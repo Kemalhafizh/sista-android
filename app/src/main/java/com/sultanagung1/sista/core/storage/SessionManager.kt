@@ -35,6 +35,7 @@ class SessionManager(private val context: Context) {
         val KEY_DYSLEXIC_MODE = booleanPreferencesKey("dyslexic_mode")
         val KEY_HIGH_CONTRAST = booleanPreferencesKey("high_contrast")
         val KEY_REFRESH_RATE_MODE = stringPreferencesKey("refresh_rate_mode")
+        val KEY_FAVORITE_MODULE_IDS = stringSetPreferencesKey("favorite_module_ids")
     }
 
     val authTokenFlow: Flow<String?> = context.dataStore.data
@@ -239,6 +240,19 @@ class SessionManager(private val context: Context) {
     suspend fun saveRefreshRateMode(mode: String) {
         context.dataStore.edit { preferences ->
             preferences[KEY_REFRESH_RATE_MODE] = mode
+        }
+    }
+
+    val favoriteModuleIdsFlow: Flow<Set<String>> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences -> preferences[KEY_FAVORITE_MODULE_IDS] ?: emptySet() }
+
+    suspend fun toggleFavoriteModule(moduleId: String) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[KEY_FAVORITE_MODULE_IDS] ?: emptySet()
+            preferences[KEY_FAVORITE_MODULE_IDS] = if (moduleId in current) current - moduleId else current + moduleId
         }
     }
 

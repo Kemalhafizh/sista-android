@@ -1,4 +1,4 @@
-package com.sultanagung1.sista.ui.portal
+﻿package com.sultanagung1.sista.ui.portal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,23 +20,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.designsystem.*
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sultanagung1.sista.data.model.EnterpriseModuleItem
+import com.sultanagung1.sista.data.model.EnterpriseModuleCatalog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModuleFavoritesScreen(
+    viewModel: ModuleCatalogViewModel = hiltViewModel(),
+
     onNavigateToRoute: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val favoriteModules: List<EnterpriseModuleItem> = remember {
-        listOf(
-            EnterpriseModuleItem("m4", 4, "Presensi GPS", "Presensi radius 250m", "Presensi & IoT", "geofence_attendance", "LocationOn"),
-            EnterpriseModuleItem("m5", 5, "QR Presensi Siswa", "Kode TOTP anti-joki", "Presensi & Akses", "dynamic_qr", "QrCode2"),
-            EnterpriseModuleItem("m9", 9, "Sultan AI Tutor", "Bimbingan 24/7", "AI & Web3", "ai_tutor", "SmartToy"),
-            EnterpriseModuleItem("m18", 18, "Rapor KKTP PDF", "Dokumen resmi YBWSA", "Akademik & LMS", "pdf_viewer", "PictureAsPdf"),
-            EnterpriseModuleItem("m22", 22, "Radar Kompetensi", "Spider chart 6-sumbu", "Akademik & LMS", "academic_analytics", "AutoGraph"),
-            EnterpriseModuleItem("m12", 12, "Mutabaah Yaumiyah", "Amalan sunnah harian", "Kesiswaan & Ibadah", "mutabaah", "Mosque")
-        )
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val favoriteModules = remember(favoriteIds) {
+        EnterpriseModuleCatalog.ALL.filter { favoriteIds.contains(it.id) }
     }
 
     Scaffold(
@@ -110,3 +108,4 @@ fun ModuleFavoritesScreen(
         }
     }
 }
+
