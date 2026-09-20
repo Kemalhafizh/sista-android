@@ -24,7 +24,6 @@ import com.sultanagung1.sista.ui.achievement.AchievementViewModel
 import com.sultanagung1.sista.ui.ai.AiTutorScreen
 import com.sultanagung1.sista.ui.ai.AiViewModel
 import com.sultanagung1.sista.ui.attendance.*
-import com.sultanagung1.sista.ui.blockchain.BlockchainPassportScreen
 import com.sultanagung1.sista.ui.common.RoleGuardedScreen
 import com.sultanagung1.sista.ui.counseling.*
 import com.sultanagung1.sista.ui.discipline.DisciplineScreen
@@ -306,12 +305,6 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.BlockchainPassport.route) {
-        BlockchainPassportScreen(
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
     composable(Screen.EnterpriseCatalog.route) {
         EnterpriseCatalogScreen(
             userRole = userRole,
@@ -373,15 +366,30 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Documents & PDF Management ---
-    composable(Screen.PdfViewer.route) {
+    composable(
+        route = Screen.PdfViewer.route,
+        arguments = listOf(
+            navArgument("fileUrl") { type = NavType.StringType; defaultValue = "" },
+            navArgument("title") { type = NavType.StringType; defaultValue = "Dokumen" },
+            navArgument("sizeBytes") { type = NavType.LongType; defaultValue = 0L }
+        )
+    ) { backStackEntry ->
+        val fileUrlEncoded = backStackEntry.arguments?.getString("fileUrl") ?: ""
+        val titleEncoded = backStackEntry.arguments?.getString("title") ?: "Dokumen"
+        val sizeBytes = backStackEntry.arguments?.getLong("sizeBytes") ?: 0L
+        val fileUrl = java.net.URLDecoder.decode(fileUrlEncoded, "UTF-8")
+        val title = java.net.URLDecoder.decode(titleEncoded, "UTF-8")
         PdfViewerScreen(
+            fileUrl = fileUrl,
+            documentTitle = title,
+            sizeBytes = sizeBytes,
             onNavigateBack = { navController.popBackStack() },
             onDownloadPdf = {
                 downloadManager.startDownload(
-                    title = "Rapor_Semester_Ganjil_XII_MIPA1.pdf",
+                    title = if (title.endsWith(".pdf", ignoreCase = true)) title else "$title.pdf",
                     fileType = "PDF",
-                    sizeBytes = 2450000,
-                    url = "https://api.sultanagung1.sch.id/reports/1.pdf"
+                    sizeBytes = sizeBytes,
+                    url = fileUrl
                 )
             }
         )
@@ -391,8 +399,10 @@ fun NavGraphBuilder.settingsNavGraph(
         DownloadHistoryScreen(
             downloadManager = downloadManager,
             onNavigateBack = { navController.popBackStack() },
-            onOpenFile = {
-                navController.navigate(Screen.PdfViewer.route)
+            onOpenFile = { task ->
+                task.localFilePath?.let { path ->
+                    navController.navigate(Screen.PdfViewer.createRoute("file://$path", task.title, task.sizeBytes))
+                }
             }
         )
     }

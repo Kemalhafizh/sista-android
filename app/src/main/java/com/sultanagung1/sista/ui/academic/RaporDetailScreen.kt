@@ -29,7 +29,7 @@ fun RaporDetailScreen(
     viewModel: RaporViewModel,
     childId: Long? = null,
     onNavigateBack: () -> Unit,
-    onNavigateToPdfViewer: (String) -> Unit = {}
+    onNavigateToPdfViewer: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -45,7 +45,8 @@ fun RaporDetailScreen(
                 actions = {
                     val pdfStatus = uiState.raporData?.pdfStatus
                     if (pdfStatus?.isReady == true && !pdfStatus.filePath.isNullOrBlank()) {
-                        IconButton(onClick = { onNavigateToPdfViewer(pdfStatus.filePath) }) {
+                        val studentName = uiState.raporData?.student?.name ?: "Siswa"
+                        IconButton(onClick = { onNavigateToPdfViewer(pdfStatus.filePath, "Rapor $studentName") }) {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = "Buka PDF", tint = Emerald700)
                         }
                     }

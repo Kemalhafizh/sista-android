@@ -47,7 +47,9 @@ fun NavGraphBuilder.adminNavGraph(
             ExecutiveAnalyticsScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToPdf = { navController.navigate(Screen.PdfViewer.route) }
+                // No backend endpoint generates an executive-summary PDF yet — PdfViewerScreen
+                // shows an honest "not available" state rather than a fabricated document.
+                onNavigateToPdf = { navController.navigate(Screen.PdfViewer.createRoute("", "Ringkasan Eksekutif", 0L)) }
             )
         }
     }

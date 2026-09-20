@@ -34,7 +34,6 @@ sealed class Screen(val route: String, val title: String = "") {
     // Ibadah & Character
     object Mutabaah : Screen("mutabaah", "Mutabaah Yaumiyah")
     object TahsinRecorder : Screen("tahsin_recorder", "Setoran Tahfidz")
-    object PrayerTimes : Screen("prayer_times", "Jadwal Salat")
 
     // AI Tutor
     object AiTutor : Screen("ai_tutor", "Sultan AI Tutor")
@@ -42,8 +41,6 @@ sealed class Screen(val route: String, val title: String = "") {
 
     // Finance & Library & Counseling
     object Billing : Screen("billing", "Tagihan SPP")
-    object DigitalLibrary : Screen("digital_library", "Perpustakaan Digital")
-    object Counseling : Screen("counseling", "Konseling BK")
     object AntiBullyingSos : Screen("antibullying_sos", "Tombol Panik SOS")
 
     // Teacher Screens
@@ -84,12 +81,16 @@ sealed class Screen(val route: String, val title: String = "") {
     }
     object NotificationCenter : Screen("notification_center", "Pusat Notifikasi")
 
-    // Web3 & Portal
-    object BlockchainPassport : Screen("blockchain_passport", "Paspor Digital Web3")
     object EnterpriseCatalog : Screen("enterprise_catalog", "Direktori Enterprise")
 
     // Documents & PDF Management
-    object PdfViewer : Screen("pdf_viewer", "Rapor & Dokumen PDF")
+    object PdfViewer : Screen("pdf_viewer?fileUrl={fileUrl}&title={title}&sizeBytes={sizeBytes}", "Rapor & Dokumen PDF") {
+        fun createRoute(fileUrl: String, title: String, sizeBytes: Long): String {
+            val encodedUrl = java.net.URLEncoder.encode(fileUrl, "UTF-8")
+            val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+            return "pdf_viewer?fileUrl=$encodedUrl&title=$encodedTitle&sizeBytes=$sizeBytes"
+        }
+    }
     object DownloadHistory : Screen("download_history", "Manajer Unduhan")
     object DocumentScanner : Screen("document_scanner", "Pemindai Dokumen OCR")
     object DigitalSignature : Screen("digital_signature", "Tanda Tangan Digital")

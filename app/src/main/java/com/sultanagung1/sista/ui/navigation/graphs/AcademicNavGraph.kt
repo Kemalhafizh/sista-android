@@ -54,7 +54,10 @@ fun NavGraphBuilder.academicNavGraph(
         RaporDetailScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() },
-            onNavigateToPdfViewer = { navController.navigate(Screen.PdfViewer.route) }
+            onNavigateToPdfViewer = { filePath, title ->
+                val resolvedUrl = com.sultanagung1.sista.core.util.Constants.resolveStorageUrl(filePath)
+                navController.navigate(Screen.PdfViewer.createRoute(resolvedUrl, title, 0L))
+            }
         )
     }
 

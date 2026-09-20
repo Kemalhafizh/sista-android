@@ -13,7 +13,19 @@ object Constants {
         }
 
     const val DEFAULT_BASE_URL = "http://127.0.0.1:8000/api/v1/"
-    
+
+    /** Server root without the /api/v1/ suffix — needed to resolve Storage::url()-style relative file paths (e.g. "uploads/rapor/x.pdf"). */
+    val SERVER_ROOT_URL: String get() = BASE_URL.removeSuffix("api/v1/")
+
+    /** Backend file fields are sometimes a full URL and sometimes a Laravel storage-relative path — normalize both to a fetchable URL. */
+    fun resolveStorageUrl(path: String): String {
+        return if (path.startsWith("http://") || path.startsWith("https://")) {
+            path
+        } else {
+            SERVER_ROOT_URL.trimEnd('/') + "/storage/" + path.trimStart('/')
+        }
+    }
+
     // SMA Islam Sultan Agung 1 Semarang Geofence Coordinates
     const val CAMPUS_LATITUDE = -6.996160
     const val CAMPUS_LONGITUDE = 110.428510
