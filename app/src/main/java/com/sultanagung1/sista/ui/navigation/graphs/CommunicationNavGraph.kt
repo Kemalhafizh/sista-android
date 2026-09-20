@@ -39,7 +39,7 @@ fun NavGraphBuilder.communicationNavGraph(
         route = Screen.Chat.route,
         arguments = listOf(navArgument("conversationId") { type = NavType.StringType })
     ) { backStackEntry ->
-        val convId = backStackEntry.arguments?.getString("conversationId") ?: "conv1"
+        val convId = backStackEntry.arguments?.getString("conversationId") ?: ""
         val viewModel: ChatViewModel = hiltViewModel()
         ChatScreen(
             conversationId = convId,
