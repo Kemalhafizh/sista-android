@@ -15,6 +15,7 @@ import com.sultanagung1.sista.core.sync.AppLifecycleSyncObserver
 import com.sultanagung1.sista.core.sync.NetworkConnectivityObserver
 import com.sultanagung1.sista.core.sync.OfflineActionQueue
 import com.sultanagung1.sista.core.sync.SyncManager
+import com.sultanagung1.sista.core.time.ServerTimeProvider
 import com.sultanagung1.sista.core.update.InAppUpdateManager
 import com.sultanagung1.sista.core.websocket.ReverbWebSocketManager
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
@@ -132,6 +133,12 @@ object StorageModule {
     @Singleton
     fun provideInAppUpdateManager(@ApplicationContext context: Context, apiClient: ApiClient): InAppUpdateManager {
         return InAppUpdateManager(context, apiClient)
+    }
+
+    @Provides
+    @Singleton
+    fun provideServerTimeProvider(@ApplicationContext context: Context, apiClient: ApiClient): ServerTimeProvider {
+        return ServerTimeProvider(context, apiClient)
     }
 
     @Provides

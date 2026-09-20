@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.sultanagung1.sista.core.accessibility.LocalAppStrings
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
+import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.ui.common.SyncStatusHeader
 import com.sultanagung1.sista.ui.home.sections.*
 import kotlinx.coroutines.delay
@@ -47,7 +48,7 @@ fun HomeScreen(
     val isDark = MaterialTheme.colorScheme.surface.isDark()
 
     val timeGreeting = remember {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val hour = DateUtils.nowCalendar().get(Calendar.HOUR_OF_DAY)
         when (hour) {
             in 3..10 -> "Selamat Pagi ☀️"
             in 11..14 -> "Selamat Siang 🌤️"
@@ -94,6 +95,14 @@ fun HomeScreen(
                     onNavigateToAnnouncements = onNavigateToAnnouncements,
                     onNavigateRoute = onNavigateRoute
                 )
+            }
+
+            // 1.5. Next-Class Countdown (FASE 71.1, server-time corrected)
+            if (uiState.todaySchedules.isNotEmpty()) {
+                item(key = "next_class_countdown", contentType = "countdown") {
+                    HomeNextClassCountdown(todaySchedules = uiState.todaySchedules)
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
 
             // 2. Compact Prayer Context Card (Hijri Date & 5-Prayer Bar)

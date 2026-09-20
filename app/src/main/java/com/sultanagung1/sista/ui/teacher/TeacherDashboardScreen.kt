@@ -411,18 +411,16 @@ private fun TeacherQuickActionCard(
     }
 }
 
-/** Compares [slot]'s real session_start/session_end against the current wall-clock time. */
-private fun isScheduleActiveNow(slot: TeacherScheduleSlot): Boolean {
-    fun minutesOf(time: String?): Int? {
-        if (time == null) return null
-        val match = Regex("""(\d{1,2}):(\d{2})""").find(time) ?: return null
-        val (h, m) = match.destructured
-        return h.toInt() * 60 + m.toInt()
-    }
-    val start = minutesOf(slot.sessionStart) ?: return false
-    val end = minutesOf(slot.sessionEnd) ?: return false
-    val now = java.util.Calendar.getInstance()
-    val nowMinutes = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
+/**
+ * Compares [slot]'s real session_start/session_end against the current
+ * time — server-corrected via [com.sultanagung1.sista.core.util.DateUtils]
+ * rather than the device clock, so a teacher (or a student peeking at a
+ * shared device) can't spoof "sedang berlangsung" by changing the phone's
+ * clock/date.
+ */
+private fun isScheduleActiveNow(slot: TeacherScheduleSlot, nowMinutes: Int): Boolean {
+    val start = com.sultanagung1.sista.core.util.DateUtils.parseMinutesOfDay(slot.sessionStart) ?: return false
+    val end = com.sultanagung1.sista.core.util.DateUtils.parseMinutesOfDay(slot.sessionEnd) ?: return false
     return nowMinutes in start..end
 }
 
@@ -433,7 +431,16 @@ private fun TeacherScheduleCard(
     onJournalClick: () -> Unit
 ) {
     val haptics = rememberHapticFeedbackHelper()
-    val isActiveNow = remember(schedule.id) { isScheduleActiveNow(schedule) }
+    var tick by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000L)
+            tick++
+        }
+    }
+    val isActiveNow = remember(schedule.id, tick) {
+        isScheduleActiveNow(schedule, com.sultanagung1.sista.core.util.DateUtils.nowMinutesOfDay())
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),

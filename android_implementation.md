@@ -3036,39 +3036,41 @@ Fase ini menuntaskan masalah paling fatal yang sering dihadapi pengguna di peran
 
 ---
 
-### 👥 FASE 71: DYNAMIC MULTI-ROLE MICRO-EXPERIENCES (SISWA, GURU, WALI MURID, PIMPINAN) `[RANCANGAN MASA DEPAN]`
+### 👥 FASE 71: DYNAMIC MULTI-ROLE MICRO-EXPERIENCES (SISWA, GURU, WALI MURID, PIMPINAN) `[SEBAGIAN SELESAI — lihat catatan per sub-fase]`
 
 Alih-alih membuat aplikasi terpisah atau mencampuradukkan fitur ke dalam satu menu raksasa yang membingungkan, Sulaone akan mengadaptasi **Contextual Dynamic Hub Architecture**: tampilan dan alur navigasi aplikasi beradaptasi 100% mengikuti peran (*role*) pengguna yang sedang aktif.
 
-- [ ] **71.1 Persona Siswa — "The Academic & Spiritual Companion":**
-  - **Fokus Pengalaman:** Belajar mandiri, presensi cepat, ibadah yaumiyah, dan pencapaian prestasi.
-  - **Komposisi Home Khusus Siswa:**
-    - *Widget Pembuka:* Sapaan hangat Islami dengan countdown jadwal pelajaran berikutnya ("Fisika: Lab 2 — 15 menit lagi").
-    - *Action Hub:* 4 Tombol Cepat (Presensi Gerbang/GPS, Jadwal Kelas, Ujian CBT, Tagihan SPP).
-    - *Mutaba'ah Streak Card:* Visualizer capaian Sholat 5 waktu & Tahfidz hari ini berbonus XP.
-    - *Bento Feed:* Pengumuman OSIS, tugas yang mendekati batas waktu (*deadline*), dan status peminjaman buku perpustakaan.
+**Fondasi arsitektur navigasi per-role sudah nyata sejak sebelumnya** (`AppNavigation.kt`): login mengarahkan `teacher/guru` → `TeacherDashboard`, `parent/ortu` → `ParentDashboard`, `admin/kepsek` → `AdminDashboard`, selain itu → `Home` (siswa). Yang dikerjakan di bagian ini adalah widget-widget spesifik per persona.
 
-- [ ] **71.2 Persona Guru — "The Classroom & KBM Cockpit":**
-  - **Fokus Pengalaman:** Efisiensi manajemen kelas, input nilai, dan administrasi KBM tanpa beban birokrasi berbelit.
-  - **Komposisi Home Khusus Guru:**
-    - *Hero Widget:* Jadwal mengajar hari ini dengan status real-time ("Jam ke 3-4: Kelas X-1 — Sedang Berlangsung").
-    - *Tombol Aksi 1-Tap:* "Buka Presensi Kelas", "Isi Jurnal Mengajar", dan "Input Nilai Harian".
-    - *Inbox Penugasan:* Badge counter jumlah tugas siswa yang belum dinilai (*unreviewed homework inbox*).
-    - *Radar Siswa Perhatian Khusus:* Peringatan siswa yang tidak hadir 3 hari berturut-turut atau nilai di bawah KKTP untuk segera dirujuk ke BK.
+**Fondasi anti-tamper waktu (dipakai lintas 71.1 & 71.2) — `[SELESAI]`:**
+- `core/time/ServerTimeProvider.kt` (baru): sinkronisasi memakai `GET mobile/config` yang SUDAH real dan sudah dipanggil app saat startup (`InAppUpdateManager`) — field `server_time` di response-nya sudah ada sejak lama tapi tidak pernah dipakai. Koreksi offset dihitung dengan estimasi round-trip-time (anchor ke titik tengah request, via `SystemClock.elapsedRealtime()` yang kebal terhadap perubahan jam perangkat), disimpan sebagai delta global di `DateUtils`.
+- `core/util/DateUtils.kt`: sekarang jadi SATU-SATUNYA sumber "jam berapa sekarang" untuk seluruh app (`nowMillis()`, `nowCalendar()`, `nowMinutesOfDay()`, `parseMinutesOfDay()`) — `todayIso()`/`todayDayNameIndonesian()` yang sudah dipakai `JournalMobileViewModel`/`TeacherViewModel` otomatis ikut terkoreksi tanpa perlu diubah satu-satu.
+- Sinkronisasi dipicu saat app dibuka (`AppNavigation.kt`) dan setiap kali app kembali dari background (`AppLifecycleSyncObserver.onCatchUp`).
+- **Alasan device clock tidak boleh dipercaya:** siswa/wali bebas mengubah jam & tanggal HP-nya sendiri di Setelan — kalau status "sedang berlangsung", countdown, atau filter "jadwal hari ini" percaya jam device mentah-mentah, ini bisa dimanipulasi.
 
-- [ ] **71.3 Persona Orang Tua / Wali — "The Real-Time Child Guardian":**
-  - **Fokus Pengalaman:** Ketenangan pikiran (*peace of mind*), transparansi keuangan, dan pemantauan perkembangan anak.
-  - **Komposisi Home Khusus Wali:**
-    - *Child Switcher Header:* Tab pemilih anak jika memiliki lebih dari 1 putra/putri di SMA Islam Sultan Agung 1.
-    - *Status Gerbang Real-time:* Notifikasi visual kehadiran ("Ananda Ahmad hadir di sekolah pukul 06:45 WIB — Foto Gerbang Terverifikasi").
-    - *Pusat Keuangan SPP:* Notifikasi tagihan bulan berjalan dengan tombol instan "Bayar via Virtual Account BSI / Bank Jateng Syariah" dan unduh kwitansi resmi.
-    - *Jalur Langsung Wali Kelas:* Tombol 1-tap konsultasi privat via Chat Sulaone atau pesan WhatsApp dinas sekolah.
+- [~] **71.1 Persona Siswa — "The Academic & Spiritual Companion":**
+  - [x] *Widget Pembuka — countdown jadwal pelajaran berikutnya:* `HomeNextClassCountdown.kt` (baru) — real, tick tiap 30 detik, dikoreksi `DateUtils` (server time). Ikut memperbaiki bug nyata di `HomeSchedulePreview.kt`: badge "Sedang Berlangsung" sebelumnya `isLive = index == 0` (selalu menandai sesi PERTAMA hari itu sebagai "berlangsung", bahkan jam 3 sore untuk jadwal jam 7 pagi) — sekarang dihitung real dari `session_start`/`session_end` vs waktu server.
+  - [x] *Action Hub 4 tombol:* sudah ada & real sejak FASE 60 (`HomeMinimalQuickActions`).
+  - [ ] *Mutaba'ah Streak Card dengan bonus XP:* kartu Mutaba'ah sudah real (FASE B), tapi sistem "XP/gamifikasi" belum ada sumber data real di backend — belum dikerjakan sesi ini.
+  - [ ] *Bento Feed (tugas mendekati deadline, status pinjaman buku):* pengumuman OSIS sudah real; "tugas mendekati deadline" dan "status peminjaman buku" belum dikerjakan sesi ini (perlu cek endpoint tugas/perpustakaan yang relevan).
+
+- [~] **71.2 Persona Guru — "The Classroom & KBM Cockpit":**
+  - [x] *Hero Widget — jadwal mengajar dengan status real-time:* sudah dibangun (rombak Dashboard Guru sebelumnya) dan kali ini `isScheduleActiveNow()` diupgrade dari `java.util.Calendar.getInstance()` (jam device) ke `DateUtils` (jam server) — status "Sedang Berlangsung" kini juga anti-tamper, plus tick otomatis tiap 30 detik.
+  - [x] *Tombol aksi 1-tap Presensi Kelas & Isi Jurnal:* sudah real sejak rombak Dashboard Guru sebelumnya.
+  - [ ] *Inbox Penugasan (badge tugas belum dinilai):* belum dikerjakan — perlu cek endpoint real untuk daftar tugas/submission belum dinilai.
+  - [ ] *Radar Siswa Perhatian Khusus:* belum dikerjakan — perlu query backend baru (siswa absen 3 hari berturut-turut / nilai di bawah KKTP), tidak ada endpoint ini saat ini.
+
+- [~] **71.3 Persona Orang Tua / Wali — "The Real-Time Child Guardian":**
+  - [x] *Child Switcher Header:* sudah real sejak rombak Portal Wali Murid sebelumnya.
+  - [x] *Pusat Keuangan SPP (VA, kwitansi):* sudah real sejak FASE B (`BillingScreen`).
+  - [x] *Jalur Langsung Wali Kelas:* sudah real (in-app chat "Pesan Sekolah") sejak rombak Portal Wali Murid; tombol WhatsApp dihapus karena memang tidak ada kolom nomor telepon guru di skema database — bukan gimmick yang dibiarkan, tapi keterbatasan data nyata.
+  - [ ] *Status Gerbang Real-time:* **BUKAN real-time.** Ditemukan `ReverbWebSocketManager.kt` terhubung ke IP LAN pribadi yang di-hardcode (`192.168.31.127`, bukan `REVERB_HOST` yang dikonfigurasi backend), DAN keempat kelas event Laravel yang diharapkan (`LiveAttendanceLoggedEvent`, `EmergencyAlertEvent`, `SchoolAnnouncementEvent`, `NewChatMessageEvent`) **tidak ada sama sekali** di `app/Events/` backend — seluruh lapisan "real-time" ini murni dekorasi, tidak pernah tersambung dan tidak pernah bisa terpicu. Status presensi wali murid saat ini memakai data REST biasa (riwayat presensi terakhir, jujur bukan real-time) dari rombak Portal Wali Murid sebelumnya — perbaikan WebSocket sungguhan (host dari config + event class Laravel real) adalah pekerjaan tersendiri yang cukup besar, belum dikerjakan.
 
 - [ ] **71.4 Persona Pimpinan & Yayasan — "The Executive School Pulse":**
-  - **Fokus Pengalaman:** Pengambilan keputusan berbasis data (*data-driven decision making*) dengan ringkasan KPI institusi.
-  - **Komposisi Home Khusus Pimpinan:**
-    - *Executive Metric Bento:* Persentase kehadiran seluruh siswa hari ini, persentase kehadiran guru, rasio pelunasan SPP per angkatan, dan penggunaan server CBT.
-    - *Antrean Persetujuan:* Daftar persetujuan dinas (Surat Izin Guru, Rencana Anggaran Ekstrakurikuler, Dispensasi Lomba).
+  - [x] *Executive Metric dasar (total siswa, tagihan belum lunas, tingkat kehadiran, approval pending):* sudah real sejak FASE B (`AdminDashboardScreen`).
+  - [ ] *Persentase kehadiran guru, rasio pelunasan SPP per angkatan, penggunaan server CBT:* tidak ada di endpoint manapun saat ini (`GET mobile/admin/kpi` baru mengembalikan `monthly_revenue`/`active_teachers` count/`avg_student_points` — komentar di kode backend-nya sendiri menyebut "Dummy or expanded KPI details").
+  - [ ] *Antrean Persetujuan (daftar, bukan cuma jumlah):* `POST mobile/admin/approvals/{id}/action` sudah real, tapi TIDAK ADA endpoint `GET` untuk mengambil daftar item pending-nya — perlu endpoint baru.
+  - [ ] *Tombol Siaran Darurat:* bergantung pada WebSocket `EmergencyAlertEvent` yang (lihat 71.3) tidak ada backend-nya sama sekali — belum dikerjakan.
     - *Tombol Siaran Darurat:* Pengiriman pengumuman darurat / siaran resmi yayasan ke seluruh aplikasi siswa, guru, dan orang tua secara serentak.
 
 ---

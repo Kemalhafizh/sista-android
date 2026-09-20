@@ -45,6 +45,7 @@ import com.sultanagung1.sista.core.sync.AppLifecycleSyncObserver
 import com.sultanagung1.sista.core.sync.NetworkConnectivityObserver
 import com.sultanagung1.sista.core.sync.OfflineActionQueue
 import com.sultanagung1.sista.core.sync.SyncManager
+import com.sultanagung1.sista.core.time.ServerTimeProvider
 import com.sultanagung1.sista.core.update.InAppUpdateManager
 import com.sultanagung1.sista.core.websocket.ReverbWebSocketManager
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
@@ -110,7 +111,17 @@ fun AppNavigation(
     val actionQueue = remember { OfflineActionQueue(localStore, effectiveApiClient) }
     val connectivityObserver = remember { NetworkConnectivityObserver(context) }
     val syncManager = remember { SyncManager(context, effectiveApiClient, localStore, actionQueue, connectivityObserver) }
-    val lifecycleSyncObserver = remember { AppLifecycleSyncObserver(syncManager) }
+    // FASE 71 anti-tamper clock: synced on app start and every resume-from-background
+    // (onCatchUp hook below), so schedule "sedang berlangsung" status, countdowns, and
+    // attendance windows never trust a device clock the user could have changed.
+    val serverTimeProvider = remember { ServerTimeProvider(context, effectiveApiClient) }
+    val lifecycleSyncObserver = remember {
+        AppLifecycleSyncObserver(syncManager, onCatchUp = { serverTimeProvider.sync() })
+    }
+
+    LaunchedEffect(Unit) {
+        serverTimeProvider.syncAsync()
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {

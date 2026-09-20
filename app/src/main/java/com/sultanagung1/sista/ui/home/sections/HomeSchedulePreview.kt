@@ -10,6 +10,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +27,7 @@ import com.sultanagung1.sista.core.accessibility.sulaoneHeading
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedBounds
+import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.ScheduleItem
 
 @Composable
@@ -61,13 +67,27 @@ internal fun HomeSchedulePreview(
                 icon = Icons.Default.EventBusy
             )
         } else {
-            todaySchedules.forEachIndexed { index, item ->
+            var tick by remember { mutableIntStateOf(0) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    kotlinx.coroutines.delay(30_000L)
+                    tick++
+                }
+            }
+            val nowMinutes = remember(tick) { DateUtils.nowMinutesOfDay() }
+            todaySchedules.forEach { item ->
+                // Real time-window check (server-corrected via DateUtils) — not "the first item of
+                // the day", which used to be shown as "Berlangsung" even hours after it ended.
+                val start = DateUtils.parseMinutesOfDay(item.startTime)
+                val end = DateUtils.parseMinutesOfDay(item.endTime)
+                val isLive = start != null && end != null && nowMinutes in start until end
+
                 ModernScheduleCard(
                     time = "${item.startTime} - ${item.endTime}",
                     subject = item.subjectName,
                     teacher = item.teacherName,
                     room = item.room,
-                    isLive = index == 0
+                    isLive = isLive
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
