@@ -32,6 +32,7 @@ import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.data.model.ConversationItem
+import com.sultanagung1.sista.data.model.TeacherDirectoryItem
 
 @Composable
 fun ConversationListScreen(
@@ -243,16 +244,22 @@ fun ConversationListScreen(
     }
 
     if (showNewConsultationDialog) {
+        LaunchedEffect(Unit) {
+            viewModel.loadTeacherDirectory()
+        }
         NewConsultationModal(
             isDark = isDark,
             borderColor = borderColor,
             cardBg = cardBg,
+            teachers = uiState.availableTeachers,
+            isLoadingTeachers = uiState.isLoadingTeachers,
             onDismiss = { showNewConsultationDialog = false },
-            onStartConsultation = { teacherName, role, topic, initialMessage ->
+            onStartConsultation = { teacher, initialMessage ->
                 haptics.success()
+                viewModel.startConsultationWith(teacher)
                 viewModel.sendMessage(initialMessage)
                 showNewConsultationDialog = false
-                onNavigateToChatRoom("conv1")
+                onNavigateToChatRoom(teacher.id.toString())
             }
         )
     }
@@ -382,29 +389,14 @@ private fun NewConsultationModal(
     isDark: Boolean,
     borderColor: Color,
     cardBg: Color,
+    teachers: List<TeacherDirectoryItem>,
+    isLoadingTeachers: Boolean,
     onDismiss: () -> Unit,
-    onStartConsultation: (String, String, String, String) -> Unit
+    onStartConsultation: (TeacherDirectoryItem, String) -> Unit
 ) {
     val haptics = rememberHapticFeedbackHelper()
 
-    val teacherList = listOf(
-        Pair("Ustadz Drs. H. Bambang Suherman", "Wali Kelas XII MIPA 1"),
-        Pair("Ustadzah Fatimah, S.Psi", "Guru Bimbingan Konseling (BK)"),
-        Pair("Ustadz Muhammad Luthfi, Lc", "Pembina Tahsin & Keislaman"),
-        Pair("Ibu Sri Wahyuni, S.Pd", "Guru Mata Pelajaran Matematika"),
-        Pair("Bpk. Joko Susilo, S.E.", "Tata Usaha & Keuangan SPP")
-    )
-
-    val topicList = listOf(
-        "Perkembangan Akademik & Rapor",
-        "Izin Sakit / Kehadiran Gerbang",
-        "Karakter & Kedisiplinan Siswa",
-        "Setoran Tahfidz Al-Qur'an",
-        "Administrasi SPP & Beasiswa"
-    )
-
-    var selectedTeacher by remember { mutableStateOf(teacherList[0]) }
-    var selectedTopic by remember { mutableStateOf(topicList[0]) }
+    var selectedTeacher by remember(teachers) { mutableStateOf(teachers.firstOrNull()) }
     var messageText by remember { mutableStateOf("Assalamu'alaikum Warahmatullahi Wabarakatuh Ustadz, mohon izin berkonsultasi mengenai ananda.") }
 
     AlertDialog(
@@ -431,71 +423,53 @@ private fun NewConsultationModal(
                     color = if (isDark) Slate300 else Slate700
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    teacherList.take(3).forEach { teacher ->
-                        val isSelected = selectedTeacher == teacher
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSelected) {
-                                if (isDark) Emerald900.copy(alpha = 0.4f) else Emerald50
-                            } else {
-                                if (isDark) Slate850 else Slate100
-                            },
-                            border = androidx.compose.foundation.BorderStroke(
-                                0.5.dp,
-                                if (isSelected) Emerald600 else borderColor
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    haptics.tapLight()
-                                    selectedTeacher = teacher
+                when {
+                    isLoadingTeachers -> Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Emerald600) }
+
+                    teachers.isEmpty() -> Text(
+                        text = "Gagal memuat daftar guru. Coba lagi nanti.",
+                        fontSize = 12.sp,
+                        color = if (isDark) Slate400 else Slate500
+                    )
+
+                    else -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        teachers.take(6).forEach { teacher ->
+                            val isSelected = selectedTeacher?.id == teacher.id
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) {
+                                    if (isDark) Emerald900.copy(alpha = 0.4f) else Emerald50
+                                } else {
+                                    if (isDark) Slate850 else Slate100
+                                },
+                                border = androidx.compose.foundation.BorderStroke(
+                                    0.5.dp,
+                                    if (isSelected) Emerald600 else borderColor
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        haptics.tapLight()
+                                        selectedTeacher = teacher
+                                    }
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = teacher.name,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) Slate100 else Slate900
+                                    )
+                                    Text(
+                                        text = teacher.subject,
+                                        fontSize = 11.sp,
+                                        color = if (isSelected) Emerald600 else if (isDark) Slate400 else Slate500
+                                    )
                                 }
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = teacher.first,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isDark) Slate100 else Slate900
-                                )
-                                Text(
-                                    text = teacher.second,
-                                    fontSize = 11.sp,
-                                    color = if (isSelected) Emerald600 else if (isDark) Slate400 else Slate500
-                                )
                             }
-                        }
-                    }
-                }
-
-                Text(
-                    text = "Topik Konsultasi:",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isDark) Slate300 else Slate700
-                )
-
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(topicList) { topic ->
-                        val isSelected = selectedTopic == topic
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) Emerald600 else if (isDark) Slate850 else Slate100)
-                                .border(0.5.dp, if (isSelected) Emerald600 else borderColor, RoundedCornerShape(12.dp))
-                                .clickable {
-                                    haptics.tapLight()
-                                    selectedTopic = topic
-                                }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = topic,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else if (isDark) Slate300 else Slate700
-                            )
                         }
                     }
                 }
@@ -517,10 +491,12 @@ private fun NewConsultationModal(
         confirmButton = {
             Button(
                 onClick = {
-                    if (messageText.isNotBlank()) {
-                        onStartConsultation(selectedTeacher.first, selectedTeacher.second, selectedTopic, messageText)
+                    val teacher = selectedTeacher
+                    if (messageText.isNotBlank() && teacher != null) {
+                        onStartConsultation(teacher, messageText)
                     }
                 },
+                enabled = selectedTeacher != null && messageText.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
                 shape = RoundedCornerShape(10.dp)
             ) {

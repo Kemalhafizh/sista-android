@@ -130,8 +130,8 @@ object StorageModule {
 
     @Provides
     @Singleton
-    fun provideInAppUpdateManager(@ApplicationContext context: Context): InAppUpdateManager {
-        return InAppUpdateManager(context)
+    fun provideInAppUpdateManager(@ApplicationContext context: Context, apiClient: ApiClient): InAppUpdateManager {
+        return InAppUpdateManager(context, apiClient)
     }
 
     @Provides

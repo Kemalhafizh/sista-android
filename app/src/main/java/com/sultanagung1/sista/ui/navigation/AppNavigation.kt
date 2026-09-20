@@ -154,7 +154,7 @@ fun AppNavigation(
 
     val audioRecorderManager = remember { AudioRecorderManager(context) }
     val downloadManager = remember { DownloadManager(context) }
-    val inAppUpdateManager = remember { InAppUpdateManager(context) }
+    val inAppUpdateManager = remember { InAppUpdateManager(context, com.sultanagung1.sista.core.network.ApiClient(context)) }
     val liteModeManager = remember { LiteModeManager(context) }
 
     // Role-Based Multilingual Bottom Navigation Bar Items (FASE 60.3: Consolidated 4-Tab System)

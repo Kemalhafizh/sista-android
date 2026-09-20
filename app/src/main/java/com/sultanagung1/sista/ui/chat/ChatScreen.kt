@@ -144,14 +144,14 @@ fun ChatScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = conv?.recipientName ?: "Ustadz Drs. H. Bambang Suherman",
+                            text = conv?.recipientName ?: "—",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = if (isDark) Slate100 else Slate900,
                             maxLines = 1
                         )
                         Text(
-                            text = if (uiState.isRecipientTyping) "sedang mengetik..." else (conv?.recipientRole ?: "Wali Kelas XII MIPA 1"),
+                            text = if (uiState.isRecipientTyping) "sedang mengetik..." else (conv?.recipientRole ?: ""),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (uiState.isRecipientTyping) Emerald600 else if (isDark) Slate400 else Slate500,
                             fontSize = 11.sp,

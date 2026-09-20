@@ -23,6 +23,11 @@ interface ChatApiService {
     suspend fun markAsRead(
         @Path("id") conversationId: String
     ): Response<Map<String, Any>>
+
+    // Real endpoint (not enveloped) — used for the "new consultation" teacher picker,
+    // since no dedicated "teachers available for parent consultation" endpoint exists.
+    @GET("evaluations/teachers")
+    suspend fun getTeacherDirectory(): Response<List<TeacherDirectoryItem>>
 }
 
 interface NotificationApiService {

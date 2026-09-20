@@ -874,6 +874,18 @@ class AdminRepository(private val apiClient: ApiClient) {
     }.flowOn(Dispatchers.IO)
 }
 
+/**
+ * NOTE ON BACKEND STATE: ChatApiService's mobile/conversations*/mobile/messages/send
+ * routes do not exist anywhere in sistem-terpadu's routes/api.php — every call
+ * 404s. The only real backend surface for parent<->teacher messaging is
+ * GET/POST /v1/parent/messages (ApiParentController), which is a flat message
+ * log keyed by (recipient_id, student_id) pairs, not a "conversation" concept
+ * with its own id — building genuine conversation threads from it is a real
+ * feature (grouping by recipient) that needs its own repository method and is
+ * tracked separately. Until then, this repository no longer fabricates
+ * conversations/messages on failure — it surfaces the real (currently
+ * guaranteed) error instead of silently showing invented people and chats.
+ */
 class ChatRepository(private val apiClient: ApiClient) {
 
     fun getConversations(): Flow<NetworkResult<List<ConversationItem>>> = flow {
@@ -883,76 +895,10 @@ class ChatRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Success(
-                    listOf(
-                        ConversationItem(
-                            id = "conv1",
-                            recipientId = "t1",
-                            recipientName = "Ustadz Drs. H. Bambang Suherman",
-                            recipientRole = "Wali Kelas XII MIPA 1",
-                            lastMessage = "Assalamu'alaikum Ibu, perkembangan tahfidz dan nilai fisika ananda sangat membanggakan.",
-                            lastMessageTime = "10:30 WIB",
-                            unreadCount = 1,
-                            isOnline = true
-                        ),
-                        ConversationItem(
-                            id = "conv2",
-                            recipientId = "t2",
-                            recipientName = "Ustadzah Fatimah, S.Psi",
-                            recipientRole = "Guru Bimbingan Konseling (BK)",
-                            lastMessage = "Jadwal konsultasi peminatan jurusan SNBP dapat dilaksanakan hari Kamis pukul 13.00 WIB.",
-                            lastMessageTime = "Kemarin",
-                            unreadCount = 0,
-                            isOnline = false
-                        ),
-                        ConversationItem(
-                            id = "conv3",
-                            recipientId = "t3",
-                            recipientName = "Ustadz Muhammad Luthfi, Lc",
-                            recipientRole = "Pembina Tahsin & Bahasa Arab",
-                            lastMessage = "Alhamdulillah setoran Surah An-Naba ananda makhraj dan tajwidnya sudah mumtaz.",
-                            lastMessageTime = "23 Ags",
-                            unreadCount = 0,
-                            isOnline = true
-                        )
-                    )
-                ))
+                emit(NetworkResult.Error("Gagal memuat daftar percakapan (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                listOf(
-                    ConversationItem(
-                        id = "conv1",
-                        recipientId = "t1",
-                        recipientName = "Ustadz Drs. H. Bambang Suherman",
-                        recipientRole = "Wali Kelas XII MIPA 1",
-                        lastMessage = "Assalamu'alaikum Ibu, perkembangan tahfidz dan nilai fisika ananda sangat membanggakan.",
-                        lastMessageTime = "10:30 WIB",
-                        unreadCount = 1,
-                        isOnline = true
-                    ),
-                    ConversationItem(
-                        id = "conv2",
-                        recipientId = "t2",
-                        recipientName = "Ustadzah Fatimah, S.Psi",
-                        recipientRole = "Guru Bimbingan Konseling (BK)",
-                        lastMessage = "Jadwal konsultasi peminatan jurusan SNBP dapat dilaksanakan hari Kamis pukul 13.00 WIB.",
-                        lastMessageTime = "Kemarin",
-                        unreadCount = 0,
-                        isOnline = false
-                    ),
-                    ConversationItem(
-                        id = "conv3",
-                        recipientId = "t3",
-                        recipientName = "Ustadz Muhammad Luthfi, Lc",
-                        recipientRole = "Pembina Tahsin & Bahasa Arab",
-                        lastMessage = "Alhamdulillah setoran Surah An-Naba ananda makhraj dan tajwidnya sudah mumtaz.",
-                        lastMessageTime = "23 Ags",
-                        unreadCount = 0,
-                        isOnline = true
-                    )
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -963,26 +909,10 @@ class ChatRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Success(
-                    listOf(
-                        ChatMessage("m1", conversationId, "t1", "Ustadz Bambang", "Assalamu'alaikum Warahmatullahi Wabarakatuh Bapak/Ibu.", "09:15 WIB", isMe = false, status = "read"),
-                        ChatMessage("m2", conversationId, "p1", "Saya", "Wa'alaikumussalam Warahmatullahi Wabarakatuh Ustadz. Mohon izin bertanya terkait persiapan ujian PTS pekan depan.", "09:20 WIB", isMe = true, status = "read"),
-                        ChatMessage("m3", conversationId, "t1", "Ustadz Bambang", "Alhamdulillah, kisi-kisi dan materi pengayaan telah kami unggah ke LMS Sulaone. Ananda bisa latihan soal CBT dari aplikasi.", "09:25 WIB", isMe = false, status = "read"),
-                        ChatMessage("m4", conversationId, "p1", "Saya", "Baik Ustadz, terima kasih banyak atas bimbingannya.", "09:28 WIB", isMe = true, status = "read"),
-                        ChatMessage("m5", conversationId, "t1", "Ustadz Bambang", "Assalamu'alaikum Ibu, perkembangan tahfidz dan nilai fisika ananda sangat membanggakan.", "10:30 WIB", isMe = false, status = "delivered")
-                    )
-                ))
+                emit(NetworkResult.Error("Gagal memuat pesan (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                listOf(
-                    ChatMessage("m1", conversationId, "t1", "Ustadz Bambang", "Assalamu'alaikum Warahmatullahi Wabarakatuh Bapak/Ibu.", "09:15 WIB", isMe = false, status = "read"),
-                    ChatMessage("m2", conversationId, "p1", "Saya", "Wa'alaikumussalam Warahmatullahi Wabarakatuh Ustadz. Mohon izin bertanya terkait persiapan ujian PTS pekan depan.", "09:20 WIB", isMe = true, status = "read"),
-                    ChatMessage("m3", conversationId, "t1", "Ustadz Bambang", "Alhamdulillah, kisi-kisi dan materi pengayaan telah kami unggah ke LMS Sulaone. Ananda bisa latihan soal CBT dari aplikasi.", "09:25 WIB", isMe = false, status = "read"),
-                    ChatMessage("m4", conversationId, "p1", "Saya", "Baik Ustadz, terima kasih banyak atas bimbingannya.", "09:28 WIB", isMe = true, status = "read"),
-                    ChatMessage("m5", conversationId, "t1", "Ustadz Bambang", "Assalamu'alaikum Ibu, perkembangan tahfidz dan nilai fisika ananda sangat membanggakan.", "10:30 WIB", isMe = false, status = "delivered")
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -994,32 +924,25 @@ class ChatRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Success(
-                    ChatMessage(
-                        id = "m_${System.currentTimeMillis()}",
-                        conversationId = conversationId ?: "conv1",
-                        senderId = "me",
-                        senderName = "Saya",
-                        text = text,
-                        timestamp = "Baru saja",
-                        isMe = true,
-                        status = "sent"
-                    )
-                ))
+                emit(NetworkResult.Error("Gagal mengirim pesan (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                ChatMessage(
-                    id = "m_${System.currentTimeMillis()}",
-                    conversationId = conversationId ?: "conv1",
-                    senderId = "me",
-                    senderName = "Saya",
-                    text = text,
-                    timestamp = "Baru saja",
-                    isMe = true,
-                    status = "sent"
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /** Real: GET evaluations/teachers, the only endpoint returning actual guru/bk id+name pairs. */
+    fun getTeacherDirectory(): Flow<NetworkResult<List<TeacherDirectoryItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.chatApi.getTeacherDirectory()
+            if (response.isSuccessful && response.body() != null) {
+                emit(NetworkResult.Success(response.body()!!))
+            } else {
+                emit(NetworkResult.Error("Gagal memuat daftar guru (Kode: ${response.code()}).", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 }

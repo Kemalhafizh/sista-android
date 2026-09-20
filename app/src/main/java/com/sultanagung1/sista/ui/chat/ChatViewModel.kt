@@ -10,6 +10,7 @@ import com.sultanagung1.sista.core.websocket.ReverbWebSocketManager
 import com.sultanagung1.sista.core.websocket.WebSocketEvent
 import com.sultanagung1.sista.data.model.ChatMessage
 import com.sultanagung1.sista.data.model.ConversationItem
+import com.sultanagung1.sista.data.model.TeacherDirectoryItem
 import com.sultanagung1.sista.data.repository.ChatRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,8 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val isSending: Boolean = false,
     val isRecipientTyping: Boolean = false,
+    val availableTeachers: List<TeacherDirectoryItem> = emptyList(),
+    val isLoadingTeachers: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -59,20 +62,41 @@ class ChatViewModel @Inject constructor(
     }
 
     fun openConversation(conversationId: String) {
-        val conv = _uiState.value.conversations.find { it.id == conversationId }
-            ?: ConversationItem(
-                id = conversationId,
-                recipientId = "t1",
-                recipientName = "Ustadz Drs. H. Bambang Suherman",
-                recipientRole = "Wali Kelas XII MIPA 1",
-                lastMessage = "",
-                lastMessageTime = "Baru saja",
-                unreadCount = 0,
-                isOnline = true
-            )
-
+        val conv = _uiState.value.conversations.find { it.id == conversationId } ?: return
         _uiState.update { it.copy(activeConversation = conv, isRecipientTyping = false) }
         loadMessages(conversationId)
+    }
+
+    /** Starts a chat with a teacher chosen from the real directory (New Consultation), without inventing a fake conversation record for one that doesn't exist yet. */
+    fun startConsultationWith(teacher: TeacherDirectoryItem) {
+        val conv = ConversationItem(
+            id = teacher.id.toString(),
+            recipientId = teacher.id.toString(),
+            recipientName = teacher.name,
+            recipientRole = teacher.subject,
+            lastMessage = "",
+            lastMessageTime = "Baru saja",
+            unreadCount = 0,
+            isOnline = false
+        )
+        _uiState.update { it.copy(activeConversation = conv, messages = emptyList(), isRecipientTyping = false) }
+    }
+
+    fun loadTeacherDirectory() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingTeachers = true) }
+            chatRepository.getTeacherDirectory().collect { result ->
+                when (result) {
+                    is NetworkResult.Loading -> Unit
+                    is NetworkResult.Success -> _uiState.update {
+                        it.copy(isLoadingTeachers = false, availableTeachers = result.data)
+                    }
+                    is NetworkResult.Error -> _uiState.update {
+                        it.copy(isLoadingTeachers = false, errorMessage = result.message)
+                    }
+                }
+            }
+        }
     }
 
     fun loadMessages(conversationId: String) {

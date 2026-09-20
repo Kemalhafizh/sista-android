@@ -1,49 +1,71 @@
 package com.sultanagung1.sista.core.update
 
 import android.content.Context
+import com.sultanagung1.sista.core.network.ApiClient
+import com.sultanagung1.sista.data.model.VersionCheckInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-data class AppVersionInfo(
-    val currentVersion: String = "2.0.0",
-    val latestVersion: String = "2.1.0",
-    val isUpdateAvailable: Boolean = true,
-    val isCriticalUpdate: Boolean = false,
-    val releaseDate: String = "25 Agustus 2026",
-    val downloadSizeBytes: Long = 18_400_000, // 18.4 MB
-    val downloadUrl: String = "https://sista.sultanagung1.sch.id/downloads/sulaone-v2.1.0.apk",
-    val changelog: List<String> = listOf(
-        "Pembaruan modul visualisasi grafik Radar Spider Web 6-Sumbu KKTP",
-        "Peningkatan performa rendering 120 FPS bebas jank/stuttering",
-        "Dukungan mode tema AMOLED Hitam Pekat murni & multi-bahasa Arab RTL",
-        "Peningkatan stabilitas sinkronisasi offline & antrean mutasi data"
-    )
+data class AppVersionState(
+    val isLoading: Boolean = false,
+    val currentVersionName: String = "",
+    val versionCheck: VersionCheckInfo? = null,
+    val maintenanceMessage: String? = null,
+    val errorMessage: String? = null
 )
 
-class InAppUpdateManager(private val context: Context) {
+/**
+ * Wraps the real, working GET mobile/config endpoint (MobileConfigController) —
+ * no auth required, backed by an actual MobileAppConfig DB row. There is no
+ * APK-hosting/download endpoint anywhere in the backend, so this intentionally
+ * does not attempt an in-app byte-progress download: the only real action is
+ * directing the user to version_check.store_url (the Play Store listing).
+ */
+class InAppUpdateManager(
+    private val context: Context,
+    private val apiClient: ApiClient
+) {
 
-    private val _versionInfo = MutableStateFlow(AppVersionInfo())
-    val versionInfo: StateFlow<AppVersionInfo> = _versionInfo.asStateFlow()
+    private val _state = MutableStateFlow(AppVersionState())
+    val state: StateFlow<AppVersionState> = _state.asStateFlow()
 
-    private val _isDownloading = MutableStateFlow(false)
-    val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
-
-    private val _downloadProgress = MutableStateFlow(0f)
-    val downloadProgress: StateFlow<Float> = _downloadProgress.asStateFlow()
-
-    fun checkForUpdates() {
-        // Checks version from server
-        _versionInfo.value = AppVersionInfo(
-            currentVersion = "2.0.0",
-            latestVersion = "2.1.0",
-            isUpdateAvailable = true,
-            isCriticalUpdate = false
-        )
+    private fun currentBuildNumber(): Int {
+        return try {
+            context.packageManager.getPackageInfo(context.packageName, 0).let {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) it.longVersionCode.toInt() else @Suppress("DEPRECATION") it.versionCode
+            }
+        } catch (_: Exception) {
+            0
+        }
     }
 
-    fun startDownloadUpdate(onComplete: () -> Unit = {}) {
-        _isDownloading.value = true
-        _downloadProgress.value = 0.05f
+    private fun currentVersionName(): String {
+        return try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    suspend fun checkForUpdates() {
+        _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+        try {
+            val build = currentBuildNumber()
+            val response = apiClient.mobileConfigApi.getConfig(platform = "android", build = build)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success) {
+                _state.value = AppVersionState(
+                    isLoading = false,
+                    currentVersionName = currentVersionName(),
+                    versionCheck = body.versionCheck,
+                    maintenanceMessage = body.maintenance?.takeIf { it.isMaintenance }?.message
+                )
+            } else {
+                _state.value = _state.value.copy(isLoading = false, errorMessage = "Gagal memeriksa pembaruan aplikasi.")
+            }
+        } catch (e: Exception) {
+            _state.value = _state.value.copy(isLoading = false, errorMessage = e.localizedMessage ?: "Koneksi terputus.")
+        }
     }
 }

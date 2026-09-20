@@ -37,6 +37,19 @@ data class SendMessageRequest(
     @SerializedName("attachment_type") val attachmentType: String? = null
 )
 
+/**
+ * Real teacher directory from GET evaluations/teachers (EvaluationMobileApiController)
+ * — the only backend endpoint that returns actual guru/bk id+name pairs any
+ * authenticated user (including parents) can call. Its "subject" field is
+ * itself a hardcoded backend placeholder ("Guru Mata Pelajaran" for every
+ * teacher), not a real per-teacher subject.
+ */
+data class TeacherDirectoryItem(
+    @SerializedName("id") val id: Long,
+    @SerializedName("name") val name: String,
+    @SerializedName("subject") val subject: String
+)
+
 data class AnnouncementItem(
     @SerializedName("id") val id: String,
     @SerializedName("title") val title: String,

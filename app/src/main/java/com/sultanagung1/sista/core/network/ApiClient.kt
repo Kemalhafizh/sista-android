@@ -81,5 +81,6 @@ class ApiClient(private val context: Context) {
     val notificationPreferencesApi: NotificationPreferencesApiService by lazy { retrofit.create(NotificationPreferencesApiService::class.java) }
     val parentExperienceApi: ParentExperienceApiService by lazy { retrofit.create(ParentExperienceApiService::class.java) }
     val syncApi: SyncApiService by lazy { retrofit.create(SyncApiService::class.java) }
+    val mobileConfigApi: MobileConfigApiService by lazy { retrofit.create(MobileConfigApiService::class.java) }
 }
 
