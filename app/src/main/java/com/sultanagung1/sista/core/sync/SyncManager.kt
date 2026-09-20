@@ -1,4 +1,4 @@
-package com.sultanagung1.sista.core.sync
+﻿package com.sultanagung1.sista.core.sync
 
 import android.content.Context
 import android.util.Log
@@ -110,7 +110,7 @@ class SyncManager(
                     // 3. Fetch fresh academic & schedule data
                     val scheduleResp = apiClient.studentApi.getSchedule()
                     if (scheduleResp.isSuccessful && scheduleResp.body() != null) {
-                        localStore.saveSchedule(scheduleResp.body()!!)
+                        localStore.saveSchedule(scheduleResp.body()!!.data ?: emptyList())
                     }
 
                     val gradesResp = apiClient.studentApi.getAcademicSummary()

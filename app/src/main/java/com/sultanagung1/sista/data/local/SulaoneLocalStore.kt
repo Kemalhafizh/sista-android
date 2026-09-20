@@ -1,4 +1,4 @@
-package com.sultanagung1.sista.data.local
+﻿package com.sultanagung1.sista.data.local
 
 import android.content.ContentValues
 import android.content.Context
@@ -257,14 +257,14 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
         return getCache("grades_cache", AcademicSummary::class.java)
     }
 
-    fun saveMutabaah(activities: List<MutabaahItem>) {
+    fun saveMutabaah(activities: List<MutabaahLogItem>) {
         saveCache("mutabaah_cache", activities, "ibadah")
     }
 
-    fun getCachedMutabaah(): List<MutabaahItem>? {
+    fun getCachedMutabaah(): List<MutabaahLogItem>? {
         val json = getCacheJson("mutabaah_cache") ?: return null
         return try {
-            val type = object : TypeToken<List<MutabaahItem>>() {}.type
+            val type = object : TypeToken<List<MutabaahLogItem>>() {}.type
             gson.fromJson(json, type)
         } catch (_: Exception) {
             null
@@ -315,3 +315,4 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
         }
     }
 }
+

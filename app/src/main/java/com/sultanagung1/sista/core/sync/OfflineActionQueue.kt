@@ -1,4 +1,4 @@
-package com.sultanagung1.sista.core.sync
+﻿package com.sultanagung1.sista.core.sync
 
 import android.util.Log
 import com.google.gson.Gson
@@ -32,7 +32,7 @@ class OfflineActionQueue(
         return localStore.enqueueAction("ATTENDANCE_CHECKIN", request)
     }
 
-    fun queueMutabaah(activities: List<MutabaahItem>): String {
+    fun queueMutabaah(activities: List<MutabaahLogItem>): String {
         return localStore.enqueueAction("MUTABAAH_LOG", activities)
     }
 
@@ -62,7 +62,7 @@ class OfflineActionQueue(
                             isSuccess = response.isSuccessful
                         }
                         "MUTABAAH_LOG" -> {
-                            val activities = gson.fromJson(action.payloadJson, Array<MutabaahItem>::class.java).toList()
+                            val activities = gson.fromJson(action.payloadJson, Array<MutabaahLogItem>::class.java).toList()
                             localStore.saveMutabaah(activities)
                             isSuccess = true
                             statusCode = 200
@@ -110,3 +110,4 @@ class OfflineActionQueue(
         }
     }
 }
+
