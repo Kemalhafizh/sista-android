@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 sealed interface JournalMobileUiEvent : UiEvent {
     data class LoadSchedules(val unit: Unit = Unit) : JournalMobileUiEvent
@@ -25,14 +28,10 @@ sealed interface JournalMobileUiEvent : UiEvent {
 
 data class JournalMobileUiState(
     val isLoading: Boolean = false,
-    val selectedTab: Int = 0, // 0: Hari Ini, 1: Semua Jadwal Minggu Ini
-    val schedules: List<JournalScheduleItem> = emptyList(),
-    val compliance: JournalSummaryCompliance = JournalSummaryCompliance(
-        totalScheduled = 0,
-        filledCount = 0,
-        compliancePercentage = 0,
-        unfilledDaysWarning = false
-    ),
+    val selectedTab: Int = 0, // 0: Hari Ini, 1: Minggu Ini, 2: Bulan Ini
+    val todaySchedule: List<JournalScheduleItem> = emptyList(),
+    val weekJournals: List<JournalScheduleItem> = emptyList(),
+    val monthJournals: List<JournalScheduleItem> = emptyList(),
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
@@ -48,27 +47,35 @@ data class JournalMobileUiState(
     val draftCatatan: String = "",
     val draftTindakLanjut: String = ""
 ) : UiState {
-    val filledCount: Int
-        get() = schedules.count { it.isFilled }
-
-    val totalCount: Int
-        get() = schedules.size
-
-    val progressPercentage: Float
-        get() = if (totalCount > 0) filledCount.toFloat() / totalCount else 0f
+    val compliance: JournalSummaryCompliance
+        get() {
+            val total = todaySchedule.size
+            val filled = todaySchedule.count { it.isFilled }
+            val percent = if (total > 0) (filled * 100) / total else 0
+            return JournalSummaryCompliance(
+                totalScheduled = total,
+                filledCount = filled,
+                compliancePercentage = percent,
+                unfilledDaysWarning = todaySchedule.any { !it.isFilled }
+            )
+        }
 
     val currentTabSchedules: List<JournalScheduleItem>
         get() = when (selectedTab) {
-            0 -> schedules.filter { it.date == "2026-09-15" || it.date == null }
-            1 -> schedules
-            else -> schedules
+            0 -> todaySchedule
+            1 -> weekJournals
+            else -> monthJournals
         }
-
-    val displayedSchedules: List<JournalScheduleItem>
-        get() = currentTabSchedules
 }
 
 
+/**
+ * Real KBM journal state, backed by [TeachingJournalRepository] — real
+ * `teacher/schedule` (weekly recurring slots) merged with real
+ * `teacher/journals` (dated, persisted entries). No sample/hardcoded
+ * fallback: a load failure surfaces as a real error, an empty result
+ * surfaces as a real empty state.
+ */
 @HiltViewModel
 class JournalMobileViewModel @Inject constructor(
     private val journalRepository: TeachingJournalRepository,
@@ -90,6 +97,9 @@ class JournalMobileViewModel @Inject constructor(
     )
     val uiState: StateFlow<JournalMobileUiState> = _uiState.asStateFlow()
 
+    private var latestSchedule: List<TeacherScheduleSlot> = emptyList()
+    private var latestJournals: List<TeachingJournalEntry> = emptyList()
+
     init {
         loadSchedules()
     }
@@ -99,10 +109,10 @@ class JournalMobileViewModel @Inject constructor(
         if (_uiState.value.draftScheduleId == scheduleId) return
         savedStateHandle[KEY_DRAFT_SCHEDULE_ID] = scheduleId
         savedStateHandle[KEY_DRAFT_MATERI] = schedule?.topic ?: ""
-        savedStateHandle[KEY_DRAFT_METODE] = schedule?.method ?: "Problem Based Learning (PBL)"
-        savedStateHandle[KEY_DRAFT_MEDIA] = schedule?.media ?: "Smart Proyektor & E-Learning"
-        savedStateHandle[KEY_DRAFT_HADIR] = (schedule?.attendancePresent ?: 0).toString()
-        savedStateHandle[KEY_DRAFT_ABSEN] = (schedule?.attendanceAbsent ?: 0).toString()
+        savedStateHandle[KEY_DRAFT_METODE] = schedule?.method ?: ""
+        savedStateHandle[KEY_DRAFT_MEDIA] = schedule?.media ?: ""
+        savedStateHandle[KEY_DRAFT_HADIR] = schedule?.attendancePresent?.toString() ?: ""
+        savedStateHandle[KEY_DRAFT_ABSEN] = schedule?.attendanceAbsent?.toString() ?: ""
         savedStateHandle[KEY_DRAFT_KOMPETENSI] = schedule?.isCompetencyAchieved ?: true
         savedStateHandle[KEY_DRAFT_CATATAN] = schedule?.notes ?: ""
         savedStateHandle[KEY_DRAFT_TINDAK_LANJUT] = schedule?.followUp ?: ""
@@ -110,10 +120,10 @@ class JournalMobileViewModel @Inject constructor(
             it.copy(
                 draftScheduleId = scheduleId,
                 draftMateriPokok = schedule?.topic ?: "",
-                draftMetode = schedule?.method ?: "Problem Based Learning (PBL)",
-                draftMedia = schedule?.media ?: "Smart Proyektor & E-Learning",
-                draftHadir = (schedule?.attendancePresent ?: 0).toString(),
-                draftAbsen = (schedule?.attendanceAbsent ?: 0).toString(),
+                draftMetode = schedule?.method ?: "",
+                draftMedia = schedule?.media ?: "",
+                draftHadir = schedule?.attendancePresent?.toString() ?: "",
+                draftAbsen = schedule?.attendanceAbsent?.toString() ?: "",
                 draftKompetensiTercapai = schedule?.isCompetencyAchieved ?: true,
                 draftCatatan = schedule?.notes ?: "",
                 draftTindakLanjut = schedule?.followUp ?: ""
@@ -147,6 +157,17 @@ class JournalMobileViewModel @Inject constructor(
         const val KEY_DRAFT_KOMPETENSI = "journal_draft_kompetensi"
         const val KEY_DRAFT_CATATAN = "journal_draft_catatan"
         const val KEY_DRAFT_TINDAK_LANJUT = "journal_draft_tindak_lanjut"
+
+        private val INDONESIAN_DAYS = arrayOf("Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu")
+        private val ISO_DATE = SimpleDateFormat("yyyy-MM-dd", Locale("id", "ID"))
+
+        fun todayDayName(): String = INDONESIAN_DAYS[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1]
+        fun todayIso(): String = ISO_DATE.format(Calendar.getInstance().time)
+        fun daysAgoIso(days: Int): String {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.DAY_OF_YEAR, -days)
+            return ISO_DATE.format(cal.time)
+        }
     }
 
     fun onEvent(event: JournalMobileUiEvent) {
@@ -160,67 +181,109 @@ class JournalMobileViewModel @Inject constructor(
     fun loadSchedules() {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            try {
-                journalRepository.getTeacherJournals().collect { result ->
-                    when (result) {
-                        is NetworkResult.Success -> {
-                            val items = result.data.map { j ->
-                                JournalScheduleItem(
-                                    id = j.id.toString(),
-                                    timeSlot = j.timeSlot,
-                                    subject = j.subjectName,
-                                    className = j.className,
-                                    isFilled = true,
-                                    date = j.date,
-                                    topic = j.topic,
-                                    notes = j.notes,
-                                    attendancePresent = j.attendancePresent,
-                                    attendanceAbsent = j.attendanceAbsent
-                                )
-                            }
-                            val combined = mergeWithScheduleSlots(items)
-                            updateScheduleState(combined)
-                        }
-                        is NetworkResult.Error -> {
-                            updateScheduleState(getSampleSchedules())
-                        }
-                        is NetworkResult.Loading -> {
-                            _uiState.update { it.copy(isLoading = true) }
-                        }
+            journalRepository.getTeacherSchedule().collect { scheduleResult ->
+                when (scheduleResult) {
+                    is NetworkResult.Success -> {
+                        latestSchedule = scheduleResult.data
+                        loadJournals()
                     }
+                    is NetworkResult.Error -> {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = scheduleResult.message) }
+                    }
+                    is NetworkResult.Loading -> Unit
                 }
-            } catch (e: Exception) {
-                updateScheduleState(getSampleSchedules())
             }
         }
     }
 
-    private fun updateScheduleState(list: List<JournalScheduleItem>) {
-        val filled = list.count { it.isFilled }
-        val total = list.size.coerceAtLeast(1)
-        val percent = (filled * 100) / total
-        val hasWarning = list.any { !it.isFilled }
+    private fun loadJournals() {
+        viewModelScope.launch {
+            journalRepository.getTeacherJournals().collect { journalResult ->
+                when (journalResult) {
+                    is NetworkResult.Success -> {
+                        latestJournals = journalResult.data
+                        rebuildState()
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = journalResult.message) }
+                    }
+                    is NetworkResult.Loading -> Unit
+                }
+            }
+        }
+    }
+
+    private fun rebuildState() {
+        val today = todayIso()
+        val todayEntries = latestJournals.filter { it.teachingDate == today }
+        val todaySlots = latestSchedule
+            .filter { it.day.equals(todayDayName(), ignoreCase = true) }
+            .sortedBy { it.sessionStart }
+            .mapIndexed { index, slot ->
+                val matched = todayEntries.firstOrNull { it.subjectId == slot.subjectId && it.classroomId == slot.classroomId }
+                slot.toJournalScheduleItem(jamKe = index + 1, entry = matched, dateOverride = today)
+            }
+
+        val weekEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= daysAgoIso(7) }
+            .sortedByDescending { it.teachingDate }
+            .map { it.toJournalScheduleItem() }
+        val monthEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= daysAgoIso(30) }
+            .sortedByDescending { it.teachingDate }
+            .map { it.toJournalScheduleItem() }
 
         _uiState.update {
             it.copy(
                 isLoading = false,
-                schedules = list,
-                compliance = JournalSummaryCompliance(
-                    totalScheduled = total,
-                    filledCount = filled,
-                    compliancePercentage = percent,
-                    unfilledDaysWarning = hasWarning
-                )
+                todaySchedule = todaySlots,
+                weekJournals = weekEntries,
+                monthJournals = monthEntries
             )
         }
     }
 
-    private fun mergeWithScheduleSlots(apiList: List<JournalScheduleItem>): List<JournalScheduleItem> {
-        val sampleSlots = getSampleSchedules()
-        val filledMap = apiList.associateBy { it.id }
-        return sampleSlots.map { slot ->
-            filledMap[slot.id] ?: slot
-        }
+    private fun TeacherScheduleSlot.toJournalScheduleItem(jamKe: Int, entry: TeachingJournalEntry?, dateOverride: String): JournalScheduleItem {
+        return JournalScheduleItem(
+            id = "sched-$id",
+            timeSlot = "$sessionStart - $sessionEnd WIB (Jam ke-$jamKe)",
+            subject = subjectName,
+            className = classroomName,
+            isFilled = entry != null,
+            subjectId = subjectId,
+            classroomId = classroomId,
+            jamKe = jamKe,
+            date = dateOverride,
+            topic = entry?.topic,
+            method = entry?.learningMethod,
+            media = entry?.learningActivity,
+            attendancePresent = entry?.studentsPresent,
+            attendanceAbsent = entry?.studentsAbsent,
+            notes = entry?.obstacles,
+            followUp = entry?.notes,
+            isEditable = entry == null
+        )
+    }
+
+    private fun TeachingJournalEntry.toJournalScheduleItem(): JournalScheduleItem {
+        return JournalScheduleItem(
+            id = "entry-$uuid",
+            timeSlot = "Jam ke-$jamKe",
+            subject = subjectName,
+            className = classroomName,
+            isFilled = true,
+            subjectId = subjectId,
+            classroomId = classroomId,
+            jamKe = jamKe,
+            date = teachingDate,
+            topic = topic,
+            method = learningMethod,
+            media = learningActivity,
+            attendancePresent = studentsPresent,
+            attendanceAbsent = studentsAbsent,
+            notes = obstacles,
+            followUp = notes,
+            // The backend exposes no update endpoint for a filed journal — editing a past entry is not possible.
+            isEditable = false
+        )
     }
 
     fun setSelectedTab(tabIndex: Int) {
@@ -228,7 +291,9 @@ class JournalMobileViewModel @Inject constructor(
     }
 
     fun getScheduleById(id: String): JournalScheduleItem? {
-        return _uiState.value.schedules.firstOrNull { it.id == id }
+        return _uiState.value.todaySchedule.firstOrNull { it.id == id }
+            ?: _uiState.value.weekJournals.firstOrNull { it.id == id }
+            ?: _uiState.value.monthJournals.firstOrNull { it.id == id }
     }
 
     fun submitJournal(
@@ -243,6 +308,11 @@ class JournalMobileViewModel @Inject constructor(
         tindakLanjut: String,
         onSuccess: () -> Unit
     ) {
+        val slot = getScheduleById(scheduleId)
+        if (slot == null) {
+            _uiState.update { it.copy(errorMessage = "Jadwal tidak ditemukan. Muat ulang halaman.") }
+            return
+        }
         if (materiPokok.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Materi pokok KBM wajib diisi.") }
             return
@@ -250,126 +320,45 @@ class JournalMobileViewModel @Inject constructor(
 
         _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
         viewModelScope.launch {
-            try {
-                // Submit to backend via Repository
-                journalRepository.submitJournal(
-                    JournalSubmitRequest(
-                        scheduleId = scheduleId,
-                        materiPokok = materiPokok,
-                        metode = metode,
-                        media = media,
-                        hadir = hadir,
-                        absen = absen,
-                        isKompetensiTercapai = isKompetensiTercapai,
-                        catatan = catatan,
-                        tindakLanjut = tindakLanjut
-                    )
-                ).collect { /* background sync */ }
-            } catch (_: Exception) {
-                // fallback to local update
-            }
-
-            // Update local state
-            val updated = _uiState.value.schedules.map { slot ->
-                if (slot.id == scheduleId) {
-                    slot.copy(
-                        isFilled = true,
-                        topic = materiPokok,
-                        method = metode,
-                        media = media,
-                        attendancePresent = hadir,
-                        attendanceAbsent = absen,
-                        isCompetencyAchieved = isKompetensiTercapai,
-                        notes = catatan,
-                        followUp = tindakLanjut
-                    )
-                } else slot
-            }
-
-            updateScheduleState(updated)
-            clearDraft()
-            _uiState.update {
-                it.copy(
-                    isSubmitting = false,
-                    successMessage = "Jurnal Mengajar KBM berhasil disimpan dan divalidasi Kurikulum!"
+            journalRepository.storeJournal(
+                StoreJournalRequest(
+                    subjectId = slot.subjectId,
+                    classroomId = slot.classroomId,
+                    teachingDate = slot.date ?: todayIso(),
+                    jamKe = slot.jamKe,
+                    topic = materiPokok,
+                    learningActivity = media,
+                    learningMethod = metode,
+                    // The backend's TeachingJournal model has no dedicated "follow-up plan" column —
+                    // "Kendala Pembelajaran" maps to the real obstacles field, and "Rencana Tindak
+                    // Lanjut" is folded into notes (labeled) rather than silently dropped.
+                    obstacles = catatan.ifBlank { null },
+                    notes = buildList {
+                        if (!isKompetensiTercapai) add("Kompetensi/tujuan pembelajaran BELUM tercapai.")
+                        if (tindakLanjut.isNotBlank()) add("Rencana Tindak Lanjut: $tindakLanjut")
+                    }.joinToString("\n").ifBlank { null },
+                    studentsPresent = hadir,
+                    studentsAbsent = absen
                 )
+            ).collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        clearDraft()
+                        loadSchedules()
+                        _uiState.update {
+                            it.copy(
+                                isSubmitting = false,
+                                successMessage = "Jurnal Mengajar KBM berhasil disimpan dan divalidasi Kurikulum!"
+                            )
+                        }
+                        onSuccess()
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message) }
+                    }
+                    is NetworkResult.Loading -> Unit
+                }
             }
-            onSuccess()
         }
-    }
-
-    private fun getSampleSchedules(): List<JournalScheduleItem> {
-        return listOf(
-            JournalScheduleItem(
-                id = "sch-1",
-                timeSlot = "07:15 - 08:45 WIB (Jam Ke 1-2)",
-                subject = "Matematika Tingkat Lanjut",
-                className = "XII MIPA 1",
-                isFilled = true,
-                date = "2026-09-15",
-                topic = "Kalkulus Differensial: Turunan Fungsi Trigonometri Kompleks",
-                method = "Problem Based Learning (PBL)",
-                media = "Smart Proyektor & Geogebra",
-                attendancePresent = 35,
-                attendanceAbsent = 1,
-                isCompetencyAchieved = true,
-                notes = "Siswa sangat antusias memahami grafik turunan kedua. Ahmad Faiz absen karena izin lomba sains.",
-                followUp = "Latihan mandiri lembar kerja soal HOTS halaman 42."
-            ),
-            JournalScheduleItem(
-                id = "sch-2",
-                timeSlot = "09:00 - 10:30 WIB (Jam Ke 3-4)",
-                subject = "Fisika Terapan",
-                className = "XII MIPA 2",
-                isFilled = false,
-                date = "2026-09-15",
-                topic = null,
-                attendancePresent = 36,
-                attendanceAbsent = 0
-            ),
-            JournalScheduleItem(
-                id = "sch-3",
-                timeSlot = "10:45 - 12:15 WIB (Jam Ke 5-6)",
-                subject = "Pendidikan Agama Islam & Kemuhammadiyahan/Ke-NU-an YBWSA",
-                className = "XI MIPA 3",
-                isFilled = true,
-                date = "2026-09-15",
-                topic = "Tafsir Ayat-ayat Sains & Etika Penggunaan Kecerdasan Buatan (AI) Perspektif Islam",
-                method = "Diskusi Kelompok & Presentasi",
-                media = "Sula-One E-Learning & Modul PAI",
-                attendancePresent = 34,
-                attendanceAbsent = 2,
-                isCompetencyAchieved = true,
-                notes = "Diskusi kelompok berjalan dinamis. Terdapat 2 siswa izin ke UKS.",
-                followUp = "Resume ayat di mutaba'ah amaliyah digital."
-            ),
-            JournalScheduleItem(
-                id = "sch-4",
-                timeSlot = "13:00 - 14:30 WIB (Jam Ke 7-8)",
-                subject = "Informatika & Kecerdasan Buatan",
-                className = "X MIPA 1",
-                isFilled = false,
-                date = "2026-09-15",
-                topic = null,
-                attendancePresent = 36,
-                attendanceAbsent = 0
-            ),
-            JournalScheduleItem(
-                id = "sch-5",
-                timeSlot = "08:00 - 09:30 WIB",
-                subject = "Matematika Tingkat Lanjut",
-                className = "XII MIPA 3",
-                isFilled = true,
-                date = "2026-09-14",
-                topic = "Integral Tak Tentu & Aplikasi Luas Daerah",
-                method = "Ceramah & Tanya Jawab",
-                media = "Papan Tulis & LKPD",
-                attendancePresent = 36,
-                attendanceAbsent = 0,
-                isCompetencyAchieved = true,
-                notes = "KBM berjalan tepat waktu.",
-                followUp = "Remedial kuis 1 bagi 3 siswa yang belum mencapai KKTP 75."
-            )
-        )
     }
 }

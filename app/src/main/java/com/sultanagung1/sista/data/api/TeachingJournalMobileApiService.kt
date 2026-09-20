@@ -1,30 +1,31 @@
 package com.sultanagung1.sista.data.api
 
-import com.sultanagung1.sista.data.model.JournalScheduleItem
-import com.sultanagung1.sista.data.model.JournalSubmitRequest
-import com.sultanagung1.sista.data.model.SchoolOpsApiResponse
-import com.sultanagung1.sista.data.model.SchoolTeachingJournalItem
-import com.sultanagung1.sista.data.model.StoreTeachingJournalRequest
+import com.sultanagung1.sista.core.network.ApiEnvelope
+import com.sultanagung1.sista.data.model.StoreJournalRequest
+import com.sultanagung1.sista.data.model.TeacherScheduleSlot
+import com.sultanagung1.sista.data.model.TeachingJournalEntry
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
+/**
+ * Real teacher-scoped endpoints (role:guru,bk) — distinct from the
+ * FASE-97 `teaching-journals/*` stub, which falls back to hardcoded sample
+ * rows when a teacher has no journals yet and never actually persists a
+ * submission. `teacher/schedule` and `teacher/journals` are the genuine,
+ * fully-persisted surface (Schedule + TeachingJournal Eloquent models).
+ */
 interface TeachingJournalMobileApiService {
 
-    @GET("teaching-journals/my")
-    suspend fun getTeacherJournals(): Response<SchoolOpsApiResponse<List<SchoolTeachingJournalItem>>>
+    @GET("teacher/schedule")
+    suspend fun getTeacherSchedule(): Response<ApiEnvelope<List<TeacherScheduleSlot>>>
 
-    @POST("teaching-journals")
-    suspend fun storeTeacherJournal(
-        @Body request: StoreTeachingJournalRequest
-    ): Response<SchoolOpsApiResponse<SchoolTeachingJournalItem>>
+    @GET("teacher/journals")
+    suspend fun getTeacherJournals(): Response<ApiEnvelope<List<TeachingJournalEntry>>>
 
-    @GET("journal/schedule")
-    suspend fun getSchedule(): Response<List<JournalScheduleItem>>
-
-    @POST("journal/submit")
-    suspend fun submitJournal(
-        @Body request: JournalSubmitRequest
-    ): Response<Unit>
+    @POST("teacher/journals")
+    suspend fun storeJournal(
+        @Body request: StoreJournalRequest
+    ): Response<ApiEnvelope<TeachingJournalEntry>>
 }

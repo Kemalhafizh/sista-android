@@ -2,10 +2,9 @@ package com.sultanagung1.sista.data.repository
 
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.api.TeachingJournalMobileApiService
-import com.sultanagung1.sista.data.model.JournalScheduleItem
-import com.sultanagung1.sista.data.model.JournalSubmitRequest
-import com.sultanagung1.sista.data.model.SchoolTeachingJournalItem
-import com.sultanagung1.sista.data.model.StoreTeachingJournalRequest
+import com.sultanagung1.sista.data.model.StoreJournalRequest
+import com.sultanagung1.sista.data.model.TeacherScheduleSlot
+import com.sultanagung1.sista.data.model.TeachingJournalEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -13,59 +12,48 @@ import kotlinx.coroutines.flow.flowOn
 
 class TeachingJournalRepository(private val apiService: TeachingJournalMobileApiService) {
 
-    fun getTeacherJournals(): Flow<NetworkResult<List<SchoolTeachingJournalItem>>> = flow {
+    fun getTeacherSchedule(): Flow<NetworkResult<List<TeacherScheduleSlot>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiService.getTeacherJournals()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data!!))
+            val response = apiService.getTeacherSchedule()
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
             } else {
-                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat daftar jurnal mengajar" }))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan jurnal mengajar"))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun storeTeacherJournal(request: StoreTeachingJournalRequest): Flow<NetworkResult<SchoolTeachingJournalItem>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.storeTeacherJournal(request)
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data!!))
-            } else {
-                emit(NetworkResult.Error(response.message().ifBlank { "Gagal menyimpan jurnal mengajar" }))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat simpan jurnal"))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun getSchedule(): Flow<NetworkResult<List<JournalScheduleItem>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.getSchedule()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat jadwal mengajar" }))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat jadwal mengajar", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan jadwal mengajar"))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun submitJournal(request: JournalSubmitRequest): Flow<NetworkResult<Unit>> = flow {
+    fun getTeacherJournals(): Flow<NetworkResult<List<TeachingJournalEntry>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiService.submitJournal(request)
-            if (response.isSuccessful) {
-                emit(NetworkResult.Success(Unit))
+            val response = apiService.getTeacherJournals()
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
             } else {
-                emit(NetworkResult.Error(response.message().ifBlank { "Gagal submit jurnal" }))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar jurnal mengajar", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat submit jurnal"))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan jurnal mengajar"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun storeJournal(request: StoreJournalRequest): Flow<NetworkResult<TeachingJournalEntry>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiService.storeJournal(request)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && body.data != null) {
+                emit(NetworkResult.Success(body.data))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: "Gagal menyimpan jurnal mengajar", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat simpan jurnal"))
         }
     }.flowOn(Dispatchers.IO)
 }

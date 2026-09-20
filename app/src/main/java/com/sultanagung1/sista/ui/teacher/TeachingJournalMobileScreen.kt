@@ -171,11 +171,34 @@ fun TeachingJournalMobileScreen(
                     Text("Jadwal & Status Pengisian Jurnal", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
 
-                items(uiState.currentTabSchedules) { schedule ->
-                    JournalScheduleCard(
-                        schedule = schedule,
-                        onFillClick = { onNavigateToForm(schedule.id) }
-                    )
+                if (uiState.isLoading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Emerald700)
+                        }
+                    }
+                } else if (uiState.errorMessage != null) {
+                    item {
+                        SulaoneErrorBanner(
+                            message = uiState.errorMessage ?: "Gagal memuat jadwal & jurnal mengajar.",
+                            onRetry = { viewModel.loadSchedules() }
+                        )
+                    }
+                } else if (uiState.currentTabSchedules.isEmpty()) {
+                    item {
+                        SulaoneEmptyState(
+                            title = if (uiState.selectedTab == 0) "Tidak Ada Jadwal Hari Ini" else "Belum Ada Jurnal",
+                            description = if (uiState.selectedTab == 0) "Anda tidak memiliki jadwal mengajar terjadwal untuk hari ini." else "Belum ada jurnal mengajar yang tercatat pada periode ini.",
+                            icon = Icons.Default.MenuBook
+                        )
+                    }
+                } else {
+                    items(uiState.currentTabSchedules) { schedule ->
+                        JournalScheduleCard(
+                            schedule = schedule,
+                            onFillClick = { onNavigateToForm(schedule.id) }
+                        )
+                    }
                 }
             }
         }
@@ -276,7 +299,7 @@ fun JournalScheduleCard(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text("Kehadiran Siswa:", fontSize = 11.sp, color = Slate500)
-                            Text("Hadir: ${schedule.attendancePresent} siswa | Absen: ${schedule.attendanceAbsent} siswa", fontSize = 12.sp, color = Slate700)
+                            Text("Hadir: ${schedule.attendancePresent ?: "-"} siswa | Absen: ${schedule.attendanceAbsent ?: "-"} siswa", fontSize = 12.sp, color = Slate700)
                         }
                     }
 
@@ -291,15 +314,17 @@ fun JournalScheduleCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = { onFillClick() }) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Edit Jurnal", fontSize = 12.sp)
+                if (schedule.isEditable) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { onFillClick() }) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Edit Jurnal", fontSize = 12.sp)
+                        }
                     }
                 }
             } else {
