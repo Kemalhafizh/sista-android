@@ -26,7 +26,7 @@ fun AcademicAnalyticsScreen(
     viewModel: AnalyticsViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val analytics by viewModel.studentAnalytics.collectAsState()
+    val analyticsState by viewModel.studentAnalytics.collectAsState()
 
     Scaffold(
         topBar = {
@@ -46,7 +46,19 @@ fun AcademicAnalyticsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            analytics?.let { data ->
+            when (val analyticsResult = analyticsState) {
+                is AnalyticsUiState.Loading -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = Emerald700) }
+
+                is AnalyticsUiState.Error -> SulaoneErrorBanner(
+                    message = analyticsResult.message,
+                    onRetry = { viewModel.loadStudentAnalytics() }
+                )
+
+                is AnalyticsUiState.Success -> {
+                val data = analyticsResult.data
                 // Overall Score Header Card
                 SulaoneGradientCard {
                     Row(
@@ -69,7 +81,7 @@ fun AcademicAnalyticsScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Predikat A (Sangat Memuaskan) • Peringkat 1",
+                                text = data.className.ifBlank { "Rata-rata seluruh mapel" },
                                 fontSize = 11.sp,
                                 color = Emerald100
                             )
@@ -196,6 +208,7 @@ fun AcademicAnalyticsScreen(
                             )
                         }
                     }
+                }
                 }
             }
         }

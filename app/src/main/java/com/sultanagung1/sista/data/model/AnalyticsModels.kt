@@ -14,10 +14,10 @@ data class SemesterTrendPoint(
 )
 
 data class StudentAnalyticsData(
-    val studentName: String = "Ahmad Kemal Hafizh",
-    val className: String = "XII MIPA 1",
-    val overallAverage: Float = 91.2f,
-    val attendanceRate: Float = 98.5f,
+    val studentName: String = "",
+    val className: String = "",
+    val overallAverage: Float = 0f,
+    val attendanceRate: Float = 0f,
     val semesterTrends: List<SemesterTrendPoint> = emptyList(),
     val competencyRadar: List<RadarAxisPoint> = emptyList(),
     val topSubjects: List<Pair<String, Float>> = emptyList()
@@ -39,13 +39,13 @@ data class AtRiskStudentItem(
 )
 
 data class ClassAnalyticsData(
-    val className: String = "XII MIPA 1",
-    val subjectName: String = "Fisika Modern",
-    val teacherName: String = "Dr. Hj. Siti Nurjanah, M.Si",
-    val classAverage: Float = 86.4f,
-    val highestScore: Int = 98,
-    val lowestScore: Int = 68,
-    val passRatePercentage: Float = 94.4f,
+    val className: String = "",
+    val subjectName: String = "",
+    val teacherName: String = "",
+    val classAverage: Float = 0f,
+    val highestScore: Int = 0,
+    val lowestScore: Int = 0,
+    val passRatePercentage: Float = 0f,
     val distributionBuckets: List<ScoreDistributionBucket> = emptyList(),
     val atRiskStudents: List<AtRiskStudentItem> = emptyList()
 )
@@ -57,13 +57,13 @@ data class DailyAttendanceHeatmapItem(
 )
 
 data class ParentProgressData(
-    val childName: String = "Ahmad Kemal Hafizh",
-    val childClass: String = "XII MIPA 1",
-    val academicScore: Float = 91.2f,
-    val classAverageScore: Float = 84.5f,
-    val tahfidzCurrentJuz: Int = 30,
+    val childName: String = "",
+    val childClass: String = "",
+    val academicScore: Float = 0f,
+    val classAverageScore: Float = 0f,
+    val tahfidzCurrentJuz: Int = 0,
     val tahfidzTargetJuz: Int = 30,
-    val totalSurahCompleted: Int = 37,
+    val totalSurahCompleted: Int = 0,
     val attendanceHeatmap: List<DailyAttendanceHeatmapItem> = emptyList()
 )
 
@@ -78,8 +78,8 @@ data class ExecutiveKpiItem(
 
 data class ExecutiveAnalyticsData(
     val kpiList: List<ExecutiveKpiItem> = emptyList(),
-    val totalActiveStudents: Int = 1080,
-    val attendanceTodayPercentage: Float = 97.8f,
-    val totalSppCollected: String = "Rp 918.000.000",
-    val collectionRatePercentage: Float = 92.5f
+    val totalActiveStudents: Int = 0,
+    val attendanceTodayPercentage: Float = 0f,
+    val totalSppCollected: String = "",
+    val collectionRatePercentage: Float = 0f
 )

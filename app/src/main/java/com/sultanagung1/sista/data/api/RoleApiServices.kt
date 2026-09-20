@@ -49,10 +49,10 @@ interface ParentApiService {
  */
 interface AdminApiService {
     @GET("mobile/admin/dashboard")
-    suspend fun getAdminDashboard(): Response<AdminDashboardData>
+    suspend fun getAdminDashboard(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<AdminDashboardData>>
 
     @GET("mobile/admin/kpi")
-    suspend fun getSchoolKpi(): Response<SchoolKpiSummary>
+    suspend fun getSchoolKpi(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<SchoolKpiSummary>>
 
     @POST("mobile/admin/approvals/{id}/action")
     suspend fun processApproval(

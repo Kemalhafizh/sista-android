@@ -24,7 +24,7 @@ fun ClassAnalyticsScreen(
     viewModel: AnalyticsViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val classData by viewModel.classAnalytics.collectAsState()
+    val classDataState by viewModel.classAnalytics.collectAsState()
 
     Scaffold(
         topBar = {
@@ -44,7 +44,19 @@ fun ClassAnalyticsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            classData?.let { data ->
+            when (val classResult = classDataState) {
+                is AnalyticsUiState.Loading -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = Emerald700) }
+
+                is AnalyticsUiState.Error -> SulaoneErrorBanner(
+                    message = classResult.message,
+                    onRetry = { viewModel.loadClassAnalytics() }
+                )
+
+                is AnalyticsUiState.Success -> {
+                val data = classResult.data
                 // Summary Metrics Grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -131,6 +143,7 @@ fun ClassAnalyticsScreen(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                     }
+                }
                 }
             }
         }

@@ -2,12 +2,8 @@ package com.sultanagung1.sista.ui.admin
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -29,8 +24,6 @@ import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
-import com.sultanagung1.sista.data.model.ApprovalRequestItem
-import com.sultanagung1.sista.data.model.CriticalAlertItem
 import com.sultanagung1.sista.ui.common.HeaderMetadataChip
 import com.sultanagung1.sista.ui.common.SulaoneExecutiveHeader
 import com.sultanagung1.sista.ui.navigation.Screen
@@ -42,15 +35,14 @@ fun AdminDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val data = uiState.dashboardData
-    val kpi = data?.kpi
     val haptics = rememberHapticFeedbackHelper()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.actionSuccessMessage) {
-        uiState.actionSuccessMessage?.let {
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.clearActionMessage()
+            viewModel.clearError()
         }
     }
 
@@ -67,7 +59,7 @@ fun AdminDashboardScreen(
             // 1. Unified Executive Top App Bar (Institutional Command Cockpit)
             item {
                 SulaoneExecutiveHeader(
-                    userName = data?.principalName ?: "Drs. H. Muhammad Arif, M.Pd",
+                    userName = uiState.principalName ?: "—",
                     titlePrefix = "KOKPIT EKSEKUTIF PIMPINAN",
                     chips = listOf(
                         HeaderMetadataChip(
@@ -83,22 +75,16 @@ fun AdminDashboardScreen(
                             isLiveDot = true,
                             dotColor = Emerald500,
                             textColor = Slate700
-                        ),
-                        HeaderMetadataChip(
-                            text = "TA ${data?.academicYear ?: "2025/2026"}",
-                            icon = Icons.Default.CalendarToday,
-                            textColor = Slate700,
-                            iconColor = Gold600
                         )
                     ),
-                    unreadNotificationsCount = 5,
+                    unreadNotificationsCount = 0,
                     onAvatarClick = { onNavigateRoute("profile") },
                     onQrClick = { onNavigateRoute("scanner") },
                     onNotificationClick = { onNavigateRoute("notifications") }
                 )
             }
 
-            // 2. Real-Time School KPI Gauges (2x2 Bento Matrix)
+            // 2. School KPI — only fields the backend actually provides
             item {
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
@@ -115,9 +101,9 @@ fun AdminDashboardScreen(
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
                             title = "Kehadiran Siswa",
-                            value = "${kpi?.attendanceRateToday ?: 98.4}%",
+                            value = data?.attendanceRateToday?.let { "${it}%" } ?: "—",
                             subtitle = "KBM Hari Ini",
-                            badgeText = ">95% Target",
+                            badgeText = if (uiState.isLoading) "Memuat..." else "Live",
                             badgeColor = Emerald700,
                             badgeBackground = Emerald50,
                             icon = Icons.Default.People,
@@ -126,43 +112,10 @@ fun AdminDashboardScreen(
                         )
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
-                            title = "Kolektibilitas SPP",
-                            value = "${kpi?.sppCollectionRate ?: 94.2}%",
-                            subtitle = "Bulan Berjalan",
-                            badgeText = ">90% Target",
-                            badgeColor = Gold700,
-                            badgeBackground = Gold50,
-                            icon = Icons.Default.AccountBalanceWallet,
-                            iconTint = Gold700,
-                            iconBackground = Gold50,
-                            onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        SulaoneMetricCard(
-                            modifier = Modifier.weight(1f),
-                            title = "Guru Mengajar",
-                            value = "${kpi?.teachersPresentToday ?: 62} / ${kpi?.totalTeachers ?: 64}",
-                            subtitle = "62 Hadir Tepat Waktu",
-                            badgeText = "Presensi KBM",
-                            badgeColor = AccentBlue,
-                            badgeBackground = AccentBlue.copy(alpha = 0.12f),
-                            icon = Icons.Default.Badge,
-                            iconTint = AccentBlue,
-                            iconBackground = AccentBlue.copy(alpha = 0.12f)
-                        )
-                        SulaoneMetricCard(
-                            modifier = Modifier.weight(1f),
                             title = "Total Siswa Aktif",
-                            value = "${kpi?.totalStudents ?: 1080}",
-                            subtitle = "Fase E & Fase F",
-                            badgeText = "36 Rombel",
+                            value = data?.totalStudents?.toString() ?: "—",
+                            subtitle = "Seluruh Rombel",
+                            badgeText = if (uiState.isLoading) "Memuat..." else "Live",
                             badgeColor = AccentPurple,
                             badgeBackground = AccentPurple.copy(alpha = 0.12f),
                             icon = Icons.Default.School,
@@ -170,6 +123,22 @@ fun AdminDashboardScreen(
                             iconBackground = AccentPurple.copy(alpha = 0.12f)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    SulaoneMetricCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "Total Tunggakan SPP",
+                        value = data?.unpaidBillingsTotal?.let { "Rp ${"%,.0f".format(it).replace(',', '.')}" } ?: "—",
+                        subtitle = "Seluruh Siswa",
+                        badgeText = if (uiState.isLoading) "Memuat..." else "Live",
+                        badgeColor = Gold700,
+                        badgeBackground = Gold50,
+                        icon = Icons.Default.AccountBalanceWallet,
+                        iconTint = Gold700,
+                        iconBackground = Gold50,
+                        onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
+                    )
                 }
             }
 
@@ -199,7 +168,7 @@ fun AdminDashboardScreen(
                             onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
                         )
                         AdminActionPill(
-                            title = "Persetujuan",
+                            title = "Evaluasi Guru",
                             icon = Icons.Default.FactCheck,
                             accentColor = AccentAmber,
                             onClick = { onNavigateRoute(Screen.TeacherEvaluation.route) }
@@ -214,30 +183,9 @@ fun AdminDashboardScreen(
                 }
             }
 
-            // 4. Critical System Alerts
-            if (!data?.criticalAlerts.isNullOrEmpty()) {
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Text(
-                            text = "Peringatan Sistem & Pengawasan",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                }
-
-                items(
-                    items = data!!.criticalAlerts,
-                    key = { "${it.title}_${it.timestamp}" },
-                    contentType = { "alert" }
-                ) { alert ->
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        CriticalAlertCard(alert = alert)
-                    }
-                }
-            }
-
-            // 5. Rapid Approval Queue (Persetujuan Menunggu Tindakan)
+            // 4. Pending approvals — backend only exposes a COUNT, not a list of
+            // requests with ids, so there is no way to render real approve/reject
+            // cards here yet. Showing the honest count instead of fabricating them.
             item {
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Row(
@@ -251,47 +199,37 @@ fun AdminDashboardScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         SulaoneBadge(
-                            text = "${data?.pendingApprovals?.size ?: 0} Berkas",
-                            containerColor = if ((data?.pendingApprovals?.size ?: 0) > 0) Gold50 else Emerald50,
-                            contentColor = if ((data?.pendingApprovals?.size ?: 0) > 0) Gold800 else Emerald800
+                            text = "${data?.pendingApprovalsCount ?: 0} Berkas",
+                            containerColor = if ((data?.pendingApprovalsCount ?: 0) > 0) Gold50 else Emerald50,
+                            contentColor = if ((data?.pendingApprovalsCount ?: 0) > 0) Gold800 else Emerald800
                         )
                     }
-                }
-            }
-
-            if (data?.pendingApprovals.isNullOrEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if ((data?.pendingApprovalsCount ?: 0) == 0) {
                         SulaoneEmptyState(
                             icon = Icons.Default.CheckCircle,
                             title = "Semua Berkas Tuntas",
-                            description = "Tidak ada permohonan izin, mutasi, atau pengadaan yang menunggu persetujuan pimpinan."
+                            description = "Tidak ada permohonan yang menunggu persetujuan pimpinan."
                         )
-                    }
-                }
-            } else {
-                items(
-                    items = data!!.pendingApprovals,
-                    key = { it.id },
-                    contentType = { "approval" }
-                ) { req ->
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        ModernApprovalCard(
-                            item = req,
-                            onApprove = {
-                                haptics.tapMedium()
-                                viewModel.processApproval(req.id, "approve")
-                            },
-                            onReject = {
-                                haptics.tapLight()
-                                viewModel.processApproval(req.id, "reject")
-                            }
-                        )
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Gold50.copy(alpha = 0.5f),
+                            border = BorderStroke(0.5.dp, Gold200)
+                        ) {
+                            Text(
+                                text = "Ada ${data?.pendingApprovalsCount} berkas menunggu, namun rincian daftarnya belum tersedia di aplikasi mobile ini — perlu dibuka melalui portal web untuk ditindaklanjuti.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Gold900,
+                                modifier = Modifier.padding(14.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            // 6. Pengawasan Kesiswaan & Evaluasi Kampus
+            // 5. Pengawasan Kesiswaan & Evaluasi Kampus — no backend aggregate
+            // exists for either metric yet, so no number is fabricated here.
             item {
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
@@ -307,9 +245,9 @@ fun AdminDashboardScreen(
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
                             title = "Evaluasi Guru & OSIS",
-                            value = "4.82 / 5.0",
+                            value = "Data belum tersedia",
                             subtitle = "Kuesioner EKG & Pemilu",
-                            badgeText = "Unggul",
+                            badgeText = "Lihat Detail",
                             badgeColor = Emerald700,
                             badgeBackground = Emerald50,
                             icon = Icons.Default.HowToVote,
@@ -321,9 +259,9 @@ fun AdminDashboardScreen(
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
                             title = "Tata Tertib Siswa",
-                            value = "99.1% Tertib",
+                            value = "Data belum tersedia",
                             subtitle = "SP & Rekap Poin Digital",
-                            badgeText = "Terkendali",
+                            badgeText = "Lihat Detail",
                             badgeColor = Gold700,
                             badgeBackground = Gold50,
                             icon = Icons.Default.Gavel,
@@ -388,154 +326,5 @@ private fun AdminActionPill(
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-@Composable
-private fun CriticalAlertCard(alert: CriticalAlertItem) {
-    val isWarning = alert.severity == "warning"
-    val containerBg = if (isWarning) Gold50.copy(alpha = 0.6f) else AccentBlue.copy(alpha = 0.08f)
-    val borderStroke = if (isWarning) Gold200 else AccentBlue.copy(alpha = 0.3f)
-    val textCol = if (isWarning) Gold900 else AccentBlue
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = containerBg,
-        border = BorderStroke(0.5.dp, borderStroke),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = if (isWarning) Icons.Default.Warning else Icons.Default.Info,
-                contentDescription = null,
-                tint = if (isWarning) Gold700 else AccentBlue,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = alert.title,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = textCol
-                    )
-                    Text(
-                        text = alert.timestamp,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Slate400,
-                        fontSize = 10.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = alert.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ModernApprovalCard(
-    item: ApprovalRequestItem,
-    onApprove: () -> Unit,
-    onReject: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SulaoneBadge(
-                    text = item.type,
-                    containerColor = Emerald50,
-                    contentColor = Emerald800
-                )
-                Text(
-                    text = item.submittedDate,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Slate400
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = item.requesterName,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = "Unit / Divisi: ${item.department}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Emerald700,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = item.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onReject,
-                    modifier = Modifier
-                        .weight(1f)
-                        .sulaoneInteractiveTouchTarget(48.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f)),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(vertical = 10.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Tolak", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                }
-
-                Button(
-                    onClick = onApprove,
-                    modifier = Modifier
-                        .weight(1f)
-                        .sulaoneInteractiveTouchTarget(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(vertical = 10.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Setujui", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
     }
 }

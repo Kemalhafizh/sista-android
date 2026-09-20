@@ -26,7 +26,7 @@ fun ChildProgressScreen(
     viewModel: AnalyticsViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val progressData by viewModel.parentProgress.collectAsState()
+    val progressDataState by viewModel.parentProgress.collectAsState()
 
     Scaffold(
         topBar = {
@@ -46,7 +46,19 @@ fun ChildProgressScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            progressData?.let { data ->
+            when (val progressResult = progressDataState) {
+                is AnalyticsUiState.Loading -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = Emerald700) }
+
+                is AnalyticsUiState.Error -> SulaoneErrorBanner(
+                    message = progressResult.message,
+                    onRetry = { viewModel.loadParentProgress() }
+                )
+
+                is AnalyticsUiState.Success -> {
+                val data = progressResult.data
                 // Child Bio & Overall Score
                 SulaoneGradientCard {
                     Row(
@@ -67,7 +79,7 @@ fun ChildProgressScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(data.childName, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("Kelas ${data.childClass} • Peringkat 1", fontSize = 11.sp, color = Emerald100)
+                            Text("Kelas ${data.childClass}", fontSize = 11.sp, color = Emerald100)
                         }
 
                         Column(horizontalAlignment = Alignment.End) {
@@ -124,12 +136,21 @@ fun ChildProgressScreen(
                         Spacer(modifier = Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Hafalan Juz 30 (Selesai Penuh)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Emerald900)
-                            Text("${data.totalSurahCompleted} dari 37 Surat telah disimak Ustadz", fontSize = 10.sp, color = Emerald700)
+                            val isComplete = data.tahfidzCurrentJuz >= data.tahfidzTargetJuz && data.tahfidzTargetJuz > 0
+                            Text(
+                                text = "Hafalan Juz ${data.tahfidzCurrentJuz}" + if (isComplete) " (Selesai)" else " dari target Juz ${data.tahfidzTargetJuz}",
+                                fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Emerald900
+                            )
+                            Text("${data.totalSurahCompleted} Surat telah disimak Ustadz", fontSize = 10.sp, color = Emerald700)
                         }
 
-                        Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Emerald700)
+                        Icon(
+                            imageVector = if (data.tahfidzCurrentJuz >= data.tahfidzTargetJuz && data.tahfidzTargetJuz > 0) Icons.Default.CheckCircle else Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            tint = Emerald700
+                        )
                     }
+                }
                 }
             }
         }

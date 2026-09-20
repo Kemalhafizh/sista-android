@@ -848,43 +848,14 @@ class AdminRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.adminApi.getAdminDashboard()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Success(
-                    AdminDashboardData(
-                        principalName = "Drs. H. Muhammad Arif, M.Pd (Kepala Sekolah)",
-                        academicYear = "2025/2026 Ganjil",
-                        kpi = SchoolKpiSummary(
-                            totalStudents = 1080,
-                            totalTeachers = 64,
-                            attendanceRateToday = 98.4,
-                            sppCollectionRate = 94.2,
-                            teachersPresentToday = 62,
-                            activeCbtExamsCount = 3
-                        ),
-                        criticalAlerts = listOf(
-                            CriticalAlertItem("al1", "Koneksi Lab CBT 2 Perlu Perhatian", "warning", "Latency jaringan di Lab CBT 2 meningkat menjadi 120ms saat simulasi.", "10 menit lalu"),
-                            CriticalAlertItem("al2", "Persiapan Akreditasi Perpustakaan", "info", "Dokumen instrumen borang siap ditinjau oleh Kepala Sekolah.", "1 jam lalu")
-                        ),
-                        pendingApprovals = listOf(
-                            ApprovalRequestItem("ap1", "Izin Cuti Dinas Guru", "Ustadzah Siti Aminah, S.Pd", "Matematika", "25 Agustus 2026", "Pelatihan Implementasi Kurikulum Merdeka di BGP Jawa Tengah"),
-                            ApprovalRequestItem("ap2", "Pengadaan Alat Praktikum Fisika", "Laboratorium IPA", "Sarana Prasarana", "24 Agustus 2026", "Pengadaan sensor optik dan osiloskop digital untuk kelas XII"),
-                            ApprovalRequestItem("ap3", "Proposal Lomba Tahfidz Nasional", "OSIS / Rohis SMA Sultan Agung", "Kesiswaan", "23 Agustus 2026", "Partisipasi 5 santri dalam Festival Tahfidz 30 Juz Tingkat Nasional")
-                        )
-                    )
-                ))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat dashboard eksekutif", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                AdminDashboardData(
-                    principalName = "Drs. H. Muhammad Arif, M.Pd (Kepala Sekolah)",
-                    academicYear = "2025/2026 Ganjil",
-                    kpi = SchoolKpiSummary(),
-                    criticalAlerts = emptyList(),
-                    pendingApprovals = emptyList()
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -895,10 +866,10 @@ class AdminRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(true))
             } else {
-                emit(NetworkResult.Success(true)) // Optimistic for demo
+                emit(NetworkResult.Error("Gagal memproses persetujuan (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(true))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 }

@@ -21,7 +21,7 @@ fun ExecutiveAnalyticsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToPdf: () -> Unit = {}
 ) {
-    val execData by viewModel.executiveKpi.collectAsState()
+    val execDataState by viewModel.executiveKpi.collectAsState()
 
     Scaffold(
         topBar = {
@@ -48,8 +48,22 @@ fun ExecutiveAnalyticsScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            execData?.kpiList?.forEach { kpi ->
-                AnimatedKpiCard(kpi = kpi)
+            when (val execResult = execDataState) {
+                is AnalyticsUiState.Loading -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) { CircularProgressIndicator(color = Emerald700) }
+
+                is AnalyticsUiState.Error -> SulaoneErrorBanner(
+                    message = execResult.message,
+                    onRetry = { viewModel.loadExecutiveKpi() }
+                )
+
+                is AnalyticsUiState.Success -> {
+                    execResult.data.kpiList.forEach { kpi ->
+                        AnimatedKpiCard(kpi = kpi)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
