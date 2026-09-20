@@ -132,13 +132,16 @@ interface AiApiService {
     @POST("ai/tutor/session")
     suspend fun startTutorSession(
         @Body request: AiTutorSessionRequest
-    ): Response<AiTutorSessionResponse>
+    ): Response<AiTutorSessionEnvelope>
 
     @POST("ai/tutor/session/{id}/message")
     suspend fun sendTutorMessage(
         @Path("id") sessionId: Long,
         @Body request: AiMessageRequest
-    ): Response<AiChatMessage>
+    ): Response<ApiEnvelope<AiTutorReplyData>>
+
+    @GET("ai/tutor/suggestions")
+    suspend fun getTutorSuggestions(): Response<ApiEnvelope<List<String>>>
 
     @POST("ai/essay/grade")
     suspend fun submitEssay(

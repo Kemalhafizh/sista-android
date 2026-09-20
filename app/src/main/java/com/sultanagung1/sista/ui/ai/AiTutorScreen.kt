@@ -150,6 +150,16 @@ fun AiTutorScreen(
                     }
                 }
 
+                uiState.errorMessage?.let { message ->
+                    item {
+                        SulaoneErrorBanner(
+                            message = message,
+                            onRetry = { viewModel.clearError() },
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
+                    }
+                }
+
                 item {
                     Spacer(modifier = Modifier.height(6.dp))
                 }

@@ -44,38 +44,51 @@ class AchievementViewModel @Inject constructor(private val repository: Achieveme
 
     fun loadData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             repository.getAchievements().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(achievements = res.data) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(achievements = res.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
             repository.getCertificates().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(certificates = res.data) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(certificates = res.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
             repository.getAcademicCvSummary().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(cvSummary = res.data, isLoading = false) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(cvSummary = res.data, isLoading = false) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
     }
 
-    fun uploadAchievement(title: String, field: String, level: String, organizer: String, date: String) {
+    /** [certificateImageBase64] must be a real photo the user picked — never a placeholder string. */
+    fun uploadAchievement(title: String, field: String, level: String, organizer: String, date: String, certificateImageBase64: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val req = UploadAchievementRequest(title, field, level, organizer, date, "base64_mock_cert")
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val req = UploadAchievementRequest(title, field, level, organizer, date, certificateImageBase64)
             repository.uploadAchievement(req).collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            uploadSuccess = true,
-                            achievements = listOf(res.data) + state.achievements
-                        )
+                when (res) {
+                    is NetworkResult.Success -> {
+                        _uiState.update { state ->
+                            state.copy(
+                                isLoading = false,
+                                uploadSuccess = true,
+                                achievements = listOf(res.data) + state.achievements
+                            )
+                        }
                     }
+                    is NetworkResult.Error -> {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }

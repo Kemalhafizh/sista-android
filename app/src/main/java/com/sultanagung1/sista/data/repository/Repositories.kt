@@ -511,12 +511,13 @@ class CbtRepository(private val apiClient: ApiClient) {
 
 class AiRepository(private val apiClient: ApiClient) {
 
-    fun startTutorSession(subject: String, topic: String): Flow<NetworkResult<AiTutorSessionResponse>> = flow {
+    fun startTutorSession(subjectName: String, topic: String): Flow<NetworkResult<AiTutorSessionData>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.aiApi.startTutorSession(AiTutorSessionRequest(subject, topic))
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val response = apiClient.aiApi.startTutorSession(AiTutorSessionRequest(subjectName, topic))
+            val session = response.body()?.session
+            if (response.isSuccessful && session != null) {
+                emit(NetworkResult.Success(session))
             } else {
                 emit(NetworkResult.Error("Gagal memulai sesi AI Tutor", response.code()))
             }
@@ -529,13 +530,29 @@ class AiRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.aiApi.sendTutorMessage(sessionId, AiMessageRequest(message))
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val reply = response.body()?.data
+            if (response.isSuccessful && reply != null) {
+                emit(NetworkResult.Success(reply.aiResponse.toChatMessage()))
             } else {
-                emit(NetworkResult.Error("Gagal mengirim pertanyaan ke AI", response.code()))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal mengirim pertanyaan ke AI", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi AI terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getTutorSuggestions(): Flow<NetworkResult<List<String>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.aiApi.getTutorSuggestions()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat saran pertanyaan", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 

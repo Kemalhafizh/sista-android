@@ -1,7 +1,12 @@
 package com.sultanagung1.sista.ui.achievement
 
+import android.net.Uri
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,15 +22,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedBounds
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun AchievementUploadScreen(
@@ -34,12 +44,18 @@ fun AchievementUploadScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val haptics = rememberHapticFeedbackHelper()
+    val context = LocalContext.current
 
     var showUploadModal by remember { mutableStateOf(false) }
     var titleInput by remember { mutableStateOf("") }
     var fieldInput by remember { mutableStateOf("Matematika & Sains") }
     var levelInput by remember { mutableStateOf("PROVINSI") }
     var organizerInput by remember { mutableStateOf("") }
+    var selectedCertificateUri by remember { mutableStateOf<Uri?>(null) }
+
+    val certificateImagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> selectedCertificateUri = uri }
 
     val tabs = listOf("Portofolio Kejuaraan", "E-Sertifikat Digital", "CV Akademik (SNBP)")
 
@@ -119,6 +135,14 @@ fun AchievementUploadScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                uiState.errorMessage?.let { message ->
+                    item {
+                        SulaoneErrorBanner(
+                            message = message,
+                            onRetry = { viewModel.loadData() }
+                        )
+                    }
+                }
                 when (uiState.selectedTab) {
                     0 -> {
                         // Hero Summary Card
@@ -416,13 +440,25 @@ fun AchievementUploadScreen(
                             .height(100.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(Slate100)
-                            .border(1.dp, Slate300, RoundedCornerShape(14.dp)),
+                            .border(1.dp, if (selectedCertificateUri != null) Emerald500 else Slate300, RoundedCornerShape(14.dp))
+                            .clickable {
+                                haptics.tapLight()
+                                certificateImagePicker.launch("image/*")
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = Emerald700, modifier = Modifier.size(30.dp))
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("Lampirkan Foto Piagam / Sertifikat (Max 5MB)", style = MaterialTheme.typography.labelSmall, color = Slate600)
+                        if (selectedCertificateUri != null) {
+                            AsyncImage(
+                                model = selectedCertificateUri,
+                                contentDescription = "Foto piagam terpilih",
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
+                            )
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = Emerald700, modifier = Modifier.size(30.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Lampirkan Foto Piagam / Sertifikat (Max 5MB)", style = MaterialTheme.typography.labelSmall, color = Slate600)
+                            }
                         }
                     }
 
@@ -440,14 +476,24 @@ fun AchievementUploadScreen(
                             Text("Batal")
                         }
 
+                        val canSubmit = titleInput.isNotBlank() && organizerInput.isNotBlank() && selectedCertificateUri != null
                         Button(
                             onClick = {
-                                if (titleInput.isNotBlank()) {
+                                val uri = selectedCertificateUri ?: return@Button
+                                val base64 = context.contentResolver.openInputStream(uri)?.use { stream ->
+                                    Base64.encodeToString(stream.readBytes(), Base64.NO_WRAP)
+                                }
+                                if (titleInput.isNotBlank() && base64 != null) {
                                     haptics.success()
-                                    viewModel.uploadAchievement(titleInput, fieldInput, levelInput, organizerInput, "2026-08-26")
+                                    val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                                    viewModel.uploadAchievement(titleInput, fieldInput, levelInput, organizerInput, today, base64)
                                     showUploadModal = false
+                                    selectedCertificateUri = null
+                                    titleInput = ""
+                                    organizerInput = ""
                                 }
                             },
+                            enabled = canSubmit,
                             modifier = Modifier.weight(1.5f),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Emerald700)

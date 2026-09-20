@@ -17,14 +17,9 @@ import kotlinx.coroutines.launch
 data class AiUiState(
     val isLoading: Boolean = false,
     val isTyping: Boolean = false,
-    val sessionId: Long? = 1L,
+    val sessionId: Long? = null,
     val messages: List<AiChatMessage> = emptyList(),
-    val suggestions: List<String> = listOf(
-        "Jelaskan konsep Limit Trigonometri",
-        "Hukum bacaan Mad Lazim Mukhaffaf Kilmi",
-        "Contoh soal UTBK Penalaran Matematika",
-        "Kerangka esai Peradaban Islam Andalusia"
-    ),
+    val suggestions: List<String> = emptyList(),
     val essayFeedback: EssayFeedbackResponse? = null,
     val errorMessage: String? = null
 )
@@ -45,9 +40,12 @@ class AiViewModel @Inject constructor(
 
     private fun loadAiSuggestions() {
         viewModelScope.launch {
-            try {
-                aiRepository.getSmartSuggestions().collect { /* processed in background if needed */ }
-            } catch (_: Exception) {}
+            aiRepository.getTutorSuggestions().collect { result ->
+                if (result is NetworkResult.Success) {
+                    _uiState.value = _uiState.value.copy(suggestions = result.data)
+                }
+                // On error, leave suggestions empty rather than showing stale/fabricated prompts.
+            }
         }
     }
 
@@ -65,11 +63,34 @@ class AiViewModel @Inject constructor(
         if (userText.isBlank()) return
 
         val userMessage = AiChatMessage(sender = "USER", message = userText)
-        val updated = _uiState.value.messages + userMessage
-        _uiState.value = _uiState.value.copy(messages = updated, isLoading = true)
+        _uiState.value = _uiState.value.copy(messages = _uiState.value.messages + userMessage, isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val sessionId = _uiState.value.sessionId ?: 1L
+            val existingSessionId = _uiState.value.sessionId
+            val sessionId = existingSessionId ?: run {
+                var resolvedId: Long? = null
+                aiRepository.startTutorSession(subjectName = "Umum", topic = userText.take(255)).collect { result ->
+                    when (result) {
+                        is NetworkResult.Success -> resolvedId = result.data.id
+                        is NetworkResult.Error -> {
+                            _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.message)
+                        }
+                        is NetworkResult.Loading -> Unit
+                    }
+                }
+                resolvedId
+            }
+
+            if (sessionId == null) {
+                if (_uiState.value.errorMessage == null) {
+                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Gagal memulai sesi belajar dengan Sultan AI Tutor.")
+                }
+                return@launch
+            }
+            if (_uiState.value.sessionId == null) {
+                _uiState.value = _uiState.value.copy(sessionId = sessionId)
+            }
+
             aiRepository.sendMessage(sessionId, userText).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
@@ -79,15 +100,9 @@ class AiViewModel @Inject constructor(
                         )
                     }
                     is NetworkResult.Error -> {
-                        // Fallback response for demonstration if backend AI is processing
-                        val fallbackAi = AiChatMessage(
-                            sender = "AI",
-                            message = "Mari kita telaah bersama: Untuk konsep tersebut, langkah pertama adalah mengidentifikasi besaran yang diketahui, lalu terapkan hukum kekekalan energi mekanik: E_m1 = E_m2. Coba hitung nilai energi potensial awalnya terlebih dahulu!"
-                        )
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            messages = _uiState.value.messages + fallbackAi
-                        )
+                        // Never fabricate a substantive AI answer on failure — surface the
+                        // real error so the user can retry instead of trusting a fake reply.
+                        _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.message)
                     }
                     is NetworkResult.Loading -> {
                         _uiState.value = _uiState.value.copy(isLoading = true)
@@ -95,5 +110,9 @@ class AiViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 }
