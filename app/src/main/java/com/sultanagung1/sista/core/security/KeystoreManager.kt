@@ -11,8 +11,11 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class KeystoreManager {
+@Singleton
+class KeystoreManager @Inject constructor() {
 
     companion object {
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"

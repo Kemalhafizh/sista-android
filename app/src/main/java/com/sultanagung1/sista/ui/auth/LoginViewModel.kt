@@ -6,6 +6,7 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
+import com.sultanagung1.sista.core.security.KeystoreManager
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.model.UserProfile
 import com.sultanagung1.sista.data.repository.AuthRepository
@@ -20,12 +21,14 @@ data class LoginUiState(
     val errorMessage: String? = null,
     val userProfile: UserProfile? = null,
     val isBiometricEnabled: Boolean = false,
-    val rememberedIdentifier: String? = null
+    val rememberedIdentifier: String? = null,
+    val rememberedUserId: String? = null
 )
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val keystoreManager: KeystoreManager,
     private val sessionManager: SessionManager? = null
 ) : ViewModel() {
 
@@ -42,6 +45,11 @@ class LoginViewModel @Inject constructor(
             viewModelScope.launch {
                 sm.rememberedIdentifierFlow.collect { remembered ->
                     _uiState.value = _uiState.value.copy(rememberedIdentifier = remembered)
+                }
+            }
+            viewModelScope.launch {
+                sm.rememberedUserIdFlow.collect { rememberedUserId ->
+                    _uiState.value = _uiState.value.copy(rememberedUserId = rememberedUserId)
                 }
             }
         }
@@ -77,31 +85,58 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun loginWithBiometric(identifier: String? = null) {
+    /**
+     * Public-key challenge/response biometric login: the fingerprint prompt only
+     * releases the on-device Keystore signing key (never a password). The signed
+     * nonce is verified server-side against the public key registered during
+     * biometric enrollment (see FaceEnrollmentViewModel.toggleBiometricLock).
+     */
+    fun loginWithBiometric() {
+        val sm = sessionManager
+        if (sm == null) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Sesi perangkat tidak tersedia.")
+            return
+        }
+        val userId = _uiState.value.rememberedUserId
+        if (userId.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Silakan masuk dengan kata sandi minimal sekali sebelum menggunakan login biometrik."
+            )
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            val effectiveIdentifier = when {
-                !identifier.isNullOrBlank() -> identifier
-                !_uiState.value.rememberedIdentifier.isNullOrBlank() -> _uiState.value.rememberedIdentifier!!
-                else -> "siswa1@student.sa1.sch.id"
-            }
-            authRepository.login(effectiveIdentifier, "password").collect { result ->
-                when (result) {
-                    is NetworkResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(isLoading = true)
+            val deviceId = sm.getOrCreateDeviceId()
+
+            authRepository.requestBiometricChallenge(deviceId).collect { challengeResult ->
+                when (challengeResult) {
+                    is NetworkResult.Loading -> Unit
+                    is NetworkResult.Error -> {
+                        _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = challengeResult.message)
                     }
                     is NetworkResult.Success -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            isSuccess = true,
-                            userProfile = result.data.data?.user
-                        )
-                    }
-                    is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = result.message
-                        )
+                        val signature = keystoreManager.signChallenge(challengeResult.data)
+                        authRepository.verifyBiometric(deviceId, userId, signature).collect { result ->
+                            when (result) {
+                                is NetworkResult.Loading -> {
+                                    _uiState.value = _uiState.value.copy(isLoading = true)
+                                }
+                                is NetworkResult.Success -> {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        isSuccess = true,
+                                        userProfile = result.data.user
+                                    )
+                                }
+                                is NetworkResult.Error -> {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        errorMessage = result.message
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -115,7 +150,8 @@ class LoginViewModel @Inject constructor(
     fun resetState() {
         _uiState.value = LoginUiState(
             isBiometricEnabled = _uiState.value.isBiometricEnabled,
-            rememberedIdentifier = _uiState.value.rememberedIdentifier
+            rememberedIdentifier = _uiState.value.rememberedIdentifier,
+            rememberedUserId = _uiState.value.rememberedUserId
         )
     }
 

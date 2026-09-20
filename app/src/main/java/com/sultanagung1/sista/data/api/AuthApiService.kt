@@ -21,7 +21,12 @@ interface AuthApiService {
     @POST("mobile/auth/biometric/verify")
     suspend fun verifyBiometric(
         @Body request: BiometricVerifyRequest
-    ): Response<LoginResponse>
+    ): Response<BiometricVerifyResponse>
+
+    @POST("mobile/auth/biometric/register")
+    suspend fun registerBiometric(
+        @Body request: RegisterBiometricRequest
+    ): Response<RegisterBiometricResponse>
 
     @GET("me")
     suspend fun getCurrentUser(): Response<UserProfile>

@@ -36,8 +36,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.security.CbtAntiCheatEngine
 import com.sultanagung1.sista.core.security.ExamViolationType
-import com.sultanagung1.sista.data.model.CbtOptionItem
-import com.sultanagung1.sista.data.model.CbtQuestionItem
 import com.sultanagung1.sista.ui.cbt.components.CbtImageViewer
 import com.sultanagung1.sista.ui.cbt.components.CbtLatexMathView
 import kotlinx.coroutines.delay
@@ -156,47 +154,6 @@ fun CbtExamRoomScreen(
         }
     }
 
-    val sampleQuestions = remember {
-        listOf(
-            CbtQuestionItem(
-                id = 1,
-                number = 1,
-                questionText = "Sebuah partikel bergerak dengan persamaan posisi s(t) = 2t³ - 9t² + 12t + 5 dalam satuan SI. Tentukan percepatan partikel tersebut pada saat kecepatannya sama dengan nol!",
-                options = listOf(
-                    CbtOptionItem("A", "a = -6 m/s² atau a = 6 m/s²"),
-                    CbtOptionItem("B", "a = -6 m/s² atau a = 12 m/s²"),
-                    CbtOptionItem("C", "a = 0 m/s²"),
-                    CbtOptionItem("D", "a = 6 m/s²"),
-                    CbtOptionItem("E", "a = 18 m/s²")
-                )
-            ),
-            CbtQuestionItem(
-                id = 2,
-                number = 2,
-                questionText = "Perhatikan ayat berikut: 'Dan Dialah yang telah menciptakan malam dan siang, matahari dan bulan. Masing-masing dari keduanya beredar di dalam garis edarnya.' (QS. Al-Anbiya: 33). Prinsip fisika apa yang paling relevan dengan orbit planet dalam ayat tersebut?",
-                options = listOf(
-                    CbtOptionItem("A", "Hukum Gravitasi Newton dan Hukum Kepler"),
-                    CbtOptionItem("B", "Hukum Termodinamika I"),
-                    CbtOptionItem("C", "Hukum Efek Doppler"),
-                    CbtOptionItem("D", "Prinsip Ketidakpastian Heisenberg"),
-                    CbtOptionItem("E", "Hukum Kekekalan Muatan")
-                )
-            ),
-            CbtQuestionItem(
-                id = 3,
-                number = 3,
-                questionText = "Sebuah kapasitor keping sejajar dengan luas penampang A dan jarak antar keping d diberi bahan dielektrik dengan konstanta k. Kapasitas kapasitor akan menjadi...",
-                options = listOf(
-                    CbtOptionItem("A", "Meningkat sebanding dengan k"),
-                    CbtOptionItem("B", "Menurun sebanding dengan 1/k"),
-                    CbtOptionItem("C", "Tetap tidak berubah"),
-                    CbtOptionItem("D", "Menjadi nol"),
-                    CbtOptionItem("E", "Meningkat kuadratis terhadap k²")
-                )
-            )
-        )
-    }
-
     LaunchedEffect(Unit) {
         viewModel.loadQuestions(examId)
         while (remainingSeconds > 0) {
@@ -207,7 +164,32 @@ fun CbtExamRoomScreen(
         }
     }
 
-    val questions = if (uiState.currentExamQuestions.isEmpty()) sampleQuestions else uiState.currentExamQuestions
+    val questions = uiState.currentExamQuestions
+
+    // Never fabricate exam content: a graded exam must show real questions or a
+    // hard stop, not a silent fallback that could pass fake questions off as real.
+    if (questions.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize().background(Slate950), contentAlignment = Alignment.Center) {
+            if (uiState.isLoading) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = Gold400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Memuat soal ujian...",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                SulaoneErrorBanner(
+                    message = uiState.errorMessage ?: "Soal ujian gagal dimuat. Periksa koneksi internet Anda.",
+                    onRetry = { viewModel.loadQuestions(examId) },
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+        }
+        return
+    }
     val currentQuestion = questions.getOrNull(uiState.currentQuestionIndex) ?: questions.first()
 
     val formattedTimer = remember(remainingSeconds) {

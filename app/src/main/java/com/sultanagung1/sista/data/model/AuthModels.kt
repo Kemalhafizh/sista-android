@@ -37,10 +37,35 @@ data class BiometricChallengeRequest(
 )
 
 data class BiometricChallengeResponse(
-    @SerializedName("challenge") val challenge: String
+    @SerializedName("success") val success: Boolean = true,
+    @SerializedName("nonce") val nonce: String = "",
+    @SerializedName("expires_in") val expiresIn: Int = 0
 )
 
 data class BiometricVerifyRequest(
-    @SerializedName("challenge") val challenge: String,
+    @SerializedName("device_id") val deviceId: String,
+    @SerializedName("user_id") val userId: String,
     @SerializedName("signature") val signature: String
+)
+
+// NOTE: MobileAuthController::biometricVerify returns token/user as TOP-LEVEL
+// fields (not nested under "data" like the password-login response), so this
+// needs its own shape rather than reusing LoginResponse/LoginData.
+data class BiometricVerifyResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("code") val code: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("token") val token: String = "",
+    @SerializedName("user") val user: UserProfile? = null
+)
+
+data class RegisterBiometricRequest(
+    @SerializedName("device_id") val deviceId: String,
+    @SerializedName("public_key") val publicKey: String,
+    @SerializedName("biometric_type") val biometricType: String = "fingerprint"
+)
+
+data class RegisterBiometricResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("message") val message: String? = null
 )

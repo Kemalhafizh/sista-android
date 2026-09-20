@@ -103,6 +103,24 @@ interface CbtApiService {
         @Path("id") examId: Long,
         @Body request: CbtForceCloseRequest
     ): Response<Map<String, Any>>
+
+    // === FASE 87: Teacher Proctor — Live Token Distribution & Student Reset ===
+
+    @GET("teacher/cbt/exams/{id}/token")
+    suspend fun getProctorToken(
+        @Path("id") examId: Long
+    ): Response<CbtApiEnvelope<CbtTokenInfoResponse>>
+
+    @POST("teacher/cbt/exams/{id}/token/regenerate")
+    suspend fun regenerateProctorToken(
+        @Path("id") examId: Long
+    ): Response<CbtApiEnvelope<CbtTokenInfoResponse>>
+
+    @POST("teacher/cbt/exams/{id}/token/reset-student")
+    suspend fun resetStudentAttempt(
+        @Path("id") examId: Long,
+        @Body request: CbtResetStudentRequest
+    ): Response<CbtApiEnvelope<CbtResetStudentData>>
 }
 
 interface AiApiService {

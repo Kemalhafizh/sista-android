@@ -163,6 +163,25 @@ data class CbtForceCloseResponse(
     @SerializedName("force_close_reason") val forceCloseReason: String? = null
 )
 
+// === FASE 87: Teacher Proctor — Live Token Distribution & Student Reset ===
+
+data class CbtApiEnvelope<T>(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("data") val data: T? = null
+)
+
+data class CbtResetStudentRequest(
+    @SerializedName("student_id") val studentId: Long
+)
+
+data class CbtResetStudentData(
+    @SerializedName("exam_id") val examId: Long = 0,
+    @SerializedName("student_id") val studentId: Long = 0,
+    @SerializedName("attempt_status") val attemptStatus: String? = null,
+    @SerializedName("force_closed") val forceClosed: Boolean = false
+)
+
 sealed class TokenValidationState {
     object Idle : TokenValidationState()
     object Loading : TokenValidationState()

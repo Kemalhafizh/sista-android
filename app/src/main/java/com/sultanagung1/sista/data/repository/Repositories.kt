@@ -35,7 +35,8 @@ class AuthRepository(
                         role = user.role,
                         name = user.name,
                         email = user.email,
-                        identifier = user.nisn ?: user.nip ?: user.email
+                        identifier = user.nisn ?: user.nip ?: user.email,
+                        userId = user.id?.toString()
                     )
                     // Simpan data profil ke Database Room (SQLite)
                     userDao?.insertUser(UserEntity.fromUserProfile(user))
@@ -67,8 +68,8 @@ class AuthRepository(
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.authApi.requestBiometricChallenge(BiometricChallengeRequest(deviceId))
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!.challenge))
+            if (response.isSuccessful && response.body() != null && response.body()!!.nonce.isNotBlank()) {
+                emit(NetworkResult.Success(response.body()!!.nonce))
             } else {
                 emit(NetworkResult.Error("Gagal mendapatkan challenge biometrik dari server (${response.code()})."))
             }
@@ -77,29 +78,44 @@ class AuthRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun verifyBiometric(challenge: String, signature: String): Flow<NetworkResult<LoginResponse>> = flow {
+    fun verifyBiometric(deviceId: String, userId: String, signature: String): Flow<NetworkResult<BiometricVerifyResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.authApi.verifyBiometric(BiometricVerifyRequest(challenge, signature))
-            if (response.isSuccessful && response.body() != null) {
-                val loginResponse = response.body()!!
-                loginResponse.data?.let { data ->
-                    data.user?.let { user ->
-                        sessionManager.saveAuthSession(
-                            token = data.token,
-                            role = user.role,
-                            name = user.name,
-                            email = user.email,
-                            identifier = user.nisn ?: user.nip ?: user.email
-                        )
-                    }
+            val response = apiClient.authApi.verifyBiometric(BiometricVerifyRequest(deviceId, userId, signature))
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.token.isNotBlank()) {
+                body.user?.let { user ->
+                    sessionManager.saveAuthSession(
+                        token = body.token,
+                        role = user.role,
+                        name = user.name,
+                        email = user.email,
+                        identifier = user.nisn ?: user.nip ?: user.email,
+                        userId = user.id?.toString() ?: userId
+                    )
                 }
-                emit(NetworkResult.Success(loginResponse))
+                emit(NetworkResult.Success(body))
             } else {
-                emit(NetworkResult.Error("Verifikasi biometrik gagal."))
+                emit(NetworkResult.Error(body?.message ?: "Verifikasi biometrik gagal.", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Gagal memverifikasi biometrik."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun registerBiometric(deviceId: String, publicKeyPem: String, biometricType: String = "fingerprint"): Flow<NetworkResult<Unit>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.authApi.registerBiometric(
+                RegisterBiometricRequest(deviceId, publicKeyPem, biometricType)
+            )
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(NetworkResult.Success(Unit))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal mendaftarkan kredensial biometrik (${response.code()})."))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Gagal mendaftarkan kredensial biometrik."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -302,69 +318,12 @@ class CbtRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Success(getStemSampleQuestions(examId)))
+                emit(NetworkResult.Error("Gagal memuat soal ujian dari server (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(getStemSampleQuestions(examId)))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat memuat soal ujian."))
         }
     }.flowOn(Dispatchers.IO)
-
-    private fun getStemSampleQuestions(examId: Long): List<CbtQuestionItem> {
-        return listOf(
-            CbtQuestionItem(
-                id = 101L,
-                number = 1,
-                questionText = "Sebuah partikel bergerak lurus dengan persamaan gerak:\n\$\$x(t) = 3t^2 + 5t + \\sqrt{16t + 9}\$\$\nTentukan kecepatan sesaat partikel \$v(t) = \\frac{dx}{dt}\$ pada saat \$t = 1\$ sekon!",
-                imageUrl = "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&auto=format&fit=crop&q=80",
-                options = listOf(
-                    CbtOptionItem("A", "\$\$v(1) = 11 + \\frac{8}{5} = 12.6\\text{ m/s}\$\$"),
-                    CbtOptionItem("B", "\$\$v(1) = 14.2\\text{ m/s}\$\$"),
-                    CbtOptionItem("C", "\$\$v(1) = 10.5\\text{ m/s}\$\$"),
-                    CbtOptionItem("D", "\$\$v(1) = 9.8\\text{ m/s}\$\$"),
-                    CbtOptionItem("E", "\$\$v(1) = 15.0\\text{ m/s}\$\$")
-                )
-            ),
-            CbtQuestionItem(
-                id = 102L,
-                number = 2,
-                questionText = "Tentukan hasil penyelesaian limit trigonometri berikut ini:\n\$\$\\lim_{x \\to 0} \\frac{\\sin(6x) + \\tan(2x)}{4x}\$\$",
-                imageUrl = null,
-                options = listOf(
-                    CbtOptionItem("A", "\$\$2\$\$"),
-                    CbtOptionItem("B", "\$\$1\$\$"),
-                    CbtOptionItem("C", "\$\$\\frac{1}{2}\$\$"),
-                    CbtOptionItem("D", "\$\$4\$\$"),
-                    CbtOptionItem("E", "\$\$0\$\$")
-                )
-            ),
-            CbtQuestionItem(
-                id = 103L,
-                number = 3,
-                questionText = "Diketahui dua buah matriks \$A\$ dan \$B\$ sebagai berikut:\n\$\$A = \\begin{pmatrix} 2 & 1 \\\\ 3 & 4 \\end{pmatrix}, \\quad B = \\begin{pmatrix} 1 & -2 \\\\ 0 & 3 \\end{pmatrix}\$\$\nTentukan nilai dari determinan matriks hasil perkalian \$\\det(A \\cdot B)\$!",
-                imageUrl = null,
-                options = listOf(
-                    CbtOptionItem("A", "\$\$\\det(AB) = 15\$\$"),
-                    CbtOptionItem("B", "\$\$\\det(AB) = 12\$\$"),
-                    CbtOptionItem("C", "\$\$\\det(AB) = 18\$\$"),
-                    CbtOptionItem("D", "\$\$\\det(AB) = -15\$\$"),
-                    CbtOptionItem("E", "\$\$\\det(AB) = 9\$\$")
-                )
-            ),
-            CbtQuestionItem(
-                id = 104L,
-                number = 4,
-                questionText = "Perhatikan kurva spektrum frekuensi gelombang elektromagnetik pada ilustrasi berikut. Jika frekuensi foton adalah \$f = 6 \\times 10^{14}\\text{ Hz}\$ dan cepat rambat cahaya \$c = 3 \\times 10^8\\text{ m/s}\$, tentukan panjang gelombangnya \$\\lambda = \\frac{c}{f}\$!",
-                imageUrl = "https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=600&auto=format&fit=crop&q=80",
-                options = listOf(
-                    CbtOptionItem("A", "\$\$\\lambda = 500\\text{ nm}\$\$"),
-                    CbtOptionItem("B", "\$\$\\lambda = 450\\text{ nm}\$\$"),
-                    CbtOptionItem("C", "\$\$\\lambda = 600\\text{ nm}\$\$"),
-                    CbtOptionItem("D", "\$\$\\lambda = 550\\text{ nm}\$\$"),
-                    CbtOptionItem("E", "\$\$\\lambda = 700\\text{ nm}\$\$")
-                )
-            )
-        )
-    }
 
     fun submitExam(request: CbtSubmitRequest): Flow<NetworkResult<CbtSubmitResponse>> = flow {
         emit(NetworkResult.Loading)
@@ -446,18 +405,54 @@ class CbtRepository(private val apiClient: ApiClient) {
                 emit(NetworkResult.Error(errorMsg, response.code()))
             }
         } catch (e: Exception) {
-            // Offline / Seeder Fallback:
-            // Token 6 karakter alfanumerik diterima untuk simulasi pengujian CBT di perangkat
-            if (token.trim().length == 6) {
-                emit(NetworkResult.Success(CbtTokenValidationResponse(
-                    valid = true,
-                    message = "Token valid. Selamat mengerjakan ujian!",
-                    examId = examId,
-                    attemptStatus = "in_progress"
-                )))
+            // Token gating is a server-side authority check (exam entry control) —
+            // never accept a client-guessed token when the backend is unreachable.
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat memvalidasi token ujian."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getProctorToken(examId: Long): Flow<NetworkResult<CbtTokenInfoResponse>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.cbtApi.getProctorToken(examId)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error("Token harus 6 digit alfanumerik."))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat token ujian (${response.code()}).", response.code()))
             }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun regenerateProctorToken(examId: Long): Flow<NetworkResult<CbtTokenInfoResponse>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.cbtApi.regenerateProctorToken(examId)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: "Gagal memperbarui token ujian (${response.code()}).", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun resetStudentAttempt(examId: Long, studentId: Long): Flow<NetworkResult<CbtResetStudentData>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.cbtApi.resetStudentAttempt(examId, CbtResetStudentRequest(studentId))
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: "Gagal mereset status siswa (${response.code()}).", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 

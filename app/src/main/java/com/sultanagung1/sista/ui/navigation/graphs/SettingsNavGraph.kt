@@ -539,15 +539,11 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- UKS Digital ---
-    composable(Screen.UksDigital.route) {
-        val viewModel: UksViewModel = hiltViewModel()
-        UksVisitScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateToHealthHistory = { navController.navigate(Screen.HealthHistory.createRoute(null)) }
-        )
-    }
-
+    // NOTE: Screen.UksDigital used to duplicate this exact destination WITHOUT
+    // a RoleGuardedScreen wrap, leaving UKS staff-only medical visit records
+    // reachable by any authenticated role via that route string. Nothing in
+    // the app navigated to it (HomeServicesBottomSheet already points at
+    // Screen.UksVisit below), so it was removed rather than guarded.
     composable(Screen.UksVisit.route) {
         val viewModel: UksViewModel = hiltViewModel()
         RoleGuardedScreen(

@@ -6,9 +6,12 @@ import javax.inject.Inject
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.security.BiometricAvailability
 import com.sultanagung1.sista.core.security.BiometricVault
+import com.sultanagung1.sista.core.security.KeystoreManager
 import com.sultanagung1.sista.core.storage.SessionManager
+import com.sultanagung1.sista.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,23 +28,23 @@ data class BiometricSecurityUiState(
 
 @HiltViewModel
 class FaceEnrollmentViewModel @Inject constructor(
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val authRepository: AuthRepository,
+    private val keystoreManager: KeystoreManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BiometricSecurityUiState())
     val uiState: StateFlow<BiometricSecurityUiState> = _uiState.asStateFlow()
 
     init {
-        sessionManager?.let { sm ->
-            viewModelScope.launch {
-                sm.isBiometricEnabledFlow.collect { enabled ->
-                    _uiState.value = _uiState.value.copy(isBiometricLockEnabled = enabled)
-                }
+        viewModelScope.launch {
+            sessionManager.isBiometricEnabledFlow.collect { enabled ->
+                _uiState.value = _uiState.value.copy(isBiometricLockEnabled = enabled)
             }
-            viewModelScope.launch {
-                sm.isSensitiveProtectionEnabledFlow.collect { enabled ->
-                    _uiState.value = _uiState.value.copy(isSensitiveProtectionEnabled = enabled)
-                }
+        }
+        viewModelScope.launch {
+            sessionManager.isSensitiveProtectionEnabledFlow.collect { enabled ->
+                _uiState.value = _uiState.value.copy(isSensitiveProtectionEnabled = enabled)
             }
         }
     }
@@ -53,14 +56,43 @@ class FaceEnrollmentViewModel @Inject constructor(
 
     fun toggleBiometricLock(enabled: Boolean) {
         viewModelScope.launch {
-            sessionManager?.setBiometricEnabled(enabled)
-            _uiState.value = _uiState.value.copy(isBiometricLockEnabled = enabled)
+            if (enabled) {
+                val publicKeyPem = keystoreManager.getPublicKeyPem()
+                if (publicKeyPem.isNullOrBlank()) {
+                    _uiState.value = _uiState.value.copy(
+                        fingerprintStatusMessage = "Gagal membuat kunci keamanan perangkat. Coba lagi."
+                    )
+                    return@launch
+                }
+                val deviceId = sessionManager.getOrCreateDeviceId()
+                authRepository.registerBiometric(deviceId, publicKeyPem).collect { result ->
+                    when (result) {
+                        is NetworkResult.Loading -> Unit
+                        is NetworkResult.Success -> {
+                            sessionManager.setBiometricEnabled(true)
+                            _uiState.value = _uiState.value.copy(
+                                isBiometricLockEnabled = true,
+                                fingerprintStatusMessage = "Login biometrik aktif untuk perangkat ini."
+                            )
+                        }
+                        is NetworkResult.Error -> {
+                            _uiState.value = _uiState.value.copy(
+                                isBiometricLockEnabled = false,
+                                fingerprintStatusMessage = result.message
+                            )
+                        }
+                    }
+                }
+            } else {
+                sessionManager.setBiometricEnabled(false)
+                _uiState.value = _uiState.value.copy(isBiometricLockEnabled = false)
+            }
         }
     }
 
     fun toggleSensitiveProtection(enabled: Boolean) {
         viewModelScope.launch {
-            sessionManager?.setSensitiveProtectionEnabled(enabled)
+            sessionManager.setSensitiveProtectionEnabled(enabled)
             _uiState.value = _uiState.value.copy(isSensitiveProtectionEnabled = enabled)
         }
     }

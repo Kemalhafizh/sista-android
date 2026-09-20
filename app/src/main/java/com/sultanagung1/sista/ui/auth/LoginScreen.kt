@@ -53,11 +53,11 @@ import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.security.BiometricVault
 
-enum class UserRoleTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val defaultEmail: String) {
-    STUDENT("Siswa", Icons.Default.School, "siswa1@student.sa1.sch.id"),
-    TEACHER("Guru", Icons.Default.Psychology, "guru.matematika@sultanagung1.sch.id"),
-    PARENT("Ortu", Icons.Default.FamilyRestroom, "ortu1@parent.sa1.sch.id"),
-    ADMIN("Admin", Icons.Default.AdminPanelSettings, "admin@sultanagung1.sch.id")
+enum class UserRoleTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val identifierHint: String) {
+    STUDENT("Siswa", Icons.Default.School, "NISN / email siswa"),
+    TEACHER("Guru", Icons.Default.Psychology, "NIP / email guru"),
+    PARENT("Ortu", Icons.Default.FamilyRestroom, "Email wali murid"),
+    ADMIN("Admin", Icons.Default.AdminPanelSettings, "Email admin")
 }
 
 @Composable
@@ -71,12 +71,12 @@ fun LoginScreen(
     val haptics = rememberHapticFeedbackHelper()
 
     var selectedRole by remember { mutableStateOf(UserRoleTab.STUDENT) }
-    var identifier by remember { mutableStateOf(selectedRole.defaultEmail) }
-    var password by remember { mutableStateOf("password") }
+    var identifier by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.rememberedIdentifier) {
-        if (!uiState.rememberedIdentifier.isNullOrBlank() && (identifier == UserRoleTab.STUDENT.defaultEmail || identifier.isBlank())) {
+        if (!uiState.rememberedIdentifier.isNullOrBlank() && identifier.isBlank()) {
             identifier = uiState.rememberedIdentifier!!
         }
     }
@@ -205,8 +205,8 @@ fun LoginScreen(
                                 .springPressable {
                                     haptics.tapLight()
                                     selectedRole = role
-                                    identifier = role.defaultEmail
-                                    password = "password"
+                                    identifier = ""
+                                    password = ""
                                 }
                                 .semantics(mergeDescendants = true) { this.role = Role.Tab }
                         ) {
@@ -291,7 +291,7 @@ fun LoginScreen(
                         value = identifier,
                         onValueChange = { identifier = it },
                         label = { Text("NISN / NIP / Email") },
-                        placeholder = { Text("Masukkan akun Anda") },
+                        placeholder = { Text(selectedRole.identifierHint) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Person,
@@ -404,7 +404,7 @@ fun LoginScreen(
 
                     // Biometric Quick Login (m-Banking Style)
                     AnimatedVisibility(
-                        visible = uiState.isBiometricEnabled,
+                        visible = uiState.isBiometricEnabled && !uiState.rememberedUserId.isNullOrBlank(),
                         enter = fadeIn() + expandVertically(),
                         exit = fadeOut() + shrinkVertically()
                     ) {
@@ -445,7 +445,7 @@ fun LoginScreen(
                                             negativeButtonText = "Gunakan Password",
                                             onSuccess = {
                                                 haptics.success()
-                                                viewModel.loginWithBiometric(identifier)
+                                                viewModel.loginWithBiometric()
                                             },
                                             onError = {
                                                 haptics.errorWarning()

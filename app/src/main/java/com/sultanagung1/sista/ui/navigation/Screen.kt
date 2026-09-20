@@ -177,7 +177,6 @@ sealed class Screen(val route: String, val title: String = "") {
     }
 
     // Fase 37: UKS Digital & Buku Kesehatan Siswa
-    object UksDigital : Screen("uks_digital", "UKS & Rekam Medis")
     object UksVisit : Screen("uks_visit", "Kunjungan UKS & Pelayanan Medis")
     object HealthHistory : Screen("health_history?studentId={studentId}", "Riwayat Medis Siswa") {
         fun createRoute(studentId: String? = null) = if (!studentId.isNullOrBlank()) "health_history?studentId=$studentId" else "health_history"

@@ -111,16 +111,26 @@ class CbtViewModel @Inject constructor(private val cbtRepository: CbtRepository)
 
     fun loadQuestions(examId: Long) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             cbtRepository.getExamQuestions(examId).collect { result ->
-                if (result is NetworkResult.Success) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        currentExamQuestions = result.data,
-                        currentQuestionIndex = 0
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
+                when (result) {
+                    is NetworkResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            currentExamQuestions = result.data,
+                            currentQuestionIndex = 0,
+                            errorMessage = null
+                        )
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = result.message
+                        )
+                    }
+                    is NetworkResult.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true)
+                    }
                 }
             }
         }
