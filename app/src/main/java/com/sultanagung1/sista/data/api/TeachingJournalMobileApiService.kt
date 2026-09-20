@@ -11,7 +11,7 @@ import retrofit2.http.POST
 
 /**
  * Real teacher-scoped endpoints (role:guru,bk) — distinct from the
- * FASE-97 `teaching-journals/*` stub, which falls back to hardcoded sample
+ * FASE-97 `teaching-journals/...` stub, which falls back to hardcoded sample
  * rows when a teacher has no journals yet and never actually persists a
  * submission. `teacher/schedule` and `teacher/journals` are the genuine,
  * fully-persisted surface (Schedule + TeachingJournal Eloquent models).

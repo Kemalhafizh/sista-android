@@ -1,3 +1,4 @@
+@file:Suppress("unused", "UNUSED_PARAMETER", "UNNECESSARY_NOT_NULL_ASSERTION", "UNUSED_VARIABLE")
 package com.sultanagung1.sista.data.repository
 
 import com.sultanagung1.sista.core.network.ApiClient
@@ -5,7 +6,64 @@ import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.local.dao.UserDao
 import com.sultanagung1.sista.data.local.entity.UserEntity
-import com.sultanagung1.sista.data.model.*
+import com.sultanagung1.sista.data.model.AcademicSummary
+import com.sultanagung1.sista.data.model.AdminDashboardData
+import com.sultanagung1.sista.data.model.AiChatMessage
+import com.sultanagung1.sista.data.model.AiMessageRequest
+import com.sultanagung1.sista.data.model.AiTutorSessionData
+import com.sultanagung1.sista.data.model.AiTutorSessionRequest
+import com.sultanagung1.sista.data.model.AnnouncementItem
+import com.sultanagung1.sista.data.model.AttendanceCheckinResponse
+import com.sultanagung1.sista.data.model.AttendanceHistoryItem
+import com.sultanagung1.sista.data.model.AttendanceRecordedResponse
+import com.sultanagung1.sista.data.model.BillingInvoice
+import com.sultanagung1.sista.data.model.BiometricChallengeRequest
+import com.sultanagung1.sista.data.model.BiometricVerifyRequest
+import com.sultanagung1.sista.data.model.BiometricVerifyResponse
+import com.sultanagung1.sista.data.model.CbtExamItem
+import com.sultanagung1.sista.data.model.CbtForceCloseRequest
+import com.sultanagung1.sista.data.model.CbtForceCloseResponse
+import com.sultanagung1.sista.data.model.CbtMicroSyncRequest
+import com.sultanagung1.sista.data.model.CbtQuestionItem
+import com.sultanagung1.sista.data.model.CbtResetStudentData
+import com.sultanagung1.sista.data.model.CbtResetStudentRequest
+import com.sultanagung1.sista.data.model.CbtSubmitRequest
+import com.sultanagung1.sista.data.model.CbtSubmitResponse
+import com.sultanagung1.sista.data.model.CbtTokenInfoResponse
+import com.sultanagung1.sista.data.model.CbtTokenValidationRequest
+import com.sultanagung1.sista.data.model.CbtTokenValidationResponse
+import com.sultanagung1.sista.data.model.ChatMessage
+import com.sultanagung1.sista.data.model.ChildActivityEvent
+import com.sultanagung1.sista.data.model.ChildAttendanceLog
+import com.sultanagung1.sista.data.model.ChildGradeItem
+import com.sultanagung1.sista.data.model.ChildSummaryResponse
+import com.sultanagung1.sista.data.model.ChildVsClassComparison
+import com.sultanagung1.sista.data.model.ContextualHomePayload
+import com.sultanagung1.sista.data.model.ConversationItem
+import com.sultanagung1.sista.data.model.DeviceTokenRegisterRequest
+import com.sultanagung1.sista.data.model.DynamicQrResponse
+import com.sultanagung1.sista.data.model.EssayFeedbackResponse
+import com.sultanagung1.sista.data.model.EssaySubmissionRequest
+import com.sultanagung1.sista.data.model.GpsCheckinRequest
+import com.sultanagung1.sista.data.model.GradeItem
+import com.sultanagung1.sista.data.model.LoginRequest
+import com.sultanagung1.sista.data.model.LoginResponse
+import com.sultanagung1.sista.data.model.MutabaahLogItem
+import com.sultanagung1.sista.data.model.NotificationItem
+import com.sultanagung1.sista.data.model.NotificationPreferences
+import com.sultanagung1.sista.data.model.ParentChildItem
+import com.sultanagung1.sista.data.model.PaymentVaResponse
+import com.sultanagung1.sista.data.model.RegisterBiometricRequest
+import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.model.SendMessageRequest
+import com.sultanagung1.sista.data.model.SmartSuggestion
+import com.sultanagung1.sista.data.model.SubmitClassAttendanceRequest
+import com.sultanagung1.sista.data.model.TahfidzLogItem
+import com.sultanagung1.sista.data.model.TeacherClassStudent
+import com.sultanagung1.sista.data.model.TeacherClassSummary
+import com.sultanagung1.sista.data.model.TeacherDirectoryItem
+import com.sultanagung1.sista.data.model.UserProfile
+import com.sultanagung1.sista.data.model.WeeklyDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -599,7 +657,7 @@ class TeacherRepository(private val apiClient: ApiClient) {
             val response = apiClient.teacherApi.getTeacherClasses()
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar kelas", response.code()))
             }
@@ -614,7 +672,7 @@ class TeacherRepository(private val apiClient: ApiClient) {
             val response = apiClient.teacherApi.getClassStudents(classroomId)
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar siswa kelas", response.code()))
             }
@@ -647,7 +705,7 @@ class ParentRepository(private val apiClient: ApiClient) {
             val response = apiClient.parentApi.getChildren()
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar anak", response.code()))
             }
@@ -677,7 +735,7 @@ class ParentRepository(private val apiClient: ApiClient) {
             val response = apiClient.parentApi.getChildAttendanceHistory(uuid)
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat riwayat presensi anak", response.code()))
             }
@@ -692,7 +750,7 @@ class ParentRepository(private val apiClient: ApiClient) {
             val response = apiClient.parentApi.getChildGrades(uuid)
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat nilai anak", response.code()))
             }
@@ -777,7 +835,7 @@ class AdminRepository(private val apiClient: ApiClient) {
 }
 
 /**
- * NOTE ON BACKEND STATE: ChatApiService's mobile/conversations*/mobile/messages/send
+ * NOTE ON BACKEND STATE: ChatApiService's mobile/conversations / mobile/messages/send
  * routes do not exist anywhere in sistem-terpadu's routes/api.php — every call
  * 404s. The only real backend surface for parent<->teacher messaging is
  * GET/POST /v1/parent/messages (ApiParentController), which is a flat message

@@ -323,9 +323,9 @@ class JournalMobileViewModel @Inject constructor(
     private fun TeacherScheduleSlot.toJournalScheduleItem(jamKe: Int, entry: TeachingJournalEntry?, dateOverride: String): JournalScheduleItem {
         return JournalScheduleItem(
             id = "sched-$id",
-            timeSlot = "$sessionStart - $sessionEnd WIB (Jam ke-$jamKe)",
-            subject = subjectName,
-            className = classroomName,
+            timeSlot = "${sessionStart ?: ""} - ${sessionEnd ?: ""} WIB (Jam ke-$jamKe)",
+            subject = subjectName ?: "-",
+            className = classroomName ?: "-",
             isFilled = entry != null,
             subjectId = subjectId,
             classroomId = classroomId,
@@ -346,8 +346,8 @@ class JournalMobileViewModel @Inject constructor(
         return JournalScheduleItem(
             id = "entry-$uuid",
             timeSlot = "Jam ke-$jamKe",
-            subject = subjectName,
-            className = classroomName,
+            subject = subjectName ?: "-",
+            className = classroomName ?: "-",
             isFilled = true,
             subjectId = subjectId,
             classroomId = classroomId,

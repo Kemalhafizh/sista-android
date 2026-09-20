@@ -192,7 +192,7 @@ fun TeacherDashboardScreen(
                             onClick = {
                                 val active = uiState.todaySchedules.firstOrNull()
                                 if (active != null) {
-                                    onNavigateToAttendance(active.classroomId, active.id, active.classroomName)
+                                    onNavigateToAttendance(active.classroomId, active.id, active.classroomName ?: "Tanpa Kelas")
                                 }
                             }
                         )
@@ -296,7 +296,7 @@ fun TeacherDashboardScreen(
                     Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                         TeacherScheduleCard(
                             schedule = schedule,
-                            onAttendanceClick = { onNavigateToAttendance(schedule.classroomId, schedule.id, schedule.classroomName) },
+                            onAttendanceClick = { onNavigateToAttendance(schedule.classroomId, schedule.id, schedule.classroomName ?: "Tanpa Kelas") },
                             onJournalClick = onNavigateToJournal
                         )
                     }
@@ -413,7 +413,8 @@ private fun TeacherQuickActionCard(
 
 /** Compares [slot]'s real session_start/session_end against the current wall-clock time. */
 private fun isScheduleActiveNow(slot: TeacherScheduleSlot): Boolean {
-    fun minutesOf(time: String): Int? {
+    fun minutesOf(time: String?): Int? {
+        if (time == null) return null
         val match = Regex("""(\d{1,2}):(\d{2})""").find(time) ?: return null
         val (h, m) = match.destructured
         return h.toInt() * 60 + m.toInt()
@@ -492,7 +493,7 @@ private fun TeacherScheduleCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = schedule.subjectName,
+                text = schedule.subjectName ?: "Tanpa Mata Pelajaran",
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -593,7 +594,7 @@ private fun TeachingJournalCard(journal: TeachingJournalEntry) {
                         .padding(horizontal = 7.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = journal.status.replaceFirstChar { it.uppercase() },
+                        text = journal.status?.replaceFirstChar { it.uppercase() } ?: "Draft",
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
                         color = Gold800
                     )
@@ -603,7 +604,7 @@ private fun TeachingJournalCard(journal: TeachingJournalEntry) {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = journal.topic,
+                text = journal.topic ?: "Tanpa Materi",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )

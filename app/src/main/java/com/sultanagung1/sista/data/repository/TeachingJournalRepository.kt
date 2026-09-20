@@ -18,7 +18,7 @@ class TeachingJournalRepository(private val apiService: TeachingJournalMobileApi
             val response = apiService.getTeacherSchedule()
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data ?: emptyList<TeacherScheduleSlot>()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat jadwal mengajar", response.code()))
             }
@@ -33,7 +33,7 @@ class TeachingJournalRepository(private val apiService: TeachingJournalMobileApi
             val response = apiService.getTeacherJournals()
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                emit(NetworkResult.Success(body.data ?: emptyList()))
+                emit(NetworkResult.Success(body.data ?: emptyList<TeachingJournalEntry>()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar jurnal mengajar", response.code()))
             }

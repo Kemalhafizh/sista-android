@@ -1,22 +1,25 @@
 package com.sultanagung1.sista.ui.teacher
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
-import com.sultanagung1.sista.data.model.*
+import com.sultanagung1.sista.data.model.AttendanceStudentStatus
+import com.sultanagung1.sista.data.model.StudentAttendanceInputItem
+import com.sultanagung1.sista.data.model.SubmitClassAttendanceRequest
+import com.sultanagung1.sista.data.model.TeacherScheduleSlot
+import com.sultanagung1.sista.data.model.TeachingJournalEntry
 import com.sultanagung1.sista.data.repository.TeacherRepository
 import com.sultanagung1.sista.data.repository.TeachingJournalRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class TeacherUiState(
     val isLoading: Boolean = false,
@@ -125,8 +128,9 @@ class TeacherViewModel @Inject constructor(
         }
     }
 
-    private fun sessionDurationHours(start: String, end: String): Double {
-        fun minutesOf(time: String): Int? {
+    private fun sessionDurationHours(start: String?, end: String?): Double {
+        fun minutesOf(time: String?): Int? {
+            if (time == null) return null
             val match = Regex("""(\d{1,2}):(\d{2})""").find(time) ?: return null
             val (h, m) = match.destructured
             return h.toInt() * 60 + m.toInt()

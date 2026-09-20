@@ -5,13 +5,13 @@ import com.google.gson.annotations.SerializedName
 /** Real weekly recurring teaching slot — GET teacher/schedule (ScheduleResource). */
 data class TeacherScheduleSlot(
     val id: Long,
-    val day: String,
-    @SerializedName("session_start") val sessionStart: String,
-    @SerializedName("session_end") val sessionEnd: String,
+    val day: String?,
+    @SerializedName("session_start") val sessionStart: String?,
+    @SerializedName("session_end") val sessionEnd: String?,
     @SerializedName("subject_id") val subjectId: Long,
-    @SerializedName("subject_name") val subjectName: String,
+    @SerializedName("subject_name") val subjectName: String?,
     @SerializedName("classroom_id") val classroomId: Long,
-    @SerializedName("classroom_name") val classroomName: String,
+    @SerializedName("classroom_name") val classroomName: String?,
     @SerializedName("room_name") val roomName: String? = null
 )
 
@@ -21,18 +21,18 @@ data class TeachingJournalEntry(
     @SerializedName("teaching_date") val teachingDate: String?,
     @SerializedName("jam_ke") val jamKe: Int,
     @SerializedName("classroom_id") val classroomId: Long,
-    @SerializedName("classroom_name") val classroomName: String,
+    @SerializedName("classroom_name") val classroomName: String?,
     @SerializedName("subject_id") val subjectId: Long,
-    @SerializedName("subject_name") val subjectName: String,
-    val topic: String,
-    @SerializedName("learning_activity") val learningActivity: String,
-    @SerializedName("learning_method") val learningMethod: String,
+    @SerializedName("subject_name") val subjectName: String?,
+    val topic: String?,
+    @SerializedName("learning_activity") val learningActivity: String?,
+    @SerializedName("learning_method") val learningMethod: String?,
     val obstacles: String? = null,
     val notes: String? = null,
     @SerializedName("students_present") val studentsPresent: Int,
     @SerializedName("students_absent") val studentsAbsent: Int,
     @SerializedName("attachment_url") val attachmentUrl: String? = null,
-    val status: String
+    val status: String?
 )
 
 /** Real request body — POST teacher/journals. */
