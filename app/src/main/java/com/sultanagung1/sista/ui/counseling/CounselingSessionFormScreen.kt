@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.ui.common.DraftRestoreDialog
 
 @Composable
 fun CounselingSessionFormScreen(
@@ -24,6 +25,15 @@ fun CounselingSessionFormScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // FASE 69.2: a draft from a fully-closed previous session was found on disk —
+    // offer to restore it before the (currently empty) SavedStateHandle draft is used.
+    if (uiState.restorableDraftAvailable) {
+        DraftRestoreDialog(
+            onRestore = { viewModel.restorePersistedDraft() },
+            onDiscard = { viewModel.discardPersistedDraft() }
+        )
+    }
 
     // FASE 69.1: draft fields live in the ViewModel (SavedStateHandle-backed) so an
     // in-progress counseling note survives process death instead of vanishing.

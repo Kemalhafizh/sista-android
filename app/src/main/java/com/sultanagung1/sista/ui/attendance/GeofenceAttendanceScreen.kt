@@ -36,6 +36,7 @@ import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.util.Constants
+import com.sultanagung1.sista.ui.common.OfflineQueuedBanner
 
 /**
  * FASE 67: Overhauled Presensi GPS Geofence Screen.
@@ -153,8 +154,14 @@ fun GeofenceAttendanceScreen(
                 }
             }
 
+            // FASE 69.3: shown instead of the success card when the check-in was
+            // queued locally after a true connectivity failure at submit time.
+            AnimatedVisibility(visible = uiState.isSuccess && uiState.isQueuedOffline) {
+                OfflineQueuedBanner()
+            }
+
             // Success Card
-            AnimatedVisibility(visible = uiState.isSuccess) {
+            AnimatedVisibility(visible = uiState.isSuccess && !uiState.isQueuedOffline) {
                 uiState.checkinResult?.let { res ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),

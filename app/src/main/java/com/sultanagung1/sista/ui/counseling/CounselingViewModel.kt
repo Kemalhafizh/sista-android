@@ -6,12 +6,16 @@ import javax.inject.Inject
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
 import com.sultanagung1.sista.core.network.NetworkResult
+import com.sultanagung1.sista.core.storage.FormDraftStore
+import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.model.*
 import com.sultanagung1.sista.data.repository.CounselingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -30,15 +34,31 @@ data class CounselingUiState(
     val draftCategory: String = "akademik",
     val draftNotes: String = "",
     val draftActionPlan: String = "",
-    val draftIsConfidential: Boolean = true
+    val draftIsConfidential: Boolean = true,
+    // FASE 69.2: a persisted draft from a PREVIOUS session (full app close, not just
+    // a process-death-and-restore) was found — the screen should offer to restore it.
+    val restorableDraftAvailable: Boolean = false
 )
 
+/** Serialized shape written to [FormDraftStore] by [CounselingViewModel]. */
+private data class CounselingDraftPayload(
+    val studentId: String,
+    val category: String,
+    val notes: String,
+    val actionPlan: String,
+    val isConfidential: Boolean
+)
 
 @HiltViewModel
 class CounselingViewModel @Inject constructor(
     private val repository: CounselingRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val formDraftStore: FormDraftStore,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
+
+    private val gson = Gson()
+    private var cachedUserId: String? = null
 
     private val _uiState = MutableStateFlow(
         CounselingUiState(
@@ -54,31 +74,88 @@ class CounselingViewModel @Inject constructor(
     init {
         loadDashboard()
         loadStudentAppointments()
+        checkForRestorableDraft()
+    }
+
+    /** Only offers restore when SavedStateHandle came back empty — a live in-memory draft always wins. */
+    private fun checkForRestorableDraft() {
+        val state = _uiState.value
+        val hasLiveDraft = state.draftNotes.isNotBlank() || state.draftActionPlan.isNotBlank() || state.draftStudentId.isNotBlank()
+        if (hasLiveDraft) return
+        viewModelScope.launch {
+            cachedUserId = sessionManager.userIdFlow.first()
+            val stored = formDraftStore.getDraft(FORM_ID) ?: return@launch
+            _uiState.update { it.copy(restorableDraftAvailable = true) }
+        }
+    }
+
+    fun restorePersistedDraft() {
+        viewModelScope.launch {
+            val stored = formDraftStore.getDraft(FORM_ID) ?: run {
+                _uiState.update { it.copy(restorableDraftAvailable = false) }
+                return@launch
+            }
+            val payload = try {
+                gson.fromJson(stored.payloadJson, CounselingDraftPayload::class.java)
+            } catch (_: Exception) {
+                null
+            }
+            if (payload != null) {
+                updateDraftStudentId(payload.studentId)
+                updateDraftCategory(payload.category)
+                updateDraftNotes(payload.notes)
+                updateDraftActionPlan(payload.actionPlan)
+                updateDraftConfidential(payload.isConfidential)
+            }
+            _uiState.update { it.copy(restorableDraftAvailable = false) }
+        }
+    }
+
+    fun discardPersistedDraft() {
+        formDraftStore.clearDraft(FORM_ID)
+        _uiState.update { it.copy(restorableDraftAvailable = false) }
+    }
+
+    private fun persistDraftSnapshot() {
+        val state = _uiState.value
+        val payload = CounselingDraftPayload(
+            studentId = state.draftStudentId,
+            category = state.draftCategory,
+            notes = state.draftNotes,
+            actionPlan = state.draftActionPlan,
+            isConfidential = state.draftIsConfidential
+        )
+        formDraftStore.autoSave(FORM_ID, cachedUserId, gson.toJson(payload))
     }
 
     fun updateDraftStudentId(value: String) {
         savedStateHandle[KEY_DRAFT_STUDENT_ID] = value
         _uiState.update { it.copy(draftStudentId = value) }
+        persistDraftSnapshot()
     }
 
     fun updateDraftCategory(value: String) {
         savedStateHandle[KEY_DRAFT_CATEGORY] = value
         _uiState.update { it.copy(draftCategory = value) }
+        persistDraftSnapshot()
     }
 
     fun updateDraftNotes(value: String) {
         savedStateHandle[KEY_DRAFT_NOTES] = value
         _uiState.update { it.copy(draftNotes = value) }
+        persistDraftSnapshot()
     }
 
     fun updateDraftActionPlan(value: String) {
         savedStateHandle[KEY_DRAFT_ACTION_PLAN] = value
         _uiState.update { it.copy(draftActionPlan = value) }
+        persistDraftSnapshot()
     }
 
     fun updateDraftConfidential(value: Boolean) {
         savedStateHandle[KEY_DRAFT_CONFIDENTIAL] = value
         _uiState.update { it.copy(draftIsConfidential = value) }
+        persistDraftSnapshot()
     }
 
     private fun clearDraft() {
@@ -87,13 +164,15 @@ class CounselingViewModel @Inject constructor(
         savedStateHandle.remove<String>(KEY_DRAFT_NOTES)
         savedStateHandle.remove<String>(KEY_DRAFT_ACTION_PLAN)
         savedStateHandle.remove<Boolean>(KEY_DRAFT_CONFIDENTIAL)
+        formDraftStore.clearDraft(FORM_ID)
         _uiState.update {
             it.copy(
                 draftStudentId = "",
                 draftCategory = "akademik",
                 draftNotes = "",
                 draftActionPlan = "",
-                draftIsConfidential = true
+                draftIsConfidential = true,
+                restorableDraftAvailable = false
             )
         }
     }
@@ -104,6 +183,7 @@ class CounselingViewModel @Inject constructor(
         const val KEY_DRAFT_NOTES = "counseling_draft_notes"
         const val KEY_DRAFT_ACTION_PLAN = "counseling_draft_action_plan"
         const val KEY_DRAFT_CONFIDENTIAL = "counseling_draft_confidential"
+        const val FORM_ID = "counseling_session_form"
     }
 
     fun loadDashboard() {

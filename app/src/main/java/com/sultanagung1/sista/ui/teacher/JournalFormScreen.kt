@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.ui.common.DraftRestoreDialog
 
 @Composable
 fun JournalFormScreen(
@@ -35,6 +36,15 @@ fun JournalFormScreen(
     // in-progress KBM journal entry survives process death instead of vanishing.
     LaunchedEffect(scheduleId) {
         viewModel.startDraftFor(scheduleId, schedule)
+    }
+
+    // FASE 69.2: a draft from a fully-closed previous session was found on disk for
+    // this exact schedule slot — offer to restore it.
+    if (uiState.restorableDraftAvailable) {
+        DraftRestoreDialog(
+            onRestore = { viewModel.restorePersistedDraft() },
+            onDiscard = { viewModel.discardPersistedDraft() }
+        )
     }
     val materiPokok = uiState.draftMateriPokok
     val selectedMetode = uiState.draftMetode

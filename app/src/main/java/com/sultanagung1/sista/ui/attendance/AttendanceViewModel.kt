@@ -6,6 +6,7 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
+import com.sultanagung1.sista.core.sync.OfflineActionQueue
 import com.sultanagung1.sista.core.util.Constants
 import com.sultanagung1.sista.core.util.GeoUtils
 import com.sultanagung1.sista.data.model.AttendanceCheckinResponse
@@ -25,12 +26,18 @@ data class AttendanceUiState(
     val distanceToCampusMeters: Double = 9999.0,
     val isInsideRadius: Boolean = false,
     val isMockLocationDetected: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    // FASE 69.3: true network dropout at the moment of submit — the check-in was
+    // queued locally (OfflineActionQueue) instead of shown as a hard failure.
+    val isQueuedOffline: Boolean = false
 )
 
 
 @HiltViewModel
-class AttendanceViewModel @Inject constructor(private val attendanceRepository: AttendanceRepository) : ViewModel() {
+class AttendanceViewModel @Inject constructor(
+    private val attendanceRepository: AttendanceRepository,
+    private val offlineActionQueue: OfflineActionQueue
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AttendanceUiState())
     val uiState: StateFlow<AttendanceUiState> = _uiState.asStateFlow()
@@ -71,7 +78,13 @@ class AttendanceViewModel @Inject constructor(private val attendanceRepository: 
             attendanceRepository.submitGpsCheckin(request).collect { result ->
                 when (result) {
                     is NetworkResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = true,
+                            isSuccess = false,
+                            isQueuedOffline = false,
+                            checkinResult = null,
+                            errorMessage = null
+                        )
                     }
                     is NetworkResult.Success -> {
                         _uiState.value = _uiState.value.copy(
@@ -81,10 +94,25 @@ class AttendanceViewModel @Inject constructor(private val attendanceRepository: 
                         )
                     }
                     is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = result.message
-                        )
+                        if (result.code == null) {
+                            // No HTTP response reached the server at all (exception before/at send) —
+                            // a true connectivity failure, safe to queue and retry automatically.
+                            // A server-side rejection (code != null, e.g. outside geofence radius)
+                            // must never be silently "succeeded" — that would let a fraudulent or
+                            // invalid check-in appear to go through.
+                            offlineActionQueue.queueAttendance(request)
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                isSuccess = true,
+                                isQueuedOffline = true,
+                                checkinResult = null
+                            )
+                        } else {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                errorMessage = result.message
+                            )
+                        }
                     }
                 }
             }

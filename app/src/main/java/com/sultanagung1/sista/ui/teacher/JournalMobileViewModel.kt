@@ -6,19 +6,35 @@ import javax.inject.Inject
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
 import com.sultanagung1.sista.core.mvi.UiEvent
 import com.sultanagung1.sista.core.mvi.UiState
 import com.sultanagung1.sista.core.network.NetworkResult
+import com.sultanagung1.sista.core.storage.FormDraftStore
+import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.model.*
 import com.sultanagung1.sista.data.repository.TeachingJournalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+
+/** Serialized shape written to [FormDraftStore] by [JournalMobileViewModel], keyed per schedule slot. */
+private data class JournalDraftPayload(
+    val materiPokok: String,
+    val metode: String,
+    val media: String,
+    val hadir: String,
+    val absen: String,
+    val kompetensiTercapai: Boolean,
+    val catatan: String,
+    val tindakLanjut: String
+)
 
 sealed interface JournalMobileUiEvent : UiEvent {
     data class LoadSchedules(val unit: Unit = Unit) : JournalMobileUiEvent
@@ -45,7 +61,10 @@ data class JournalMobileUiState(
     val draftAbsen: String = "",
     val draftKompetensiTercapai: Boolean = true,
     val draftCatatan: String = "",
-    val draftTindakLanjut: String = ""
+    val draftTindakLanjut: String = "",
+    // FASE 69.2: a persisted draft from a fully-closed previous session was found for
+    // the currently-open schedule slot — the screen should offer to restore it.
+    val restorableDraftAvailable: Boolean = false
 ) : UiState {
     val compliance: JournalSummaryCompliance
         get() {
@@ -79,8 +98,13 @@ data class JournalMobileUiState(
 @HiltViewModel
 class JournalMobileViewModel @Inject constructor(
     private val journalRepository: TeachingJournalRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val formDraftStore: FormDraftStore,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
+
+    private val gson = Gson()
+    private var cachedUserId: String? = null
 
     private val _uiState = MutableStateFlow(
         JournalMobileUiState(
@@ -129,22 +153,90 @@ class JournalMobileViewModel @Inject constructor(
                 draftTindakLanjut = schedule?.followUp ?: ""
             )
         }
+        // Only a genuinely blank slot (no filed journal yet) is worth checking for a
+        // leftover local draft — an already-filled entry has nothing to "resume".
+        if (schedule == null || !schedule.isFilled) {
+            checkForRestorableDraft(scheduleId)
+        }
     }
 
-    fun updateDraftMateriPokok(v: String) { savedStateHandle[KEY_DRAFT_MATERI] = v; _uiState.update { it.copy(draftMateriPokok = v) } }
-    fun updateDraftMetode(v: String) { savedStateHandle[KEY_DRAFT_METODE] = v; _uiState.update { it.copy(draftMetode = v) } }
-    fun updateDraftMedia(v: String) { savedStateHandle[KEY_DRAFT_MEDIA] = v; _uiState.update { it.copy(draftMedia = v) } }
-    fun updateDraftHadir(v: String) { savedStateHandle[KEY_DRAFT_HADIR] = v; _uiState.update { it.copy(draftHadir = v) } }
-    fun updateDraftAbsen(v: String) { savedStateHandle[KEY_DRAFT_ABSEN] = v; _uiState.update { it.copy(draftAbsen = v) } }
-    fun updateDraftKompetensi(v: Boolean) { savedStateHandle[KEY_DRAFT_KOMPETENSI] = v; _uiState.update { it.copy(draftKompetensiTercapai = v) } }
-    fun updateDraftCatatan(v: String) { savedStateHandle[KEY_DRAFT_CATATAN] = v; _uiState.update { it.copy(draftCatatan = v) } }
-    fun updateDraftTindakLanjut(v: String) { savedStateHandle[KEY_DRAFT_TINDAK_LANJUT] = v; _uiState.update { it.copy(draftTindakLanjut = v) } }
+    private fun checkForRestorableDraft(scheduleId: String) {
+        viewModelScope.launch {
+            cachedUserId = sessionManager.userIdFlow.first()
+            formDraftStore.getDraft(formIdFor(scheduleId)) ?: return@launch
+            if (_uiState.value.draftScheduleId == scheduleId) {
+                _uiState.update { it.copy(restorableDraftAvailable = true) }
+            }
+        }
+    }
+
+    fun restorePersistedDraft() {
+        val scheduleId = _uiState.value.draftScheduleId
+        if (scheduleId.isBlank()) return
+        viewModelScope.launch {
+            val stored = formDraftStore.getDraft(formIdFor(scheduleId)) ?: run {
+                _uiState.update { it.copy(restorableDraftAvailable = false) }
+                return@launch
+            }
+            val payload = try {
+                gson.fromJson(stored.payloadJson, JournalDraftPayload::class.java)
+            } catch (_: Exception) {
+                null
+            }
+            if (payload != null) {
+                updateDraftMateriPokok(payload.materiPokok)
+                updateDraftMetode(payload.metode)
+                updateDraftMedia(payload.media)
+                updateDraftHadir(payload.hadir)
+                updateDraftAbsen(payload.absen)
+                updateDraftKompetensi(payload.kompetensiTercapai)
+                updateDraftCatatan(payload.catatan)
+                updateDraftTindakLanjut(payload.tindakLanjut)
+            }
+            _uiState.update { it.copy(restorableDraftAvailable = false) }
+        }
+    }
+
+    fun discardPersistedDraft() {
+        val scheduleId = _uiState.value.draftScheduleId
+        if (scheduleId.isNotBlank()) formDraftStore.clearDraft(formIdFor(scheduleId))
+        _uiState.update { it.copy(restorableDraftAvailable = false) }
+    }
+
+    private fun persistDraftSnapshot() {
+        val state = _uiState.value
+        if (state.draftScheduleId.isBlank()) return
+        val payload = JournalDraftPayload(
+            materiPokok = state.draftMateriPokok,
+            metode = state.draftMetode,
+            media = state.draftMedia,
+            hadir = state.draftHadir,
+            absen = state.draftAbsen,
+            kompetensiTercapai = state.draftKompetensiTercapai,
+            catatan = state.draftCatatan,
+            tindakLanjut = state.draftTindakLanjut
+        )
+        formDraftStore.autoSave(formIdFor(state.draftScheduleId), cachedUserId, gson.toJson(payload))
+    }
+
+    private fun formIdFor(scheduleId: String) = "journal_form_$scheduleId"
+
+    fun updateDraftMateriPokok(v: String) { savedStateHandle[KEY_DRAFT_MATERI] = v; _uiState.update { it.copy(draftMateriPokok = v) }; persistDraftSnapshot() }
+    fun updateDraftMetode(v: String) { savedStateHandle[KEY_DRAFT_METODE] = v; _uiState.update { it.copy(draftMetode = v) }; persistDraftSnapshot() }
+    fun updateDraftMedia(v: String) { savedStateHandle[KEY_DRAFT_MEDIA] = v; _uiState.update { it.copy(draftMedia = v) }; persistDraftSnapshot() }
+    fun updateDraftHadir(v: String) { savedStateHandle[KEY_DRAFT_HADIR] = v; _uiState.update { it.copy(draftHadir = v) }; persistDraftSnapshot() }
+    fun updateDraftAbsen(v: String) { savedStateHandle[KEY_DRAFT_ABSEN] = v; _uiState.update { it.copy(draftAbsen = v) }; persistDraftSnapshot() }
+    fun updateDraftKompetensi(v: Boolean) { savedStateHandle[KEY_DRAFT_KOMPETENSI] = v; _uiState.update { it.copy(draftKompetensiTercapai = v) }; persistDraftSnapshot() }
+    fun updateDraftCatatan(v: String) { savedStateHandle[KEY_DRAFT_CATATAN] = v; _uiState.update { it.copy(draftCatatan = v) }; persistDraftSnapshot() }
+    fun updateDraftTindakLanjut(v: String) { savedStateHandle[KEY_DRAFT_TINDAK_LANJUT] = v; _uiState.update { it.copy(draftTindakLanjut = v) }; persistDraftSnapshot() }
 
     private fun clearDraft() {
+        val scheduleId = _uiState.value.draftScheduleId
         listOf(KEY_DRAFT_SCHEDULE_ID, KEY_DRAFT_MATERI, KEY_DRAFT_METODE, KEY_DRAFT_MEDIA, KEY_DRAFT_HADIR, KEY_DRAFT_ABSEN, KEY_DRAFT_CATATAN, KEY_DRAFT_TINDAK_LANJUT)
             .forEach { savedStateHandle.remove<String>(it) }
         savedStateHandle.remove<Boolean>(KEY_DRAFT_KOMPETENSI)
-        _uiState.update { it.copy(draftScheduleId = "", draftMateriPokok = "", draftMetode = "", draftMedia = "", draftHadir = "", draftAbsen = "", draftKompetensiTercapai = true, draftCatatan = "", draftTindakLanjut = "") }
+        if (scheduleId.isNotBlank()) formDraftStore.clearDraft(formIdFor(scheduleId))
+        _uiState.update { it.copy(draftScheduleId = "", draftMateriPokok = "", draftMetode = "", draftMedia = "", draftHadir = "", draftAbsen = "", draftKompetensiTercapai = true, draftCatatan = "", draftTindakLanjut = "", restorableDraftAvailable = false) }
     }
 
     private companion object {

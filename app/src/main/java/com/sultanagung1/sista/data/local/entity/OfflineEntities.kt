@@ -17,3 +17,9 @@ data class CacheMetadata(
     val isExpired: Boolean
         get() = System.currentTimeMillis() - lastUpdated > expiryDurationMillis
 }
+
+/** FASE 69.2: a locally-persisted, not-yet-submitted form draft (`form_drafts` table). */
+data class FormDraftRow(
+    val payloadJson: String,
+    val updatedAt: Long
+)

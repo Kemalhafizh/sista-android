@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.sultanagung1.sista.data.local.entity.FormDraftRow
 import com.sultanagung1.sista.data.local.entity.PendingActionItem
 import com.sultanagung1.sista.data.model.*
 import java.util.UUID
@@ -19,7 +20,7 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
 
     companion object {
         private const val DATABASE_NAME = "sulaone_offline_store.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         private const val TABLE_CACHE = "cached_records"
         private const val COL_CACHE_KEY = "cache_key"
@@ -34,6 +35,14 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
         private const val COL_QUEUE_CREATED = "created_at"
         private const val COL_QUEUE_RETRY = "retry_count"
         private const val COL_QUEUE_STATUS = "status"
+
+        // FASE 69.2: local form-draft persistence — survives full app restarts,
+        // unlike SavedStateHandle which only survives within the same Activity task.
+        private const val TABLE_DRAFTS = "form_drafts"
+        private const val COL_DRAFT_FORM_ID = "form_id"
+        private const val COL_DRAFT_USER_ID = "user_id"
+        private const val COL_DRAFT_PAYLOAD = "payload_json"
+        private const val COL_DRAFT_UPDATED = "updated_at"
 
         @Volatile
         private var INSTANCE: SulaoneLocalStore? = null
@@ -73,11 +82,23 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
             )
             """.trimIndent()
         )
+
+        db.execSQL(
+            """
+            CREATE TABLE $TABLE_DRAFTS (
+                $COL_DRAFT_FORM_ID TEXT PRIMARY KEY,
+                $COL_DRAFT_USER_ID TEXT,
+                $COL_DRAFT_PAYLOAD TEXT NOT NULL,
+                $COL_DRAFT_UPDATED INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS $TABLE_CACHE")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_QUEUE")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_DRAFTS")
         onCreate(db)
     }
 
@@ -232,7 +253,59 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
     }
 
     // ==========================================
-    // 3. Typed Helpers for Modules
+    // 3. Local Form Draft Persistence (FASE 69.2)
+    // ==========================================
+
+    @Synchronized
+    fun saveDraft(formId: String, userId: String?, payloadJson: String) {
+        try {
+            val db = writableDatabase
+            val values = ContentValues().apply {
+                put(COL_DRAFT_FORM_ID, formId)
+                put(COL_DRAFT_USER_ID, userId)
+                put(COL_DRAFT_PAYLOAD, payloadJson)
+                put(COL_DRAFT_UPDATED, System.currentTimeMillis())
+            }
+            db.insertWithOnConflict(TABLE_DRAFTS, null, values, SQLiteDatabase.CONFLICT_REPLACE)
+        } catch (_: Exception) {}
+    }
+
+    @Synchronized
+    fun getDraft(formId: String): FormDraftRow? {
+        return try {
+            val db = readableDatabase
+            val cursor = db.query(
+                TABLE_DRAFTS,
+                arrayOf(COL_DRAFT_PAYLOAD, COL_DRAFT_UPDATED),
+                "$COL_DRAFT_FORM_ID = ?",
+                arrayOf(formId),
+                null, null, null
+            )
+            var result: FormDraftRow? = null
+            cursor.use {
+                if (it.moveToFirst()) {
+                    result = FormDraftRow(
+                        payloadJson = it.getString(0),
+                        updatedAt = it.getLong(1)
+                    )
+                }
+            }
+            result
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    @Synchronized
+    fun deleteDraft(formId: String) {
+        try {
+            val db = writableDatabase
+            db.delete(TABLE_DRAFTS, "$COL_DRAFT_FORM_ID = ?", arrayOf(formId))
+        } catch (_: Exception) {}
+    }
+
+    // ==========================================
+    // 4. Typed Helpers for Modules
     // ==========================================
 
     fun saveSchedule(schedules: List<ScheduleItem>) {
@@ -286,7 +359,7 @@ class SulaoneLocalStore(context: Context) : SQLiteOpenHelper(
     }
 
     // ==========================================
-    // 4. Tombstone Handling (Ghost Data Purge - FASE 61.2)
+    // 5. Tombstone Handling (Ghost Data Purge - FASE 61.2)
     // ==========================================
 
     @Synchronized
