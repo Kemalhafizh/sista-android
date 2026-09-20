@@ -2971,3 +2971,241 @@ Fase ini memanfaatkan persenjataan infrastruktur lengkap (*Arsenal MCP Servers*)
   - **Eksekusi:** 
     - **Filesystem & Context7 MCP:** Agen AI dapat membaca ratusan *file* *codebase* Android dan Laravel, melakukan pencarian lintas direktori, dan memahami struktur MVI secara komprehensif (Deep Context).
     - **GitHub MCP:** Setelah agen menyelesaikan kode perbaikan UI (Fase 67) atau *bug fixing*, agen dapat otomatis membuat *Commit*, mendorongnya ke *branch*, membuka *Pull Request* (PR), dan mereview-nya secara otomatis di repositori GitHub Anda.
+
+---
+
+# 🚀 BLUEPRINT MASTER PENGEMBANGAN MASA DEPAN FRONTEND ANDROID
+## Roadmap Lanjutan Sulaone (SISTA Mobile) — SMA Islam Sultan Agung 1 Semarang
+### Target Standar: World-Class Enterprise SuperApp (100% Jetpack Compose, Clean Architecture & Design System)
+
+Blueprint ini dirancang secara khusus untuk menjadi **kompas dan panduan mutlak bagi AI Agent maupun tim perekayasa (software engineers)** yang akan mengeksekusi pengembangan *frontend* Android Sulaone ke depan. Setiap fase dirancang dengan perincian tingkat implementasi kode (baris, struktur data, kontrak MVI, dan arsitektur file) guna memastikan hasil pengerjaan bebas halusinasi, modular, teruji 100%, serta nyaman dipakai oleh ribuan siswa, guru, wali murid, dan pimpinan sekolah.
+
+---
+
+### 🛡️ FASE 69: ADVANCED STATE PRESERVATION, PROCESS DEATH & RESILIENT DATA ENTRY `[RANCANGAN MASA DEPAN]`
+
+Fase ini menuntaskan masalah paling fatal yang sering dihadapi pengguna di perangkat Android kelas pemula (*entry-level* 2GB–3GB RAM yang umum digunakan siswa): **Aplikasi terbunuh oleh Android LMK (Low Memory Killer) saat berada di background**, menyebabkan hilangnya teks jawaban esai CBT, formulir konseling BK, atau jurnal mengajar guru yang sedang diisi.
+
+- [ ] **69.1 Integrasi `SavedStateHandle` di Seluruh 35+ ViewModel MVI:**
+  - **Masalah:** Saat siswa berpindah ke aplikasi lain sebentar (misal: membuka kalkulator atau menerima panggilan darurat) lalu kembali ke Sulaone, sistem Android telah mendaur ulang memori sehingga `ViewModel` dibuat ulang dari `initialState()`, mereset semua input pengguna.
+  - **Solusi Arsitektur:** Injeksi `SavedStateHandle` pada seluruh ViewModel berbasis `@HiltViewModel`.
+  - **Target Implementasi:**
+    - `CbtViewModel.kt`: Simpan snapshot sementara `currentQuestionIndex`, `selectedAnswersMap` (JSON stringified), dan `elapsedTimeSeconds` ke `savedStateHandle[KEY_CBT_SNAPSHOT]`.
+    - `CounselingSessionFormViewModel.kt`: Simpan draft `keluhanSiswa`, `kategoriMasalah`, dan `catatanKonselor`.
+    - `JournalMobileViewModel.kt`: Simpan draft `materiKBM`, `capaianPembelajaran`, dan `kendalaKelas`.
+  - **File Target:** `app/src/main/java/com/sultanagung1/sista/ui/**/viewmodel/*ViewModel.kt`
+
+- [ ] **69.2 Local Draft Persistence Engine (`FormDraftStore.kt`):**
+  - **Solusi:** Buat mekanisme *auto-save* lokal asynchronous berbasis Coroutine Debounce (500ms).
+  - **Implementasi:**
+    - Buat tabel Room / SQLite `form_drafts` (`form_id VARCHAR PRIMARY KEY`, `user_id INT`, `payload_json TEXT`, `updated_at TIMESTAMP`).
+    - Setiap karakter yang diketikkan di `SulaoneTextField` pada formulir penting otomatis didebounce dan disimpan ke cache lokal SQLite terenkripsi.
+    - Saat layar dibuka kembali, tampilkan dialog halus / snackbar: *"Ditemukan draf formulir yang belum tersimpan dari sesi sebelumnya. Pulihkan draf?"* dengan aksi 1-tap "Pulihkan" atau "Buang".
+  - **File Baru:** `core/storage/FormDraftStore.kt` & `ui/common/DraftRestoreDialog.kt`.
+
+- [ ] **69.3 Seamless Network Reconnection Resilience:**
+  - **Skenario:** Siswa menekan tombol "Kirim Jawaban CBT" atau "Submit Presensi GPS", namun di detik yang sama koneksi internet seluler terputus.
+  - **Implementasi:**
+    - Jangan tampilkan layar merah atau error pop-up yang mengagetkan.
+    - Simpan permintaan mutasi ke dalam antrean `SulaoneLocalStore.kt` dengan status `PENDING_NETWORK`.
+    - Tampilkan indikator non-intrusif di bagian atas layar: *"Disimpan offline — akan otomatis disinkronkan saat terhubung kembali"*.
+    - Layar UI langsung bertransisi ke state sukses optimistik (*Optimistic UI Updates*).
+
+---
+
+### 🎨 FASE 70: DEEP FIGMA DESIGN SYSTEM IMPLEMENTATION & COMPOSABLE ATOMIC DESIGN TOKENS (FIGMA DEV MCP BLUEPRINT) `[RANCANGAN MASA DEPAN]`
+
+Memanfaatkan keberadaan **Figma Dev MCP** yang sudah terpasang, fase ini mengubah proses koding antarmuka dari "kira-kira / hardcoded" menjadi **Design-to-Code Pipeline otomatis dengan akurasi piksel 100%**.
+
+- [ ] **70.1 Pemetaan Token Desain Terpadu (`SulaoneDesignTokens.kt`):**
+  - **Sumber Tunggal:** Tarik langsung dari variabel / styles file Figma Sulaone via `get_design_context`.
+  - **Struktur Token:**
+    ```kotlin
+    // core/designsystem/tokens/
+    object SulaoneColorTokens {
+        // Neutral Off-White Canvas
+        val Slate50 = Color(0xFFF8FAFC)
+        val Slate100 = Color(0xFFF1F5F9)
+        val Slate200 = Color(0xFFE2E8F0)
+        val Slate800 = Color(0xFF1E293B)
+        val Slate900 = Color(0xFF0F172A)
+        // Islamic Institutional Accent (Restricted to CTA & Badges)
+        val Emerald50 = Color(0xFFECFDF5)
+        val Emerald600 = Color(0xFF107047)
+        val Emerald700 = Color(0xFF045D38)
+        // Gold Prestasi (Gamification & Verified Only)
+        val GoldAmber500 = Color(0xFFF59E0B)
+        val GoldAmber600 = Color(0xFFD97706)
+    }
+    ```
+  - **Typography Scale:** Menggunakan `Plus Jakarta Sans` untuk teks Latin dan `Amiri` untuk teks Arab / Al-Qur'an dengan skala rasio Modular Type Scale (Display, Headline, Title, Body, Label) yang patuh WCAG 2.2 AAA.
+
+- [ ] **70.2 Pustaka Komponen Atomik Lengkap (`core/designsystem/components/`):**
+  - Buat komponen murni mandiri (reusable) berbasis Figma Variants:
+    1. **`SulaoneButton.kt`:** 4 varian (`Primary`, `SecondaryOutlined`, `GhostText`, `DestructiveRose`) dengan state loading spinner terintegrasi, min touch-target 48x48dp, dan micro-haptics.
+    2. **`SulaoneTextField.kt`:** Input modern dengan border 0.5dp, label melayang, validasi inline error animasi, ikon trailing (visibility toggle, clear text, scanner shortcut).
+    3. **`SulaoneModalBottomSheet.kt`:** Sheet adaptif dengan drag handle interaktif, spring physics, dan dukungan full-height untuk daftar menu panjang.
+    4. **`SulaoneSegmentedFilter.kt`:** Kontrol filter tab kapsul (*pill*) dengan indikator animasi bergeser (*sliding pill background*) tanpa recomposition jank.
+    5. **`SulaoneEmptyState.kt`:** Komponen seragam saat data kosong (belum ada tugas, riwayat kosong, koneksi terputus) dilengkapi ilustrasi vektor minimalis dan tombol CTA pemulihan.
+
+- [ ] **70.3 Dynamic Contrast & Automatic Dark Theme Engine:**
+  - Implementasikan evaluasi kontras dinamis: jika mode malam aktif (`isSystemInDarkTheme()`), permukaan kartu otomatis menggunakan `SurfaceDark` (`Color(0xFF1E293B)`) dengan border halus `Color(0xFF334155)`, menjaga keterbacaan teks tanpa menimbulkan silau kontras ekstrem (*OLED deep black halo effect*).
+
+---
+
+### 👥 FASE 71: DYNAMIC MULTI-ROLE MICRO-EXPERIENCES (SISWA, GURU, WALI MURID, PIMPINAN) `[RANCANGAN MASA DEPAN]`
+
+Alih-alih membuat aplikasi terpisah atau mencampuradukkan fitur ke dalam satu menu raksasa yang membingungkan, Sulaone akan mengadaptasi **Contextual Dynamic Hub Architecture**: tampilan dan alur navigasi aplikasi beradaptasi 100% mengikuti peran (*role*) pengguna yang sedang aktif.
+
+- [ ] **71.1 Persona Siswa — "The Academic & Spiritual Companion":**
+  - **Fokus Pengalaman:** Belajar mandiri, presensi cepat, ibadah yaumiyah, dan pencapaian prestasi.
+  - **Komposisi Home Khusus Siswa:**
+    - *Widget Pembuka:* Sapaan hangat Islami dengan countdown jadwal pelajaran berikutnya ("Fisika: Lab 2 — 15 menit lagi").
+    - *Action Hub:* 4 Tombol Cepat (Presensi Gerbang/GPS, Jadwal Kelas, Ujian CBT, Tagihan SPP).
+    - *Mutaba'ah Streak Card:* Visualizer capaian Sholat 5 waktu & Tahfidz hari ini berbonus XP.
+    - *Bento Feed:* Pengumuman OSIS, tugas yang mendekati batas waktu (*deadline*), dan status peminjaman buku perpustakaan.
+
+- [ ] **71.2 Persona Guru — "The Classroom & KBM Cockpit":**
+  - **Fokus Pengalaman:** Efisiensi manajemen kelas, input nilai, dan administrasi KBM tanpa beban birokrasi berbelit.
+  - **Komposisi Home Khusus Guru:**
+    - *Hero Widget:* Jadwal mengajar hari ini dengan status real-time ("Jam ke 3-4: Kelas X-1 — Sedang Berlangsung").
+    - *Tombol Aksi 1-Tap:* "Buka Presensi Kelas", "Isi Jurnal Mengajar", dan "Input Nilai Harian".
+    - *Inbox Penugasan:* Badge counter jumlah tugas siswa yang belum dinilai (*unreviewed homework inbox*).
+    - *Radar Siswa Perhatian Khusus:* Peringatan siswa yang tidak hadir 3 hari berturut-turut atau nilai di bawah KKTP untuk segera dirujuk ke BK.
+
+- [ ] **71.3 Persona Orang Tua / Wali — "The Real-Time Child Guardian":**
+  - **Fokus Pengalaman:** Ketenangan pikiran (*peace of mind*), transparansi keuangan, dan pemantauan perkembangan anak.
+  - **Komposisi Home Khusus Wali:**
+    - *Child Switcher Header:* Tab pemilih anak jika memiliki lebih dari 1 putra/putri di SMA Islam Sultan Agung 1.
+    - *Status Gerbang Real-time:* Notifikasi visual kehadiran ("Ananda Ahmad hadir di sekolah pukul 06:45 WIB — Foto Gerbang Terverifikasi").
+    - *Pusat Keuangan SPP:* Notifikasi tagihan bulan berjalan dengan tombol instan "Bayar via Virtual Account BSI / Bank Jateng Syariah" dan unduh kwitansi resmi.
+    - *Jalur Langsung Wali Kelas:* Tombol 1-tap konsultasi privat via Chat Sulaone atau pesan WhatsApp dinas sekolah.
+
+- [ ] **71.4 Persona Pimpinan & Yayasan — "The Executive School Pulse":**
+  - **Fokus Pengalaman:** Pengambilan keputusan berbasis data (*data-driven decision making*) dengan ringkasan KPI institusi.
+  - **Komposisi Home Khusus Pimpinan:**
+    - *Executive Metric Bento:* Persentase kehadiran seluruh siswa hari ini, persentase kehadiran guru, rasio pelunasan SPP per angkatan, dan penggunaan server CBT.
+    - *Antrean Persetujuan:* Daftar persetujuan dinas (Surat Izin Guru, Rencana Anggaran Ekstrakurikuler, Dispensasi Lomba).
+    - *Tombol Siaran Darurat:* Pengiriman pengumuman darurat / siaran resmi yayasan ke seluruh aplikasi siswa, guru, dan orang tua secara serentak.
+
+---
+
+### 🎙️ FASE 72: REAL-TIME COLLABORATIVE LEARNING & INTERACTIVE MULTIMEDIA ENGINE `[RANCANGAN MASA DEPAN]`
+
+Mengembangkan fitur multimedia interaktif murni native yang menunjang kekhasan SMA Islam Sultan Agung 1 Semarang (Tahfidz Al-Qur'an, Ujian CBT, dan Konsultasi Interaktif).
+
+- [ ] **72.1 Audio Recorder & Live Waveform Canvas untuk Tahsin/Tahfidz (`ui/ibadah/tahsin/`):**
+  - **Kebutuhan:** Siswa merekam setoran hafalan Al-Qur'an dan guru menyimak serta memberi feedback di detik tertentu.
+  - **Implementasi Native:**
+    - Gunakan `android.media.AudioRecord` / `MediaRecorder` dengan format m4a/aac hemat bandwidth.
+    - Buat visualizer gelombang suara *real-time* berbasis Jetpack Compose `Canvas` yang membaca level amplitudo audio setiap 50ms (`drawRoundRect` waveform animatif).
+    - Fitur penanda waktu (*timestamp annotation*): Guru dapat mengetuk titik tertentu pada gelombang audio untuk menyematkan catatan tajwid (misal: "Ghunnah kurang panjang di detik 00:14").
+  - **File:** `ui/ibadah/TahsinWaveformRecorder.kt` & `ui/ibadah/TahsinAudioPlayer.kt`.
+
+- [ ] **72.2 Live Proctoring & Broadcast Engine untuk CBT (`ui/cbt/proctoring/`):**
+  - **Kebutuhan:** Pengawasan ujian online terpusat tanpa membebani server sekolah.
+  - **Implementasi:**
+    - Koneksi WebSocket dua arah via Laravel Reverb (`core/websocket/ReverbClient.kt`).
+    - *Heartbeat Monitoring:* Aplikasi Android mengirim ping setiap 15 detik yang memverifikasi bahwa aplikasi tetap berada di latar depan (*foreground*).
+    - *Anti-Cheat Alerts:* Jika siswa mencoba membuka aplikasi lain, mengambil screenshot, atau mengaktifkan split-screen, aplikasi otomatis mengirimkan *violation event* ke pengawas.
+    - *Live Proctor Broadcast:* Pengawas dapat mengirimkan pesan darurat (misal: "Ada ralat pada soal nomor 12") yang langsung muncul sebagai overlay dialog di layar seluruh peserta ujian tanpa menghentikan timer ujian.
+
+- [ ] **72.3 Konsultasi Real-time Chat 2.0 (`ui/chat/`):**
+  - **Peningkatan:**
+    - *Typing Indicator* animasi tiga titik melayang saat lawan bicara mengetik.
+    - Status pesan: Centang satu (terkirim), centang dua abu (diterima perangkat), centang dua hijau (dibaca/read receipt).
+    - Lampiran dokumen: Dukungan pratinjau instan gambar dan file PDF surat izin/sakit langsung di dalam gelembung percakapan.
+
+---
+
+### 📦 FASE 73: FULL MULTI-MODULE CODEBASE MIGRATION & GRADLE PERFORMANCE OPTIMIZATION `[RANCANGAN MASA DEPAN]`
+
+Mengubah arsitektur proyek dari satu modul tunggal raksasa `:app` menjadi arsitektur **Multi-Module Clean Architecture** tingkat industri. Ini akan menurunkan waktu kompilasi Gradle dari ~30-40 detik menjadi di bawah 8 detik dengan *incremental build caching*.
+
+- [ ] **73.1 Skema Pembagian Modul (Modularization Architecture):**
+  ```
+  sista-android/
+  ├── build.gradle
+  ├── settings.gradle
+  ├── gradle/libs.versions.toml
+  ├── core/
+  │   ├── model/           # Data classes murni (User, Grade, Attendance, Exam) — 0 Android dependency
+  │   ├── network/         # Retrofit, OkHttp, Reverb WebSocket, Token Refresh Interceptor
+  │   ├── database/        # Room Database, DAOs, SQLiteCipher Store, TypeConverters
+  │   ├── designsystem/    # Theme, Tokens, Sulaone Components, Icons, Typography
+  │   ├── common/          # DispatcherProvider, ResultWrapper, StringExtensions, DateTimeFormatter
+  │   └── testing/         # Mock repositories, Fake data generators, Test rules
+  ├── feature/
+  │   ├── auth/            # Login, Role Switcher, Biometric Vault
+  │   ├── home/            # Smart Contextual Hub, Banner, Sholat Widget
+  │   ├── academic/        # Jadwal KBM, E-Rapor Kurikulum Merdeka, Presensi GPS
+  │   ├── cbt/             # Exam Room, Anti-Cheat Engine, Token Entry, Timer
+  │   ├── finance/         # SPP Billing Dashboard, Virtual Account, Kwitansi PDF
+  │   ├── ibadah/          # Mutaba'ah BISA, Tahsin Audio Recorder, Jadwal Sholat
+  │   ├── chat/            # Real-time WebSocket Chat Ortu-Guru
+  │   └── profile/         # Kartu Pelajar Digital, Settings, Display Refresh Rate
+  └── app/                 # Application class, MainActivity, Hilt App Graph, Root AppNavigation
+  ```
+
+- [ ] **73.2 Isolasi Dependensi via `libs.versions.toml`:**
+  - Setiap modul fitur (`feature:*`) hanya boleh bergantung pada `:core:model`, `:core:designsystem`, dan `:core:common`.
+  - Fitur dilarang bergantung langsung pada `:core:network` atau `:core:database`; semua akses data harus melalui interface `Repository` yang disediakan di `:core:data`.
+  - Mencegah siklus dependensi (*circular dependency*) 100%.
+
+- [ ] **73.3 Optimasi Gradle Build Speed:**
+  - Aktifkan `org.gradle.caching=true`, `org.gradle.parallel=true`, dan `org.gradle.configuration-cache=true` di `gradle.properties`.
+  - Terapkan Kotlin compiler flag `-Xcontext-receivers` dan *Compose Strong Skipping Mode* untuk menghindari recomposition yang tidak perlu pada data class non-primitive.
+
+---
+
+### 🧪 FASE 74: AUTOMATED E2E, VISUAL REGRESSION & PROXYMAN NETWORK VALIDATION PIPELINE `[RANCANGAN MASA DEPAN]`
+
+Memanfaatkan keberadaan **Appium MCP, ADB MCP, dan Proxyman MCP** untuk mewujudkan pengujian otomatis ujung-ke-ujung (*End-to-End Automated Testing*) tanpa sentuh manual.
+
+- [ ] **74.1 Skrip Pengujian E2E Otomatis (Appium MCP):**
+  - **Skenario 1 — Alur Presensi GPS:**
+    1. Buka aplikasi -> Pilih peran Siswa -> Verifikasi mendarat di HomeScreen.
+    2. Tap tombol "Presensi Masuk" -> Layar `GeofenceAttendanceScreen` terbuka.
+    3. Simulasikan koordinat GPS kampus SMA Islam Sultan Agung 1 (-6.996160, 110.428510) via ADB.
+    4. Verifikasi tombol "Kirim Presensi" aktif (warna hijau zamrud) -> Ketuk tombol -> Verifikasi animasi sukses muncul.
+  - **Skenario 2 — Alur Ujian CBT & Ketahanan Offline:**
+    1. Masuk menu CBT -> Masukkan token ujian 6 digit -> Mulai ujian.
+    2. Jawab soal 1-5 -> Matikan koneksi internet via ADB (`svc wifi disable && svc data disable`).
+    3. Lanjutkan menjawab soal 6-10 -> Verifikasi tidak ada dialog error fatal yang menutup aplikasi.
+    4. Nyalakan kembali koneksi internet -> Verifikasi indikator sinkronisasi otomatis mengirim jawaban ke server.
+
+- [ ] **74.2 Network Validation & Payload Sniffing (Proxyman MCP):**
+  - Pasang aturan intercept otomatis:
+    - Verifikasi setiap request mutasi `POST /api/v1/attendance` menyertakan header `Idempotency-Key` bertipe UUID v4.
+    - Verifikasi endpoint `GET /api/v1/sync/catch-up` mengembalikan data dengan header `ETag` atau `Last-Modified` milidetik yang valid.
+    - Verifikasi payload respon error (HTTP 422, 500, 401) ditangkap rapi oleh `ApiResultCallAdapter` tanpa menyebabkan *NullPointerException* di Kotlin.
+
+- [ ] **74.3 Deteksi Memory Leak & Zero ANR Enforcement (ADB MCP):**
+  - Skrip ADB memantau memori aplikasi saat pengguna berpindah-pindah 20 layar secara cepat (*monkey stress testing*).
+  - Batas toleransi: Penggunaan RAM aplikasi maksimal 120MB pada perangkat 2GB RAM, 0 kejadian *Application Not Responding* (ANR), dan 0 *Dropped Frames* di atas 16.6ms pada mode 60Hz.
+
+---
+
+### 🔒 FASE 75: PRODUCTION HARDENING, APP SECURITY & GOOGLE PLAY STORE DISTRIBUTION `[RANCANGAN MASA DEPAN]`
+
+Langkah pemungkas untuk memastikan Sulaone siap dirilis secara resmi ke publik melalui Google Play Store dan didistribusikan secara aman kepada ribuan warga SMA Islam Sultan Agung 1 Semarang.
+
+- [ ] **75.1 R8 / ProGuard Full Optimization & Code Obfuscation:**
+  - Konfigurasi `proguard-rules.pro` yang agresif namun aman:
+    - Obfuscate seluruh nama kelas dan fungsi di layer domain, data, dan UI.
+    - Pertahankan model serialization KotlinX / Gson (`@Keep` pada seluruh data transfer objects).
+    - Amankan deklarasi native Hilt, SQLCipher, dan Biometric prompts.
+    - Strip seluruh pemanggilan `Log.d()`, `Log.v()`, dan `println()` pada build varian `release`.
+
+- [ ] **75.2 Keamanan Lanjutan & Anti-Tamper:**
+  - **Certificate Pinning:** Terapkan SSL Pinning di `OkHttpClient` untuk domain resmi sekolah (`api.sultanagung1.sch.id`), mencegah serangan MITM pada jaringan WiFi publik.
+  - **Play Integrity API:** Verifikasi integritas biner aplikasi saat start-up untuk memastikan aplikasi tidak dimodifikasi (*repackaged / cracked*).
+  - **Keystore-Backed Token Storage:** Kunci enkripsi sesi Sanctum di DataStore dilindungi oleh master key perangkat keras Android Keystore (TEE / StrongBox).
+
+- [ ] **75.3 Standarisasi Rilis Google Play Store (Target API 35 — Android 15):**
+  - Buat bundle Android App Bundle (`.aab`) teroptimasi dengan *Dynamic Feature Delivery* dan *Size Analyzer* (target ukuran download di bawah 15 MB).
+  - Dokumentasi kepatuhan privasi (Justifikasi Izin Lokasi di latar depan untuk Presensi GPS, Izin Kamera untuk QR Scanner, dan Kebijakan Privasi Data Anak di bawah umur sesuai standar Kemendikbud & Google Play Families Policy).
+  - Skrip rilis otomatis via GitHub Actions / GitHub MCP ke jalur pengujian internal (*Internal Testing Track*).
+
+---
+*Roadmap Master ini disahkan sebagai pedoman implementasi jangka panjang bagi arsitektur dan antarmuka aplikasi Android Sulaone (SISTA Mobile).*

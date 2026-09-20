@@ -1,6 +1,7 @@
 package com.sultanagung1.sista.core.network
 
 import android.content.Context
+import com.sultanagung1.sista.BuildConfig
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.Constants
 import com.sultanagung1.sista.data.api.*
@@ -24,6 +25,16 @@ class ApiClient(private val context: Context) {
         .addInterceptor(IdempotencyInterceptor())
         .addInterceptor(AuthInterceptor(sessionManager))
         .addInterceptor(loggingInterceptor)
+        .apply {
+            if (BuildConfig.DEBUG) {
+                try {
+                    val debugInterceptor = Class.forName(
+                        "com.sultanagung1.sista.core.debug.SistaNetworkInterceptor"
+                    ).getDeclaredConstructor().newInstance() as okhttp3.Interceptor
+                    addInterceptor(debugInterceptor)
+                } catch (_: Exception) { /* debug class not available in release */ }
+            }
+        }
         .connectTimeout(5, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
