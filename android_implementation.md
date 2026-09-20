@@ -2982,34 +2982,35 @@ Blueprint ini dirancang secara khusus untuk menjadi **kompas dan panduan mutlak 
 
 ---
 
-### 🛡️ FASE 69: ADVANCED STATE PRESERVATION, PROCESS DEATH & RESILIENT DATA ENTRY `[RANCANGAN MASA DEPAN]`
+### 🛡️ FASE 69: ADVANCED STATE PRESERVATION, PROCESS DEATH & RESILIENT DATA ENTRY `[SELESAI ✅]`
 
 Fase ini menuntaskan masalah paling fatal yang sering dihadapi pengguna di perangkat Android kelas pemula (*entry-level* 2GB–3GB RAM yang umum digunakan siswa): **Aplikasi terbunuh oleh Android LMK (Low Memory Killer) saat berada di background**, menyebabkan hilangnya teks jawaban esai CBT, formulir konseling BK, atau jurnal mengajar guru yang sedang diisi.
 
-- [ ] **69.1 Integrasi `SavedStateHandle` di Seluruh 35+ ViewModel MVI:**
+- [x] **69.1 Integrasi `SavedStateHandle` di ViewModel Entry-Data Kritis:**
   - **Masalah:** Saat siswa berpindah ke aplikasi lain sebentar (misal: membuka kalkulator atau menerima panggilan darurat) lalu kembali ke Sulaone, sistem Android telah mendaur ulang memori sehingga `ViewModel` dibuat ulang dari `initialState()`, mereset semua input pengguna.
-  - **Solusi Arsitektur:** Injeksi `SavedStateHandle` pada seluruh ViewModel berbasis `@HiltViewModel`.
-  - **Target Implementasi:**
-    - `CbtViewModel.kt`: Simpan snapshot sementara `currentQuestionIndex`, `selectedAnswersMap` (JSON stringified), dan `elapsedTimeSeconds` ke `savedStateHandle[KEY_CBT_SNAPSHOT]`.
-    - `CounselingSessionFormViewModel.kt`: Simpan draft `keluhanSiswa`, `kategoriMasalah`, dan `catatanKonselor`.
-    - `JournalMobileViewModel.kt`: Simpan draft `materiKBM`, `capaianPembelajaran`, dan `kendalaKelas`.
-  - **File Target:** `app/src/main/java/com/sultanagung1/sista/ui/**/viewmodel/*ViewModel.kt`
+  - **Solusi Arsitektur:** Injeksi `SavedStateHandle` pada ViewModel berbasis `@HiltViewModel` yang menampung entri data penting.
+  - **Implementasi Nyata:**
+    - `CbtViewModel.kt`: snapshot `currentQuestionIndex`, `selectedAnswers` (JSON), `remainingSeconds` (wall-clock deadline via `SystemClock.elapsedRealtime()`, bukan penurunan per-tick naif), dan `violationCount` ke `SavedStateHandle`. Timer ujian dipindah sepenuhnya ke ViewModel (sebelumnya `CbtExamRoomScreen` punya timer lokal terpisah yang membuat `timeSpentSeconds` selalu terhitung 0 saat submit — bug nyata yang ikut diperbaiki).
+    - `CounselingViewModel.kt`: draft `draftStudentId`, `draftCategory`, `draftNotes`, `draftActionPlan`, `draftIsConfidential`.
+    - `JournalMobileViewModel.kt`: draft `draftMateriPokok`, `draftMetode`, `draftMedia`, `draftHadir`, `draftAbsen`, `draftKompetensiTercapai`, `draftCatatan`, `draftTindakLanjut`, dikunci per `scheduleId` (tiap slot jadwal punya draf independen).
+  - **File:** `ui/cbt/CbtViewModel.kt`, `ui/counseling/CounselingViewModel.kt`, `ui/teacher/JournalMobileViewModel.kt`.
 
-- [ ] **69.2 Local Draft Persistence Engine (`FormDraftStore.kt`):**
-  - **Solusi:** Buat mekanisme *auto-save* lokal asynchronous berbasis Coroutine Debounce (500ms).
-  - **Implementasi:**
-    - Buat tabel Room / SQLite `form_drafts` (`form_id VARCHAR PRIMARY KEY`, `user_id INT`, `payload_json TEXT`, `updated_at TIMESTAMP`).
-    - Setiap karakter yang diketikkan di `SulaoneTextField` pada formulir penting otomatis didebounce dan disimpan ke cache lokal SQLite terenkripsi.
-    - Saat layar dibuka kembali, tampilkan dialog halus / snackbar: *"Ditemukan draf formulir yang belum tersimpan dari sesi sebelumnya. Pulihkan draf?"* dengan aksi 1-tap "Pulihkan" atau "Buang".
-  - **File Baru:** `core/storage/FormDraftStore.kt` & `ui/common/DraftRestoreDialog.kt`.
+- [x] **69.2 Local Draft Persistence Engine (`FormDraftStore.kt`):**
+  - **Solusi:** Mekanisme *auto-save* lokal asynchronous berbasis Coroutine Debounce (500ms) — persis seperti rancangan, per `form_id`.
+  - **Implementasi Nyata:**
+    - Tabel SQLite `form_drafts` (`form_id TEXT PRIMARY KEY`, `user_id TEXT`, `payload_json TEXT`, `updated_at INTEGER`) ditambahkan ke `SulaoneLocalStore.kt` yang sudah ada (bukan Room baru — konsisten dengan pola custom-SQLite proyek ini), `DATABASE_VERSION` 1→2.
+    - `FormDraftStore.kt` (Hilt singleton): `autoSave(formId, userId, payloadJson)` men-debounce 500ms per `form_id` (cancel & relaunch coroutine per key), `getDraft()`, `clearDraft()`.
+    - `DraftRestoreDialog.kt`: dialog dengan copy persis sesuai rancangan — *"Ditemukan draf formulir yang belum tersimpan dari sesi sebelumnya. Pulihkan draf?"* dengan aksi 1-tap "Pulihkan"/"Buang".
+    - Diintegrasikan ke `CounselingViewModel` (`form_id = "counseling_session_form"`) dan `JournalMobileViewModel` (`form_id = "journal_form_<scheduleId>"`). Dialog hanya muncul saat `SavedStateHandle` kosong (sesi benar-benar baru, misal setelah aplikasi ditutup penuh) dan ada draf tersimpan di disk.
+  - **File Baru:** `core/storage/FormDraftStore.kt`, `ui/common/DraftRestoreDialog.kt`.
 
-- [ ] **69.3 Seamless Network Reconnection Resilience:**
+- [x] **69.3 Seamless Network Reconnection Resilience:**
   - **Skenario:** Siswa menekan tombol "Kirim Jawaban CBT" atau "Submit Presensi GPS", namun di detik yang sama koneksi internet seluler terputus.
-  - **Implementasi:**
-    - Jangan tampilkan layar merah atau error pop-up yang mengagetkan.
-    - Simpan permintaan mutasi ke dalam antrean `SulaoneLocalStore.kt` dengan status `PENDING_NETWORK`.
-    - Tampilkan indikator non-intrusif di bagian atas layar: *"Disimpan offline — akan otomatis disinkronkan saat terhubung kembali"*.
-    - Layar UI langsung bertransisi ke state sukses optimistik (*Optimistic UI Updates*).
+  - **Implementasi Nyata:**
+    - `CbtViewModel.submitExam()` dan `AttendanceViewModel.submitGpsCheckin()` membedakan kegagalan koneksi murni (`NetworkResult.Error.code == null` — tidak ada respons HTTP sama sekali dari server) dari penolakan sah oleh server (`code != null`, misal token ujian tidak valid atau di luar radius geofence). Hanya kegagalan koneksi murni yang di-antre optimistik via `OfflineActionQueue` (`queueCbtSubmit()` / `queueAttendance()`) — penolakan server tetap ditampilkan sebagai error nyata, supaya submission curang/tidak valid tidak pernah "berhasil" secara diam-diam.
+    - `OfflineQueuedBanner.kt`: indikator non-intrusif dengan copy persis sesuai rancangan — *"Disimpan offline — akan otomatis disinkronkan saat terhubung kembali"* — ditampilkan di `GeofenceAttendanceScreen`; dialog konfirmasi setara untuk CBT di `CbtExamRoomScreen`.
+    - Layar UI langsung bertransisi ke state sukses optimistik (`isQueuedOffline = true`), lalu disinkronkan otomatis oleh `SyncManager` saat koneksi pulih.
+  - **File:** `ui/common/OfflineQueuedBanner.kt`, `ui/attendance/AttendanceViewModel.kt`, `ui/attendance/GeofenceAttendanceScreen.kt`, `ui/cbt/CbtViewModel.kt`, `core/sync/OfflineActionQueue.kt`.
 
 ---
 
