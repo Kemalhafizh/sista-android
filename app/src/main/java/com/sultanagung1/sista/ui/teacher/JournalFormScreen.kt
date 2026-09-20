@@ -31,14 +31,19 @@ fun JournalFormScreen(
     val schedule = viewModel.getScheduleById(scheduleId)
     val context = LocalContext.current
 
-    var materiPokok by remember { mutableStateOf(schedule?.topic ?: "") }
-    var selectedMetode by remember { mutableStateOf(schedule?.method ?: "Problem Based Learning (PBL)") }
-    var selectedMedia by remember { mutableStateOf(schedule?.media ?: "Smart Proyektor & E-Learning") }
-    var hadirCount by remember { mutableStateOf((schedule?.attendancePresent ?: 35).toString()) }
-    var absenCount by remember { mutableStateOf((schedule?.attendanceAbsent ?: 1).toString()) }
-    var isKompetensiTercapai by remember { mutableStateOf(schedule?.isCompetencyAchieved ?: true) }
-    var catatanKelas by remember { mutableStateOf(schedule?.notes ?: "") }
-    var tindakLanjut by remember { mutableStateOf(schedule?.followUp ?: "") }
+    // FASE 69.1: draft fields live in the ViewModel (SavedStateHandle-backed) so an
+    // in-progress KBM journal entry survives process death instead of vanishing.
+    LaunchedEffect(scheduleId) {
+        viewModel.startDraftFor(scheduleId, schedule)
+    }
+    val materiPokok = uiState.draftMateriPokok
+    val selectedMetode = uiState.draftMetode
+    val selectedMedia = uiState.draftMedia
+    val hadirCount = uiState.draftHadir
+    val absenCount = uiState.draftAbsen
+    val isKompetensiTercapai = uiState.draftKompetensiTercapai
+    val catatanKelas = uiState.draftCatatan
+    val tindakLanjut = uiState.draftTindakLanjut
 
     val metodeOptions = listOf(
         "Ceramah & Tanya Jawab",
@@ -134,7 +139,7 @@ fun JournalFormScreen(
 
                         OutlinedTextField(
                             value = materiPokok,
-                            onValueChange = { materiPokok = it },
+                            onValueChange = { viewModel.updateDraftMateriPokok(it) },
                             label = { Text("Materi Pokok / Sub-Bab *") },
                             placeholder = { Text("Contoh: Turunan Fungsi Trigonometri & Titik Stasioner") },
                             modifier = Modifier.fillMaxWidth(),
@@ -146,13 +151,13 @@ fun JournalFormScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedMetode = met }
+                                    .clickable { viewModel.updateDraftMetode(met) }
                                     .padding(vertical = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = selectedMetode == met,
-                                    onClick = { selectedMetode = met }
+                                    onClick = { viewModel.updateDraftMetode(met) }
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(met, fontSize = 12.sp)
@@ -164,13 +169,13 @@ fun JournalFormScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedMedia = med }
+                                    .clickable { viewModel.updateDraftMedia(med) }
                                     .padding(vertical = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = selectedMedia == med,
-                                    onClick = { selectedMedia = med }
+                                    onClick = { viewModel.updateDraftMedia(med) }
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(med, fontSize = 12.sp)
@@ -194,14 +199,14 @@ fun JournalFormScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedTextField(
                                 value = hadirCount,
-                                onValueChange = { hadirCount = it },
+                                onValueChange = { viewModel.updateDraftHadir(it) },
                                 label = { Text("Jumlah Hadir") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true
                             )
                             OutlinedTextField(
                                 value = absenCount,
-                                onValueChange = { absenCount = it },
+                                onValueChange = { viewModel.updateDraftAbsen(it) },
                                 label = { Text("Jumlah Tidak Hadir") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true
@@ -219,14 +224,14 @@ fun JournalFormScreen(
                             }
                             Switch(
                                 checked = isKompetensiTercapai,
-                                onCheckedChange = { isKompetensiTercapai = it },
+                                onCheckedChange = { viewModel.updateDraftKompetensi(it) },
                                 colors = SwitchDefaults.colors(checkedThumbColor = Emerald700)
                             )
                         }
 
                         OutlinedTextField(
                             value = catatanKelas,
-                            onValueChange = { catatanKelas = it },
+                            onValueChange = { viewModel.updateDraftCatatan(it) },
                             label = { Text("Kendala Pembelajaran & Catatan Khusus") },
                             placeholder = { Text("Contoh: Terdapat siswa yang izin ke UKS / butuh pendampingan tambahan.") },
                             modifier = Modifier.fillMaxWidth(),
@@ -235,7 +240,7 @@ fun JournalFormScreen(
 
                         OutlinedTextField(
                             value = tindakLanjut,
-                            onValueChange = { tindakLanjut = it },
+                            onValueChange = { viewModel.updateDraftTindakLanjut(it) },
                             label = { Text("Rencana Tindak Lanjut KBM") },
                             placeholder = { Text("Contoh: Remedial bagi 3 siswa dan tugas kelompok lanjutan.") },
                             modifier = Modifier.fillMaxWidth(),
@@ -249,8 +254,8 @@ fun JournalFormScreen(
             item {
                 Button(
                     onClick = {
-                        val present = hadirCount.toIntOrNull() ?: 35
-                        val absent = absenCount.toIntOrNull() ?: 1
+                        val present = hadirCount.toIntOrNull() ?: return@Button
+                        val absent = absenCount.toIntOrNull() ?: return@Button
                         viewModel.submitJournal(
                             scheduleId = scheduleId,
                             materiPokok = materiPokok,
@@ -272,7 +277,7 @@ fun JournalFormScreen(
                         .height(52.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
-                    enabled = !uiState.isSubmitting
+                    enabled = !uiState.isSubmitting && materiPokok.isNotBlank() && hadirCount.toIntOrNull() != null && absenCount.toIntOrNull() != null
                 ) {
                     if (uiState.isSubmitting) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)

@@ -40,6 +40,11 @@ class OfflineActionQueue(
         return localStore.enqueueAction("TEACHING_JOURNAL", request)
     }
 
+    /** FASE 69.3: queues a CBT submission that failed purely due to connectivity, so pressing "Submit" during a dropout still guarantees delivery once back online. */
+    fun queueCbtSubmit(request: CbtSubmitRequest): String {
+        return localStore.enqueueAction("CBT_SUBMIT", request)
+    }
+
     suspend fun processPendingQueue(): Int = withContext(Dispatchers.IO) {
         // Enforce single-worker execution with Mutex
         queueMutex.withLock {
@@ -70,6 +75,12 @@ class OfflineActionQueue(
                         "TEACHING_JOURNAL" -> {
                             val req = gson.fromJson(action.payloadJson, TeachingJournalCreateRequest::class.java)
                             val response = apiClient.teacherApi.storeTeachingJournal(req)
+                            statusCode = response.code()
+                            isSuccess = response.isSuccessful
+                        }
+                        "CBT_SUBMIT" -> {
+                            val req = gson.fromJson(action.payloadJson, CbtSubmitRequest::class.java)
+                            val response = apiClient.cbtApi.submitExam(req.examId, req)
                             statusCode = response.code()
                             isSuccess = response.isSuccessful
                         }

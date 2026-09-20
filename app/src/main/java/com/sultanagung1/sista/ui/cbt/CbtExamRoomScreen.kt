@@ -38,7 +38,8 @@ import com.sultanagung1.sista.core.security.CbtAntiCheatEngine
 import com.sultanagung1.sista.core.security.ExamViolationType
 import com.sultanagung1.sista.ui.cbt.components.CbtImageViewer
 import com.sultanagung1.sista.ui.cbt.components.CbtLatexMathView
-import kotlinx.coroutines.delay
+// Matches the previous hardcoded default; no per-exam duration field exists in CbtExamQuestion yet.
+private const val EXAM_DURATION_SECONDS = 5400L
 
 @Composable
 fun CbtExamRoomScreen(
@@ -54,7 +55,9 @@ fun CbtExamRoomScreen(
     val antiCheatState by antiCheatEngine.antiCheatState.collectAsState()
 
     val uiState by viewModel.uiState.collectAsState()
-    var remainingSeconds by remember { mutableLongStateOf(5400L) }
+    // FASE 69.1: the countdown now lives in the ViewModel (SavedStateHandle-backed,
+    // wall-clock based) so it survives process death instead of resetting to 5400s.
+    val remainingSeconds = uiState.remainingSeconds
     var showSubmitDialog by remember { mutableStateOf(false) }
     var showExitWarningDialog by remember { mutableStateOf(false) }
 
@@ -154,14 +157,13 @@ fun CbtExamRoomScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadQuestions(examId)
-        while (remainingSeconds > 0) {
-            delay(1000)
-            if (!antiCheatState.isExamLocked) {
-                remainingSeconds--
-            }
-        }
+    // FASE 69.1: the ViewModel owns the countdown (wall-clock deadline persisted in
+    // SavedStateHandle), so this effect only starts it once instead of ticking locally.
+    LaunchedEffect(examId) {
+        viewModel.startExamTimer(EXAM_DURATION_SECONDS)
+    }
+    DisposableEffect(Unit) {
+        onDispose { viewModel.pauseExamTimer() }
     }
 
     val questions = uiState.currentExamQuestions
@@ -770,7 +772,6 @@ fun CbtExamRoomScreen(
                         onClick = {
                             showSubmitDialog = false
                             viewModel.submitExam(examId, vault)
-                            onNavigateBack()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
                     ) {
@@ -780,6 +781,35 @@ fun CbtExamRoomScreen(
                 dismissButton = {
                     TextButton(onClick = { showSubmitDialog = false }) {
                         Text("Periksa Lagi")
+                    }
+                }
+            )
+        }
+
+        // FASE 69.3: honest confirmation after submit — tells the student explicitly
+        // when their answers were queued offline instead of silently pretending a
+        // normal successful submission happened.
+        if (uiState.isSubmitted) {
+            AlertDialog(
+                onDismissRequest = onNavigateBack,
+                title = {
+                    Text(if (uiState.isQueuedOffline) "Disimpan Offline" else "Ujian Terkumpul")
+                },
+                text = {
+                    Text(
+                        if (uiState.isQueuedOffline) {
+                            "Jawaban Anda tersimpan di perangkat karena tidak ada koneksi internet saat mengumpulkan. Jawaban akan otomatis disinkronkan ke server begitu perangkat terhubung kembali."
+                        } else {
+                            "Lembar jawaban Anda berhasil dikumpulkan ke server."
+                        }
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = onNavigateBack,
+                        colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
+                    ) {
+                        Text("Selesai")
                     }
                 }
             )

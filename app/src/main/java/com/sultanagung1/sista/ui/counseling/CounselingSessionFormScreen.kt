@@ -25,14 +25,19 @@ fun CounselingSessionFormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    var studentIdText by remember {
-        mutableStateOf(if (prefilledStudentId != null && prefilledStudentId > 0) prefilledStudentId.toString() else "101")
+    // FASE 69.1: draft fields live in the ViewModel (SavedStateHandle-backed) so an
+    // in-progress counseling note survives process death instead of vanishing.
+    LaunchedEffect(prefilledStudentId) {
+        if (prefilledStudentId != null && prefilledStudentId > 0 && uiState.draftStudentId.isBlank()) {
+            viewModel.updateDraftStudentId(prefilledStudentId.toString())
+        }
     }
     val categories = listOf("akademik", "pribadi", "sosial", "karir", "kedisiplinan")
-    var selectedCategory by remember { mutableStateOf("akademik") }
-    var notesText by remember { mutableStateOf("") }
-    var actionPlanText by remember { mutableStateOf("") }
-    var isConfidential by remember { mutableStateOf(true) }
+    val studentIdText = uiState.draftStudentId
+    val selectedCategory = uiState.draftCategory
+    val notesText = uiState.draftNotes
+    val actionPlanText = uiState.draftActionPlan
+    val isConfidential = uiState.draftIsConfidential
 
     Scaffold(
         topBar = {
@@ -53,7 +58,7 @@ fun CounselingSessionFormScreen(
             // Student ID Field
             OutlinedTextField(
                 value = studentIdText,
-                onValueChange = { studentIdText = it },
+                onValueChange = { viewModel.updateDraftStudentId(it) },
                 label = { Text("ID Siswa / Nomor Induk") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Emerald700) },
                 modifier = Modifier.fillMaxWidth(),
@@ -76,7 +81,7 @@ fun CounselingSessionFormScreen(
                     categories.forEach { cat ->
                         FilterChip(
                             selected = selectedCategory == cat,
-                            onClick = { selectedCategory = cat },
+                            onClick = { viewModel.updateDraftCategory(cat) },
                             label = { Text(cat.replaceFirstChar { it.uppercase() }, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Emerald700,
@@ -90,7 +95,7 @@ fun CounselingSessionFormScreen(
             // Session Notes
             OutlinedTextField(
                 value = notesText,
-                onValueChange = { notesText = it },
+                onValueChange = { viewModel.updateDraftNotes(it) },
                 label = { Text("Catatan Hasil Konseling & Pembahasan") },
                 placeholder = { Text("Uraikan dinamika masalah, respon siswa, dan akar persoalan...") },
                 modifier = Modifier
@@ -102,7 +107,7 @@ fun CounselingSessionFormScreen(
             // Action Plan
             OutlinedTextField(
                 value = actionPlanText,
-                onValueChange = { actionPlanText = it },
+                onValueChange = { viewModel.updateDraftActionPlan(it) },
                 label = { Text("Rencana Tindak Lanjut (Action Plan)") },
                 placeholder = { Text("Langkah konkret siswa, peran wali kelas/orang tua, jadwal evaluasi...") },
                 modifier = Modifier
@@ -143,7 +148,7 @@ fun CounselingSessionFormScreen(
                     }
                     Switch(
                         checked = isConfidential,
-                        onCheckedChange = { isConfidential = it },
+                        onCheckedChange = { viewModel.updateDraftConfidential(it) },
                         colors = SwitchDefaults.colors(checkedThumbColor = Emerald800, checkedTrackColor = Emerald200)
                     )
                 }
@@ -153,7 +158,7 @@ fun CounselingSessionFormScreen(
 
             Button(
                 onClick = {
-                    val sId = studentIdText.toLongOrNull() ?: 1L
+                    val sId = studentIdText.toLongOrNull() ?: return@Button
                     viewModel.createSession(
                         studentId = sId,
                         category = selectedCategory,
@@ -164,7 +169,7 @@ fun CounselingSessionFormScreen(
                         onNavigateBack()
                     }
                 },
-                enabled = !uiState.isSubmitting && notesText.isNotBlank(),
+                enabled = !uiState.isSubmitting && notesText.isNotBlank() && studentIdText.toLongOrNull() != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

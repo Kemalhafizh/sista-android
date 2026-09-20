@@ -3,6 +3,7 @@ package com.sultanagung1.sista.ui.teacher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.mvi.UiEvent
@@ -34,7 +35,18 @@ data class JournalMobileUiState(
     ),
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    // FASE 69.1: an in-progress KBM journal entry (materi/catatan/tindak lanjut)
+    // survives process death instead of resetting to blank, keyed by scheduleId.
+    val draftScheduleId: String = "",
+    val draftMateriPokok: String = "",
+    val draftMetode: String = "",
+    val draftMedia: String = "",
+    val draftHadir: String = "",
+    val draftAbsen: String = "",
+    val draftKompetensiTercapai: Boolean = true,
+    val draftCatatan: String = "",
+    val draftTindakLanjut: String = ""
 ) : UiState {
     val filledCount: Int
         get() = schedules.count { it.isFilled }
@@ -59,14 +71,82 @@ data class JournalMobileUiState(
 
 @HiltViewModel
 class JournalMobileViewModel @Inject constructor(
-    private val journalRepository: TeachingJournalRepository
+    private val journalRepository: TeachingJournalRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(JournalMobileUiState())
+    private val _uiState = MutableStateFlow(
+        JournalMobileUiState(
+            draftScheduleId = savedStateHandle.get<String>(KEY_DRAFT_SCHEDULE_ID) ?: "",
+            draftMateriPokok = savedStateHandle.get<String>(KEY_DRAFT_MATERI) ?: "",
+            draftMetode = savedStateHandle.get<String>(KEY_DRAFT_METODE) ?: "",
+            draftMedia = savedStateHandle.get<String>(KEY_DRAFT_MEDIA) ?: "",
+            draftHadir = savedStateHandle.get<String>(KEY_DRAFT_HADIR) ?: "",
+            draftAbsen = savedStateHandle.get<String>(KEY_DRAFT_ABSEN) ?: "",
+            draftKompetensiTercapai = savedStateHandle.get<Boolean>(KEY_DRAFT_KOMPETENSI) ?: true,
+            draftCatatan = savedStateHandle.get<String>(KEY_DRAFT_CATATAN) ?: "",
+            draftTindakLanjut = savedStateHandle.get<String>(KEY_DRAFT_TINDAK_LANJUT) ?: ""
+        )
+    )
     val uiState: StateFlow<JournalMobileUiState> = _uiState.asStateFlow()
 
     init {
         loadSchedules()
+    }
+
+    /** Loads the draft for [scheduleId], or seeds it from the (possibly already-filled) schedule on first entry. */
+    fun startDraftFor(scheduleId: String, schedule: JournalScheduleItem?) {
+        if (_uiState.value.draftScheduleId == scheduleId) return
+        savedStateHandle[KEY_DRAFT_SCHEDULE_ID] = scheduleId
+        savedStateHandle[KEY_DRAFT_MATERI] = schedule?.topic ?: ""
+        savedStateHandle[KEY_DRAFT_METODE] = schedule?.method ?: "Problem Based Learning (PBL)"
+        savedStateHandle[KEY_DRAFT_MEDIA] = schedule?.media ?: "Smart Proyektor & E-Learning"
+        savedStateHandle[KEY_DRAFT_HADIR] = (schedule?.attendancePresent ?: 0).toString()
+        savedStateHandle[KEY_DRAFT_ABSEN] = (schedule?.attendanceAbsent ?: 0).toString()
+        savedStateHandle[KEY_DRAFT_KOMPETENSI] = schedule?.isCompetencyAchieved ?: true
+        savedStateHandle[KEY_DRAFT_CATATAN] = schedule?.notes ?: ""
+        savedStateHandle[KEY_DRAFT_TINDAK_LANJUT] = schedule?.followUp ?: ""
+        _uiState.update {
+            it.copy(
+                draftScheduleId = scheduleId,
+                draftMateriPokok = schedule?.topic ?: "",
+                draftMetode = schedule?.method ?: "Problem Based Learning (PBL)",
+                draftMedia = schedule?.media ?: "Smart Proyektor & E-Learning",
+                draftHadir = (schedule?.attendancePresent ?: 0).toString(),
+                draftAbsen = (schedule?.attendanceAbsent ?: 0).toString(),
+                draftKompetensiTercapai = schedule?.isCompetencyAchieved ?: true,
+                draftCatatan = schedule?.notes ?: "",
+                draftTindakLanjut = schedule?.followUp ?: ""
+            )
+        }
+    }
+
+    fun updateDraftMateriPokok(v: String) { savedStateHandle[KEY_DRAFT_MATERI] = v; _uiState.update { it.copy(draftMateriPokok = v) } }
+    fun updateDraftMetode(v: String) { savedStateHandle[KEY_DRAFT_METODE] = v; _uiState.update { it.copy(draftMetode = v) } }
+    fun updateDraftMedia(v: String) { savedStateHandle[KEY_DRAFT_MEDIA] = v; _uiState.update { it.copy(draftMedia = v) } }
+    fun updateDraftHadir(v: String) { savedStateHandle[KEY_DRAFT_HADIR] = v; _uiState.update { it.copy(draftHadir = v) } }
+    fun updateDraftAbsen(v: String) { savedStateHandle[KEY_DRAFT_ABSEN] = v; _uiState.update { it.copy(draftAbsen = v) } }
+    fun updateDraftKompetensi(v: Boolean) { savedStateHandle[KEY_DRAFT_KOMPETENSI] = v; _uiState.update { it.copy(draftKompetensiTercapai = v) } }
+    fun updateDraftCatatan(v: String) { savedStateHandle[KEY_DRAFT_CATATAN] = v; _uiState.update { it.copy(draftCatatan = v) } }
+    fun updateDraftTindakLanjut(v: String) { savedStateHandle[KEY_DRAFT_TINDAK_LANJUT] = v; _uiState.update { it.copy(draftTindakLanjut = v) } }
+
+    private fun clearDraft() {
+        listOf(KEY_DRAFT_SCHEDULE_ID, KEY_DRAFT_MATERI, KEY_DRAFT_METODE, KEY_DRAFT_MEDIA, KEY_DRAFT_HADIR, KEY_DRAFT_ABSEN, KEY_DRAFT_CATATAN, KEY_DRAFT_TINDAK_LANJUT)
+            .forEach { savedStateHandle.remove<String>(it) }
+        savedStateHandle.remove<Boolean>(KEY_DRAFT_KOMPETENSI)
+        _uiState.update { it.copy(draftScheduleId = "", draftMateriPokok = "", draftMetode = "", draftMedia = "", draftHadir = "", draftAbsen = "", draftKompetensiTercapai = true, draftCatatan = "", draftTindakLanjut = "") }
+    }
+
+    private companion object {
+        const val KEY_DRAFT_SCHEDULE_ID = "journal_draft_schedule_id"
+        const val KEY_DRAFT_MATERI = "journal_draft_materi"
+        const val KEY_DRAFT_METODE = "journal_draft_metode"
+        const val KEY_DRAFT_MEDIA = "journal_draft_media"
+        const val KEY_DRAFT_HADIR = "journal_draft_hadir"
+        const val KEY_DRAFT_ABSEN = "journal_draft_absen"
+        const val KEY_DRAFT_KOMPETENSI = "journal_draft_kompetensi"
+        const val KEY_DRAFT_CATATAN = "journal_draft_catatan"
+        const val KEY_DRAFT_TINDAK_LANJUT = "journal_draft_tindak_lanjut"
     }
 
     fun onEvent(event: JournalMobileUiEvent) {
@@ -207,6 +287,7 @@ class JournalMobileViewModel @Inject constructor(
             }
 
             updateScheduleState(updated)
+            clearDraft()
             _uiState.update {
                 it.copy(
                     isSubmitting = false,
