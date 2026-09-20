@@ -12,6 +12,7 @@ import com.sultanagung1.sista.core.mvi.UiState
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.FormDraftStore
 import com.sultanagung1.sista.core.storage.SessionManager
+import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.*
 import com.sultanagung1.sista.data.repository.TeachingJournalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,9 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
 /** Serialized shape written to [FormDraftStore] by [JournalMobileViewModel], keyed per schedule slot. */
 private data class JournalDraftPayload(
@@ -249,17 +247,6 @@ class JournalMobileViewModel @Inject constructor(
         const val KEY_DRAFT_KOMPETENSI = "journal_draft_kompetensi"
         const val KEY_DRAFT_CATATAN = "journal_draft_catatan"
         const val KEY_DRAFT_TINDAK_LANJUT = "journal_draft_tindak_lanjut"
-
-        private val INDONESIAN_DAYS = arrayOf("Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu")
-        private val ISO_DATE = SimpleDateFormat("yyyy-MM-dd", Locale("id", "ID"))
-
-        fun todayDayName(): String = INDONESIAN_DAYS[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1]
-        fun todayIso(): String = ISO_DATE.format(Calendar.getInstance().time)
-        fun daysAgoIso(days: Int): String {
-            val cal = Calendar.getInstance()
-            cal.add(Calendar.DAY_OF_YEAR, -days)
-            return ISO_DATE.format(cal.time)
-        }
     }
 
     fun onEvent(event: JournalMobileUiEvent) {
@@ -306,20 +293,20 @@ class JournalMobileViewModel @Inject constructor(
     }
 
     private fun rebuildState() {
-        val today = todayIso()
+        val today = DateUtils.todayIso()
         val todayEntries = latestJournals.filter { it.teachingDate == today }
         val todaySlots = latestSchedule
-            .filter { it.day.equals(todayDayName(), ignoreCase = true) }
+            .filter { it.day.equals(DateUtils.todayDayNameIndonesian(), ignoreCase = true) }
             .sortedBy { it.sessionStart }
             .mapIndexed { index, slot ->
                 val matched = todayEntries.firstOrNull { it.subjectId == slot.subjectId && it.classroomId == slot.classroomId }
                 slot.toJournalScheduleItem(jamKe = index + 1, entry = matched, dateOverride = today)
             }
 
-        val weekEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= daysAgoIso(7) }
+        val weekEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= DateUtils.daysAgoIso(7) }
             .sortedByDescending { it.teachingDate }
             .map { it.toJournalScheduleItem() }
-        val monthEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= daysAgoIso(30) }
+        val monthEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= DateUtils.daysAgoIso(30) }
             .sortedByDescending { it.teachingDate }
             .map { it.toJournalScheduleItem() }
 
@@ -416,7 +403,7 @@ class JournalMobileViewModel @Inject constructor(
                 StoreJournalRequest(
                     subjectId = slot.subjectId,
                     classroomId = slot.classroomId,
-                    teachingDate = slot.date ?: todayIso(),
+                    teachingDate = slot.date ?: DateUtils.todayIso(),
                     jamKe = slot.jamKe,
                     topic = materiPokok,
                     learningActivity = media,

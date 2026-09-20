@@ -27,20 +27,19 @@ import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
-import com.sultanagung1.sista.data.model.TeacherScheduleItem
-import com.sultanagung1.sista.data.model.TeachingJournalItem
+import com.sultanagung1.sista.data.model.TeacherScheduleSlot
+import com.sultanagung1.sista.data.model.TeachingJournalEntry
 import com.sultanagung1.sista.ui.common.HeaderMetadataChip
 import com.sultanagung1.sista.ui.common.SulaoneExecutiveHeader
 
 @Composable
 fun TeacherDashboardScreen(
     viewModel: TeacherViewModel,
-    onNavigateToAttendance: (String, String) -> Unit, // scheduleId, className
-    onNavigateToJournal: (String, String, String) -> Unit, // scheduleId, className, subjectName
+    onNavigateToAttendance: (classroomId: Long, scheduleId: Long, className: String) -> Unit,
+    onNavigateToJournal: () -> Unit,
     onNavigateRoute: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val data = uiState.dashboardData
 
     Scaffold { paddingValues ->
         LazyColumn(
@@ -53,7 +52,7 @@ fun TeacherDashboardScreen(
             // 1. Executive Top App Bar (Unified Professional Design)
             item {
                 SulaoneExecutiveHeader(
-                    userName = data?.teacherName ?: "Ustadz Ahmad Fauzi, M.Pd",
+                    userName = uiState.teacherName.ifBlank { "Guru" },
                     titlePrefix = "Assalamu'alaikum,",
                     chips = listOf(
                         HeaderMetadataChip(
@@ -73,17 +72,27 @@ fun TeacherDashboardScreen(
                             textColor = Emerald800
                         ),
                         HeaderMetadataChip(
-                            text = "NIP: ${data?.nip ?: "198504122010011002"}",
+                            text = if (uiState.nip.isNotBlank()) "NIP: ${uiState.nip}" else "NIP belum diatur",
                             containerColor = Slate100,
                             borderColor = Slate200,
                             textColor = Slate700
                         )
                     ),
-                    unreadNotificationsCount = 2,
                     onAvatarClick = { onNavigateRoute("profile") },
                     onQrClick = { onNavigateRoute("scanner") },
                     onNotificationClick = { onNavigateRoute("notifications") }
                 )
+            }
+
+            if (uiState.errorMessage != null) {
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        SulaoneErrorBanner(
+                            message = uiState.errorMessage ?: "Gagal memuat data dashboard guru.",
+                            onRetry = { viewModel.loadDashboard() }
+                        )
+                    }
+                }
             }
 
             // 2. 2x2 Bento Metric Cards (Key Teaching KPIs)
@@ -99,8 +108,8 @@ fun TeacherDashboardScreen(
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
                             title = "Beban Mengajar",
-                            value = "${data?.teachingHoursThisWeek ?: 24} Jam",
-                            subtitle = "Target 24 Jam/Mgg",
+                            value = "${uiState.teachingHoursThisWeek.let { if (it % 1.0 == 0.0) it.toInt().toString() else String.format("%.1f", it) }} Jam",
+                            subtitle = "Total Jadwal Mingguan",
                             badgeText = "Minggu Ini",
                             badgeColor = Emerald700,
                             badgeBackground = Emerald50,
@@ -112,9 +121,9 @@ fun TeacherDashboardScreen(
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
                             title = "Kelas Diampu",
-                            value = "${data?.totalClasses ?: 5} Rombel",
-                            subtitle = "Fisika & Matematika",
-                            badgeText = "Ganjil 25/26",
+                            value = "${uiState.totalClasses} Rombel",
+                            subtitle = "Rombongan Belajar",
+                            badgeText = "Aktif",
                             badgeColor = AccentBlue,
                             badgeBackground = AccentBlue.copy(alpha = 0.12f),
                             icon = Icons.Default.Groups,
@@ -130,7 +139,7 @@ fun TeacherDashboardScreen(
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
                             title = "Jadwal Hari Ini",
-                            value = "${data?.todaySchedules?.size ?: 0} Sesi",
+                            value = "${uiState.todaySchedules.size} Sesi",
                             subtitle = "Tatap Muka Kelas",
                             badgeText = "Aktif",
                             badgeColor = Gold700,
@@ -142,10 +151,10 @@ fun TeacherDashboardScreen(
 
                         SulaoneMetricCard(
                             modifier = Modifier.weight(1f),
-                            title = "Jurnal Terisi",
-                            value = "${data?.recentJournals?.size ?: 0} Jurnal",
-                            subtitle = "Tersimpan di Cloud",
-                            badgeText = "Lengkap",
+                            title = "Jurnal Terbaru",
+                            value = "${uiState.recentJournals.size} Jurnal",
+                            subtitle = "Tersimpan di Server",
+                            badgeText = "Terkini",
                             badgeColor = AccentPurple,
                             badgeBackground = AccentPurple.copy(alpha = 0.12f),
                             icon = Icons.Default.FactCheck,
@@ -181,8 +190,10 @@ fun TeacherDashboardScreen(
                             containerColor = Emerald50,
                             iconTint = Emerald700,
                             onClick = {
-                                val active = data?.todaySchedules?.firstOrNull()
-                                onNavigateToAttendance(active?.id ?: "s1", active?.className ?: "XII MIPA 1")
+                                val active = uiState.todaySchedules.firstOrNull()
+                                if (active != null) {
+                                    onNavigateToAttendance(active.classroomId, active.id, active.classroomName)
+                                }
                             }
                         )
                         TeacherQuickActionCard(
@@ -192,14 +203,7 @@ fun TeacherDashboardScreen(
                             subtitle = "Catat materi KBM",
                             containerColor = Gold50,
                             iconTint = Gold700,
-                            onClick = {
-                                val active = data?.todaySchedules?.firstOrNull()
-                                onNavigateToJournal(
-                                    active?.id ?: "s1",
-                                    active?.className ?: "XII MIPA 1",
-                                    active?.subjectName ?: "Fisika Tingkat Lanjut"
-                                )
-                            }
+                            onClick = onNavigateToJournal
                         )
                     }
 
@@ -258,7 +262,7 @@ fun TeacherDashboardScreen(
                                 .padding(horizontal = 9.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = "${data?.todaySchedules?.size ?: 0} Sesi KBM",
+                                text = "${uiState.todaySchedules.size} Sesi KBM",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = Emerald800
                             )
@@ -267,7 +271,13 @@ fun TeacherDashboardScreen(
                 }
             }
 
-            if (data?.todaySchedules.isNullOrEmpty()) {
+            if (uiState.isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Emerald700)
+                    }
+                }
+            } else if (uiState.todaySchedules.isEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                         SulaoneEmptyState(
@@ -279,15 +289,15 @@ fun TeacherDashboardScreen(
                 }
             } else {
                 items(
-                    items = data!!.todaySchedules,
+                    items = uiState.todaySchedules,
                     key = { it.id },
                     contentType = { "schedule" }
                 ) { schedule ->
                     Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                         TeacherScheduleCard(
                             schedule = schedule,
-                            onAttendanceClick = { onNavigateToAttendance(schedule.id, schedule.className) },
-                            onJournalClick = { onNavigateToJournal(schedule.id, schedule.className, schedule.subjectName) }
+                            onAttendanceClick = { onNavigateToAttendance(schedule.classroomId, schedule.id, schedule.classroomName) },
+                            onJournalClick = onNavigateToJournal
                         )
                     }
                 }
@@ -308,9 +318,21 @@ fun TeacherDashboardScreen(
                 }
             }
 
+            if (!uiState.isLoading && uiState.recentJournals.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        SulaoneEmptyState(
+                            icon = Icons.Default.MenuBook,
+                            title = "Belum Ada Jurnal Tercatat",
+                            description = "Jurnal KBM yang Anda catat akan muncul di sini."
+                        )
+                    }
+                }
+            }
+
             items(
-                items = data?.recentJournals ?: emptyList(),
-                key = { it.id },
+                items = uiState.recentJournals,
+                key = { it.uuid },
                 contentType = { "journal" }
             ) { journal ->
                 Box(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -389,21 +411,36 @@ private fun TeacherQuickActionCard(
     }
 }
 
+/** Compares [slot]'s real session_start/session_end against the current wall-clock time. */
+private fun isScheduleActiveNow(slot: TeacherScheduleSlot): Boolean {
+    fun minutesOf(time: String): Int? {
+        val match = Regex("""(\d{1,2}):(\d{2})""").find(time) ?: return null
+        val (h, m) = match.destructured
+        return h.toInt() * 60 + m.toInt()
+    }
+    val start = minutesOf(slot.sessionStart) ?: return false
+    val end = minutesOf(slot.sessionEnd) ?: return false
+    val now = java.util.Calendar.getInstance()
+    val nowMinutes = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
+    return nowMinutes in start..end
+}
+
 @Composable
 private fun TeacherScheduleCard(
-    schedule: TeacherScheduleItem,
+    schedule: TeacherScheduleSlot,
     onAttendanceClick: () -> Unit,
     onJournalClick: () -> Unit
 ) {
     val haptics = rememberHapticFeedbackHelper()
+    val isActiveNow = remember(schedule.id) { isScheduleActiveNow(schedule) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(
-            width = if (schedule.isActiveNow) 1.dp else 0.5.dp,
-            color = if (schedule.isActiveNow) Emerald600 else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            width = if (isActiveNow) 1.dp else 0.5.dp,
+            color = if (isActiveNow) Emerald600 else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
         ),
         shadowElevation = 0.5.dp
     ) {
@@ -422,31 +459,33 @@ private fun TeacherScheduleCard(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (schedule.isActiveNow) Emerald500 else Slate400)
+                            .background(if (isActiveNow) Emerald500 else Slate400)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (schedule.isActiveNow) "SEKARANG DI KELAS" else schedule.timeSlot,
+                        text = if (isActiveNow) "SEKARANG DI KELAS" else "${schedule.sessionStart} - ${schedule.sessionEnd} WIB",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.4.sp
                         ),
-                        color = if (schedule.isActiveNow) Emerald700 else Slate600
+                        color = if (isActiveNow) Emerald700 else Slate600
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Slate100)
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text(
-                        text = schedule.room,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                        color = Slate700
-                    )
+                if (schedule.roomName != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Slate100)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = schedule.roomName,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            color = Slate700
+                        )
+                    }
                 }
             }
 
@@ -464,7 +503,7 @@ private fun TeacherScheduleCard(
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "Rombongan Belajar: ${schedule.className}",
+                text = "Rombongan Belajar: ${schedule.classroomName}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -523,7 +562,7 @@ private fun TeacherScheduleCard(
 }
 
 @Composable
-private fun TeachingJournalCard(journal: TeachingJournalItem) {
+private fun TeachingJournalCard(journal: TeachingJournalEntry) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -542,7 +581,7 @@ private fun TeachingJournalCard(journal: TeachingJournalItem) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${journal.className} • ${journal.date}",
+                    text = "${journal.classroomName} • ${journal.teachingDate ?: "-"}",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -554,7 +593,7 @@ private fun TeachingJournalCard(journal: TeachingJournalItem) {
                         .padding(horizontal = 7.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = journal.competencyCode,
+                        text = journal.status.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
                         color = Gold800
                     )
@@ -569,15 +608,16 @@ private fun TeachingJournalCard(journal: TeachingJournalItem) {
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = journal.notes,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (!journal.notes.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = journal.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -590,7 +630,7 @@ private fun TeachingJournalCard(journal: TeachingJournalItem) {
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Kehadiran: ${journal.attendanceSummary}",
+                    text = "Hadir: ${journal.studentsPresent} • Absen: ${journal.studentsAbsent}",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold

@@ -32,11 +32,15 @@ fun NavGraphBuilder.teacherNavGraph(
         ) {
             TeacherDashboardScreen(
                 viewModel = viewModel,
-                onNavigateToAttendance = { scheduleId, className ->
-                    navController.navigate(Screen.TeacherAttendance.createRoute(scheduleId, className))
+                onNavigateToAttendance = { classroomId, scheduleId, className ->
+                    navController.navigate(Screen.TeacherAttendance.createRoute(classroomId, scheduleId, className))
                 },
-                onNavigateToJournal = { scheduleId, className, subjectName ->
-                    navController.navigate(Screen.TeacherJournal.createRoute(scheduleId, className, subjectName))
+                // The per-schedule "Isi Jurnal" quick action opens the real journal list/
+                // compliance screen (Screen.TeachingJournalMobile) instead of a standalone
+                // form — that screen already has the tabs, compliance %, and per-slot fill
+                // status wired to real data; no need for a second, narrower journal flow.
+                onNavigateToJournal = {
+                    navController.navigate(Screen.TeachingJournalMobile.route)
                 },
                 onNavigateRoute = { route -> navController.navigate(route) }
             )
@@ -46,12 +50,14 @@ fun NavGraphBuilder.teacherNavGraph(
     composable(
         route = Screen.TeacherAttendance.route,
         arguments = listOf(
-            navArgument("scheduleId") { type = NavType.StringType },
+            navArgument("classroomId") { type = NavType.LongType },
+            navArgument("scheduleId") { type = NavType.LongType },
             navArgument("className") { type = NavType.StringType }
         )
     ) { backStackEntry ->
-        val scheduleId = backStackEntry.arguments?.getString("scheduleId") ?: "s1"
-        val rawClassName = backStackEntry.arguments?.getString("className") ?: "XII MIPA 1"
+        val classroomId = backStackEntry.arguments?.getLong("classroomId") ?: 0L
+        val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: 0L
+        val rawClassName = backStackEntry.arguments?.getString("className") ?: ""
         val className = URLDecoder.decode(rawClassName, StandardCharsets.UTF_8.toString())
         val viewModel: TeacherViewModel = hiltViewModel()
 
@@ -63,40 +69,9 @@ fun NavGraphBuilder.teacherNavGraph(
             onNavigateHome = navigateToRoleHome
         ) {
             TeacherAttendanceScreen(
+                classroomId = classroomId,
                 scheduleId = scheduleId,
                 className = className,
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-    }
-
-    composable(
-        route = Screen.TeacherJournal.route,
-        arguments = listOf(
-            navArgument("scheduleId") { type = NavType.StringType },
-            navArgument("className") { type = NavType.StringType },
-            navArgument("subjectName") { type = NavType.StringType }
-        )
-    ) { backStackEntry ->
-        val scheduleId = backStackEntry.arguments?.getString("scheduleId") ?: "s1"
-        val rawClassName = backStackEntry.arguments?.getString("className") ?: "XII MIPA 1"
-        val rawSubject = backStackEntry.arguments?.getString("subjectName") ?: "Matematika"
-        val className = URLDecoder.decode(rawClassName, StandardCharsets.UTF_8.toString())
-        val subjectName = URLDecoder.decode(rawSubject, StandardCharsets.UTF_8.toString())
-        val viewModel: TeacherViewModel = hiltViewModel()
-
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("teacher", "guru", "admin", "superadmin"),
-            featureTitle = "Jurnal Mengajar Guru",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            TeachingJournalScreen(
-                scheduleId = scheduleId,
-                className = className,
-                subjectName = subjectName,
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
@@ -219,25 +194,6 @@ fun NavGraphBuilder.teacherNavGraph(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
-    }
-
-    composable(Screen.TeachingJournal.route) {
-        val viewModel: JournalMobileViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("teacher", "guru", "admin", "superadmin"),
-            featureTitle = "Jurnal Mengajar Guru",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            TeachingJournalMobileScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToForm = { scheduleId ->
-                    navController.navigate(Screen.JournalForm.createRoute(scheduleId))
-                }
-            )
-        }
     }
 
     composable(Screen.TeachingJournalMobile.route) {

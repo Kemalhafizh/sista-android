@@ -3,53 +3,64 @@ package com.sultanagung1.sista.data.model
 import com.google.gson.annotations.SerializedName
 
 /**
- * Models for Parent / Wali Murid role in SMA Islam Sultan Agung 1 Semarang
+ * Models for Parent / Wali Murid role — matches ApiParentController
+ * (routes/api.php prefix('parent'), role:parent) exactly. No field here has
+ * a hardcoded default: every value not provided by the backend is nullable
+ * and the UI shows an honest "belum tersedia" instead of a fabricated number.
  */
-data class ChildSummary(
-    @SerializedName("student_id") val studentId: String,
-    @SerializedName("nisn") val nisn: String,
-    @SerializedName("name") val name: String,
-    @SerializedName("class_name") val className: String,
-    @SerializedName("homeroom_teacher") val homeroomTeacher: String,
-    @SerializedName("homeroom_phone") val homeroomPhone: String = "6281234567890",
-    @SerializedName("counselor_name") val counselorName: String = "Ustadzah Fatimah, S.Psi (Guru BK)",
-    @SerializedName("counselor_phone") val counselorPhone: String = "6289876543210",
-    @SerializedName("today_attendance_status") val todayAttendanceStatus: String = "Hadir Tepat Waktu",
-    @SerializedName("today_checkin_time") val todayCheckinTime: String = "06:42 WIB",
-    @SerializedName("mutabaah_score") val mutabaahScore: Int = 85,
-    @SerializedName("gpa_score") val gpaScore: Double = 91.8,
-    @SerializedName("attendance_percentage") val attendancePercentage: Double = 98.4,
-    @SerializedName("pending_spp_amount") val pendingSppAmount: Long = 0L,
-    @SerializedName("spp_status") val sppStatus: String = "Lunas"
+
+/** GET parent/children — real StudentResource row. */
+data class ParentChildItem(
+    val uuid: String,
+    val name: String,
+    val nis: String? = null,
+    val nisn: String? = null,
+    val classroom: String? = null,
+    @SerializedName("grade_level") val gradeLevel: String? = null,
+    val major: String? = null,
+    val gender: String? = null,
+    val status: String? = null,
+    @SerializedName("total_points") val totalPoints: Int = 0
 )
 
+/** GET parent/child/{uuid}/summary — nested `student` object. */
+data class ChildSummaryStudent(
+    val uuid: String,
+    val name: String,
+    val classroom: String? = null,
+    @SerializedName("grade_level") val gradeLevel: String? = null,
+    @SerializedName("homeroom_teacher") val homeroomTeacher: String? = null
+)
+
+/** GET parent/child/{uuid}/summary — nested `statistics` object, all real computed KPIs. */
+data class ChildSummaryStatistics(
+    @SerializedName("average_grade") val averageGrade: Double,
+    @SerializedName("attendance_rate") val attendanceRate: Double,
+    @SerializedName("unpaid_billings_count") val unpaidBillingsCount: Int,
+    @SerializedName("total_bk_points") val totalBkPoints: Int
+)
+
+data class ChildSummaryResponse(
+    val student: ChildSummaryStudent,
+    val statistics: ChildSummaryStatistics
+)
+
+/** GET parent/child/{uuid}/attendance — real AttendanceResource row (latest 30). */
 data class ChildAttendanceLog(
-    @SerializedName("date") val date: String,
-    @SerializedName("status") val status: String,
-    @SerializedName("check_in_time") val checkInTime: String,
-    @SerializedName("check_out_time") val checkOutTime: String?,
-    @SerializedName("gate") val gate: String = "Gerbang Utama Kampus Sultan Agung",
-    @SerializedName("is_punctual") val isPunctual: Boolean = true
+    val id: Long,
+    val date: String,
+    val status: String, // H, S, I, A
+    @SerializedName("status_label") val statusLabel: String,
+    val notes: String? = null,
+    @SerializedName("recorded_by") val recordedBy: String? = null
 )
 
-data class ChildGradeSubject(
-    @SerializedName("subject_name") val subjectName: String,
-    @SerializedName("score") val score: Double,
-    @SerializedName("kktp") val kktp: Double = 75.0,
-    @SerializedName("predicate") val predicate: String = "A",
-    @SerializedName("teacher_notes") val teacherNotes: String = "Sangat aktif dan memahami konsep pembelajaran dengan baik."
-)
-
-data class ParentDashboardData(
-    @SerializedName("parent_name") val parentName: String,
-    @SerializedName("children") val children: List<ChildSummary>,
-    @SerializedName("recent_announcements") val recentAnnouncements: List<SchoolAnnouncementItem> = emptyList()
-)
-
-data class SchoolAnnouncementItem(
-    @SerializedName("id") val id: String,
-    @SerializedName("title") val title: String,
-    @SerializedName("date") val date: String,
-    @SerializedName("category") val category: String,
-    @SerializedName("summary") val summary: String
+/** GET parent/child/{uuid}/grades — real GradeResource row. */
+data class ChildGradeItem(
+    val id: Long,
+    val subject: String,
+    val type: String,
+    val score: Double,
+    val description: String? = null,
+    val date: String
 )

@@ -5,43 +5,38 @@ import retrofit2.Response
 import retrofit2.http.*
 
 /**
- * Teacher / Guru API Service
+ * Teacher / Guru API Service — matches ApiTeacherController (routes/api.php
+ * prefix('teacher'), role:guru,bk). Schedule and journal endpoints live on
+ * [TeachingJournalMobileApiService] since both features share the same
+ * underlying data.
  */
 interface TeacherApiService {
-    @GET("mobile/teacher/dashboard")
-    suspend fun getTeacherDashboard(): Response<TeacherDashboardData>
+    @GET("teacher/classes")
+    suspend fun getTeacherClasses(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<TeacherClassSummary>>>
 
-    @GET("mobile/teacher/classes")
-    suspend fun getTeacherClasses(): Response<List<TeacherClassItem>>
+    @GET("teacher/classes/{classroomId}/students")
+    suspend fun getClassStudents(@Path("classroomId") classroomId: Long): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<TeacherClassStudent>>>
 
-    @GET("mobile/teacher/classes/{classId}/students")
-    suspend fun getClassStudents(@Path("classId") classId: String): Response<List<StudentAttendanceInputItem>>
-
-    @POST("mobile/teacher/attendance/submit")
-    suspend fun submitClassAttendance(@Body request: ClassAttendanceSubmitRequest): Response<Map<String, Any>>
-
-    @GET("mobile/teacher/journals")
-    suspend fun getTeachingJournals(): Response<List<TeachingJournalItem>>
-
-    @POST("mobile/teacher/journals/store")
-    suspend fun storeTeachingJournal(@Body request: TeachingJournalCreateRequest): Response<TeachingJournalItem>
+    @POST("teacher/attendance")
+    suspend fun submitClassAttendance(@Body request: SubmitClassAttendanceRequest): Response<com.sultanagung1.sista.core.network.ApiEnvelope<AttendanceRecordedResponse>>
 }
 
 /**
- * Parent / Wali Murid API Service
+ * Parent / Wali Murid API Service — matches ApiParentController (routes/api.php
+ * prefix('parent'), role:parent).
  */
 interface ParentApiService {
-    @GET("mobile/parent/dashboard")
-    suspend fun getParentDashboard(): Response<ParentDashboardData>
+    @GET("parent/children")
+    suspend fun getChildren(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<ParentChildItem>>>
 
-    @GET("mobile/parent/children")
-    suspend fun getChildrenList(): Response<List<ChildSummary>>
+    @GET("parent/child/{uuid}/summary")
+    suspend fun getChildSummary(@Path("uuid") uuid: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<ChildSummaryResponse>>
 
-    @GET("mobile/parent/children/{studentId}/attendance")
-    suspend fun getChildAttendanceHistory(@Path("studentId") studentId: String): Response<List<ChildAttendanceLog>>
+    @GET("parent/child/{uuid}/attendance")
+    suspend fun getChildAttendanceHistory(@Path("uuid") uuid: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<ChildAttendanceLog>>>
 
-    @GET("mobile/parent/children/{studentId}/grades")
-    suspend fun getChildGrades(@Path("studentId") studentId: String): Response<List<ChildGradeSubject>>
+    @GET("parent/child/{uuid}/grades")
+    suspend fun getChildGrades(@Path("uuid") uuid: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<ChildGradeItem>>>
 }
 
 /**

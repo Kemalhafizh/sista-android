@@ -29,7 +29,8 @@ import com.sultanagung1.sista.data.model.StudentAttendanceInputItem
 
 @Composable
 fun TeacherAttendanceScreen(
-    scheduleId: String,
+    classroomId: Long,
+    scheduleId: Long,
     className: String,
     viewModel: TeacherViewModel,
     onNavigateBack: () -> Unit
@@ -37,8 +38,8 @@ fun TeacherAttendanceScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showSuccessDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(scheduleId) {
-        viewModel.loadClassStudents(scheduleId)
+    LaunchedEffect(classroomId) {
+        viewModel.loadClassStudents(classroomId)
     }
 
     LaunchedEffect(uiState.attendanceSubmittedSuccess) {
@@ -63,8 +64,9 @@ fun TeacherAttendanceScreen(
                 Box(modifier = Modifier.padding(16.dp)) {
                     SulaoneButton(
                         text = "Simpan & Rekap Presensi",
-                        onClick = { viewModel.submitClassAttendance(scheduleId, className) },
-                        isLoading = uiState.isLoading,
+                        onClick = { viewModel.submitClassAttendance(scheduleId) },
+                        isLoading = uiState.isSubmittingAttendance,
+                        enabled = uiState.activeClassStudents.isNotEmpty(),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -79,6 +81,15 @@ fun TeacherAttendanceScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (uiState.errorMessage != null) {
+                item {
+                    SulaoneErrorBanner(
+                        message = uiState.errorMessage ?: "Terjadi kesalahan.",
+                        onRetry = { viewModel.loadClassStudents(classroomId) }
+                    )
+                }
+            }
+
             // One-Touch Header Action & Summary
             item {
                 val students = uiState.activeClassStudents
@@ -137,12 +148,29 @@ fun TeacherAttendanceScreen(
                 }
             }
 
+            // Loading / Empty state for the real student roster
+            if (uiState.isLoadingStudents) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Emerald700)
+                    }
+                }
+            } else if (uiState.activeClassStudents.isEmpty()) {
+                item {
+                    SulaoneEmptyState(
+                        icon = Icons.Default.Groups,
+                        title = "Belum Ada Data Siswa",
+                        description = "Daftar siswa rombel ini belum tersedia atau gagal dimuat."
+                    )
+                }
+            }
+
             // Student List
             items(uiState.activeClassStudents) { student ->
                 StudentAttendanceRow(
                     student = student,
                     onStatusChange = { newStatus ->
-                        viewModel.updateStudentStatus(student.nisn, newStatus)
+                        viewModel.updateStudentStatus(student.studentId, newStatus)
                     }
                 )
             }

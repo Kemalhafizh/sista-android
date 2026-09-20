@@ -45,17 +45,10 @@ sealed class Screen(val route: String, val title: String = "") {
 
     // Teacher Screens
     object TeacherDashboard : Screen("teacher_dashboard", "Dashboard Guru")
-    object TeacherAttendance : Screen("teacher_attendance/{scheduleId}/{className}", "Presensi Kelas") {
-        fun createRoute(scheduleId: String, className: String): String {
+    object TeacherAttendance : Screen("teacher_attendance/{classroomId}/{scheduleId}/{className}", "Presensi Kelas") {
+        fun createRoute(classroomId: Long, scheduleId: Long, className: String): String {
             val encClass = URLEncoder.encode(className, StandardCharsets.UTF_8.toString())
-            return "teacher_attendance/$scheduleId/$encClass"
-        }
-    }
-    object TeacherJournal : Screen("teacher_journal/{scheduleId}/{className}/{subjectName}", "Jurnal Mengajar") {
-        fun createRoute(scheduleId: String, className: String, subjectName: String): String {
-            val encClass = URLEncoder.encode(className, StandardCharsets.UTF_8.toString())
-            val encSubject = URLEncoder.encode(subjectName, StandardCharsets.UTF_8.toString())
-            return "teacher_journal/$scheduleId/$encClass/$encSubject"
+            return "teacher_attendance/$classroomId/$scheduleId/$encClass"
         }
     }
 
@@ -184,7 +177,6 @@ sealed class Screen(val route: String, val title: String = "") {
     }
 
     // Fase 38: Jurnal Guru & Agenda Mengajar Harian
-    object TeachingJournal : Screen("teaching_journal", "Jurnal Mengajar Guru")
     object TeachingJournalMobile : Screen("teaching_journal_mobile", "Jurnal KBM Harian")
     object JournalForm : Screen("journal_form/{scheduleId}", "Catat Jurnal Mengajar") {
         fun createRoute(scheduleId: String) = "journal_form/$scheduleId"

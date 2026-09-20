@@ -585,217 +585,119 @@ class AiRepository(private val apiClient: ApiClient) {
     }.flowOn(Dispatchers.IO)
 }
 
+/**
+ * Real teacher/guru data — no fallback of any kind. "Today's schedule" and
+ * "recent journals" are intentionally NOT owned here; they come from
+ * [TeachingJournalRepository] (teacher/schedule, teacher/journals), which
+ * TeacherViewModel composes alongside these calls instead of duplicating them.
+ */
 class TeacherRepository(private val apiClient: ApiClient) {
 
-    fun getDashboard(): Flow<NetworkResult<TeacherDashboardData>> = flow {
+    fun getClasses(): Flow<NetworkResult<List<TeacherClassSummary>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.teacherApi.getTeacherDashboard()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val response = apiClient.teacherApi.getTeacherClasses()
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
             } else {
-                // Fallback mock for teacher demo
-                emit(NetworkResult.Success(
-                    TeacherDashboardData(
-                        teacherName = "Ustadz Ahmad Fauzi, M.Pd",
-                        nip = "198504122010011002",
-                        teachingHoursThisWeek = 24,
-                        totalClasses = 5,
-                        todaySchedules = listOf(
-                            TeacherScheduleItem("s1", "Selasa", "07:30 - 09:00 WIB", "XII MIPA 1", "Matematika Tingkat Lanjut", "R.201", isActiveNow = true, attendanceCompleted = false),
-                            TeacherScheduleItem("s2", "Selasa", "09:15 - 10:45 WIB", "XII MIPA 2", "Matematika Tingkat Lanjut", "R.202", isActiveNow = false, attendanceCompleted = false),
-                            TeacherScheduleItem("s3", "Selasa", "11:00 - 12:30 WIB", "XI MIPA 3", "Matematika Wajib", "R.105", isActiveNow = false, attendanceCompleted = false)
-                        ),
-                        recentJournals = listOf(
-                            TeachingJournalItem("j1", "25 Agustus 2026", "XII MIPA 1", "Matematika Tingkat Lanjut", "Kalkulus Integral & Penerapan Luas Daerah", "TP-3.4", "Siswa sangat antusias dalam mengerjakan studi kasus luas bidang."),
-                            TeachingJournalItem("j2", "24 Agustus 2026", "XI MIPA 3", "Matematika Wajib", "Transformasi Geometri & Refleksi Garis", "TP-2.1", "Semua siswa tuntas mengerjakan LKPD kelompok.")
-                        )
-                    )
-                ))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar kelas", response.code()))
             }
         } catch (e: Exception) {
-            // Graceful fallback for offline demo
-            emit(NetworkResult.Success(
-                TeacherDashboardData(
-                    teacherName = "Ustadz Ahmad Fauzi, M.Pd",
-                    nip = "198504122010011002",
-                    teachingHoursThisWeek = 24,
-                    totalClasses = 5,
-                    todaySchedules = listOf(
-                        TeacherScheduleItem("s1", "Selasa", "07:30 - 09:00 WIB", "XII MIPA 1", "Matematika Tingkat Lanjut", "R.201", isActiveNow = true, attendanceCompleted = false),
-                        TeacherScheduleItem("s2", "Selasa", "09:15 - 10:45 WIB", "XII MIPA 2", "Matematika Tingkat Lanjut", "R.202", isActiveNow = false, attendanceCompleted = false)
-                    ),
-                    recentJournals = listOf(
-                        TeachingJournalItem("j1", "25 Agustus 2026", "XII MIPA 1", "Matematika Tingkat Lanjut", "Kalkulus Integral", "TP-3.4", "Pembelajaran interaktif di lab komputer.")
-                    )
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getClassStudents(classId: String): Flow<NetworkResult<List<StudentAttendanceInputItem>>> = flow {
+    fun getClassStudents(classroomId: Long): Flow<NetworkResult<List<TeacherClassStudent>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.teacherApi.getClassStudents(classId)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val response = apiClient.teacherApi.getClassStudents(classroomId)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
             } else {
-                emit(NetworkResult.Success(
-                    listOf(
-                        StudentAttendanceInputItem("st1", "0068941231", "Muhammad Rizky Pratama", "L", "Hadir"),
-                        StudentAttendanceInputItem("st2", "0068941232", "Aisyah Nur Salsabila", "P", "Hadir"),
-                        StudentAttendanceInputItem("st3", "0068941233", "Fathir Ahmad Al-Farisi", "L", "Hadir"),
-                        StudentAttendanceInputItem("st4", "0068941234", "Khadijah Zahra Amalia", "P", "Izin", "Izin olimpiade sains"),
-                        StudentAttendanceInputItem("st5", "0068941235", "Zaid bin Haritsah", "L", "Hadir"),
-                        StudentAttendanceInputItem("st6", "0068941236", "Maryam Azzahra", "P", "Sakit", "Demam berobat di UKS")
-                    )
-                ))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar siswa kelas", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                listOf(
-                    StudentAttendanceInputItem("st1", "0068941231", "Muhammad Rizky Pratama", "L", "Hadir"),
-                    StudentAttendanceInputItem("st2", "0068941232", "Aisyah Nur Salsabila", "P", "Hadir"),
-                    StudentAttendanceInputItem("st3", "0068941233", "Fathir Ahmad Al-Farisi", "L", "Hadir"),
-                    StudentAttendanceInputItem("st4", "0068941234", "Khadijah Zahra Amalia", "P", "Hadir")
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun submitClassAttendance(request: ClassAttendanceSubmitRequest): Flow<NetworkResult<Boolean>> = flow {
+    fun submitClassAttendance(request: SubmitClassAttendanceRequest): Flow<NetworkResult<AttendanceRecordedResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.teacherApi.submitClassAttendance(request)
-            if (response.isSuccessful) {
-                emit(NetworkResult.Success(true))
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && body.data != null) {
+                emit(NetworkResult.Success(body.data))
             } else {
-                emit(NetworkResult.Success(true)) // Optimistic success for demo
+                emit(NetworkResult.Error(body?.message ?: "Gagal menyimpan presensi kelas", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(true))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun storeJournal(request: TeachingJournalCreateRequest): Flow<NetworkResult<TeachingJournalItem>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.teacherApi.storeTeachingJournal(request)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Success(
-                    TeachingJournalItem("j-new", "25 Agustus 2026", request.className, request.subjectName, request.topic, request.competencyCode, request.notes)
-                ))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                TeachingJournalItem("j-new", "25 Agustus 2026", request.className, request.subjectName, request.topic, request.competencyCode, request.notes)
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat menyimpan presensi"))
         }
     }.flowOn(Dispatchers.IO)
 }
 
 class ParentRepository(private val apiClient: ApiClient) {
 
-    fun getDashboard(): Flow<NetworkResult<ParentDashboardData>> = flow {
+    fun getChildren(): Flow<NetworkResult<List<ParentChildItem>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentApi.getParentDashboard()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val response = apiClient.parentApi.getChildren()
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
             } else {
-                emit(NetworkResult.Success(
-                    ParentDashboardData(
-                        parentName = "Bapak Hendra Gunawan, S.T.",
-                        children = listOf(
-                            ChildSummary(
-                                studentId = "c1",
-                                nisn = "0068941231",
-                                name = "Muhammad Rizky Pratama",
-                                className = "XII MIPA 1 (Fase F)",
-                                homeroomTeacher = "Ustadz Drs. H. Bambang Suherman",
-                                homeroomPhone = "6281234567890",
-                                counselorName = "Ustadzah Fatimah, S.Psi (Guru BK)",
-                                counselorPhone = "6289876543210",
-                                todayAttendanceStatus = "Hadir di Sekolah",
-                                todayCheckinTime = "06:42 WIB",
-                                mutabaahScore = 92,
-                                gpaScore = 92.4,
-                                pendingSppAmount = 0L,
-                                sppStatus = "Lunas"
-                            ),
-                            ChildSummary(
-                                studentId = "c2",
-                                nisn = "0081239842",
-                                name = "Fatimah Azzahra Gunawan",
-                                className = "X-2 (Fase E)",
-                                homeroomTeacher = "Ustadzah Hj. Nurul Hidayah, S.Pd",
-                                homeroomPhone = "6281234567891",
-                                counselorName = "Ustadz Ridwan Hakim, M.Pd (Guru BK)",
-                                counselorPhone = "6289876543211",
-                                todayAttendanceStatus = "Hadir di Sekolah",
-                                todayCheckinTime = "06:38 WIB",
-                                mutabaahScore = 88,
-                                gpaScore = 89.6,
-                                pendingSppAmount = 0L,
-                                sppStatus = "Lunas"
-                            )
-                        ),
-                        recentAnnouncements = listOf(
-                            SchoolAnnouncementItem("a1", "Jadwal Asesmen Sumatif Tengah Semester", "25 Agustus 2026", "Akademik", "Pemberitahuan pelaksanaan ASTS Ganjil TA 2025/2026 berbasis CBT."),
-                            SchoolAnnouncementItem("a2", "Kajian Parenting Bulanan Yayasan Sultan Agung", "20 Agustus 2026", "Kesiswaan", "Undangan pengajian wali murid di Masjid SMA Sultan Agung 1.")
-                        )
-                    )
-                ))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar anak", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                ParentDashboardData(
-                    parentName = "Bapak Hendra Gunawan, S.T.",
-                    children = listOf(
-                        ChildSummary(
-                            studentId = "c1",
-                            nisn = "0068941231",
-                            name = "Muhammad Rizky Pratama",
-                            className = "XII MIPA 1 (Fase F)",
-                            homeroomTeacher = "Ustadz Drs. H. Bambang Suherman",
-                            homeroomPhone = "6281234567890",
-                            todayAttendanceStatus = "Hadir di Sekolah",
-                            todayCheckinTime = "06:42 WIB",
-                            mutabaahScore = 92,
-                            gpaScore = 92.4,
-                            pendingSppAmount = 0L,
-                            sppStatus = "Lunas"
-                        )
-                    )
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getChildAttendanceHistory(studentId: String): Flow<NetworkResult<List<ChildAttendanceLog>>> = flow {
+    fun getChildSummary(uuid: String): Flow<NetworkResult<ChildSummaryResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentApi.getChildAttendanceHistory(studentId)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val response = apiClient.parentApi.getChildSummary(uuid)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && body.data != null) {
+                emit(NetworkResult.Success(body.data))
             } else {
-                emit(NetworkResult.Success(
-                    listOf(
-                        ChildAttendanceLog("25 Agustus 2026", "Hadir", "06:42 WIB", null, isPunctual = true),
-                        ChildAttendanceLog("24 Agustus 2026", "Hadir", "06:40 WIB", "15:30 WIB", isPunctual = true),
-                        ChildAttendanceLog("23 Agustus 2026", "Hadir", "06:45 WIB", "15:30 WIB", isPunctual = true),
-                        ChildAttendanceLog("22 Agustus 2026", "Hadir", "06:35 WIB", "15:30 WIB", isPunctual = true)
-                    )
-                ))
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat rangkuman anak", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                listOf(
-                    ChildAttendanceLog("25 Agustus 2026", "Hadir", "06:42 WIB", null, isPunctual = true)
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getChildAttendanceHistory(uuid: String): Flow<NetworkResult<List<ChildAttendanceLog>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.parentApi.getChildAttendanceHistory(uuid)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat riwayat presensi anak", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getChildGrades(uuid: String): Flow<NetworkResult<List<ChildGradeItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.parentApi.getChildGrades(uuid)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                emit(NetworkResult.Success(body.data ?: emptyList()))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat nilai anak", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
         }
     }.flowOn(Dispatchers.IO)
 

@@ -1,8 +1,5 @@
 package com.sultanagung1.sista.ui.parent
 
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,9 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -37,7 +32,7 @@ import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
-import com.sultanagung1.sista.data.model.ChildSummary
+import com.sultanagung1.sista.data.model.ParentChildItem
 import com.sultanagung1.sista.ui.common.HeaderMetadataChip
 import com.sultanagung1.sista.ui.common.SulaoneExecutiveHeader
 import com.sultanagung1.sista.ui.navigation.Screen
@@ -51,9 +46,8 @@ fun ParentDashboardScreen(
     onNavigateToActivityFeed: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val data = uiState.dashboardData
     val activeChild = uiState.selectedChild
-    val context = LocalContext.current
+    val summary = uiState.selectedChildSummary
     val haptics = rememberHapticFeedbackHelper()
 
     Scaffold { paddingValues ->
@@ -67,7 +61,7 @@ fun ParentDashboardScreen(
             // 1. Parent Executive Top App Bar (Unified Professional Design)
             item {
                 SulaoneExecutiveHeader(
-                    userName = data?.parentName ?: "Bapak Hendra Gunawan, S.T.",
+                    userName = uiState.parentName.ifBlank { "Wali Murid" },
                     titlePrefix = "Assalamu'alaikum,",
                     chips = listOf(
                         HeaderMetadataChip(
@@ -91,11 +85,21 @@ fun ParentDashboardScreen(
                             iconColor = Gold600
                         )
                     ),
-                    unreadNotificationsCount = 3,
                     onAvatarClick = { onNavigateRoute("profile") },
                     onQrClick = { onNavigateRoute("scanner") },
                     onNotificationClick = { onNavigateRoute("notifications") }
                 )
+            }
+
+            if (uiState.errorMessage != null) {
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        SulaoneErrorBanner(
+                            message = uiState.errorMessage ?: "Gagal memuat data wali murid.",
+                            onRetry = { viewModel.loadDashboard() }
+                        )
+                    }
+                }
             }
 
             // 2. Children Switcher Selector (Multi-Child Support)
@@ -111,8 +115,8 @@ fun ParentDashboardScreen(
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(data?.children ?: emptyList()) { child ->
-                            val isSelected = child.studentId == activeChild?.studentId
+                        items(uiState.children) { child ->
+                            val isSelected = child.uuid == activeChild?.uuid
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = if (isSelected) Emerald700 else MaterialTheme.colorScheme.surface,
@@ -138,7 +142,7 @@ fun ParentDashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "${child.name} (${child.className})",
+                                        text = "${child.name} (${child.classroom ?: "-"})",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
@@ -150,28 +154,22 @@ fun ParentDashboardScreen(
                 }
             }
 
-            // 3. High-Fidelity Selected Child Persona & Live Gate Presence Card
+            // 3. High-Fidelity Selected Child Persona Card
             activeChild?.let { child ->
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         ParentChildPersonaCard(
                             child = child,
-                            onDetailClick = { onNavigateToChildDetail(child.studentId) },
-                            onBillingClick = onNavigateToBilling,
+                            summary = summary,
+                            latestAttendance = uiState.childAttendanceLogs.firstOrNull(),
+                            onDetailClick = { onNavigateToChildDetail(child.uuid) },
                             onDisciplineClick = { onNavigateRoute(Screen.Discipline.route) },
-                            onChatClick = { onNavigateRoute(Screen.ConversationList.route) },
-                            onWhatsAppClick = { phone, name ->
-                                val cleanPhone = if (phone.startsWith("0")) "62" + phone.substring(1) else phone
-                                val message = "Assalamu'alaikum wr. wb. Ustadz/Ustadzah, saya wali murid dari ananda $name ingin berkonsultasi mengenai perkembangan ananda."
-                                val uri = Uri.parse("https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(message)}")
-                                val intent = Intent(Intent.ACTION_VIEW, uri)
-                                context.startActivity(intent)
-                            }
+                            onChatClick = { onNavigateRoute(Screen.ConversationList.route) }
                         )
                     }
                 }
 
-                // 4. 3 Pillar KPI Metric Cards for Selected Child
+                // 4. Real KPI Metric Cards for Selected Child (from ApiParentController::childSummary)
                 item {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         Text(
@@ -182,71 +180,79 @@ fun ParentDashboardScreen(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            SulaoneMetricCard(
-                                modifier = Modifier.weight(1f),
-                                title = "Kehadiran Kampus",
-                                value = "${child.attendancePercentage}%",
-                                subtitle = "Semester Berjalan",
-                                badgeText = if (child.attendancePercentage >= 95) "Sangat Baik" else "Cukup",
-                                badgeColor = Emerald700,
-                                badgeBackground = Emerald50,
-                                icon = Icons.Default.CheckCircle,
-                                iconTint = Emerald700,
-                                iconBackground = Emerald50
-                            )
+                        if (uiState.isLoadingChildDetail && summary == null) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Emerald700)
+                            }
+                        } else {
+                            val stats = summary?.statistics
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                SulaoneMetricCard(
+                                    modifier = Modifier.weight(1f),
+                                    title = "Kehadiran",
+                                    value = stats?.let { "${it.attendanceRate}%" } ?: "-",
+                                    subtitle = "Semester Berjalan",
+                                    badgeText = if ((stats?.attendanceRate ?: 0.0) >= 95) "Sangat Baik" else "Perlu Perhatian",
+                                    badgeColor = Emerald700,
+                                    badgeBackground = Emerald50,
+                                    icon = Icons.Default.CheckCircle,
+                                    iconTint = Emerald700,
+                                    iconBackground = Emerald50
+                                )
 
-                            SulaoneMetricCard(
-                                modifier = Modifier.weight(1f),
-                                title = "Rata-rata KKTP",
-                                value = "${child.gpaScore}",
-                                subtitle = "Target KKTP: 78.0",
-                                badgeText = "Fase F Unggul",
-                                badgeColor = AccentBlue,
-                                badgeBackground = AccentBlue.copy(alpha = 0.12f),
-                                icon = Icons.Default.School,
-                                iconTint = AccentBlue,
-                                iconBackground = AccentBlue.copy(alpha = 0.12f),
-                                onClick = { onNavigateToChildDetail(child.studentId) }
-                            )
-                        }
+                                SulaoneMetricCard(
+                                    modifier = Modifier.weight(1f),
+                                    title = "Rata-rata Nilai",
+                                    value = stats?.let { String.format("%.1f", it.averageGrade) } ?: "-",
+                                    subtitle = "Seluruh Mata Pelajaran",
+                                    badgeText = "Lihat Rapor",
+                                    badgeColor = AccentBlue,
+                                    badgeBackground = AccentBlue.copy(alpha = 0.12f),
+                                    icon = Icons.Default.School,
+                                    iconTint = AccentBlue,
+                                    iconBackground = AccentBlue.copy(alpha = 0.12f),
+                                    onClick = { onNavigateToChildDetail(child.uuid) }
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            SulaoneMetricCard(
-                                modifier = Modifier.weight(1f),
-                                title = "Mutabaah Ibadah",
-                                value = "${child.mutabaahScore}%",
-                                subtitle = "Sholat & Tilawah",
-                                badgeText = "Konsisten",
-                                badgeColor = Gold700,
-                                badgeBackground = Gold50,
-                                icon = Icons.Default.Mosque,
-                                iconTint = Gold700,
-                                iconBackground = Gold50
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                SulaoneMetricCard(
+                                    modifier = Modifier.weight(1f),
+                                    title = "Poin BK",
+                                    value = "${stats?.totalBkPoints ?: 0}",
+                                    subtitle = "Total Poin Pelanggaran",
+                                    badgeText = if ((stats?.totalBkPoints ?: 0) == 0) "Bersih" else "Perlu Perhatian",
+                                    badgeColor = if ((stats?.totalBkPoints ?: 0) == 0) Emerald700 else Gold700,
+                                    badgeBackground = if ((stats?.totalBkPoints ?: 0) == 0) Emerald50 else Gold50,
+                                    icon = Icons.Default.Gavel,
+                                    iconTint = if ((stats?.totalBkPoints ?: 0) == 0) Emerald700 else Gold700,
+                                    iconBackground = if ((stats?.totalBkPoints ?: 0) == 0) Emerald50 else Gold50,
+                                    onClick = { onNavigateRoute(Screen.Discipline.route) }
+                                )
 
-                            val isLunas = child.sppStatus.contains("Lunas", ignoreCase = true)
-                            SulaoneMetricCard(
-                                modifier = Modifier.weight(1f),
-                                title = "Status SPP & Infaq",
-                                value = if (isLunas) "LUNAS" else "TERTUNGGAK",
-                                subtitle = if (isLunas) "Bebas Administrasi" else "Menunggu Pembayaran",
-                                badgeText = if (isLunas) "Aman" else "Segera Bayar",
-                                badgeColor = if (isLunas) Emerald700 else AccentRose,
-                                badgeBackground = if (isLunas) Emerald50 else AccentRose.copy(alpha = 0.12f),
-                                icon = Icons.Default.AccountBalanceWallet,
-                                iconTint = if (isLunas) Emerald700 else AccentRose,
-                                iconBackground = if (isLunas) Emerald50 else AccentRose.copy(alpha = 0.12f),
-                                onClick = onNavigateToBilling
-                            )
+                                val unpaidCount = stats?.unpaidBillingsCount ?: 0
+                                SulaoneMetricCard(
+                                    modifier = Modifier.weight(1f),
+                                    title = "Status SPP & Infaq",
+                                    value = if (unpaidCount == 0) "LUNAS" else "$unpaidCount Tagihan",
+                                    subtitle = if (unpaidCount == 0) "Bebas Administrasi" else "Menunggu Pembayaran",
+                                    badgeText = if (unpaidCount == 0) "Aman" else "Segera Bayar",
+                                    badgeColor = if (unpaidCount == 0) Emerald700 else AccentRose,
+                                    badgeBackground = if (unpaidCount == 0) Emerald50 else AccentRose.copy(alpha = 0.12f),
+                                    icon = Icons.Default.AccountBalanceWallet,
+                                    iconTint = if (unpaidCount == 0) Emerald700 else AccentRose,
+                                    iconBackground = if (unpaidCount == 0) Emerald50 else AccentRose.copy(alpha = 0.12f),
+                                    onClick = onNavigateToBilling
+                                )
+                            }
                         }
                     }
                 }
@@ -333,7 +339,7 @@ fun ParentDashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "${digest?.attendancePercentage?.toInt() ?: 100}%",
+                                        text = digest?.attendancePercentage?.let { "${it.toInt()}%" } ?: "-",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Emerald700
@@ -347,7 +353,7 @@ fun ParentDashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "${digest?.averageGrade ?: 91.5f}",
+                                        text = digest?.averageGrade?.toString() ?: "-",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = AccentBlue
@@ -361,71 +367,13 @@ fun ParentDashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "${digest?.ibadahScore ?: 96}",
+                                        text = digest?.ibadahScore?.toString() ?: "-",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Gold700
                                     )
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-            // 6. Announcements for Parents
-            item {
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Text(
-                        text = "Pengumuman Sekolah untuk Wali Murid",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            }
-
-            items(
-                items = data?.recentAnnouncements ?: emptyList(),
-                key = { it.id },
-                contentType = { "announcement" }
-            ) { announcement ->
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                SulaoneBadge(
-                                    text = announcement.category,
-                                    containerColor = Emerald50,
-                                    contentColor = Emerald800
-                                )
-                                Text(
-                                    text = announcement.date,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Slate400
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = announcement.title,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = announcement.summary,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                     }
                 }
@@ -440,31 +388,25 @@ fun ParentDashboardScreen(
 }
 
 /**
- * Modern High-Polish Selected Child Persona Card with Real-Time Campus Gate arrival status
- * and WCAG 48dp action buttons.
+ * Selected child persona card. The old "real-time campus gate" pulse and
+ * "WhatsApp Guru" action are gone — the backend has no live gate-checkin
+ * feed for parents and no phone number field on the teacher/user record at
+ * all, so both were fabricated. In their place: an honest "most recent
+ * attendance log" summary (from real data already loaded) and an in-app
+ * "Pesan Sekolah" action, which is real (ConversationList).
  */
 @Composable
 private fun ParentChildPersonaCard(
-    child: ChildSummary,
+    child: ParentChildItem,
+    summary: com.sultanagung1.sista.data.model.ChildSummaryResponse?,
+    latestAttendance: com.sultanagung1.sista.data.model.ChildAttendanceLog?,
     onDetailClick: () -> Unit,
-    onBillingClick: () -> Unit,
     onDisciplineClick: () -> Unit,
-    onChatClick: () -> Unit,
-    onWhatsAppClick: (String, String) -> Unit
+    onChatClick: () -> Unit
 ) {
     val haptics = rememberHapticFeedbackHelper()
-
-    // Breathing pulse for gate presence
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+    val unpaidCount = summary?.statistics?.unpaidBillingsCount ?: 0
+    val sppLabel = if (unpaidCount == 0) "Lunas" else "$unpaidCount Tagihan"
 
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -514,7 +456,7 @@ private fun ParentChildPersonaCard(
                             )
                         }
                         Text(
-                            text = "${child.className} • NISN: ${child.nisn}",
+                            text = "${child.classroom ?: "-"} • NISN: ${child.nisn ?: "-"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -522,15 +464,16 @@ private fun ParentChildPersonaCard(
                 }
 
                 SulaoneBadge(
-                    text = child.sppStatus,
-                    containerColor = if (child.sppStatus == "Lunas") Emerald50 else Gold50,
-                    contentColor = if (child.sppStatus == "Lunas") Emerald800 else Gold800
+                    text = sppLabel,
+                    containerColor = if (unpaidCount == 0) Emerald50 else Gold50,
+                    contentColor = if (unpaidCount == 0) Emerald800 else Gold800
                 )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Real-Time Campus Gate Presence Status with Live Pulse
+            // Homeroom teacher name (real, from childSummary) — no phone number
+            // field exists on the backend's teacher/user record, so no WhatsApp action.
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = Emerald50.copy(alpha = 0.75f),
@@ -541,34 +484,27 @@ private fun ParentChildPersonaCard(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .graphicsLayer { this.alpha = pulseAlpha }
-                            .clip(CircleShape)
-                            .background(Emerald500)
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Emerald700,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Presensi Gerbang: ${child.todayAttendanceStatus}",
+                            text = "Wali Kelas: ${summary?.student?.homeroomTeacher ?: "Belum tersedia"}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = Emerald900
                         )
                         Text(
-                            text = "Tercatat di gerbang sekolah pukul ${child.todayCheckinTime}",
+                            text = if (latestAttendance != null) "Presensi terakhir: ${latestAttendance.date} — ${latestAttendance.statusLabel}" else "Belum ada data presensi",
                             style = MaterialTheme.typography.bodySmall,
                             color = Emerald800,
                             fontSize = 11.sp
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Emerald700,
-                        modifier = Modifier.size(18.dp)
-                    )
                 }
             }
 
@@ -576,7 +512,7 @@ private fun ParentChildPersonaCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Action Row 1: WhatsApp Wali Kelas & Rapor Detail (48dp Touch Targets)
+            // Action Row 1: Rapor Digital & Pesan Sekolah (48dp Touch Targets)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -584,10 +520,7 @@ private fun ParentChildPersonaCard(
                 OutlinedButton(
                     onClick = {
                         haptics.tapLight()
-                        onWhatsAppClick(
-                            child.homeroomPhone,
-                            "Assalamu'alaikum Ustadz ${child.homeroomTeacher}, saya orang tua dari ${child.name} ingin berkonsultasi mengenai perkembangan ananda."
-                        )
+                        onChatClick()
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -599,7 +532,7 @@ private fun ParentChildPersonaCard(
                 ) {
                     Icon(imageVector = Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = Emerald700, modifier = Modifier.size(17.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "WhatsApp Guru", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "Pesan Sekolah", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
@@ -622,46 +555,23 @@ private fun ParentChildPersonaCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Action Row 2: Buku Saku Kedisiplinan & Konsultasi Ortu ↔ Guru
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Action Row 2: Buku Saku Kedisiplinan
+            OutlinedButton(
+                onClick = {
+                    haptics.tapLight()
+                    onDisciplineClick()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .sulaoneInteractiveTouchTarget(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                contentPadding = PaddingValues(vertical = 10.dp)
             ) {
-                OutlinedButton(
-                    onClick = {
-                        haptics.tapLight()
-                        onDisciplineClick()
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .sulaoneInteractiveTouchTarget(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-                    contentPadding = PaddingValues(vertical = 10.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Gavel, contentDescription = null, tint = Gold700, modifier = Modifier.size(17.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Buku Saku Poin", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        haptics.tapLight()
-                        onChatClick()
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .sulaoneInteractiveTouchTarget(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-                    contentPadding = PaddingValues(vertical = 10.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.QuestionAnswer, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(17.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Pesan Sekolah", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                Icon(imageVector = Icons.Default.Gavel, contentDescription = null, tint = Gold700, modifier = Modifier.size(17.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "Buku Saku Poin", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }

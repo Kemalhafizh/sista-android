@@ -36,7 +36,7 @@ class OfflineActionQueue(
         return localStore.enqueueAction("MUTABAAH_LOG", activities)
     }
 
-    fun queueJournal(request: TeachingJournalCreateRequest): String {
+    fun queueJournal(request: StoreJournalRequest): String {
         return localStore.enqueueAction("TEACHING_JOURNAL", request)
     }
 
@@ -73,8 +73,8 @@ class OfflineActionQueue(
                             statusCode = 200
                         }
                         "TEACHING_JOURNAL" -> {
-                            val req = gson.fromJson(action.payloadJson, TeachingJournalCreateRequest::class.java)
-                            val response = apiClient.teacherApi.storeTeachingJournal(req)
+                            val req = gson.fromJson(action.payloadJson, StoreJournalRequest::class.java)
+                            val response = apiClient.teachingJournalApi.storeJournal(req)
                             statusCode = response.code()
                             isSuccess = response.isSuccessful
                         }

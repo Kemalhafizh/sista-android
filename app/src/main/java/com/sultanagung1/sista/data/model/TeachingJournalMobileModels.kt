@@ -11,7 +11,8 @@ data class TeacherScheduleSlot(
     @SerializedName("subject_id") val subjectId: Long,
     @SerializedName("subject_name") val subjectName: String,
     @SerializedName("classroom_id") val classroomId: Long,
-    @SerializedName("classroom_name") val classroomName: String
+    @SerializedName("classroom_name") val classroomName: String,
+    @SerializedName("room_name") val roomName: String? = null
 )
 
 /** Real dated journal entry — GET/POST teacher/journals (TeachingJournalResource). */
