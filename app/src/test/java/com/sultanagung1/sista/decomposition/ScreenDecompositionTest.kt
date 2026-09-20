@@ -94,9 +94,9 @@ class ScreenDecompositionTest {
         val newComponents = listOf(
             "SulaoneTextField.kt",
             "SulaoneDropdown.kt",
-            "SulaoneBottomSheet.kt",
+            "SulaoneModalBottomSheet.kt", // FASE 70.2: renamed from SulaoneBottomSheet.kt
             "SulaoneDatePicker.kt",
-            "SulaoneSegmentedButton.kt"
+            "SulaoneSegmentedFilter.kt" // FASE 70.2: renamed from SulaoneSegmentedButton.kt (which had zero real callers)
         )
 
         for (comp in newComponents) {

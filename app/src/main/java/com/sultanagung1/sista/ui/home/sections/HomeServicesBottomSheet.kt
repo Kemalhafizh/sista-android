@@ -94,10 +94,11 @@ fun HomeServicesBottomSheet(
         )
     }
 
-    SulaoneBottomSheet(
+    SulaoneModalBottomSheet(
         isVisible = isVisible,
         onDismiss = onDismiss,
-        title = "Semua Layanan SISTA"
+        title = "Semua Layanan SISTA",
+        fullHeight = true
     ) {
         LazyColumn(
             modifier = Modifier

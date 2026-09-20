@@ -170,6 +170,15 @@ fun SulaoneGradientCard(
     }
 }
 
+/** FASE 70.2 — the 4 variants [SulaoneButton] supports, matching the roadmap's atomic button spec. */
+enum class SulaoneButtonVariant { Primary, SecondaryOutlined, GhostText, DestructiveRose }
+
+/**
+ * FASE 70.2 — Sulaone's single atomic button, 4 variants, integrated loading
+ * spinner, WCAG 48dp+ touch target (default height 52dp), and micro-haptics
+ * on every tap. [containerColor]/[contentColor] still override [variant]
+ * when passed explicitly, so every pre-FASE-70 call site keeps working unchanged.
+ */
 @Composable
 fun SulaoneButton(
     text: String,
@@ -178,27 +187,38 @@ fun SulaoneButton(
     icon: ImageVector? = null,
     isLoading: Boolean = false,
     enabled: Boolean = true,
-    containerColor: Color = Emerald700,
-    contentColor: Color = Color.White
+    variant: SulaoneButtonVariant = SulaoneButtonVariant.Primary,
+    containerColor: Color? = null,
+    contentColor: Color? = null
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .height(52.dp)
-            .fillMaxWidth(),
-        enabled = enabled && !isLoading,
-        shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-            disabledContainerColor = containerColor.copy(alpha = 0.5f),
-            disabledContentColor = contentColor.copy(alpha = 0.5f)
-        )
-    ) {
+    val haptics = rememberHapticFeedbackHelper()
+    val resolvedContainer = containerColor ?: when (variant) {
+        SulaoneButtonVariant.Primary -> Emerald700
+        SulaoneButtonVariant.SecondaryOutlined, SulaoneButtonVariant.GhostText -> Color.Transparent
+        SulaoneButtonVariant.DestructiveRose -> AccentRose
+    }
+    val resolvedContent = contentColor ?: when (variant) {
+        SulaoneButtonVariant.Primary, SulaoneButtonVariant.DestructiveRose -> Color.White
+        SulaoneButtonVariant.SecondaryOutlined -> Emerald700
+        SulaoneButtonVariant.GhostText -> Emerald700
+    }
+
+    val onTap = {
+        haptics.tapLight()
+        onClick()
+    }
+
+    val buttonModifier = modifier
+        .heightIn(min = 52.dp)
+        .fillMaxWidth()
+    val shape = RoundedCornerShape(14.dp)
+
+    @Composable
+    fun ButtonContent() {
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
-                color = contentColor,
+                color = resolvedContent,
                 strokeWidth = 2.5.dp
             )
         } else {
@@ -215,6 +235,48 @@ fun SulaoneButton(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             }
+        }
+    }
+
+    when (variant) {
+        SulaoneButtonVariant.SecondaryOutlined -> {
+            OutlinedButton(
+                onClick = onTap,
+                modifier = buttonModifier,
+                enabled = enabled && !isLoading,
+                shape = shape,
+                border = androidx.compose.foundation.BorderStroke(1.dp, resolvedContent),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = resolvedContent,
+                    disabledContentColor = resolvedContent.copy(alpha = 0.5f)
+                )
+            ) { ButtonContent() }
+        }
+        SulaoneButtonVariant.GhostText -> {
+            TextButton(
+                onClick = onTap,
+                modifier = buttonModifier,
+                enabled = enabled && !isLoading,
+                shape = shape,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = resolvedContent,
+                    disabledContentColor = resolvedContent.copy(alpha = 0.5f)
+                )
+            ) { ButtonContent() }
+        }
+        else -> {
+            Button(
+                onClick = onTap,
+                modifier = buttonModifier,
+                enabled = enabled && !isLoading,
+                shape = shape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = resolvedContainer,
+                    contentColor = resolvedContent,
+                    disabledContainerColor = resolvedContainer.copy(alpha = 0.5f),
+                    disabledContentColor = resolvedContent.copy(alpha = 0.5f)
+                )
+            ) { ButtonContent() }
         }
     }
 }
@@ -254,7 +316,12 @@ fun SulaoneEmptyState(
     title: String,
     description: String,
     icon: ImageVector = Icons.Default.Inbox,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // FASE 70.2 — optional recovery CTA (e.g. "Coba Lagi", "Muat Ulang"). Null by
+    // default so all 14 pre-FASE-70 call sites keep rendering exactly as before.
+    ctaLabel: String? = null,
+    ctaIcon: ImageVector? = Icons.Default.Refresh,
+    onCtaClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -292,6 +359,16 @@ fun SulaoneEmptyState(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        if (ctaLabel != null && onCtaClick != null) {
+            Spacer(modifier = Modifier.height(18.dp))
+            SulaoneButton(
+                text = ctaLabel,
+                onClick = onCtaClick,
+                icon = ctaIcon,
+                variant = SulaoneButtonVariant.SecondaryOutlined,
+                modifier = Modifier.fillMaxWidth(fraction = 0.7f)
+            )
+        }
     }
 }
 
