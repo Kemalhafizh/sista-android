@@ -85,31 +85,6 @@ data class HealthScreeningData(
     val screener: String
 )
 
-// FASE 38: Jurnal Mengajar Guru
-data class SchoolTeachingJournalItem(
-    val id: Long,
-    val date: String,
-    @SerializedName("time_slot") val timeSlot: String,
-    @SerializedName("class_name") val className: String,
-    @SerializedName("subject_name") val subjectName: String,
-    val topic: String,
-    val notes: String? = null,
-    @SerializedName("attendance_present") val attendancePresent: Int,
-    @SerializedName("attendance_absent") val attendanceAbsent: Int = 0,
-    @SerializedName("absent_reason") val absentReason: String? = null,
-    val status: String = "approved"
-)
-
-data class StoreTeachingJournalRequest(
-    @SerializedName("class_name") val className: String,
-    @SerializedName("subject_name") val subjectName: String,
-    val topic: String,
-    val date: String,
-    val notes: String? = null,
-    @SerializedName("attendance_present") val attendancePresent: Int,
-    @SerializedName("attendance_absent") val attendanceAbsent: Int = 0
-)
-
 data class SchoolOpsApiResponse<T>(
     val success: Boolean,
     val message: String? = null,

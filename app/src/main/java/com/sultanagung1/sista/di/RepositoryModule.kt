@@ -136,11 +136,6 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideSchoolOperationsRepository(schoolOpsApi: SchoolOperationsApiService): SchoolOperationsRepository =
-        SchoolOperationsRepository(schoolOpsApi)
-
-    @Provides
-    @Singleton
     fun provideUksRepository(uksApi: UksMobileApiService): UksRepository =
         UksRepository(uksApi)
 

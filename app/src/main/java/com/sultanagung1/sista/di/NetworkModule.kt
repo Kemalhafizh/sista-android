@@ -207,11 +207,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideSchoolOpsApiService(retrofit: Retrofit): SchoolOperationsApiService =
-        retrofit.create(SchoolOperationsApiService::class.java)
-
-    @Provides
-    @Singleton
     fun provideCalendarApiService(retrofit: Retrofit): CalendarMobileApiService =
         retrofit.create(CalendarMobileApiService::class.java)
 
