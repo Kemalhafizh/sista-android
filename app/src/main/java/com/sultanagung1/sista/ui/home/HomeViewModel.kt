@@ -7,40 +7,39 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
-import com.sultanagung1.sista.data.model.AcademicSummary
 import com.sultanagung1.sista.data.model.PrayerSchedule
 import com.sultanagung1.sista.data.model.ScheduleItem
 import com.sultanagung1.sista.data.repository.StudentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 data class HomeUiState(
     val isLoading: Boolean = false,
     val userName: String = "Siswa Sultan Agung",
     val userRole: String = "student",
-    val userIdentifier: String = "212210045",
-    val studentClass: String = "XII MIPA 1",
+    val userIdentifier: String = "—",
+    val studentClass: String = "—",
     val todaySchedules: List<ScheduleItem> = emptyList(),
-    val academicSummary: AcademicSummary? = null,
     val contextualPayload: com.sultanagung1.sista.data.model.ContextualHomePayload? = null,
-    val prayerSchedule: PrayerSchedule = PrayerSchedule(
-        fajr = "04:32",
-        dhuhr = "11:52",
-        asr = "15:10",
-        maghrib = "17:54",
-        isha = "19:04",
-        currentPrayer = "Dzuhur",
-        nextPrayerName = "Ashar",
-        nextPrayerCountdown = "01:24:10"
-    ),
-    val isAttendanceDoneToday: Boolean = false,
-    val unreadNotificationsCount: Int = 3,
+    /** Null until a real prayer-time source is wired — sistem-terpadu has no JSON API for this yet. */
+    val prayerSchedule: PrayerSchedule? = null,
+    val unreadNotificationsCount: Int = 0,
     val errorMessage: String? = null
 )
 
+private val INDONESIAN_DAY_NAMES = mapOf(
+    Calendar.MONDAY to "Senin",
+    Calendar.TUESDAY to "Selasa",
+    Calendar.WEDNESDAY to "Rabu",
+    Calendar.THURSDAY to "Kamis",
+    Calendar.FRIDAY to "Jumat",
+    Calendar.SATURDAY to "Sabtu",
+    Calendar.SUNDAY to "Minggu"
+)
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -73,6 +72,13 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            sessionManager.userClassroomFlow.collect { classroom ->
+                if (!classroom.isNullOrBlank()) {
+                    _uiState.value = _uiState.value.copy(studentClass = classroom)
+                }
+            }
+        }
         loadHomeData()
     }
 
@@ -80,18 +86,31 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            // Load today's schedule
+            // The backend returns the whole week's schedule (no day filter param),
+            // so "today's" classes must be filtered client-side.
+            val todayName = INDONESIAN_DAY_NAMES[Calendar.getInstance().get(Calendar.DAY_OF_WEEK)]
             studentRepository.getSchedule().collect { result ->
-                if (result is NetworkResult.Success) {
-                    _uiState.value = _uiState.value.copy(
-                        todaySchedules = result.data.take(3),
-                        isLoading = false
-                    )
-                } else if (result is NetworkResult.Error) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
+                when (result) {
+                    is NetworkResult.Loading -> Unit
+                    is NetworkResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            todaySchedules = result.data
+                                .filter { it.day.equals(todayName, ignoreCase = true) }
+                                .sortedBy { it.startTime },
+                            isLoading = false
+                        )
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.message)
+                    }
+                }
+            }
+
+            viewModelScope.launch {
+                studentRepository.getUnreadNotificationCount().collect { result ->
+                    if (result is NetworkResult.Success) {
+                        _uiState.value = _uiState.value.copy(unreadNotificationsCount = result.data)
+                    }
                 }
             }
 

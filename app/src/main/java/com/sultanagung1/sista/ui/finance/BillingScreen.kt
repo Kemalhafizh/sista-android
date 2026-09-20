@@ -59,10 +59,13 @@ fun BillingScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val filteredInvoices by viewModel.filteredInvoices.collectAsState()
+    val vaState by viewModel.vaState.collectAsState()
+    val studentName by viewModel.studentName.collectAsState()
+    val studentClass by viewModel.studentClass.collectAsState()
 
     var selectedInvoiceForVa by remember { mutableStateOf<BillingInvoice?>(null) }
     var selectedInvoiceForReceipt by remember { mutableStateOf<BillingInvoice?>(null) }
-    var selectedBankChannel by remember { mutableStateOf("BSI") }
+    var selectedBankChannel by remember { mutableStateOf("BCA") }
 
     Scaffold(
         topBar = {
@@ -168,7 +171,7 @@ fun BillingScreen(
 
                                     // Main Amount Display
                                     Text(
-                                        text = "Rp ${"%,d".format(state.totalUnpaid).replace(',', '.')}",
+                                        text = "Rp ${"%,.0f".format(state.totalUnpaid).replace(',', '.')}",
                                         style = MaterialTheme.typography.headlineLarge,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = if (isDark) Color.White else Slate900
@@ -186,8 +189,11 @@ fun BillingScreen(
                                             tint = if (isDark) Slate400 else Slate500,
                                             modifier = Modifier.size(14.dp)
                                         )
+                                        val nearestDueDate = state.invoices
+                                            .filter { it.status != BillingStatus.PAID }
+                                            .minByOrNull { it.dueDate }?.dueDate
                                         Text(
-                                            text = "Jatuh tempo terdekat: 10 September 2026",
+                                            text = nearestDueDate?.let { "Jatuh tempo terdekat: $it" } ?: "Tidak ada tagihan tertunda",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (isDark) Slate400 else Slate500
                                         )
@@ -214,7 +220,7 @@ fun BillingScreen(
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = "Rp ${"%,d".format(state.totalPaid).replace(',', '.')}",
+                                                text = "Rp ${"%,.0f".format(state.totalPaid).replace(',', '.')}",
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isDark) Emerald300 else Emerald600
@@ -268,8 +274,8 @@ fun BillingScreen(
                             ) {
                                 listOf(
                                     "SEMUA" to "Semua (${state.invoices.size})",
-                                    "UNPAID" to "Belum Bayar (${state.invoices.count { it.status == "UNPAID" }})",
-                                    "PAID" to "Lunas (${state.invoices.count { it.status == "PAID" }})"
+                                    "UNPAID" to "Belum Bayar (${state.invoices.count { it.status != BillingStatus.PAID }})",
+                                    "PAID" to "Lunas (${state.invoices.count { it.status == BillingStatus.PAID }})"
                                 ).forEach { (key, label) ->
                                     val isSelected = state.selectedFilter == key
                                     Surface(
@@ -311,7 +317,7 @@ fun BillingScreen(
                         // Invoices List (Flat 0dp Card, 0.5dp Border, Micro-interactions)
                         // =========================================================
                         items(filteredInvoices) { item ->
-                            val isPaid = item.status == "PAID"
+                            val isPaid = item.status == BillingStatus.PAID
 
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -335,7 +341,7 @@ fun BillingScreen(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = item.title,
+                                                text = item.displayTitle,
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isDark) Color.White else Slate900
@@ -405,7 +411,7 @@ fun BillingScreen(
                                                 color = if (isDark) Slate400 else Slate500
                                             )
                                             Text(
-                                                text = item.formattedAmount,
+                                                text = item.amountFormatted,
                                                 style = MaterialTheme.typography.titleLarge,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 color = if (isPaid) (if (isDark) Emerald300 else Emerald700) else (if (isDark) Color.White else Slate900)
@@ -479,16 +485,19 @@ fun BillingScreen(
     // =====================================================================
     if (selectedInvoiceForVa != null) {
         val invoice = selectedInvoiceForVa!!
-        val studentNisn = "0069911223"
-        val vaNumber = when (selectedBankChannel) {
-            "BSI" -> "88219$studentNisn"
-            "JATENG_SYARIAH" -> "99120$studentNisn"
-            "MUAMALAT" -> "77310$studentNisn"
-            else -> "00029$studentNisn"
+
+        LaunchedEffect(invoice.id, selectedBankChannel) {
+            viewModel.requestVa(invoice.id, selectedBankChannel)
+        }
+        DisposableEffect(Unit) {
+            onDispose { viewModel.clearVaState() }
         }
 
         AlertDialog(
-            onDismissRequest = { selectedInvoiceForVa = null },
+            onDismissRequest = {
+                selectedInvoiceForVa = null
+                viewModel.clearVaState()
+            },
             shape = RoundedCornerShape(20.dp),
             containerColor = if (isDark) Slate850 else Color.White,
             title = {
@@ -502,14 +511,14 @@ fun BillingScreen(
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        text = invoice.title,
+                        text = invoice.displayTitle,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                         color = if (isDark) Emerald300 else Emerald700
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Total Tagihan: ${invoice.formattedAmount}",
+                        text = "Total Tagihan: ${invoice.amountFormatted}",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 16.sp,
                         color = if (isDark) Color.White else Slate900
@@ -525,15 +534,16 @@ fun BillingScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Bank selection chips
+                    // Bank codes match exactly what ApiStudentController::payBilling() recognizes.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         listOf(
-                            "BSI" to "BSI Syariah",
-                            "JATENG_SYARIAH" to "Jateng Syariah",
-                            "MUAMALAT" to "Muamalat"
+                            "BCA" to "BCA",
+                            "MANDIRI" to "Mandiri",
+                            "BNI" to "BNI",
+                            "BRI" to "BRI"
                         ).forEach { (code, label) ->
                             val isSelected = selectedBankChannel == code
                             Surface(
@@ -573,54 +583,80 @@ fun BillingScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // VA Box
+                    // VA Box — driven by the real POST .../billings/{id}/pay response
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = if (isDark) Slate800 else Emerald50,
                         border = BorderStroke(0.5.dp, if (isDark) Slate700 else Emerald200),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Text(
-                                text = "NOMOR VIRTUAL ACCOUNT:",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDark) Emerald300 else Emerald700
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = vaNumber,
-                                    style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace),
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (isDark) Color.White else Emerald900,
-                                    letterSpacing = 1.sp
-                                )
-                                IconButton(
-                                    onClick = {
-                                        haptics.success()
-                                        clipboardManager.setPrimaryClip(ClipData.newPlainText("VA Number", vaNumber))
-                                        Toast.makeText(context, "Nomor VA berhasil disalin!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    modifier = Modifier.sulaoneInteractiveTouchTarget(48.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = "Salin Nomor VA",
-                                        tint = if (isDark) Emerald300 else Emerald600
+                        Column(
+                            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            when (val va = vaState) {
+                                is VaRequestState.Loading, VaRequestState.Idle -> {
+                                    CircularProgressIndicator(modifier = Modifier.size(28.dp), color = Emerald600)
+                                }
+                                is VaRequestState.Error -> {
+                                    Text(
+                                        text = va.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AccentRose,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
+                                is VaRequestState.Success -> {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = "NOMOR VIRTUAL ACCOUNT:",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isDark) Emerald300 else Emerald700
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = va.va.vaNumber,
+                                                style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace),
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = if (isDark) Color.White else Emerald900,
+                                                letterSpacing = 1.sp
+                                            )
+                                            IconButton(
+                                                onClick = {
+                                                    haptics.success()
+                                                    clipboardManager.setPrimaryClip(ClipData.newPlainText("VA Number", va.va.vaNumber))
+                                                    Toast.makeText(context, "Nomor VA berhasil disalin!", Toast.LENGTH_SHORT).show()
+                                                },
+                                                modifier = Modifier.sulaoneInteractiveTouchTarget(48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.ContentCopy,
+                                                    contentDescription = "Salin Nomor VA",
+                                                    tint = if (isDark) Emerald300 else Emerald600
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "Atas Nama: ${studentName ?: "—"}${studentClass?.let { " ($it)" } ?: ""}",
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                            color = if (isDark) Slate400 else Slate600
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "Berlaku hingga: ${va.va.expiryTime}",
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                            color = if (isDark) Slate400 else Slate600
+                                        )
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Atas Nama: Ahmad Kemal Hafizh (XII MIPA 1)",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                color = if (isDark) Slate400 else Slate600
-                            )
                         }
                     }
 
@@ -634,7 +670,7 @@ fun BillingScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "1. Buka BSI Mobile / ATM / Mobile Banking Anda.\n2. Pilih menu Pembayaran / Bayar Tagihan > Institusi Akademik.\n3. Masukkan kode institusi / No VA di atas.\n4. Konfirmasi nama siswa & jumlah, lalu selesaikan pembayaran.",
+                        text = "1. Buka Mobile Banking / ATM bank pilihan Anda.\n2. Pilih menu Pembayaran / Bayar Tagihan > Institusi Akademik.\n3. Masukkan nomor VA di atas.\n4. Konfirmasi nama siswa & jumlah, lalu selesaikan pembayaran.",
                         fontSize = 11.sp,
                         color = if (isDark) Slate400 else Slate600,
                         lineHeight = 16.sp
@@ -642,13 +678,18 @@ fun BillingScreen(
                 }
             },
             confirmButton = {
+                val currentVa = (vaState as? VaRequestState.Success)?.va
                 Button(
                     onClick = {
                         haptics.success()
-                        clipboardManager.setPrimaryClip(ClipData.newPlainText("VA Number", vaNumber))
-                        Toast.makeText(context, "Nomor VA disalin ke clipboard!", Toast.LENGTH_SHORT).show()
+                        currentVa?.let {
+                            clipboardManager.setPrimaryClip(ClipData.newPlainText("VA Number", it.vaNumber))
+                            Toast.makeText(context, "Nomor VA disalin ke clipboard!", Toast.LENGTH_SHORT).show()
+                        }
                         selectedInvoiceForVa = null
+                        viewModel.clearVaState()
                     },
+                    enabled = currentVa != null,
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
                     elevation = ButtonDefaults.buttonElevation(0.dp),
@@ -662,6 +703,7 @@ fun BillingScreen(
                     onClick = {
                         haptics.tapLight()
                         selectedInvoiceForVa = null
+                        viewModel.clearVaState()
                     },
                     modifier = Modifier.sulaoneInteractiveTouchTarget(48.dp)
                 ) {
@@ -741,12 +783,12 @@ fun BillingScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Nama Siswa:", fontSize = 11.sp, color = if (isDark) Slate400 else Slate500)
-                        Text("Ahmad Kemal Hafizh", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Slate900)
+                        Text(studentName ?: "—", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Slate900)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Keterangan:", fontSize = 11.sp, color = if (isDark) Slate400 else Slate500)
-                        Text(invoice.title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Slate900)
+                        Text(invoice.displayTitle, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Slate900)
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -773,7 +815,7 @@ fun BillingScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = invoice.formattedAmount,
+                                    text = invoice.amountFormatted,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = if (isDark) Color.White else Emerald900
@@ -797,24 +839,16 @@ fun BillingScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            haptics.success()
-                            Toast.makeText(context, "Kuitansi resmi berhasil disimpan ke folder Download", Toast.LENGTH_LONG).show()
-                            selectedInvoiceForReceipt = null
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .sulaoneInteractiveTouchTarget(48.dp)
-                            .springPressable(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
-                        elevation = ButtonDefaults.buttonElevation(0.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Unduh Kuitansi PDF", fontWeight = FontWeight.Bold)
-                    }
+                    // No backend endpoint exists yet to generate/download a receipt PDF
+                    // for the mobile client (see ApiStudentController — payBilling() is a
+                    // VA simulator with no persisted transaction to issue a receipt for).
+                    Text(
+                        text = "Fitur unduh kuitansi PDF belum tersedia di aplikasi ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isDark) Slate400 else Slate500,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

@@ -36,7 +36,8 @@ class AuthRepository(
                         name = user.name,
                         email = user.email,
                         identifier = user.nisn ?: user.nip ?: user.email,
-                        userId = user.id?.toString()
+                        userId = user.id?.toString(),
+                        classroom = user.classroom
                     )
                     // Simpan data profil ke Database Room (SQLite)
                     userDao?.insertUser(UserEntity.fromUserProfile(user))
@@ -91,7 +92,8 @@ class AuthRepository(
                         name = user.name,
                         email = user.email,
                         identifier = user.nisn ?: user.nip ?: user.email,
-                        userId = user.id?.toString() ?: userId
+                        userId = user.id?.toString() ?: userId,
+                        classroom = user.classroom
                     )
                 }
                 emit(NetworkResult.Success(body))
@@ -142,46 +144,17 @@ class StudentRepository(
 
         try {
             val response = apiClient.studentApi.getSchedule()
-            if (response.isSuccessful && response.body() != null) {
-                val data = response.body()!!
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
                 localStore?.saveSchedule(data)
                 emit(NetworkResult.Success(data))
-            } else {
-                if (localStore?.getCachedSchedule() == null) {
-                    emit(NetworkResult.Error("Gagal memuat jadwal pelajaran", response.code()))
-                }
+            } else if (localStore?.getCachedSchedule() == null) {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat jadwal pelajaran", response.code()))
             }
         } catch (e: Exception) {
-            val fallback = localStore?.getCachedSchedule() ?: listOf(
-                ScheduleItem(
-                    id = 1L,
-                    day = "Selasa",
-                    startTime = "07:30",
-                    endTime = "09:00",
-                    subjectName = "Matematika Tingkat Lanjut",
-                    teacherName = "Ustadz Ahmad Fauzi, M.Pd",
-                    room = "R.201 (Lab AI)"
-                ),
-                ScheduleItem(
-                    id = 2L,
-                    day = "Selasa",
-                    startTime = "09:15",
-                    endTime = "10:45",
-                    subjectName = "Pendidikan Agama Islam & Tahfidz",
-                    teacherName = "Ustadz Bambang Irawan, Lc",
-                    room = "Masjid Sultan Agung"
-                ),
-                ScheduleItem(
-                    id = 3L,
-                    day = "Selasa",
-                    startTime = "11:00",
-                    endTime = "12:30",
-                    subjectName = "Fisika Modern & Riset",
-                    teacherName = "Ustadzah Siti Aminah, M.Si",
-                    room = "R.203"
-                )
-            )
-            emit(NetworkResult.Success(fallback))
+            if (localStore?.getCachedSchedule() == null) {
+                emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat memuat jadwal pelajaran."))
+            }
         }
     }.flowOn(Dispatchers.IO)
 
@@ -225,10 +198,11 @@ class StudentRepository(
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.studentApi.getBillings()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Error("Gagal memuat tagihan SPP", response.code()))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat tagihan SPP", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
@@ -239,10 +213,56 @@ class StudentRepository(
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.studentApi.requestPaymentVa(billingId, mapOf("bank" to bank))
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Error("Gagal generate Virtual Account", response.code()))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal generate Virtual Account", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getMutabaah(): Flow<NetworkResult<List<MutabaahLogItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.studentApi.getMutabaah()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat riwayat mutaba'ah", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getTahfidzHistory(): Flow<NetworkResult<List<TahfidzLogItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.studentApi.getTahfidzHistory()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat riwayat setoran tahfidz", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getUnreadNotificationCount(): Flow<NetworkResult<Int>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.studentApi.getNotificationsSummary()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data.count { it.readAt == null }))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat notifikasi", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
@@ -288,6 +308,21 @@ class AttendanceRepository(private val apiClient: ApiClient) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
                 emit(NetworkResult.Error("Gagal memuat QR presensi dinamis", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getAttendanceHistory(): Flow<NetworkResult<List<AttendanceHistoryItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.attendanceApi.getAttendanceHistory()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat riwayat presensi", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))

@@ -1,5 +1,6 @@
 package com.sultanagung1.sista.data.api
 
+import com.sultanagung1.sista.core.network.ApiEnvelope
 import com.sultanagung1.sista.data.model.*
 import retrofit2.Response
 import retrofit2.http.*
@@ -7,25 +8,28 @@ import retrofit2.http.*
 interface StudentApiService {
 
     @GET("student/schedule")
-    suspend fun getSchedule(): Response<List<ScheduleItem>>
+    suspend fun getSchedule(): Response<ApiEnvelope<List<ScheduleItem>>>
 
     @GET("student/grades")
     suspend fun getAcademicSummary(): Response<AcademicSummary>
 
     @GET("student/billings")
-    suspend fun getBillings(): Response<List<BillingInvoice>>
+    suspend fun getBillings(): Response<ApiEnvelope<List<BillingInvoice>>>
 
     @POST("student/billings/{id}/pay")
     suspend fun requestPaymentVa(
         @Path("id") billingId: Long,
         @Body body: Map<String, String>
-    ): Response<PaymentVaResponse>
+    ): Response<ApiEnvelope<PaymentVaResponse>>
 
     @GET("student/mutabaah")
-    suspend fun getMutabaah(): Response<List<MutabaahItem>>
+    suspend fun getMutabaah(): Response<ApiEnvelope<List<MutabaahLogItem>>>
 
     @GET("student/tahfidz")
-    suspend fun getTahfidzHistory(): Response<List<TahsinRecordItem>>
+    suspend fun getTahfidzHistory(): Response<ApiEnvelope<List<TahfidzLogItem>>>
+
+    @GET("student/notifications")
+    suspend fun getNotificationsSummary(): Response<ApiEnvelope<List<NotificationSummaryItem>>>
 }
 
 interface AttendanceApiService {
@@ -39,7 +43,7 @@ interface AttendanceApiService {
     suspend fun getDynamicQr(): Response<DynamicQrResponse>
 
     @GET("student/attendance")
-    suspend fun getAttendanceHistory(): Response<List<AttendanceHistoryItem>>
+    suspend fun getAttendanceHistory(): Response<ApiEnvelope<List<AttendanceHistoryItem>>>
 
     @POST("iot/face/enroll")
     suspend fun enrollFaceBiometric(

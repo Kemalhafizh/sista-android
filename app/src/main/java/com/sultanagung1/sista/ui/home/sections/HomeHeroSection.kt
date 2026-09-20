@@ -52,7 +52,7 @@ internal fun HomeHeroSection(
     onNavigateRoute: ((String) -> Unit)?
 ) {
     val haptics = rememberHapticFeedbackHelper()
-    val studentName = uiState.userName.ifBlank { "Muhammad Rizky Pratama" }
+    val studentName = uiState.userName
     val initials = remember(studentName) {
         studentName.split(" ")
             .filter { it.isNotBlank() }
@@ -335,7 +335,7 @@ internal fun HomeHeroSection(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = uiState.studentClass.ifBlank { "XII MIPA 1" },
+                                text = uiState.studentClass,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold
                                 ),
@@ -378,7 +378,7 @@ internal fun HomeHeroSection(
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, if (isDark) Slate700 else Slate200)
                     ) {
                         Text(
-                            text = "NIS: ${uiState.userIdentifier.ifBlank { "212210045" }}",
+                            text = "NIS: ${uiState.userIdentifier}",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Medium
                             ),

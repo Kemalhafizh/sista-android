@@ -22,12 +22,16 @@ import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.data.model.PrayerSchedule
 
+/**
+ * [prayerSchedule] is null until a real prayer-time source is wired — the
+ * school backend has no JSON API for this yet, so this renders an honest
+ * "not available" card instead of fabricated Hijri dates/times.
+ */
 @Composable
-internal fun HomePrayerWidget(prayerSchedule: PrayerSchedule) {
+internal fun HomePrayerWidget(prayerSchedule: PrayerSchedule?) {
     val isDark = MaterialTheme.colorScheme.surface.isDark()
 
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
-        // Minimalist Surface Card (No heavy oversized arch)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp),
@@ -43,81 +47,75 @@ internal fun HomePrayerWidget(prayerSchedule: PrayerSchedule) {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                // Top Meta Row: Hijri Date & Live Status
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Emerald50),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Mosque,
-                                contentDescription = null,
-                                tint = Emerald700,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "12 Safar 1448 H • Semarang",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Emerald50),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mosque,
+                            contentDescription = null,
+                            tint = Emerald700,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-
-                    LiveStatusChip(
-                        text = "KBM AKTIF",
-                        color = Emerald700
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Jadwal Sholat",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Countdown Headline
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Menuju Waktu ${prayerSchedule.nextPrayerName}",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${prayerSchedule.nextPrayerCountdown} lagi menuju adzan",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                if (prayerSchedule == null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Jadwal sholat belum tersedia di aplikasi ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Menuju Waktu ${prayerSchedule.nextPrayerName}",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${prayerSchedule.nextPrayerCountdown} lagi menuju adzan",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                // Clean 5 Prayer Times Bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    ModernPrayerBadge("Subuh", prayerSchedule.fajr, isCurrent = false)
-                    ModernPrayerBadge("Dzuhur", prayerSchedule.dhuhr, isCurrent = true)
-                    ModernPrayerBadge("Ashar", prayerSchedule.asr, isCurrent = false)
-                    ModernPrayerBadge("Maghrib", prayerSchedule.maghrib, isCurrent = false)
-                    ModernPrayerBadge("Isya", prayerSchedule.isha, isCurrent = false)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        ModernPrayerBadge("Subuh", prayerSchedule.fajr, isCurrent = prayerSchedule.currentPrayer == "Subuh")
+                        ModernPrayerBadge("Dzuhur", prayerSchedule.dhuhr, isCurrent = prayerSchedule.currentPrayer == "Dzuhur")
+                        ModernPrayerBadge("Ashar", prayerSchedule.asr, isCurrent = prayerSchedule.currentPrayer == "Ashar")
+                        ModernPrayerBadge("Maghrib", prayerSchedule.maghrib, isCurrent = prayerSchedule.currentPrayer == "Maghrib")
+                        ModernPrayerBadge("Isya", prayerSchedule.isha, isCurrent = prayerSchedule.currentPrayer == "Isya")
+                    }
                 }
             }
         }

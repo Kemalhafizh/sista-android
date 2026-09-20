@@ -4,14 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.mvi.UiEvent
 import com.sultanagung1.sista.core.mvi.UiState
+import com.sultanagung1.sista.core.network.NetworkResult
+import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.model.BillingInvoice
+import com.sultanagung1.sista.data.model.PaymentVaResponse
 import com.sultanagung1.sista.data.repository.StudentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 sealed interface BillingUiEvent : UiEvent {
@@ -23,32 +25,51 @@ sealed interface BillingUiState : UiState {
     data object Loading : BillingUiState
     data class Content(
         val invoices: List<BillingInvoice>,
-        val totalUnpaid: Long,
-        val totalPaid: Long,
+        val totalUnpaid: Double,
+        val totalPaid: Double,
         val selectedFilter: String = "SEMUA"
     ) : BillingUiState
     data class Error(val message: String) : BillingUiState
 }
 
+sealed interface VaRequestState {
+    data object Idle : VaRequestState
+    data object Loading : VaRequestState
+    data class Success(val va: PaymentVaResponse) : VaRequestState
+    data class Error(val message: String) : VaRequestState
+}
+
+/** Billing.status values as the backend actually stores them (finance_tables migration). */
+object BillingStatus {
+    const val PAID = "paid"
+    const val UNPAID = "unpaid"
+    const val PARTIAL = "partial"
+}
+
 @HiltViewModel
 class BillingViewModel @Inject constructor(
-    private val studentRepository: StudentRepository
+    private val studentRepository: StudentRepository,
+    sessionManager: SessionManager
 ) : ViewModel() {
 
-    private val sampleBillings = listOf(
-        BillingInvoice(1, "SPP & Syahriah September 2026", 750000, "Rp 750.000", "10 Sep 2026", "UNPAID", "Bank Syariah Indonesia", "8821900699112"),
-        BillingInvoice(2, "Iuran Praktikum Lab Komputer & AI (Semester 1)", 250000, "Rp 250.000", "15 Sep 2026", "UNPAID", "Bank Jateng Syariah", "9912000699112"),
-        BillingInvoice(3, "Wakaf Pembangunan Lab Robotik & STEM", 500000, "Rp 500.000", "30 Sep 2026", "UNPAID", "BSI Virtual Account", "8821900699112"),
-        BillingInvoice(4, "SPP & Syahriah Agustus 2026", 750000, "Rp 750.000", "10 Agu 2026", "PAID", "BSI Virtual Account", "8821900699112"),
-        BillingInvoice(5, "SPP & Syahriah Juli 2026", 750000, "Rp 750.000", "10 Jul 2026", "PAID", "BSI Virtual Account", "8821900699112"),
-        BillingInvoice(6, "Daftar Ulang & Seragam Khas Yayasan", 1200000, "Rp 1.200.000", "05 Jul 2026", "PAID", "Bank Jateng Syariah", "9912000699112")
-    )
+    val studentName: StateFlow<String?> = MutableStateFlow<String?>(null).also { flow ->
+        viewModelScope.launch { sessionManager.userNameFlow.collect { flow.value = it } }
+    }.asStateFlow()
+
+    val studentClass: StateFlow<String?> = MutableStateFlow<String?>(null).also { flow ->
+        viewModelScope.launch { sessionManager.userClassroomFlow.collect { flow.value = it } }
+    }.asStateFlow()
+
+    private var allInvoices: List<BillingInvoice> = emptyList()
 
     private val _uiState = MutableStateFlow<BillingUiState>(BillingUiState.Loading)
     val uiState: StateFlow<BillingUiState> = _uiState.asStateFlow()
 
     private val _filteredInvoices = MutableStateFlow<List<BillingInvoice>>(emptyList())
     val filteredInvoices: StateFlow<List<BillingInvoice>> = _filteredInvoices.asStateFlow()
+
+    private val _vaState = MutableStateFlow<VaRequestState>(VaRequestState.Idle)
+    val vaState: StateFlow<VaRequestState> = _vaState.asStateFlow()
 
     private var currentFilter = "SEMUA"
 
@@ -66,19 +87,25 @@ class BillingViewModel @Inject constructor(
     fun loadBillings() {
         viewModelScope.launch {
             _uiState.value = BillingUiState.Loading
-            delay(500) // Simulate network delay
-            try {
-                val totalUnpaid = sampleBillings.filter { it.status == "UNPAID" }.sumOf { it.amount }
-                val totalPaid = sampleBillings.filter { it.status == "PAID" }.sumOf { it.amount }
-                _uiState.value = BillingUiState.Content(
-                    invoices = sampleBillings,
-                    totalUnpaid = totalUnpaid,
-                    totalPaid = totalPaid,
-                    selectedFilter = currentFilter
-                )
-                updateFilteredInvoices()
-            } catch (e: Exception) {
-                _uiState.value = BillingUiState.Error(e.message ?: "Unknown error occurred")
+            studentRepository.getBillings().collect { result ->
+                when (result) {
+                    is NetworkResult.Loading -> Unit
+                    is NetworkResult.Success -> {
+                        allInvoices = result.data
+                        val totalUnpaid = allInvoices.filter { it.status != BillingStatus.PAID }.sumOf { it.remainingBalance }
+                        val totalPaid = allInvoices.filter { it.status == BillingStatus.PAID }.sumOf { it.amount }
+                        _uiState.value = BillingUiState.Content(
+                            invoices = allInvoices,
+                            totalUnpaid = totalUnpaid,
+                            totalPaid = totalPaid,
+                            selectedFilter = currentFilter
+                        )
+                        updateFilteredInvoices()
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.value = BillingUiState.Error(result.message)
+                    }
+                }
             }
         }
     }
@@ -92,12 +119,27 @@ class BillingViewModel @Inject constructor(
         }
     }
 
+    fun requestVa(billingId: Long, bank: String) {
+        viewModelScope.launch {
+            studentRepository.requestPaymentVa(billingId, bank).collect { result ->
+                _vaState.value = when (result) {
+                    is NetworkResult.Loading -> VaRequestState.Loading
+                    is NetworkResult.Success -> VaRequestState.Success(result.data)
+                    is NetworkResult.Error -> VaRequestState.Error(result.message)
+                }
+            }
+        }
+    }
+
+    fun clearVaState() {
+        _vaState.value = VaRequestState.Idle
+    }
+
     private fun updateFilteredInvoices() {
-        val invoices = sampleBillings
         _filteredInvoices.value = when (currentFilter) {
-            "UNPAID" -> invoices.filter { it.status == "UNPAID" }
-            "PAID" -> invoices.filter { it.status == "PAID" }
-            else -> invoices
+            "UNPAID" -> allInvoices.filter { it.status != BillingStatus.PAID }
+            "PAID" -> allInvoices.filter { it.status == BillingStatus.PAID }
+            else -> allInvoices
         }
     }
 }

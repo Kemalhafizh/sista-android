@@ -302,7 +302,8 @@ fun TahsinRecorderScreen(
         }
     }
 
-    // Success Dialog
+    // Recording is saved locally only — there is no backend endpoint yet to
+    // upload/submit it for teacher grading, so this must not claim it was sent.
     if (showSubmitSuccess) {
         AlertDialog(
             onDismissRequest = {
@@ -310,10 +311,10 @@ fun TahsinRecorderScreen(
                 onNavigateBack()
             },
             title = {
-                Text("Alhamdulillah, Setoran Terkirim!", fontWeight = FontWeight.Bold)
+                Text("Rekaman Tersimpan di Perangkat", fontWeight = FontWeight.Bold)
             },
             text = {
-                Text("Rekaman audio tahsin $selectedSurah telah berhasil dikirim ke Ust. Zainul Arifin, Lc untuk dievaluasi makhraj dan tajwidnya.")
+                Text("Rekaman audio tahsin $selectedSurah tersimpan di perangkat Anda. Fitur pengiriman rekaman ke guru tahfidz untuk evaluasi belum tersedia di server — silakan setorkan secara langsung untuk saat ini.")
             },
             confirmButton = {
                 Button(

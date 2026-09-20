@@ -22,6 +22,7 @@ class SessionManager(private val context: Context) {
         val KEY_USER_NAME = stringPreferencesKey("user_name")
         val KEY_USER_EMAIL = stringPreferencesKey("user_email")
         val KEY_USER_IDENTIFIER = stringPreferencesKey("user_identifier") // NISN or NIP
+        val KEY_USER_CLASSROOM = stringPreferencesKey("user_classroom")
         val KEY_DEVICE_ID = stringPreferencesKey("device_id")
         val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
         val KEY_SENSITIVE_PROTECTION_ENABLED = booleanPreferencesKey("sensitive_protection_enabled")
@@ -65,6 +66,12 @@ class SessionManager(private val context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map { preferences -> preferences[KEY_USER_IDENTIFIER] }
+
+    val userClassroomFlow: Flow<String?> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences -> preferences[KEY_USER_CLASSROOM] }
 
     val isLoggedInFlow: Flow<Boolean> = context.dataStore.data
         .catch { exception ->
@@ -133,7 +140,8 @@ class SessionManager(private val context: Context) {
         name: String,
         email: String,
         identifier: String,
-        userId: String? = null
+        userId: String? = null,
+        classroom: String? = null
     ) {
         context.dataStore.edit { preferences ->
             preferences[KEY_AUTH_TOKEN] = token
@@ -146,6 +154,9 @@ class SessionManager(private val context: Context) {
             if (!userId.isNullOrBlank()) {
                 preferences[KEY_USER_ID] = userId
                 preferences[KEY_REMEMBERED_USER_ID] = userId
+            }
+            if (!classroom.isNullOrBlank()) {
+                preferences[KEY_USER_CLASSROOM] = classroom
             }
         }
     }

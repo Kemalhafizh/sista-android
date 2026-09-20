@@ -5,11 +5,17 @@ import com.google.gson.annotations.SerializedName
 data class ScheduleItem(
     @SerializedName("id") val id: Long,
     @SerializedName("day") val day: String,
-    @SerializedName("start_time") val startTime: String,
-    @SerializedName("end_time") val endTime: String,
+    @SerializedName("session_start") val startTime: String,
+    @SerializedName("session_end") val endTime: String,
     @SerializedName("subject_name") val subjectName: String,
     @SerializedName("teacher_name") val teacherName: String,
-    @SerializedName("room") val room: String
+    @SerializedName("classroom_name") val room: String
+)
+
+/** Minimal projection of NotificationResource.php — enough to compute an unread count without pulling in the full notification-center model. */
+data class NotificationSummaryItem(
+    @SerializedName("id") val id: Long,
+    @SerializedName("read_at") val readAt: String? = null
 )
 
 data class GradeItem(

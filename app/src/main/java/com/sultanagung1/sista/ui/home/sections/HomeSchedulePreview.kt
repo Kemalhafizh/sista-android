@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,11 +55,11 @@ internal fun HomeSchedulePreview(
         Spacer(modifier = Modifier.height(10.dp))
 
         if (todaySchedules.isEmpty()) {
-            ModernScheduleCard("07:00 - 08:30", "Matematika Peminatan", "Drs. H. Ahmad Fauzi, M.Pd", "Lab Komputer 2", isLive = true)
-            Spacer(modifier = Modifier.height(8.dp))
-            ModernScheduleCard("08:30 - 10:00", "Fisika Modern", "Dr. Hj. Siti Nurjanah, M.Si", "Lab Fisika 1")
-            Spacer(modifier = Modifier.height(8.dp))
-            ModernScheduleCard("10:15 - 11:45", "Pendidikan Agama Islam", "Ust. M. Rizqi, Lc., M.Hum", "Masjid Sultan Agung")
+            SulaoneEmptyState(
+                title = "Tidak Ada Jadwal Hari Ini",
+                description = "Belum ada jadwal pelajaran yang tercatat untuk hari ini.",
+                icon = Icons.Default.EventBusy
+            )
         } else {
             todaySchedules.forEachIndexed { index, item ->
                 ModernScheduleCard(
