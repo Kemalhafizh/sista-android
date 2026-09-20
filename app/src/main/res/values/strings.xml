@@ -1,0 +1,103 @@
+<resources>
+    <!-- App & School Identity -->
+    <string name="app_name">Sulaone</string>
+    <string name="school_name">SMA Islam Sultan Agung 1 Semarang</string>
+    <string name="school_foundation">Yayasan Badan Wakaf Sultan Agung (YBWSA)</string>
+    <string name="welcome_greeting">Selamat Datang</string>
+    <string name="islamic_greeting">Assalamu\'alaikum Warahmatullahi Wabarakatuh</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_attendance_short">Presensi</string>
+    <string name="shortcut_attendance_long">Presensi GPS Sekolah</string>
+    <string name="shortcut_scanner_short">Scan QR</string>
+    <string name="shortcut_scanner_long">Pindai QR Smart Gate</string>
+    <string name="shortcut_sos_short">SOS Panik</string>
+    <string name="shortcut_sos_long">Tombol SOS Darurat</string>
+    <string name="shortcut_cbt_short">Ujian CBT</string>
+    <string name="shortcut_cbt_long">Ruang Ujian CBT</string>
+
+    <!-- Navigation Tabs -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_schedule">Jadwal</string>
+    <string name="nav_modules">74 Modul</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_executive">Eksekutif</string>
+    <string name="nav_teacher">Pendidik</string>
+    <string name="nav_parent">Wali Murid</string>
+    <string name="nav_billing">Tagihan SPP</string>
+
+    <!-- Common Actions -->
+    <string name="action_back">Kembali</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_confirm">Konfirmasi</string>
+    <string name="action_login">Masuk ke Akun</string>
+    <string name="action_logout">Keluar dari Akun</string>
+    <string name="action_confirm_logout">Ya, Keluar</string>
+    <string name="action_search">Cari…</string>
+    <string name="action_filter">Filter</string>
+    <string name="action_refresh">Muat Ulang</string>
+    <string name="action_download">Unduh PDF</string>
+    <string name="action_share">Bagikan</string>
+    <string name="action_retry">Coba Lagi</string>
+
+    <!-- Dialogs & Confirmation -->
+    <string name="dialog_logout_title">Konfirmasi Keluar Akun</string>
+    <string name="dialog_logout_message">Apakah Anda yakin ingin keluar dari sesi aktif ini?</string>
+
+    <!-- Roles & Badges -->
+    <string name="role_student">Siswa Aktif</string>
+    <string name="role_teacher">Guru Pendidik</string>
+    <string name="role_principal">Kepala Sekolah</string>
+    <string name="role_parent">Wali Murid</string>
+    <string name="role_superadmin">Superadmin Ultimate</string>
+
+    <!-- Academic Domain (Kurikulum Merdeka) -->
+    <string name="academic_schedule">Jadwal Pelajaran KBM</string>
+    <string name="academic_grades">Rapor Nilai KKTP</string>
+    <string name="academic_cbt">Ujian CBT Online</string>
+    <string name="academic_elearning">E-Learning LMS</string>
+    <string name="academic_question_bank">Bank Soal Terpusat</string>
+    <string name="academic_teaching_journal">Jurnal Mengajar Guru</string>
+    <string name="academic_curriculum_merdeka">Kurikulum Merdeka</string>
+    <string name="kktp_passed">Tuntas KKTP</string>
+    <string name="kktp_remedial">Perlu Remedial</string>
+
+    <!-- Finance Domain -->
+    <string name="finance_billing_title">Tagihan SPP &amp; Infaq</string>
+    <string name="finance_virtual_account">BSI Virtual Account</string>
+    <string name="finance_status_paid">LUNAS • SAH</string>
+    <string name="finance_status_unpaid">BELUM BAYAR</string>
+    <string name="finance_due_date">Batas Pembayaran</string>
+    <string name="finance_official_receipt">Kuitansi Pembayaran Sah</string>
+
+    <!-- Attendance & GPS -->
+    <string name="attendance_title">Presensi GPS Kampus</string>
+    <string name="attendance_present">Hadir di Sekolah</string>
+    <string name="attendance_late">Terlambat Hadir</string>
+    <string name="attendance_sick">Izin Sakit</string>
+    <string name="attendance_permission">Izin Keperluan</string>
+    <string name="attendance_absent">Alpa (Tanpa Keterangan)</string>
+
+    <!-- Communication -->
+    <string name="comm_chat_title">Chat Konsultasi Ortu &amp; Guru</string>
+    <string name="comm_notifications">Pusat Notifikasi &amp; Pengumuman</string>
+    <string name="comm_official_circular">Surat Edaran Resmi</string>
+
+    <!-- Student Affairs & Services -->
+    <string name="student_discipline">Buku Saku Poin Tatib</string>
+    <string name="student_counseling">Konseling BK Digital</string>
+    <string name="student_library">E-Pustaka Pintar</string>
+    <string name="student_extracurricular">Ekstrakurikuler &amp; OSIS</string>
+    <string name="student_achievements">Portofolio Prestasi Siswa</string>
+    <string name="student_utbk">Simulasi UTBK / SNBT</string>
+    <string name="student_uks">UKS &amp; Rekam Medis</string>
+
+    <!-- Settings & Accessibility -->
+    <string name="settings_title">Pengaturan SuperApp</string>
+    <string name="settings_language">Pengaturan Bahasa</string>
+    <string name="settings_theme">Tema &amp; Mode Gelap</string>
+    <string name="settings_accessibility">Aksesibilitas &amp; Font Scaling</string>
+    <string name="settings_biometric">Keamanan Sidik Jari (m-Banking)</string>
+    <string name="settings_about">Tentang SMA Islam Sultan Agung 1</string>
+</resources>

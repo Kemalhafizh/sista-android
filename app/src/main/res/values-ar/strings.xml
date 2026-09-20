@@ -1,0 +1,103 @@
+<resources>
+    <!-- App & School Identity -->
+    <string name="app_name">سولاون</string>
+    <string name="school_name">SMA Islam Sultan Agung 1 Semarang</string>
+    <string name="school_foundation">Yayasan Badan Wakaf Sultan Agung (YBWSA)</string>
+    <string name="welcome_greeting">مرحبًا بكم</string>
+    <string name="islamic_greeting">السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_attendance_short">الحضور</string>
+    <string name="shortcut_attendance_long">تسجيل الحضور عبر نظام GPS</string>
+    <string name="shortcut_scanner_short">مسح الرمز</string>
+    <string name="shortcut_scanner_long">مسح رمز الاستجابة السريعة للبوابة</string>
+    <string name="shortcut_sos_short">طوارئ SOS</string>
+    <string name="shortcut_sos_long">زر طوارئ الاستغاثة</string>
+    <string name="shortcut_cbt_short">اختبار CBT</string>
+    <string name="shortcut_cbt_long">غرفة الاختبارات الإلكترونية CBT</string>
+
+    <!-- Navigation Tabs -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_schedule">الجدول</string>
+    <string name="nav_modules">74 وحدة</string>
+    <string name="nav_profile">الملف الشخصي</string>
+    <string name="nav_executive">الإدارة</string>
+    <string name="nav_teacher">المعلم</string>
+    <string name="nav_parent">ولي الأمر</string>
+    <string name="nav_billing">الرسوم الدراسية</string>
+
+    <!-- Common Actions -->
+    <string name="action_back">رجوع</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_save">حفظ</string>
+    <string name="action_confirm">تأكيد</string>
+    <string name="action_login">تسجيل الدخول إلى الحساب</string>
+    <string name="action_logout">تسجيل الخروج من الحساب</string>
+    <string name="action_confirm_logout">نعم، تسجيل الخروج</string>
+    <string name="action_search">بحث…</string>
+    <string name="action_filter">تصفية</string>
+    <string name="action_refresh">تحديث</string>
+    <string name="action_download">تحميل PDF</string>
+    <string name="action_share">مشاركة</string>
+    <string name="action_retry">إعادة المحاولة</string>
+
+    <!-- Dialogs & Confirmation -->
+    <string name="dialog_logout_title">تأكيد تسجيل الخروج</string>
+    <string name="dialog_logout_message">هل أنت متأكد من رغبتك في تسجيل الخروج من هذه الجلسة؟</string>
+
+    <!-- Roles & Badges -->
+    <string name="role_student">طالب نشط</string>
+    <string name="role_teacher">معلم ومربي</string>
+    <string name="role_principal">مدير المدرسة</string>
+    <string name="role_parent">ولي أمر الطالب</string>
+    <string name="role_superadmin">المشرف العام</string>
+
+    <!-- Academic Domain (Kurikulum Merdeka) -->
+    <string name="academic_schedule">الجدول الدراسي للحصص</string>
+    <string name="academic_grades">تقرير درجات KKTP</string>
+    <string name="academic_cbt">الاختبارات الإلكترونية CBT</string>
+    <string name="academic_elearning">نظام التعلم الإلكتروني LMS</string>
+    <string name="academic_question_bank">بنك الأسئلة المركزي</string>
+    <string name="academic_teaching_journal">سجل المعلم اليومي</string>
+    <string name="academic_curriculum_merdeka">منهج Kurikulum Merdeka</string>
+    <string name="kktp_passed">اجتياز KKTP بنجاح</string>
+    <string name="kktp_remedial">يتطلب برنامج علاجي</string>
+
+    <!-- Finance Domain -->
+    <string name="finance_billing_title">فواتير الرسوم والإنفاق</string>
+    <string name="finance_virtual_account">الحساب الافتراضي BSI</string>
+    <string name="finance_status_paid">مدفوع • معتمد</string>
+    <string name="finance_status_unpaid">غير مدفوع</string>
+    <string name="finance_due_date">تاريخ الاستحقاق</string>
+    <string name="finance_official_receipt">إيصال الدفع المعتمد</string>
+
+    <!-- Attendance & GPS -->
+    <string name="attendance_title">تسجيل الحضور عبر GPS</string>
+    <string name="attendance_present">حاضر في المدرسة</string>
+    <string name="attendance_late">تأخر في الحضور</string>
+    <string name="attendance_sick">إجازة مرضية</string>
+    <string name="attendance_permission">إذن مسبق</string>
+    <string name="attendance_absent">غياب بدون عذر</string>
+
+    <!-- Communication -->
+    <string name="comm_chat_title">استشارات أولياء الأمور والمعلمين</string>
+    <string name="comm_notifications">مركز الإشعارات والتعاميم</string>
+    <string name="comm_official_circular">التعاميم والخطابات الرسمية</string>
+
+    <!-- Student Affairs & Services -->
+    <string name="student_discipline">دليل نقاط الانضباط المدرسي</string>
+    <string name="student_counseling">الإرشاد الطلابي الرقمي BK</string>
+    <string name="student_library">المكتبة الإلكترونية الذكية</string>
+    <string name="student_extracurricular">الأنشطة الموازية ومجلس الطلاب</string>
+    <string name="student_achievements">سجل إنجازات الطلاب</string>
+    <string name="student_utbk">محاكاة اختبارات UTBK / SNBT</string>
+    <string name="student_uks">الوحدة الصحية والسجل الطبي</string>
+
+    <!-- Settings & Accessibility -->
+    <string name="settings_title">إعدادات التطبيق</string>
+    <string name="settings_language">إعدادات اللغة</string>
+    <string name="settings_theme">المظهر والوضع الداكن</string>
+    <string name="settings_accessibility">إمكانية الوصول وحجم الخط</string>
+    <string name="settings_biometric">أمان بصمة الإصبع المصرفي</string>
+    <string name="settings_about">حول مدرسة السلطان أجونج 1</string>
+</resources>

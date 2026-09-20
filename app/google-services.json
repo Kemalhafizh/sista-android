@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "100961092811",
+    "project_id": "device-streaming-31ed4203",
+    "storage_bucket": "device-streaming-31ed4203.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100961092811:android:df02284a53fea80e78474e",
+        "android_client_info": {
+          "package_name": "com.sultanagung1.sista"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzFc7_PmoNmn4i_-mkYjYpl7NCLRGO_Lw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

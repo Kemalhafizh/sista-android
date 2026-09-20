@@ -1,0 +1,113 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt.android)
+    id 'kotlin-kapt'
+}
+
+android {
+    namespace 'com.sultanagung1.sista'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.sultanagung1.sista"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "2.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        compose true
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += [
+            "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi"
+        ]
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlin:kotlin-metadata-jvm:2.2.10"
+    }
+}
+
+dependencies {
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.compose.animation
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material3.windowsizeclass
+    implementation libs.androidx.compose.material3.adaptive
+    implementation libs.androidx.compose.material3.adaptive.layout
+    implementation libs.androidx.compose.material3.adaptive.navigation
+    implementation libs.androidx.compose.material.icons.extended
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.text.google.fonts
+    implementation libs.androidx.compose.ui.graphics
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel.compose
+    implementation libs.androidx.navigation.compose
+    implementation libs.kotlinx.serialization.json
+
+    // Networking (Retrofit & OkHttp)
+    implementation libs.retrofit.core
+    implementation libs.retrofit.converter.gson
+    implementation libs.okhttp.logging
+
+    // Room Database Runtime
+    implementation libs.room.runtime
+    implementation libs.room.ktx
+
+    // Hardware Sensors & Security
+    implementation libs.play.services.location
+    implementation libs.androidx.biometric
+    implementation libs.androidx.datastore.preferences
+
+    // Image Loading
+    implementation libs.coil.compose
+
+    // Dependency Injection (Hilt)
+    implementation libs.hilt.android
+    implementation libs.androidx.hilt.navigation.compose
+    kapt libs.hilt.compiler
+    kapt libs.kotlin.metadata.jvm
+
+    // Firebase Crashlytics, Performance & Observability
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.crashlytics
+    implementation libs.firebase.perf
+    implementation libs.firebase.analytics
+
+    testImplementation libs.junit
+    androidTestImplementation platform(libs.androidx.compose.bom)
+    androidTestImplementation libs.androidx.compose.ui.test.junit4
+    androidTestImplementation libs.androidx.espresso.core
+    androidTestImplementation libs.androidx.junit
+    debugImplementation libs.androidx.compose.ui.test.manifest
+    debugImplementation libs.androidx.compose.ui.tooling
+}

@@ -1,0 +1,166 @@
+package com.sultanagung1.sista.di
+
+import com.sultanagung1.sista.core.network.ApiClient
+import com.sultanagung1.sista.core.storage.SessionManager
+import com.sultanagung1.sista.data.api.*
+import com.sultanagung1.sista.data.local.SulaoneLocalStore
+import com.sultanagung1.sista.data.repository.*
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object RepositoryModule {
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        apiClient: ApiClient,
+        sessionManager: SessionManager
+    ): AuthRepository = AuthRepository(apiClient, sessionManager)
+
+    @Provides
+    @Singleton
+    fun provideStudentRepository(
+        apiClient: ApiClient,
+        localStore: SulaoneLocalStore
+    ): StudentRepository = StudentRepository(apiClient, localStore)
+
+    @Provides
+    @Singleton
+    fun provideAttendanceRepository(apiClient: ApiClient): AttendanceRepository =
+        AttendanceRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideCbtRepository(apiClient: ApiClient): CbtRepository =
+        CbtRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideAiRepository(apiClient: ApiClient): AiRepository =
+        AiRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideTeacherRepository(apiClient: ApiClient): TeacherRepository =
+        TeacherRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideParentRepository(apiClient: ApiClient): ParentRepository =
+        ParentRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideAdminRepository(apiClient: ApiClient): AdminRepository =
+        AdminRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(apiClient: ApiClient): ChatRepository =
+        ChatRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideNotificationRepository(apiClient: ApiClient): NotificationRepository =
+        NotificationRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideAnalyticsRepository(apiClient: ApiClient): AnalyticsRepository =
+        AnalyticsRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideDisciplineRepository(disciplineApi: DisciplineApiService): DisciplineRepository =
+        DisciplineRepository(disciplineApi)
+
+    @Provides
+    @Singleton
+    fun provideUtbkRepository(utbkApi: UtbkApiService): UtbkRepository =
+        UtbkRepository(utbkApi)
+
+    @Provides
+    @Singleton
+    fun provideLibraryRepository(libraryApi: LibraryApiService): LibraryRepository =
+        LibraryRepository(libraryApi)
+
+    @Provides
+    @Singleton
+    fun provideExtracurricularRepository(extracurricularApi: ExtracurricularApiService): ExtracurricularRepository =
+        ExtracurricularRepository(extracurricularApi)
+
+    @Provides
+    @Singleton
+    fun provideAchievementRepository(achievementApi: AchievementApiService): AchievementRepository =
+        AchievementRepository(achievementApi)
+
+    @Provides
+    @Singleton
+    fun provideEvaluationRepository(evaluationApi: EvaluationApiService): EvaluationRepository =
+        EvaluationRepository(evaluationApi)
+
+    @Provides
+    @Singleton
+    fun provideQuestionBankRepository(questionBankApi: QuestionBankApiService): QuestionBankRepository =
+        QuestionBankRepository(questionBankApi)
+
+    @Provides
+    @Singleton
+    fun provideRaporRepository(raporApi: ERaporApiService): RaporRepository =
+        RaporRepository(raporApi)
+
+    @Provides
+    @Singleton
+    fun provideDailyAssessmentRepository(dailyAssessmentApi: DailyAssessmentMobileApiService): DailyAssessmentRepository =
+        DailyAssessmentRepository(dailyAssessmentApi)
+
+    @Provides
+    @Singleton
+    fun provideElearningMobileRepository(elearningApi: ElearningMobileApiService): ElearningMobileRepository =
+        ElearningMobileRepository(elearningApi)
+
+    @Provides
+    @Singleton
+    fun provideCounselingRepository(counselingApi: CounselingMobileApiService): CounselingRepository =
+        CounselingRepository(counselingApi)
+
+    @Provides
+    @Singleton
+    fun provideStudentProfileRepository(studentProfileApi: StudentProfileApiService): StudentProfileRepository =
+        StudentProfileRepository(studentProfileApi)
+
+    @Provides
+    @Singleton
+    fun provideSchoolOperationsRepository(schoolOpsApi: SchoolOperationsApiService): SchoolOperationsRepository =
+        SchoolOperationsRepository(schoolOpsApi)
+
+    @Provides
+    @Singleton
+    fun provideUksRepository(uksApi: UksMobileApiService): UksRepository =
+        UksRepository(uksApi)
+
+    @Provides
+    @Singleton
+    fun provideSpmbRepository(spmbApi: SpmbMobileApiService): SpmbRepository =
+        SpmbRepository(spmbApi)
+
+    @Provides
+    @Singleton
+    fun provideCalendarRepository(calendarApi: CalendarMobileApiService): CalendarRepository =
+        CalendarRepository(calendarApi)
+
+    @Provides
+    @Singleton
+    fun provideTeachingJournalRepository(journalApi: TeachingJournalMobileApiService): TeachingJournalRepository =
+        TeachingJournalRepository(journalApi)
+
+    @Provides
+    @Singleton
+    fun provideGamificationRepository(gamificationApi: GamificationApiService): GamificationRepository =
+        GamificationRepository(gamificationApi)
+}

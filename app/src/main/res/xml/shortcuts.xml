@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="shortcut_attendance"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round_v2"
+        android:shortcutShortLabel="@string/shortcut_attendance_short"
+        android:shortcutLongLabel="@string/shortcut_attendance_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.sultanagung1.sista"
+            android:targetClass="com.sultanagung1.sista.MainActivity"
+            android:data="sulaone://attendance" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_scanner"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round_v2"
+        android:shortcutShortLabel="@string/shortcut_scanner_short"
+        android:shortcutLongLabel="@string/shortcut_scanner_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.sultanagung1.sista"
+            android:targetClass="com.sultanagung1.sista.MainActivity"
+            android:data="sulaone://scanner" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_sos"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round_v2"
+        android:shortcutShortLabel="@string/shortcut_sos_short"
+        android:shortcutLongLabel="@string/shortcut_sos_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.sultanagung1.sista"
+            android:targetClass="com.sultanagung1.sista.MainActivity"
+            android:data="sulaone://sos" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_cbt"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_round_v2"
+        android:shortcutShortLabel="@string/shortcut_cbt_short"
+        android:shortcutLongLabel="@string/shortcut_cbt_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.sultanagung1.sista"
+            android:targetClass="com.sultanagung1.sista.MainActivity"
+            android:data="sulaone://cbt" />
+    </shortcut>
+
+</shortcuts>

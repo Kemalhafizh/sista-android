@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_attendance_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#064E3B"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PRESENSI HARI INI"
+        android:textColor="#FACC15"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_attendance_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="✅ HADIR (06:45 WIB)"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_attendance_gate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gerbang Utama SMA SA 1"
+        android:textColor="#A7F3D0"
+        android:textSize="9sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Ketuk untuk Presensi GPS ➔"
+        android:textColor="#CBD5E1"
+        android:textSize="8.5sp" />
+
+</LinearLayout>
