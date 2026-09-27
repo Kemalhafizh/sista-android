@@ -48,10 +48,12 @@ object WidgetTextMapper {
 
         val child = record.childName?.takeIf { it.isNotBlank() }
         val updated = updatedAt(record.fetchedAt, now)
-        val date = record.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        // Local copy: record comes from :core:common, so its properties don't smart-cast here.
+        val rawDate = record.date
+        val date = rawDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
         return when {
-            record.date == null ->
+            rawDate == null ->
                 AttendanceWidgetContent(res(R.string.widget_attendance_none), child?.let(WidgetText::Raw), updated)
             date == now.toLocalDate() -> {
                 val label = statusLabel(record)
@@ -63,7 +65,7 @@ object WidgetTextMapper {
             else -> {
                 // The newest record is from another day. Nothing is known about
                 // today beyond "not recorded when the app last loaded it".
-                val day = date?.format(DAY_MONTH) ?: record.date
+                val day = date?.format(DAY_MONTH) ?: rawDate
                 val last = if (child != null) {
                     res(R.string.widget_attendance_child_last, child, statusLabel(record), day)
                 } else {
