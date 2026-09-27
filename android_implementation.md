@@ -3453,7 +3453,7 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
       - `groupOf()`/`homeRouteFor()` dipakai `navigateToRoleHome`, `bottomNavItems`, login (`AuthNavGraph`), dan FAB.
   - **Test:** `Fase76CompletionLogicTest` (alias role → home yang benar, `normalize` tidak menyentuh role asing, FAB per role, tidak ada FAB di rute ujian/tab lain) dan `Fase76CompletionGuardTest` (satu sumber kebenaran role, FAB di Scaffold root hanya di tab, back di ujian hanya membuka dialog).
   - **Ditemukan, BELUM diperbaiki (di luar cakupan 76):**
-    - Role `waka_*` dan `staf_tu` tidak punya "home" mobile yang cocok. Endpoint dashboard Admin hanya menerima `admin/superadmin/kepsek/kepala_sekolah`, dan dashboard Guru hanya `guru/bk`, sehingga mereka tetap diarahkan ke Home siswa (perilaku lama).
+    - ~~Role `waka_*` dan `staf_tu` tidak punya "home" mobile yang cocok.~~ **Sebagian beres di FASE 77:** `waka_kurikulum` dan `staf_tu` kini mendarat di Manajemen Sesi Kelas (`RoleGroup.ACADEMIC_STAFF`). Role `waka_*` lainnya masih ke Home siswa, karena endpoint dashboard Admin hanya menerima `admin/superadmin/kepsek/kepala_sekolah`, dan dashboard Guru hanya `guru/bk` (perilaku lama).
   - **Ditemukan di sini, sudah diperbaiki di PR terpisah (27 Sep 2026):**
     - ~~**Role Switcher** di Profil menulis sesi palsu~~ → **dihapus di PR #3.** `onRoleSwitch` di `SettingsNavGraph` menulis sesi dengan token karangan (`token_teacher`, `token_parent`, … plus nama/NIP contoh), jadi semua request API sesudahnya ditolak. Backend tidak punya endpoint ganti peran, jadi fiturnya dihapus: `RoleSwitcherBottomSheet.kt`, menu di `ProfileScreen`, handler di `SettingsNavGraph`, dan `SessionManager.updateUserRole()`. Penjaga: `ProfessionalUiUxOverhaulTest.testAuthSessionIsOnlyWrittenFromServerResponses`. Detail di koreksi FASE 26.
     - ~~FAB **"Uji Push Notifikasi"** tampil di build rilis~~ → **diperbaiki di PR #2.** `NotificationCenterScreen` kini punya parameter `showDebugTools` (default `false`); `CommunicationNavGraph` mengisinya dengan `BuildConfig.DEBUG`. FAB dan dialog simulasinya hanya ada di build `debug`. Penjaga: `NotificationDebugToolsGuardTest`.
@@ -3593,7 +3593,7 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
 
 ---
 
-## 📚 FASE 77: SESI KELAS HIDUP & PRESENSI PER-MAPEL — UNIVERSITY-GRADE ACADEMIC DIGITALIZATION `[RANCANGAN BARU]`
+## 📚 FASE 77: SESI KELAS HIDUP & PRESENSI PER-MAPEL — UNIVERSITY-GRADE ACADEMIC DIGITALIZATION `[ANDROID SELESAI 27 Sep 2026 — MENUNGGU BACKEND FASE 117]`
 
 > **Tanggal Rancangan:** 27 September 2026
 > **Versi Dokumen:** 8.0 — Academic Management System
@@ -3602,18 +3602,134 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
 > **Prerequisite:** FASE 117 Backend selesai. Model `ClassSession` dan `SessionAttendance` API sudah live.
 > **Tujuan Utama:** Mendigitalkan KBM (Kegiatan Belajar Mengajar) harian SMA Islam Sultan Agung 1 Semarang setara sistem perkuliahan universitas. Setiap jam pelajaran punya sesi hidup, QR berputar, dan status kehadiran real-time.
 
+### ✅ Status Implementasi Android (27 September 2026)
+
+Seluruh sisi Android 77.1–77.7 sudah dibangun, tetapi **belum bisa dipakai sungguhan**: backend FASE 117 belum ada di `sistem-terpadu` (tidak ada migration `class_sessions`, controller, maupun route). Rancangan 117 ada di `implementation_plan.md`, tetapi sesi backend sedang mengerjakan perbaikan CI dan bug Larastan, bukan 117.
+
+- **Selama backend belum ada:** setiap layar FASE 77 membaca HTTP 404 tanpa `error_code` (404 route Laravel) sebagai "fitur belum aktif di server". Layar menampilkan *"Fitur Sesi Kelas belum aktif di server sekolah"*, bukan daftar kosong yang bisa dikira "tidak ada kelas hari ini".
+  - Polling berhenti sendiri.
+  - Kartu di dashboard guru dan banner di Home siswa tidak muncul.
+- **Kontraknya dikunci test:** `ClassSessionContractTest` menjalankan Retrofit/OkHttp/Gson sungguhan terhadap MockWebServer dengan bentuk JSON Laravel di 77.0. Kalau backend mengubah key, test itu yang ikut diubah.
+
+**Yang dibangun (sesuai rancangan, dengan penyimpangan yang dicatat):**
+- **77.1 Data layer** (`core/model` `ClassSessionModels.kt`, `ClassSessionRules.kt`; `core/network` `ClassSessionApiService.kt`; `core/data` `ClassSessionRepository.kt`)
+  - Hasil bertipe `ClassSessionResult` dengan `ClassSessionError` (jenis + `error_code` server + pesan server).
+  - Repository lama hanya membaca `response.body()`, yang selalu `null` pada respons gagal, sehingga pesan server tidak pernah sampai ke pengguna. Repository ini membaca `errorBody`.
+  - Semua aturan (jendela mulai, warna timer, kesegaran QR + backoff, hitungan kehadiran, diff edit manual, transisi koreksi, label, pesan error) ada di `ClassSessionRules` dan diuji di JVM.
+- **77.2 Sesi Kelas Hari Ini** (`feature/teacher/.../sessions/`)
+  - Tab **"Mengajar"** menggantikan tab "Jadwal" guru. Tab "Jadwal" lama memanggil `student/schedule` (`role:student,siswa`), jadi **selalu 403 untuk guru dan admin**. Admin juga mendapat tab "Sesi Kelas" menggantikan tab itu.
+  - Sesi diurutkan: aktif → terjadwal → selesai.
+  - Tombol "Mulai Kelas" aktif dari 10 menit sebelum jadwal sampai jam pelajaran berakhir. Di luar itu tampil "Bisa dimulai pukul HH:mm". Slot yang terlewat tanpa dimulai diberi keterangan jujur.
+  - Dialog mulai dengan topik opsional.
+  - Polling 30 dtk hanya saat layar terlihat, plus pull-to-refresh.
+  - Kalau sesi sudah dimulai dari perangkat lain (409 `session_already_exists`), sesi itu dibuka alih-alih menampilkan error.
+- **77.3 Sesi Kelas Aktif**
+  - QR sungguhan (ZXing, `SulaoneQrCode`), selalu hitam-putih walau tema gelap/AMOLED.
+  - QR diambil ulang tepat saat `remaining_seconds` dari server habis, bukan pada jam tetap 30 dtk di HP.
+  - Kalau gagal: QR lama diredupkan dengan label "mungkin kedaluwarsa", retry 5→10→20→30 dtk. Setelah 60 dtk tampil "tidak bisa memperbarui QR" plus arahan absen manual.
+  - Timer memakai jam server (`DateUtils`): kuning ≤5 menit, merah ≤1 menit, dialog "waktu habis" dengan pilihan "Lanjutkan 5 menit". Peringatan in-app 5 menit sebelum berakhir.
+  - Kehadiran real-time tiap 10 dtk. Auto-close oleh server terdeteksi lewat polling status 30 dtk.
+  - Dialog "Akhiri Kelas" menyebut jumlah siswa yang akan jadi alpha dan punya isian catatan/topik.
+  - Layar tetap menyala dengan kecerahan penuh selama sesi aktif.
+  - Sesi yang sudah selesai dibuka sebagai ringkasan di layar yang sama.
+- **77.4 Daftar Hadir**
+  - Cari nama/NIS dan filter status. Filter mengikuti editan yang belum disimpan.
+  - Pilihan manual Hadir/Sakit/Izin/Alpha dikumpulkan lalu dikirim sekali lewat `attendance/bulk`: "Simpan Perubahan (N diubah)". Editan yang dikembalikan ke nilai server tidak ikut terhitung.
+  - Polling 10 dtk tidak pernah menimpa editan.
+  - Setelah sesi berakhir daftar menjadi baca-saja.
+- **77.5 Presensi Kelas (siswa)**
+  - CameraX + ML Kit, hanya format QR.
+  - QR yang bukan QR sesi kelas (prefix `sista-cs:`) ditolak sebelum ada request.
+  - `ScanGate`: satu payload tidak dikirim berulang, dan payload yang sudah ditolak server tidak dikirim lagi.
+  - Setiap error 77.5.2 punya pesan sendiri. Kamera tetap jalan hanya untuk kasus yang bisa dicoba lagi (QR kedaluwarsa, koneksi).
+  - Banner "Sesi X sedang berlangsung — Tap untuk absen" di Home, dengan polling 60 dtk hanya saat Home terlihat. Setelah siswa tercatat, banner menjadi konfirmasi pelan.
+- **77.6 Manajemen Sesi & Koreksi**
+  - Filter tanggal dan status, paginasi Laravel, rekap 7/30 hari per kelas.
+  - Koreksi per siswa dengan alasan ≥10 karakter.
+  - Transisi mengikuti 77.6.3: kehadiran tidak pernah dikoreksi menjadi alpha. Baris "Dikoreksi oleh … pada …" beserta alasan sebelumnya ditampilkan.
+  - **Waka Kurikulum dan TU** mendapat grup peran sendiri (`RoleGroup.ACADEMIC_STAFF`). Home mereka adalah layar ini; sebelumnya mereka mendarat di Home siswa yang serba 403.
+  - Kepala sekolah bisa melihat, tetapi tidak bisa mengoreksi.
+- **77.7** Kartu di Dashboard Guru: "Kembali ke Kelas X" (LIVE), "Mulai Kelas X", atau "Berikutnya pukul HH:mm". Deep link `sulaone://class-session/{scan|teach|manage|<id>}` untuk notifikasi.
+- **Arsitektur (77.9):** enam ViewModel baru adalah **pemakai nyata pertama `MviViewModel`** (sebelumnya didefinisikan tapi tidak dipakai siapa pun).
+  - UI bersama ada di design system: chip status, ringkasan kehadiran, state "belum tersedia", `SulaoneQrCode`, `LifecycleStartStopEffect`, `KeepScreenAwake`.
+
+**Penyimpangan dari rancangan (disengaja):**
+- **Filter guru/kelas di layar admin tidak dibuat.** Mobile API tidak punya daftar guru/kelas untuk dropdown. Filter yang tersedia: tanggal dan status.
+- **Endpoint `attendance/manual` tidak dipakai.** Absen manual satu siswa = bulk berisi satu baris.
+- **`present_count`/`absent_count` diganti lima hitungan terpisah** (`hadir/telat/sakit/izin/alpha_count`). "Absent" tidak jelas apakah termasuk sakit/izin.
+- **Pil "Absen Kelas" di quick action tidak dibuat.** Banner 77.5.3 sudah menjalankan perannya.
+
+**Temuan saat mengerjakan:**
+- **ZXing tidak pernah ada di dependency.** Rancangan 77.3.2 menyebut ZXing "sudah tersedia — digunakan oleh `DynamicQrScreen`". Kenyataannya `DynamicQrScreen` menggambar **ikon**, bukan QR (payload-nya tidak pernah dirender). ZXing `core:3.5.3` kini ditambahkan. `QrMatrixEncoderTest` membuktikan QR yang digambar terbaca balik oleh decoder sungguhan. *`DynamicQrScreen` sendiri belum diperbaiki (di luar FASE 77).*
+- **Tab "Jadwal" guru/admin selalu 403** (lihat 77.2 di atas).
+
+**Belum:**
+- Uji di perangkat/emulator: kamera, QR di layar proyektor, kecerahan, haptic, dan TalkBack.
+- Uji end-to-end dengan backend. Ini menunggu FASE 117.
+- Notifikasi push 77.7.1 dikirim server. Sisi Android sudah siap lewat `deep_link_route`.
+
+### 🤝 77.0: Kontrak API — Sumber Kebenaran Android ↔ Backend FASE 117
+
+Semua path di bawah `api/v1/`. Respons sukses memakai `ApiResponseTrait::successResponse` (`{success: true, message, data}`). Waktu `HH:mm` dan tanggal `YYYY-MM-DD` mengikuti waktu sekolah (WIB). Timestamp memakai ISO-8601 dengan offset (`2026-10-07T08:32:10+07:00`).
+
+**Error:** `{success: false, message, data: {error_code, ...}}`; `message` ditampilkan apa adanya.
+
+| `error_code` | HTTP | Kapan |
+|---|:--:|---|
+| `outside_schedule_window` | 422 | Mulai di luar [mulai−10 mnt, selesai+5 mnt] |
+| `not_your_schedule` | 403 | Jadwal milik guru lain |
+| `session_already_exists` | 409 | Sudah dimulai; `data.session` = sesi itu |
+| `session_not_active` | 409 | Akhiri/QR/absen manual pada sesi yang sudah tidak aktif |
+| `session_not_found` | 404 | Sesi tidak ada (404 **tanpa** `error_code` = route belum ada) |
+| `qr_invalid` | 422 | Payload tidak dikenali |
+| `qr_expired` | 410 | QR sudah diganti (lewat masa tenggang) |
+| `not_enrolled` | 403 | Siswa bukan anggota kelas sesi |
+| `already_checked_in` | 409 | `data.checked_in_at`, `data.subject_name` |
+| `session_closed` | 409 | Scan setelah sesi berakhir |
+| `transition_not_allowed` | 422 | Koreksi yang dilarang 77.6.3 |
+| `reason_too_short` | 422 | Alasan koreksi < 10 karakter (validasi Laravel biasa juga diterima) |
+
+**Objek `ClassSession`** — dipakai `today`, `start`, `end`, dan daftar admin:
+`schedule_id`, `session_id` (null jika belum dimulai), `session_uuid`, `subject_name`, `classroom_name`, `teacher_name`, `session_date`, `jam_ke`, `scheduled_start`, `scheduled_end`, `actual_start`, `actual_end`, `status` (`scheduled|active|completed|cancelled|auto_closed`), `topic`, `notes`, `total_students`, `hadir_count`, `telat_count`, `sakit_count`, `izin_count`, `alpha_count` (terpisah, jumlahnya = `total_students`), `is_auto_closed`.
+
+**Objek `SessionAttendance`:**
+`id`, `student_id`, `student_name`, `student_nis`, `status` (`hadir|telat|sakit|izin|alpha`), `check_in_method` (`qr_scan|manual_teacher|auto_alpha|admin_override`), `checked_in_at`, `notes`, `is_override`, `override_by_name`, `override_at`, `override_reason`.
+
+| Endpoint | Role (middleware) | Body → `data` |
+|---|---|---|
+| `GET teacher/class-sessions/today` | guru, bk | → `ClassSession[]`: **satu per slot jadwal hari ini, termasuk yang belum dimulai** (`session_id: null`, `status: scheduled`) |
+| `POST teacher/class-sessions/{scheduleId}/start` | guru, bk | `{topic?}` → `ClassSession`; membuat baris `alpha` untuk semua siswa kelas |
+| `POST teacher/class-sessions/{sessionId}/end` | guru, bk | `{notes?, topic?}` → `ClassSession` |
+| `GET teacher/class-sessions/{sessionId}/qr` | guru, bk | → `{qr_payload, expires_at, remaining_seconds, rotation_seconds}` |
+| `GET teacher/class-sessions/{sessionId}/students` | guru, bk | → `SessionAttendance[]` |
+| `POST teacher/class-sessions/{sessionId}/attendance/bulk` | guru, bk | `{attendances: [{student_id, status, notes?}]}` → `{updated, failed, errors[]}`; hanya saat `active` |
+| `GET student/class-session/active` | student, siswa | → `{session_id, subject_name, classroom_name, teacher_name, scheduled_start, scheduled_end, already_checked_in, checked_in_at}` atau `null` |
+| `POST student/class-session/scan-qr` | student, siswa | `{qr_payload}` → `{status, checked_in_at, subject_name, classroom_name, teacher_name}` |
+| `GET admin/class-sessions?date=&status=&page=` | admin, superadmin, kepsek, kepala_sekolah, waka_kurikulum, staf_tu | → paginator Laravel (`data`, `current_page`, `last_page`, `total`) berisi `ClassSession` |
+| `GET admin/class-sessions/{sessionId}/attendances` | sama | → `SessionAttendance[]` |
+| `PUT admin/class-sessions/attendances/{id}/override` | admin, superadmin, waka_kurikulum, staf_tu (**tanpa** kepsek) | `{status, reason}` → `SessionAttendance` |
+| `GET admin/class-sessions/reports?start_date=&end_date=&group_by=student\|class\|subject` | sama dengan daftar | → `{summary: {total_sessions, average_presence_rate, total_hadir, total_telat, total_sakit, total_izin, total_alpha}, details: [{label, hadir, telat, sakit, izin, alpha, presence_rate}]}` |
+
+**QR (memperbaiki celah di 117.3):**
+- `rotateQrToken()` di rancangan menyimpan `hash(token . uuid)`, tetapi `scanQr` hanya menerima token. Server tidak bisa mencari sesi tanpa uuid-nya.
+- Kontraknya: `qr_payload` adalah string **opak** yang dibuat server dan selalu diawali `sista-cs:`, misalnya `sista-cs:v1:{session_uuid}:{token}`. Aplikasi menggambarnya apa adanya, dan siswa mengirimnya balik apa adanya.
+- Server merotasi **secara malas**: token yang sama dikembalikan sampai kedaluwarsa. Dengan begitu dua perangkat guru tidak saling membatalkan QR.
+- Token sebelumnya tetap diterima ±5 dtk untuk menutup jeda antara memindai dan mengirim.
+
+**Notifikasi (77.7.1):** push FCM membawa `data.deep_link_route` berupa rute layar (`student_session_qr_scan`, `teacher_today_sessions`, `teacher_active_session/{id}`, `admin_session_management`), atau link `sulaone://class-session/{scan|teach|manage|<id>}`.
+
 ### 📊 Matriks Sub-Fase 77
 
 | No | Sub-Fase | Modul & Cakupan | Aktor | Status |
 |:--:|----------|-----------------|:-----:|:------:|
-| 1 | **77.1** | Data Layer — API Service, Repository, Model | Semua | **RANCANGAN** |
-| 2 | **77.2** | Layar Guru: Daftar Sesi Hari Ini | Guru | **RANCANGAN** |
-| 3 | **77.3** | Layar Guru: Sesi Kelas Aktif + QR Display + Timer | Guru | **RANCANGAN** |
-| 4 | **77.4** | Layar Guru: Daftar Hadir & Absensi Manual | Guru | **RANCANGAN** |
-| 5 | **77.5** | Layar Siswa: Scan QR Sesi Kelas | Siswa | **RANCANGAN** |
-| 6 | **77.6** | Layar Admin: Manajemen Sesi & Koreksi Absensi | Admin/Waka | **RANCANGAN** |
-| 7 | **77.7** | Notifikasi & Widget Quick-Action | Semua | **RANCANGAN** |
-| 8 | **77.8** | Test Plan & Acceptance Criteria | — | **RANCANGAN** |
+| 1 | **77.1** | Data Layer — API Service, Repository, Model | Semua | **SELESAI (Android)** |
+| 2 | **77.2** | Layar Guru: Daftar Sesi Hari Ini | Guru | **SELESAI (Android)** |
+| 3 | **77.3** | Layar Guru: Sesi Kelas Aktif + QR Display + Timer | Guru | **SELESAI (Android)** |
+| 4 | **77.4** | Layar Guru: Daftar Hadir & Absensi Manual | Guru | **SELESAI (Android)** |
+| 5 | **77.5** | Layar Siswa: Scan QR Sesi Kelas | Siswa | **SELESAI (Android)** |
+| 6 | **77.6** | Layar Admin: Manajemen Sesi & Koreksi Absensi | Admin/Waka | **SELESAI (Android)** |
+| 7 | **77.7** | Notifikasi & Widget Quick-Action | Semua | **SELESAI (Android)**; push dikirim server |
+| 8 | **77.8** | Test Plan & Acceptance Criteria | — | **Unit/kontrak: SELESAI**; E2E menunggu backend |
 
 ---
 
@@ -3949,14 +4065,14 @@ class ClassSessionRepository @Inject constructor(
 
 #### 77.2.2: Logika UI
 
-- [ ] **Grouping otomatis:** Sesi dikelompokkan berdasarkan status: `ACTIVE` → `SCHEDULED` → `COMPLETED`/`AUTO_CLOSED`/`CANCELLED`.
-- [ ] **Polling real-time:** Layar ini melakukan polling `GET teacher/class-sessions/today` setiap **30 detik** untuk memperbarui status sesi (misal: sesi yang tadinya `scheduled` bisa berubah jadi `active` jika dimulai dari device lain, atau `auto_closed` jika waktu habis).
-- [ ] **Tombol "Mulai Kelas":**
+- [x] **Grouping otomatis:** Sesi dikelompokkan berdasarkan status: `ACTIVE` → `SCHEDULED` → `COMPLETED`/`AUTO_CLOSED`/`CANCELLED`.
+- [x] **Polling real-time:** Layar ini melakukan polling `GET teacher/class-sessions/today` setiap **30 detik** untuk memperbarui status sesi (misal: sesi yang tadinya `scheduled` bisa berubah jadi `active` jika dimulai dari device lain, atau `auto_closed` jika waktu habis).
+- [x] **Tombol "Mulai Kelas":**
   - **Enabled** hanya jika waktu sekarang berada dalam rentang `scheduled_start - 10 menit` hingga `scheduled_end`.
   - **Disabled** jika belum waktunya → tampilkan teks "Bisa dimulai pukul HH:mm".
   - **Hidden** jika sesi sudah berstatus `active`, `completed`, atau `auto_closed`.
-- [ ] **Pull-to-refresh:** SwipeRefresh untuk memuat ulang data manual.
-- [ ] **Empty state:** Jika guru tidak ada jadwal hari ini → tampilkan ilustrasi "Tidak ada jadwal mengajar hari ini" + opsi "Lihat jadwal minggu ini".
+- [x] **Pull-to-refresh:** SwipeRefresh untuk memuat ulang data manual.
+- [x] **Empty state:** Jika guru tidak ada jadwal hari ini → tampilkan ilustrasi "Tidak ada jadwal mengajar hari ini" + opsi "Lihat jadwal minggu ini". *(CTA mengarah ke Jurnal KBM, yang sudah punya tab jadwal mingguan dari `teacher/schedule`.)*
 
 ---
 
@@ -4011,39 +4127,39 @@ class ClassSessionRepository @Inject constructor(
 
 #### 77.3.2: Logika QR Code Berputar
 
-- [ ] **QR Rotation setiap 30 detik:**
+- [x] **QR Rotation setiap 30 detik:**
   - ViewModel memanggil `GET teacher/class-sessions/{sessionId}/qr` setiap 30 detik.
   - QR code di-generate secara lokal dari `qrToken` menggunakan library `com.google.zxing:core` (sudah tersedia di project — digunakan oleh `DynamicQrScreen`).
   - Countdown timer visual menunjukkan berapa detik tersisa sebelum QR berganti.
   - **Alasan rotasi cepat:** Mencegah siswa screenshot QR dan mengirimkannya ke teman yang tidak hadir. QR hanya valid 30 detik dan harus di-scan langsung dari layar guru.
 
-- [ ] **Handling ketika QR gagal di-fetch:**
+- [x] **Handling ketika QR gagal di-fetch:**
   - Tampilkan QR terakhir yang berhasil dengan badge "Mungkin kedaluwarsa — sedang memperbarui..."
   - Retry otomatis setiap 5 detik dengan exponential backoff.
   - Jika offline 60+ detik: tampilkan placeholder "Tidak bisa memperbarui QR — periksa koneksi internet".
 
 #### 77.3.3: Timer Sesi Kelas
 
-- [ ] **Countdown timer:** Menghitung mundur dari `scheduled_end - now()`.
+- [x] **Countdown timer:** Menghitung mundur dari `scheduled_end - now()`.
   - Ketika tersisa ≤5 menit: warna teks berubah jadi kuning/peringatan.
   - Ketika tersisa ≤1 menit: warna teks berubah jadi merah.
   - Ketika waktu habis: tampilkan dialog "Waktu sesi telah habis. Akhiri kelas sekarang?" dengan tombol "Akhiri Kelas" dan "Lanjutkan 5 menit" (toleransi).
 
-- [ ] **Auto-close warning:**
+- [x] **Auto-close warning:**
   - 5 menit sebelum `scheduled_end`: notifikasi in-app "Sesi akan ditutup otomatis dalam 5 menit".
   - Saat `scheduled_end + 5 menit`: backend auto-close sesi → UI menampilkan layar "Sesi ditutup otomatis oleh sistem" + ringkasan kehadiran.
 
 #### 77.3.4: Tombol "Akhiri Kelas"
 
-- [ ] Tap tombol → Dialog konfirmasi: "Akhiri sesi kelas Matematika Peminatan X-1 (IPA)? Siswa yang belum terabsen akan otomatis dianggap ALPHA."
+- [x] Tap tombol → Dialog konfirmasi: "Akhiri sesi kelas Matematika Peminatan X-1 (IPA)? Siswa yang belum terabsen akan otomatis dianggap ALPHA."
   - Input opsional: "Catatan KBM hari ini" (textarea, maks 500 karakter)
   - Input opsional: "Topik/materi yang diajarkan" (text field, maks 200 karakter)
-- [ ] Setelah konfirmasi → `POST teacher/class-sessions/{sessionId}/end` → Navigasi ke layar ringkasan
+- [x] Setelah konfirmasi → `POST teacher/class-sessions/{sessionId}/end` → Navigasi ke layar ringkasan
 
 #### 77.3.5: Keep Screen On
 
-- [ ] **Layar TIDAK BOLEH mati** selama sesi aktif — karena guru menampilkan QR yang harus di-scan siswa.
-- [ ] Implementasi: `DisposableEffect` di composable yang memanggil `window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)` saat sesi aktif dan membersihkannya saat keluar layar.
+- [x] **Layar TIDAK BOLEH mati** selama sesi aktif — karena guru menampilkan QR yang harus di-scan siswa.
+- [x] Implementasi: `DisposableEffect` di composable yang memanggil `window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)` saat sesi aktif dan membersihkannya saat keluar layar. *(Dibuat sebagai `KeepScreenAwake` di design system: `view.keepScreenOn` + kecerahan penuh, dilepas saat keluar layar.)*
 
 ---
 
@@ -4097,18 +4213,18 @@ class ClassSessionRepository @Inject constructor(
 
 #### 77.4.2: Logika UI
 
-- [ ] **Real-time update:** Saat siswa scan QR, daftar ini otomatis terupdate (polling setiap 10 detik dari `GET teacher/class-sessions/{sessionId}/students`).
-- [ ] **Absensi Manual:**
+- [x] **Real-time update:** Saat siswa scan QR, daftar ini otomatis terupdate (polling setiap 10 detik dari `GET teacher/class-sessions/{sessionId}/students`).
+- [x] **Absensi Manual:**
   - Guru bisa mengetuk dropdown status pada setiap siswa untuk mengubah: `alpha` → `hadir`, `alpha` → `sakit`, `alpha` → `izin`, atau sebaliknya.
   - Perubahan di-batch secara lokal → tombol "Simpan Perubahan (N diubah)" muncul di bawah.
   - Tap simpan → `POST teacher/class-sessions/{sessionId}/attendance/bulk` dengan semua perubahan.
-- [ ] **Search & Filter:**
+- [x] **Search & Filter:**
   - Search field filter berdasarkan nama siswa atau NIS.
   - Filter chips untuk melihat hanya siswa dengan status tertentu.
-- [ ] **Visual feedback per siswa:**
+- [x] **Visual feedback per siswa:**
   - Badge ✅ hijau untuk Hadir, ❌ merah untuk Alpha, 🏥 kuning untuk Sakit, 📋 biru untuk Izin, 🕐 oranye untuk Telat.
   - Metode check-in ditampilkan: "Scan QR 08:32" atau "Manual 08:35" atau "—" (belum absen).
-- [ ] **Hanya bisa diedit saat sesi aktif:** Jika sesi sudah `completed`/`auto_closed`, dropdown status di-disable. Guru diarahkan ke Admin/Waka untuk koreksi.
+- [x] **Hanya bisa diedit saat sesi aktif:** Jika sesi sudah `completed`/`auto_closed`, dropdown status di-disable. Guru diarahkan ke Admin/Waka untuk koreksi.
 
 ---
 
@@ -4175,20 +4291,20 @@ Setelah scan berhasil:
 
 #### 77.5.2: Logika UI
 
-- [ ] **CameraX integration:** Gunakan library CameraX (sudah digunakan di `DynamicQrScreen` untuk QR scanning) dengan `BarcodeScanner` dari ML Kit.
-- [ ] **Validasi di sisi klien (sebelum kirim ke server):**
+- [x] **CameraX integration:** Gunakan library CameraX (sudah digunakan di `DynamicQrScreen` untuk QR scanning) dengan `BarcodeScanner` dari ML Kit. *(Koreksi: `DynamicQrScreen` tidak pernah memindai apa pun — yang memakai CameraX + ML Kit adalah `QrScannerScreen`. Polanya disalin dan hanya mencari format QR.)*
+- [x] **Validasi di sisi klien (sebelum kirim ke server):**
   - QR berisi token string → kirim ke `POST student/class-session/scan-qr`.
   - Tidak perlu validasi client-side — semua validasi (kecocokan kelas, expired token, duplikasi absen) dilakukan di server.
-- [ ] **Handling response error:**
+- [x] **Handling response error:**
   - `"QR token sudah kedaluwarsa"` → "QR sudah berganti, coba scan ulang" + kamera tetap aktif.
   - `"Anda tidak terdaftar di kelas ini"` → "Anda bukan siswa kelas ini. Hubungi guru."
   - `"Anda sudah tercatat hadir di sesi ini"` → "Anda sudah absen sebelumnya ✅" + tampilkan waktu check-in.
   - `"Sesi kelas sudah berakhir"` → "Sesi kelas sudah selesai. Minta koreksi ke Waka Kurikulum/TU."
-- [ ] **Haptic feedback:** Vibrate singkat (50ms) saat QR terdeteksi, vibrate panjang (200ms) + konfirmasi visual saat presensi berhasil.
+- [x] **Haptic feedback:** Vibrate singkat (50ms) saat QR terdeteksi, vibrate panjang (200ms) + konfirmasi visual saat presensi berhasil. *(Memakai haptic bawaan view: `tapLight` saat terdeteksi, `success` saat tercatat, `errorWarning` saat ditolak — durasi persis 50/200 ms tidak dijamin di semua perangkat.)*
 
 #### 77.5.3: Banner Kontekstual di Home Siswa
 
-- [ ] Tambahkan logic di `HomeScreen.kt` (atau `HomeContextualSection`):
+- [x] Tambahkan logic di `HomeScreen.kt` (atau `HomeContextualSection`):
   ```kotlin
   // Cek apakah ada sesi aktif untuk kelas siswa
   val activeSession by homeViewModel.activeClassSession.collectAsStateWithLifecycle()
@@ -4203,7 +4319,7 @@ Setelah scan berhasil:
       )
   }
   ```
-- [ ] **Polling:** `HomeViewModel` mengecek `GET student/class-session/active` setiap 60 detik (hemat baterai, cukup frequent karena sesi berlangsung 45 menit).
+- [x] **Polling:** `HomeViewModel` mengecek `GET student/class-session/active` setiap 60 detik (hemat baterai, cukup frequent karena sesi berlangsung 45 menit).
 
 ---
 
@@ -4287,10 +4403,10 @@ Setelah scan berhasil:
 
 #### 77.6.3: Logika Koreksi
 
-- [ ] **Hanya role tertentu:** Layar ini hanya muncul di navigasi jika user memiliki role `admin`, `superadmin`, `waka_kurikulum`, atau `staf_tu`. Middleware backend juga memvalidasi.
-- [ ] **Alasan wajib:** Field alasan minimal 10 karakter. Tombol "Simpan Koreksi" disabled jika belum diisi.
-- [ ] **Audit trail visual:** Jika absensi sudah pernah dikoreksi sebelumnya, tampilkan badge "Dikoreksi oleh [Nama] pada [tanggal]" + alasan koreksi sebelumnya.
-- [ ] **Batasan koreksi:** Siswa yang sudah berstatus `hadir` (via QR scan atau manual guru) **tidak bisa** dikoreksi ke `alpha` oleh admin — hanya bisa dikoreksi dari `alpha` ke `hadir`/`sakit`/`izin`, atau dari `sakit`/`izin` ke `hadir`. Ini mencegah admin sewenang-wenang menghapus kehadiran siswa.
+- [x] **Hanya role tertentu:** Layar ini hanya muncul di navigasi jika user memiliki role `admin`, `superadmin`, `waka_kurikulum`, atau `staf_tu`. Middleware backend juga memvalidasi. *(Plus `kepsek`/`kepala_sekolah` untuk melihat saja; lihat 77.0.)*
+- [x] **Alasan wajib:** Field alasan minimal 10 karakter. Tombol "Simpan Koreksi" disabled jika belum diisi.
+- [x] **Audit trail visual:** Jika absensi sudah pernah dikoreksi sebelumnya, tampilkan badge "Dikoreksi oleh [Nama] pada [tanggal]" + alasan koreksi sebelumnya.
+- [x] **Batasan koreksi:** Siswa yang sudah berstatus `hadir` (via QR scan atau manual guru) **tidak bisa** dikoreksi ke `alpha` oleh admin — hanya bisa dikoreksi dari `alpha` ke `hadir`/`sakit`/`izin`, atau dari `sakit`/`izin` ke `hadir`. Ini mencegah admin sewenang-wenang menghapus kehadiran siswa.
 
 ---
 
@@ -4298,24 +4414,24 @@ Setelah scan berhasil:
 
 #### 77.7.1: Notifikasi Push (FCM)
 
-- [ ] **Untuk Guru:**
+- [ ] **Untuk Guru:** *(Dikirim server (backend FASE 117); sisi Android siap — lihat "Notifikasi" di 77.0.)*
   - 5 menit sebelum jadwal dimulai: "Sesi Matematika X-1 (IPA) dimulai 5 menit lagi. Tap untuk memulai kelas."
   - 5 menit sebelum jadwal berakhir: "Sesi Matematika X-1 akan berakhir 5 menit lagi. 6 siswa belum absen."
   - Saat sesi auto-close: "Sesi Matematika X-1 ditutup otomatis. 6 siswa tercatat alpha."
 
-- [ ] **Untuk Siswa:**
+- [ ] **Untuk Siswa:** *(Dikirim server (backend FASE 117); sisi Android siap — lihat "Notifikasi" di 77.0.)*
   - Saat guru memulai sesi kelas mereka: "Sesi Matematika dimulai! Segera scan QR dari layar Pak Hadi."
   - Saat sesi berakhir dan siswa belum absen: "Anda tercatat ALPHA di sesi Matematika. Hubungi Waka Kurikulum/TU untuk koreksi."
 
-- [ ] **Untuk Orang Tua:**
+- [ ] **Untuk Orang Tua:** *(Dikirim server (backend FASE 117); sisi Android siap — lihat "Notifikasi" di 77.0.)*
   - Rangkuman harian (17:00 WIB): "Kehadiran [Nama Anak] hari ini: 6/7 sesi hadir. Alpha: Matematika (Jam ke-3)."
 
 #### 77.7.2: Quick Action Integration
 
-- [ ] **Dashboard Guru:** Kartu hero "Jadwal Hari Ini" yang sudah ada (dari FASE 76.2) diperkaya:
+- [x] **Dashboard Guru:** Kartu hero "Jadwal Hari Ini" yang sudah ada (dari FASE 76.2) diperkaya:
   - Jika ada sesi yang bisa dimulai sekarang → label berubah jadi "Mulai Kelas [Nama Mapel]" + tombol hijau.
   - Jika ada sesi aktif → label berubah jadi "Kembali ke Kelas [Nama Mapel]" + badge "🟢 LIVE".
-- [ ] **Home Siswa:** Menambahkan entri baru di `HomeMinimalQuickActions`: "Absen Kelas 📷" → buka scanner QR.
+- [ ] **Home Siswa:** Menambahkan entri baru di `HomeMinimalQuickActions`: "Absen Kelas 📷" → buka scanner QR. *(Tidak dibuat: banner 77.5.3 di atas Home sudah menjadi aksi cepat itu dan hanya muncul saat ada sesi aktif; menambah pil kelima ke deretan 4+1 akan menggandakannya.)*
   - Hanya muncul jika ada sesi aktif (dari polling `GET student/class-session/active`).
 
 ---
