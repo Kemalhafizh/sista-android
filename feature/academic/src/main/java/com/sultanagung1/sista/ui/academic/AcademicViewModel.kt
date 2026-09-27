@@ -11,6 +11,10 @@ import com.sultanagung1.sista.core.mvi.UiState
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.model.GradeEntry
 import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.model.ScheduleRules
+import com.sultanagung1.sista.core.util.DateUtils
+import kotlinx.coroutines.Job
+import java.util.Calendar
 import com.sultanagung1.sista.data.repository.StudentRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +36,11 @@ sealed interface AcademicUiEffect : UiEffect {
 
 data class AcademicUiState(
     val isLoading: Boolean = false,
-    val selectedDay: String = "Senin",
+    val selectedDay: String = ScheduleRules.defaultDay(DateUtils.nowCalendar().get(Calendar.DAY_OF_WEEK)),
+    /** True until `student/schedule` has fully answered (cache first, then network) — drives the pull-to-refresh spinner. */
+    val isScheduleRefreshing: Boolean = false,
+    /** Why the timetable could not be loaded (kept apart from grade errors). */
+    val scheduleErrorMessage: String? = null,
     val allSchedules: List<ScheduleItem> = emptyList(),
     val grades: List<GradeEntry> = emptyList(),
     val errorMessage: String? = null
@@ -65,27 +73,33 @@ class AcademicViewModel @Inject constructor(private val studentRepository: Stude
         _uiState.value = _uiState.value.copy(selectedDay = day)
     }
 
+    private var scheduleJob: Job? = null
+
     fun loadSchedule() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            studentRepository.getSchedule().collect { result ->
-                when (result) {
-                    is NetworkResult.Success -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            allSchedules = result.data
-                        )
-                    }
-                    is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = result.message
-                        )
-                    }
-                    is NetworkResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(isLoading = true)
-                    }
-                }
+        scheduleJob?.cancel()
+        scheduleJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, isScheduleRefreshing = true)
+            try {
+                collectSchedule()
+            } finally {
+                _uiState.value = _uiState.value.copy(isScheduleRefreshing = false)
+            }
+        }
+    }
+
+    private suspend fun collectSchedule() {
+        studentRepository.getSchedule().collect { result ->
+            when (result) {
+                is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    allSchedules = result.data,
+                    scheduleErrorMessage = null
+                )
+                is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    scheduleErrorMessage = result.message
+                )
+                is NetworkResult.Loading -> _uiState.value = _uiState.value.copy(isLoading = true)
             }
         }
     }

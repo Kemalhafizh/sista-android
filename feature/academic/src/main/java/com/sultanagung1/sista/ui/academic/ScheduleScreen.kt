@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,8 +18,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,10 +31,24 @@ import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedBounds
+import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.model.ScheduleRules
+import com.sultanagung1.sista.data.model.ScheduleRules.LessonStatus
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
+/**
+ * The student's timetable, straight from `student/schedule`.
+ *
+ * It used to fall back to four made-up lessons whenever the list was empty
+ * (or failed to load), show a hardcoded date and class badge, ignore the
+ * selected day, mark the first card as
+ * "Berlangsung" at any hour, and "refresh" by re-selecting the day for 600 ms
+ * without asking the server anything.
+ */
 @Composable
 fun ScheduleScreen(
     viewModel: AcademicViewModel,
@@ -40,17 +58,22 @@ fun ScheduleScreen(
     val haptics = rememberHapticFeedbackHelper()
     val isDark = isSystemInDarkTheme()
 
-    val days = listOf("Senin", "Selasa", "Rabu", "Kamis", "Jumat")
+    // The clock drives "Berlangsung"/"Selesai"; a minute is plenty of resolution.
+    var now by remember { mutableStateOf(DateUtils.nowCalendar()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            now = DateUtils.nowCalendar()
+        }
+    }
+    val todayName = ScheduleRules.dayName(now.get(Calendar.DAY_OF_WEEK))
+    val nowMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
 
-    val sampleSchedules = listOf(
-        ScheduleItem(1, "Senin", "07:00", "08:30", "Matematika Peminatan", "Drs. H. Ahmad Fauzi, M.Pd", "Lab Komputer 2"),
-        ScheduleItem(2, "Senin", "08:30", "10:00", "Fisika Modern", "Dr. Hj. Siti Nurjanah, M.Si", "Lab Fisika 1"),
-        ScheduleItem(3, "Senin", "10:15", "11:45", "Pendidikan Agama Islam", "Ust. M. Rizqi, Lc., M.Hum", "Masjid Sultan Agung Lt. 2"),
-        ScheduleItem(4, "Senin", "12:30", "14:00", "Bahasa Inggris Lanjutan", "Sarah Jenkins, M.Ed", "Kelas XII MIPA 1")
-    )
+    val days = ScheduleRules.daysToShow(uiState.allSchedules)
+    val lessons = ScheduleRules.lessonsFor(uiState.allSchedules, uiState.selectedDay)
+    val isToday = uiState.selectedDay == todayName
+    val className = ScheduleRules.classNameOf(uiState.allSchedules)
 
-    val displayList = if (uiState.allSchedules.isEmpty()) sampleSchedules else uiState.allSchedules
-    
     val borderColor = if (isDark) Slate800 else Slate200
     val backgroundColor = if (isDark) MaterialTheme.colorScheme.background else Slate50
     val textMain = if (isDark) Slate50 else Slate900
@@ -61,7 +84,7 @@ fun ScheduleScreen(
         topBar = {
             SulaoneTopBar(
                 title = "Jadwal Pelajaran",
-                subtitle = "Semester Ganjil 2026/2027",
+                subtitle = className?.let { "Kelas $it" },
                 onNavigateBack = onNavigateBack
             )
         }
@@ -72,7 +95,6 @@ fun ScheduleScreen(
                 .background(backgroundColor)
                 .padding(paddingValues)
         ) {
-            // Section Header Summary Card
             ModernBentoCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -89,29 +111,39 @@ fun ScheduleScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Senin, 20 September 2026",
+                            text = if (isToday) {
+                                SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID")).format(now.time)
+                            } else {
+                                "Jadwal hari ${uiState.selectedDay}"
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = textMain
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${displayList.size} Pelajaran hari ini",
+                            text = when {
+                                uiState.allSchedules.isEmpty() && uiState.isLoading -> "Memuat jadwal…"
+                                lessons.isEmpty() -> "Tidak ada pelajaran"
+                                isToday -> "${lessons.size} pelajaran hari ini"
+                                else -> "${lessons.size} pelajaran"
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = textSub
                         )
                     }
-                    SulaoneBadge(
-                        text = "XII MIPA 1",
-                        containerColor = Emerald600,
-                        contentColor = Slate50
-                    )
+                    if (className != null) {
+                        SulaoneBadge(
+                            text = className,
+                            containerColor = Emerald600,
+                            contentColor = Slate50
+                        )
+                    }
                 }
             }
 
-            // Day selector tabs
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,8 +152,7 @@ fun ScheduleScreen(
             ) {
                 items(days) { day ->
                     val isSelected = uiState.selectedDay == day
-                    val shortDay = day.take(3).uppercase()
-                    
+                    val count = ScheduleRules.lessonsFor(uiState.allSchedules, day).size
                     Box(
                         modifier = Modifier
                             .heightIn(min = 48.dp)
@@ -136,12 +167,20 @@ fun ScheduleScreen(
                                 haptics.tapLight()
                                 viewModel.selectDay(day)
                             }
+                            .semantics {
+                                contentDescription = buildString {
+                                    append(day)
+                                    if (day == todayName) append(", hari ini")
+                                    append(", $count pelajaran")
+                                    if (isSelected) append(", dipilih")
+                                }
+                            }
                             .padding(horizontal = 20.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = shortDay,
+                                text = if (day == todayName) "HARI INI" else day.take(3).uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) Slate50 else textSub
@@ -157,18 +196,17 @@ fun ScheduleScreen(
                 }
             }
 
-            var isRefreshing by remember { mutableStateOf(false) }
-            val coroutineScope = rememberCoroutineScope()
+            // The spinner stays until the server has actually answered.
+            var refreshRequested by remember { mutableStateOf(false) }
+            LaunchedEffect(uiState.isScheduleRefreshing) {
+                if (!uiState.isScheduleRefreshing) refreshRequested = false
+            }
 
             SulaonePullToRefreshBox(
-                isRefreshing = isRefreshing,
+                isRefreshing = refreshRequested && uiState.isScheduleRefreshing,
                 onRefresh = {
-                    isRefreshing = true
-                    coroutineScope.launch {
-                        viewModel.selectDay(uiState.selectedDay)
-                        delay(600)
-                        isRefreshing = false
-                    }
+                    refreshRequested = true
+                    viewModel.loadSchedule()
                 },
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -179,117 +217,199 @@ fun ScheduleScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
                 ) {
-                    items(displayList) { item ->
-                        val isFirstItem = displayList.firstOrNull() == item
-                        val cardBg = if (isFirstItem) {
-                            if (isDark) Emerald900.copy(alpha = 0.4f) else Emerald50
-                        } else {
-                            if (isDark) MaterialTheme.colorScheme.surface else Slate50
-                        }
-
-                        ModernBentoCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .sulaoneSharedBounds(key = "schedule_card_${item.subjectName}"),
-                            shape = RoundedCornerShape(20.dp),
-                            backgroundColor = cardBg,
-                            borderColor = borderColor,
-                            elevation = 0.dp
-                        ) {
-                            Row(
+                    val error = uiState.scheduleErrorMessage
+                    when {
+                        uiState.allSchedules.isEmpty() && uiState.isLoading -> items(4) {
+                            ShimmerSkeleton(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Lesson number indicator
-                                Text(
-                                    text = item.id.toString(),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isFirstItem) Emerald600 else textMuted,
-                                    modifier = Modifier.padding(end = 12.dp)
+                                    .height(84.dp),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                        }
+                        uiState.allSchedules.isEmpty() && error != null -> item {
+                            SulaoneEmptyState(
+                                title = "Jadwal belum bisa dimuat",
+                                description = error,
+                                icon = Icons.Default.CloudOff,
+                                ctaLabel = "Coba Lagi",
+                                onCtaClick = viewModel::loadSchedule
+                            )
+                        }
+                        uiState.allSchedules.isEmpty() -> item {
+                            SulaoneEmptyState(
+                                title = "Belum ada jadwal",
+                                description = "Kelasmu belum memiliki jadwal pelajaran di sistem. Hubungi wali kelas atau Tata Usaha.",
+                                icon = Icons.Default.EventBusy,
+                                ctaLabel = "Muat Ulang",
+                                onCtaClick = viewModel::loadSchedule
+                            )
+                        }
+                        lessons.isEmpty() -> item {
+                            SulaoneEmptyState(
+                                title = "Tidak ada pelajaran",
+                                description = "Tidak ada jadwal pada hari ${uiState.selectedDay}.",
+                                icon = Icons.Default.EventAvailable
+                            )
+                        }
+                        else -> {
+                            if (error != null) {
+                                item {
+                                    SulaoneErrorBanner(
+                                        message = "Menampilkan jadwal tersimpan. $error",
+                                        onRetry = viewModel::loadSchedule
+                                    )
+                                }
+                            }
+                            itemsIndexed(lessons, key = { _, lesson -> lesson.id }) { index, item ->
+                                ScheduleLessonCard(
+                                    order = index + 1,
+                                    item = item,
+                                    status = ScheduleRules.statusOf(item, isToday, nowMinutes),
+                                    isDark = isDark,
+                                    borderColor = borderColor,
+                                    textMain = textMain,
+                                    textSub = textSub,
+                                    textMuted = textMuted
                                 )
-
-                                // Time Badge
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(if (isDark) Slate800 else Slate200)
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = item.startTime,
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = textMain
-                                        )
-                                        Text(
-                                            text = item.endTime,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                            color = textSub
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(14.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = item.subjectName,
-                                            modifier = Modifier.weight(1f, fill = false),
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = textMain,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        if (isFirstItem) {
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            LiveStatusChip("Berlangsung", color = Emerald600)
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = null,
-                                            tint = textSub,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = item.teacherName,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = textSub,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Room,
-                                            contentDescription = null,
-                                            tint = textMuted,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = item.room,
-                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                                            color = textMuted
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScheduleLessonCard(
+    order: Int,
+    item: ScheduleItem,
+    status: LessonStatus,
+    isDark: Boolean,
+    borderColor: Color,
+    textMain: Color,
+    textSub: Color,
+    textMuted: Color
+) {
+    val ongoing = status == LessonStatus.ONGOING
+    val done = status == LessonStatus.DONE
+    val cardBg = when {
+        ongoing -> if (isDark) Emerald900.copy(alpha = 0.4f) else Emerald50
+        else -> if (isDark) MaterialTheme.colorScheme.surface else Slate50
+    }
+    val start = ScheduleRules.displayTime(item.startTime)
+    val end = ScheduleRules.displayTime(item.endTime)
+
+    ModernBentoCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (done) 0.6f else 1f)
+            .sulaoneSharedBounds(key = "schedule_card_${item.id}")
+            .semantics(mergeDescendants = true) {
+                contentDescription = buildString {
+                    append("Jam ke-$order, ${item.subjectName}, $start sampai $end, ${item.teacherName}, ${ScheduleRules.locationOf(item)}")
+                    if (ongoing) append(", sedang berlangsung")
+                    if (done) append(", selesai")
+                }
+            },
+        shape = RoundedCornerShape(20.dp),
+        backgroundColor = cardBg,
+        borderColor = if (ongoing) Emerald600 else borderColor,
+        elevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = order.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (ongoing) Emerald600 else textMuted,
+                modifier = Modifier.padding(end = 12.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (isDark) Slate800 else Slate200)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = start,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = textMain
+                    )
+                    Text(
+                        text = end,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = textSub
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.subjectName,
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = textMain,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (ongoing) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        LiveStatusChip("Berlangsung", color = Emerald600)
+                    } else if (done) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Selesai", style = MaterialTheme.typography.labelSmall, color = textMuted)
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = textSub,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = item.teacherName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textSub,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Room,
+                        contentDescription = null,
+                        tint = textMuted,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = ScheduleRules.locationOf(item),
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
