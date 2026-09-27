@@ -33,7 +33,10 @@ fun NotificationCenterScreen(
     viewModel: NotificationViewModel,
     onNavigateDeepLink: (String) -> Unit,
     onNavigateBack: (() -> Unit)? = null,
-    onNavigateToSettings: (() -> Unit)? = null
+    onNavigateToSettings: (() -> Unit)? = null,
+    // Developer-only push simulator. The app module passes BuildConfig.DEBUG;
+    // defaults to false so release builds never show the test dispatcher.
+    showDebugTools: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -89,13 +92,15 @@ fun NotificationCenterScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showTestDispatchDialog = true },
-                containerColor = Emerald800,
-                contentColor = Color.White,
-                icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
-                text = { Text("Uji Push Notifikasi", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-            )
+            if (showDebugTools) {
+                ExtendedFloatingActionButton(
+                    onClick = { showTestDispatchDialog = true },
+                    containerColor = Emerald800,
+                    contentColor = Color.White,
+                    icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+                    text = { Text("Uji Push Notifikasi", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -192,7 +197,7 @@ fun NotificationCenterScreen(
         }
     }
 
-    if (showTestDispatchDialog) {
+    if (showDebugTools && showTestDispatchDialog) {
         AlertDialog(
             onDismissRequest = { showTestDispatchDialog = false },
             title = {
