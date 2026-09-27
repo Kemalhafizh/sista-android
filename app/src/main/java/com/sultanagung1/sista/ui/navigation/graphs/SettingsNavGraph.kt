@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
@@ -68,7 +67,6 @@ import com.sultanagung1.sista.ui.uks.UksViewModel
 import com.sultanagung1.sista.ui.update.UpdatePromptScreen
 import com.sultanagung1.sista.ui.utbk.UtbkTryOutScreen
 import com.sultanagung1.sista.ui.utbk.UtbkViewModel
-import kotlinx.coroutines.launch
 
 /**
  * Sub-Navigation Graph untuk Modul Pengaturan, Profil, Perangkat Keras,
@@ -88,7 +86,6 @@ fun NavGraphBuilder.settingsNavGraph(
     // --- Profile & Settings ---
     composable(Screen.Profile.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
-            val coroutineScope = rememberCoroutineScope()
             val loginViewModel: LoginViewModel = hiltViewModel()
             ProfileScreen(
                 sessionManager = sessionManager,
@@ -98,37 +95,6 @@ fun NavGraphBuilder.settingsNavGraph(
                 onNavigateToAnnouncements = { navController.navigate(Screen.AnnouncementFeed.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToDiagnostics = { navController.navigate(Screen.DiagnosticReport.route) },
-                onRoleSwitch = { newRole ->
-                    coroutineScope.launch {
-                        val roleKey = newRole.lowercase()
-                        when {
-                            roleKey.contains("teacher") || roleKey.contains("guru") -> {
-                                sessionManager.saveAuthSession("token_teacher", "teacher", "Ustadz Ahmad Fauzi, M.Pd", "guru.matematika@sultanagung1.sch.id", "198504122010011002")
-                                navController.navigate(Screen.TeacherDashboard.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
-                            roleKey.contains("parent") || roleKey.contains("ortu") -> {
-                                sessionManager.saveAuthSession("token_parent", "parent", "Bapak Hendra Gunawan, S.T.", "ortu1@parent.sa1.sch.id", "wali-0071829102")
-                                navController.navigate(Screen.ParentDashboard.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
-                            roleKey.contains("admin") || roleKey.contains("kepsek") -> {
-                                sessionManager.saveAuthSession("token_admin", "admin", "Drs. H. Muhammad Arif, M.Pd", "admin@sultanagung1.sch.id", "197405121998031002")
-                                navController.navigate(Screen.AdminDashboard.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
-                            else -> {
-                                sessionManager.saveAuthSession("token_student", "student", "Ahmad Kemal Hafizh", "siswa1@student.sa1.sch.id", "0071829102")
-                                navController.navigate(Screen.Home.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
-                        }
-                    }
-                },
                 onLogout = {
                     loginViewModel.logout {
                         navController.navigate(Screen.Login.route) {

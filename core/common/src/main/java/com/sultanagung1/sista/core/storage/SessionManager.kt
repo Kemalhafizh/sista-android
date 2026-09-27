@@ -177,12 +177,6 @@ class SessionManager(private val context: Context) {
         return generated
     }
 
-    suspend fun updateUserRole(role: String) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_USER_ROLE] = role
-        }
-    }
-
     suspend fun setBiometricEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_BIOMETRIC_ENABLED] = enabled
