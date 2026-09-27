@@ -32,6 +32,7 @@ import com.sultanagung1.sista.core.designsystem.Emerald50
 import com.sultanagung1.sista.core.designsystem.Emerald700
 import com.sultanagung1.sista.core.designsystem.Slate500
 import com.sultanagung1.sista.ui.navigation.Screen
+import androidx.compose.material3.minimumInteractiveComponentSize
 
 @Composable
 internal fun HomeModuleCarousel(
@@ -55,6 +56,7 @@ internal fun HomeModuleCarousel(
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(8.dp))
                     .clickable { onNavigateToCatalog() }
                     .padding(4.dp)

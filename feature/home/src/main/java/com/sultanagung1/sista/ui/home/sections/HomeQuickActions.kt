@@ -11,6 +11,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +32,7 @@ import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
+import com.sultanagung1.sista.data.repository.UsageRanking
 
 data class QuickActionItem(
     val title: String,
@@ -38,12 +40,27 @@ data class QuickActionItem(
     val icon: ImageVector,
     val backgroundColor: Color,
     val iconColor: Color,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
+    /** FASE 76.4: usage-counter key; null for pills that are not counted ("Semua"). */
+    val key: String? = null
 )
+
+/** FASE 76.4: stable keys the local usage counter stores for each Home pill. */
+internal object QuickActionKeys {
+    const val PRESENSI = "home.presensi"
+    const val JADWAL = "home.jadwal"
+    const val CBT = "home.cbt"
+    const val SPP = "home.spp"
+}
 
 /**
  * FASE 60.1: Minimalist 5-Pill Quick Actions Row.
  * 4 primary high-frequency services + 1 "Semua" button for progressive disclosure.
+ *
+ * FASE 76.4: the four service pills are ordered by how often this account taps
+ * them on this device ([UsageRanking]); "Semua" always stays last. The title
+ * says "Sering Dipakai" only once the order has actually changed, and says what
+ * it is based on. It is a counter, so it is never labelled as AI.
  */
 @Composable
 internal fun HomeMinimalQuickActions(
@@ -52,15 +69,20 @@ internal fun HomeMinimalQuickActions(
     onNavigateToSchedule: () -> Unit,
     onNavigateToCbt: () -> Unit,
     onNavigateToBilling: () -> Unit,
-    onOpenAllServices: () -> Unit
+    onOpenAllServices: () -> Unit,
+    usage: Map<String, Int> = emptyMap(),
+    onActionUsed: (String) -> Unit = {}
 ) {
-    val items = listOf(
-        QuickActionItem("Presensi", "GPS", Icons.Default.LocationOn, Color.White, Emerald600, onNavigateToGeofence),
-        QuickActionItem("Jadwal", "KBM", Icons.Default.CalendarMonth, Color.White, Emerald600, onNavigateToSchedule),
-        QuickActionItem("Ujian CBT", "Online", Icons.Default.Quiz, Color.White, Emerald600, onNavigateToCbt),
-        QuickActionItem("SPP", "VA BSI", Icons.Default.AccountBalanceWallet, Color.White, Emerald600, onNavigateToBilling),
-        QuickActionItem("Semua", "Layanan", Icons.Default.GridView, Color.White, Emerald600, onOpenAllServices)
+    val serviceItems = listOf(
+        QuickActionItem("Presensi", "GPS", Icons.Default.LocationOn, Color.White, Emerald600, onNavigateToGeofence, QuickActionKeys.PRESENSI),
+        QuickActionItem("Jadwal", "KBM", Icons.Default.CalendarMonth, Color.White, Emerald600, onNavigateToSchedule, QuickActionKeys.JADWAL),
+        QuickActionItem("Ujian CBT", "Online", Icons.Default.Quiz, Color.White, Emerald600, onNavigateToCbt, QuickActionKeys.CBT),
+        QuickActionItem("SPP", "VA BSI", Icons.Default.AccountBalanceWallet, Color.White, Emerald600, onNavigateToBilling, QuickActionKeys.SPP)
     )
+    val isPersonalized = UsageRanking.isReordered(serviceItems, usage) { it.key.orEmpty() }
+    val items = UsageRanking.rank(serviceItems, usage) { it.key.orEmpty() } +
+        QuickActionItem("Semua", "Layanan", Icons.Default.GridView, Color.White, Emerald600, onOpenAllServices)
+    val sectionTitle = if (isPersonalized) "Sering Dipakai" else "Layanan Utama"
 
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
         Row(
@@ -68,17 +90,27 @@ internal fun HomeMinimalQuickActions(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Layanan Utama",
-                modifier = Modifier.sulaoneHeading("Layanan Utama"),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = sectionTitle,
+                    modifier = Modifier.sulaoneHeading(sectionTitle),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (isPersonalized) {
+                    Text(
+                        text = "Diurutkan dari yang paling sering Anda buka di HP ini",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Text(
                 text = "Lihat Semua",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = Emerald700,
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(6.dp))
                     .springPressable { onOpenAllServices() }
                     .padding(4.dp)
@@ -92,14 +124,14 @@ internal fun HomeMinimalQuickActions(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             items.forEach { action ->
-                ModernQuickActionPill(action)
+                ModernQuickActionPill(action, onUsed = onActionUsed)
             }
         }
     }
 }
 
 @Composable
-internal fun ModernQuickActionPill(action: QuickActionItem) {
+internal fun ModernQuickActionPill(action: QuickActionItem, onUsed: (String) -> Unit = {}) {
     val haptics = rememberHapticFeedbackHelper()
     val isDark = MaterialTheme.colorScheme.surface.isDark()
 
@@ -113,6 +145,7 @@ internal fun ModernQuickActionPill(action: QuickActionItem) {
             }
             .springPressable {
                 haptics.tapLight()
+                action.key?.let(onUsed)
                 action.onClick()
             },
         horizontalAlignment = Alignment.CenterHorizontally

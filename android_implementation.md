@@ -4,9 +4,9 @@
 Dokumen ini adalah cetak biru (*blueprint*) dan dokumentasi implementasi teknis lengkap untuk aplikasi **Sulaone (SISTA Mobile)**. Aplikasi ini dikhususkan untuk **SMA Islam Sultan Agung 1 Semarang (YBWSA)** dan dibangun dengan standar *Enterprise* modern murni **100% Native Jetpack Compose (Material 3)**.
 
 > **Versi Dokumen:** 9.1 — Diperbarui 19 September 2026
-> **Status Proyek (dicek ulang 27 September 2026):** FASE 1–70 & 73 tercatat selesai; FASE 71, 72, 74, 76 sebagian; FASE 68 & 75 belum. Beberapa klaim lama ternyata tidak sesuai kode — lihat **🔎 Status Verifikasi Terkini** di bawah.
-> **Total File Kotlin (dihitung 27 Sep 2026):** 356 file produksi + 33 file test, di 1 modul `app` + 6 modul `core` + 11 modul `feature` | **Rute Navigasi (`Screen.kt`):** 87
-> **Hasil Verifikasi Kompilasi:** ⚠️ **Belum terverifikasi untuk kode saat ini.** "BUILD SUCCESSFUL" di bagian-bagian lama adalah catatan pada fase masing-masing; perubahan Kotlin sejak FASE 76 belum pernah dikompilasi (Gradle tidak bisa dijalankan di lingkungan agen: `Unable to establish loopback connection`). Kompilasi pertama harus dilakukan di Android Studio.
+> **Status Proyek (dicek ulang 27 September 2026):** FASE 1–70, 73 & 76 tercatat selesai (76: kode + test logika terverifikasi, tampilan belum dilihat di emulator); FASE 71, 72, 74 sebagian; FASE 68 & 75 belum. Beberapa klaim lama ternyata tidak sesuai kode — lihat **🔎 Status Verifikasi Terkini** di bawah.
+> **Total File Kotlin (dihitung ulang 27 Sep 2026, setelah FASE 76):** 365 file produksi + 36 file test, di 1 modul `app` + 6 modul `core` + 11 modul `feature` | **Rute Navigasi (`Screen.kt`):** 87
+> **Hasil Verifikasi Kompilasi (27 Sep 2026):** ✅ **Terverifikasi di CI GitHub Actions** (PR `claude/sweet-cray-1ciw98`, run #7, commit `7618752`): `./gradlew testDebugUnitTest` → BUILD SUCCESSFUL (semua modul terkompilasi penuh, termasuk Compose, Hilt, Room kapt; semua unit test lolos), `./gradlew lintDebug` → 0 error di 17 modul, `./gradlew assembleDebug` → APK debug jadi. Sebelumnya CI **selalu merah sebelum mengompilasi apa pun** karena `gradle.properties` mem-pin JDK Windows lokal (lihat "Perbaikan CI & lint" di FASE 76). Tampilan belum dilihat di emulator.
 
 ---
 
@@ -15,12 +15,12 @@ Dokumen ini adalah cetak biru (*blueprint*) dan dokumentasi implementasi teknis 
 Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa otomatis: setiap tautan file, setiap nama file `.kt` yang disebut, setiap `import` proyek, referensi kelas lengkap dan `Class.forName` di test, serta path file yang dibaca test penjaga sumber.
 
 **Build & test**
-- Kode Kotlin saat ini **belum pernah dikompilasi** sejak perubahan FASE 76 dan perbaikan-perbaikan sesudahnya (ujian guru, Kedisiplinan, presensi GPS). Kompilasi pertama: Android Studio → *Build → Make Project*.
+- ~~Kode Kotlin saat ini **belum pernah dikompilasi** sejak perubahan FASE 76.~~ **Diperbarui 27 Sep 2026:** seluruh kode kini dikompilasi dan diuji di CI (`testDebugUnitTest`, `lintDebug`, `assembleDebug` hijau). Lihat "Hasil Verifikasi Kompilasi" di atas.
 - **Diperbaiki hari ini — tiga referensi yang membuat source set test tidak bisa dikompilasi sama sekali:**
   - `RetrofitUrlNormalizationTest` memuat `SchoolOperationsApiService`, yang sudah tidak ada. Kini ada test yang mencocokkan daftarnya dengan semua `interface …ApiService` di source; tiga service yang belum tercakup (`TahsinApiService`, `ScannerMobileApiService`, `MobileConfigApiService`) ikut ditambahkan.
   - `HiltDependencyInjectionTest` dan `CleanArchitectureTest` memuat `SchoolOperationsViewModel`, yang sudah tidak ada, dan melewatkan 10 ViewModel nyata (44 ada, 35 tercantum). Daftarnya diperbaiki, dan kedua test kini mencocokkan daftarnya dengan setiap `@HiltViewModel` di source.
   - `AdaptiveLayoutTest` mencari `TeachingJournalScreenKt` (file tidak ada, `ClassNotFoundException`). Kini `TeachingJournalMobileScreenKt`.
-- **Masih akan gagal saat dijalankan:** `SharedElementMotionTest`, `AdaptiveRefreshRateTest`, `MinimalistUxOverhaulTest`, dan `Fase66UiOverhaulTest` masih membaca 32 path `src/main/java/...` modul `app` yang sudah pindah ke `feature/*` dan `core/*` (FASE 73). Test-nya bisa dikompilasi, tapi assertion-nya perlu disesuaikan.
+- ~~**Masih akan gagal saat dijalankan:** `SharedElementMotionTest`, `AdaptiveRefreshRateTest`, `MinimalistUxOverhaulTest`, dan `Fase66UiOverhaulTest` …~~ **Koreksi 27 Sep 2026:** perkiraan ini tidak terbukti. Keempat test lolos saat `testDebugUnitTest` benar-benar dijalankan di CI (run #4 dan #7).
 
 **Tautan di dokumen ini**
 - Sebelum pemeriksaan, hanya 35 dari 291 tautan file yang benar. Setelah perbaikan, 276 dari 288 benar: 359 tautan diarahkan ke lokasi modul yang sebenarnya.
@@ -46,7 +46,7 @@ Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa oto
 **Label status yang tertinggal dari kode**
 - **FASE 72:** 72.2 (heartbeat, pencatatan pelanggaran, dan intervensi pengawas lewat Reverb) sudah ada, walau label lamanya "rancangan".
 - **FASE 73:** sudah terlaksana (6 modul `core` + 11 modul `feature`), walau label lamanya "rancangan".
-- **FASE 76:** 76.1 dan 76.2 selesai; sisanya belum.
+- **FASE 76:** 76.0–76.9 selesai 27 Sep 2026 (lihat bagian FASE 76). Terkompilasi penuh, lolos unit test, lint, dan assemble di CI; belum dilihat di emulator.
 
 **Backend yang dibutuhkan versi aplikasi ini**
 - Server harus sudah menjalankan migrasi terbaru (`php artisan migrate`).
@@ -3310,11 +3310,11 @@ Langkah pemungkas untuk memastikan Sulaone siap dirilis secara resmi ke publik m
 
 ---
 
-### 🎨 FASE 76: UI/UX RENAISSANCE 2026 — MATERIAL 3 EXPRESSIVE, BENTO-GLASS SYSTEM & HYPER-PERSONALISASI `[SEBAGIAN — 76.1 & 76.2 selesai, belum dikompilasi]`
+### 🎨 FASE 76: UI/UX RENAISSANCE 2026 — MATERIAL 3 EXPRESSIVE, BENTO-GLASS SYSTEM & HYPER-PERSONALISASI `[SELESAI 27 Sep 2026 — hijau di CI (test, lint, APK); belum dilihat di emulator]`
 
 Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplikasi Android/mobile 2026 dari internet (daftar sumber di 76.0), dan (2) audit jujur terhadap kode Sulaone yang sudah ada — bukan asumsi kosong. Temuan paling penting dari audit: **sebagian besar infrastruktur tren 2026 SUDAH ADA di codebase ini, tapi nyaris tidak dipakai.** Ini bukan proyek "bangun dari nol", tapi proyek "formalkan, sebarkan secara sistematis, dan tutup celah yang genuinely belum ada".
 
-- [ ] **76.0 Riset Tren 2026 & Audit Adopsi Kode Saat Ini (dasar rancangan, sudah dilakukan):**
+- [x] **76.0 Riset Tren 2026 & Audit Adopsi Kode Saat Ini (dasar rancangan, sudah dilakukan):**
   - **Ringkasan riset** (sumber lengkap di catatan bawah bagian ini):
     1. **Material 3 Expressive** (diumumkan Google I/O 2025, berlaku penuh 2026) — pergeseran dari minimalis ke visual "emotive": warna lebih berani, motion "springy", 35 bentuk baru + shape-morphing, tipografi lebih besar/tegas. Diuji lewat 46 studi & 18.000 partisipan — pengguna menemukan elemen kunci 4x lebih cepat, dan pengguna 45+ tahun performanya setara pengguna muda berkat tombol lebih besar & kontras tinggi.
     2. **Bento Grid** — layout modular kotak-kotak asimetris (terinspirasi kotak bento Jepang), jadi pola default untuk dashboard/feature section. Sweet spot: 6–9 tile sebelum terasa penuh sesak. Cocok untuk dashboard, TIDAK cocok untuk tabel data padat.
@@ -3369,7 +3369,7 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
       - Tujuan keterbacaan/penemuan cepat dari riset M3 Expressive dipenuhi lewat `SulaoneEmphasizedTypography` (bobot lebih berat, ukuran sama) yang dipasang selektif di Gelombang 2, bukan lewat pembesaran global.
       - Boleh ditinjau ulang nanti **per layar** (bukan global) bila ada emulator/screenshot test untuk memverifikasi tidak ada teks terpotong.
     - **Verifikasi:** test baru `EmphasizedTypographyTest.kt` mengunci (1) ukuran/line-height/letter-spacing sama persis dengan baseline di ke-15 peran, (2) bobot emphasized lebih berat di setiap peran, (3) tidak ada bobot melewati ExtraBold (800) yang tidak punya file font. Belum bisa dijalankan di sandbox ini (Gradle `Unable to establish loopback connection`, dicoba ulang 2026-09-26 termasuk tanpa sandbox — tetap gagal); diverifikasi lewat pemeriksaan struktur manual.
-  - [ ] **Ditemukan sebagai bonus, belum diperbaiki:** `DesignSystemTokensTest.kt`'s `testNoHardcodedColorsInUiScreens` cuma men-scan `app/.../ui` — sejak migrasi multi-module FASE 73, layar fitur sungguhan pindah ke `feature/*/.../ui`, jadi test itu sekarang cuma mengecek folder navigasi kosong, bukan layar sungguhan. Ditandai untuk diperbaiki di increment 76 berikutnya.
+  - [x] **Ditemukan sebagai bonus — DIPERBAIKI 2026-09-27:** `DesignSystemTokensTest.testNoHardcodedColorsInUiScreens` dulu cuma men-scan `app/.../ui` (sejak FASE 73 isinya hanya navigasi), jadi selalu lolos. Sekarang men-scan `app/.../ui` **plus `src/main/java` setiap modul `feature/*`**, dan gagal bila yang ter-scan kurang dari 50 file (penjaga agar tidak diam-diam kosong lagi). Hasil: 0 warna hardcoded di layar fitur (test dijalankan, lihat Verifikasi 76.3–76.8).
   - **Verifikasi:** unit test baru `DesignSystemShapeMotionTokensTest.kt` (pola sama seperti `DesignSystemTokensTest`) — mengecek skala radius menaik ketat, kecocokan persis dengan default Compose (bukti nol-regresi), 3 tingkat motion benar-benar beda nilai (bukan cuma beda nama), `springStandard` sama persis dengan nilai lama `springPressable`, dan regex guard yang menolak `spring(dampingRatio=...)` ad hoc baru di luar file token. **Belum bisa dieksekusi** di sandbox pengerjaan ini (Gradle daemon gagal `Unable to establish loopback connection` — limitasi lingkungan yang sama seperti ditemukan di sesi-sesi sebelumnya), diverifikasi lewat pembacaan manual yang teliti terhadap tipe/nilai/pemakaian nyata sebagai gantinya.
 
 - [x] **76.2 Sebarkan Bento Grid + Glassmorphism Secara Sistematis `[Gelombang 2 — dashboard 4 role selesai 2026-09-26; Gelombang 3 — Billing & header daftar panjang selesai 2026-09-27]`:**
@@ -3416,16 +3416,55 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
       - Bukan *backdrop blur* sungguhan; alasannya sama dengan `SulaoneGlassTopBar` (minSdk 26).
   - **Verifikasi:** backend `php artisan test` (10/10 lolos, termasuk test yang dibuktikan gagal lebih dulu); pemeriksa keseimbangan kurung/struktur untuk 8 file Kotlin yang diubah (lolos, dan diuji balik dengan file yang sengaja dirusak untuk memastikan pemeriksanya tidak selalu lolos); assertion `ProfessionalUiUxOverhaulTest` diputar ulang terhadap kode nyata (lolos); test baru `emphasized()` di `EmphasizedTypographyTest` (termasuk penjaga mode disleksia). Build/test Gradle Android **tetap tidak bisa dijalankan** di lingkungan ini (`Unable to establish loopback connection`), dan tampilan akhirnya **belum dilihat di emulator** — tata letak `IntrinsicSize` dan glass bar perlu dicek visual pada run pertama.
 
-- [ ] **76.3 Navigasi Hybrid — FAB Kontekstual & Gesture Shortcut di Atas Fondasi Adaptif yang Sudah Ada:**
+- [x] **76.3 Navigasi Hybrid — FAB Kontekstual & Gesture Shortcut di Atas Fondasi Adaptif yang Sudah Ada `[SELESAI 2026-09-27]`:**
   - Fondasi bottom bar + `SulaoneNavigationRail` (FASE 55) dipertahankan — riset menegaskan bottom bar tetap pola terkuat untuk 3–5 destinasi, tidak perlu dirombak total.
-  - **Tambahan baru:** FAB kontekstual di `AppNavigation.kt`'s `Scaffold` yang berubah aksi sesuai layar aktif (mis. di Home Siswa → "Presensi Cepat", di CBT List → tidak muncul saat ujian berjalan demi anti-cheat, di Chat → "Pesan Baru").
-  - **Tambahan baru:** swipe-back gesture kontekstual pada `CbtExamRoomScreen`/detail screens dinonaktifkan secara sadar (bukan lupa) selama sesi ujian aktif — dikombinasikan, bukan gesture-only, sesuai temuan riset "gesture murni membingungkan sebagian pengguna".
+  - **FAB kontekstual** di `Scaffold` root `AppNavigation.kt`. Aturannya ada di `ContextualFab.kt` (murni Kotlin, tanpa tipe Compose, jadi bisa diuji):
+    - Home siswa → **"Presensi"** (`GeofenceAttendance`).
+    - Dashboard Guru → **"Jurnal KBM"** (`TeachingJournalMobile`).
+    - Portal Wali Murid → **"Pesan Guru"** (`ConversationList`).
+    - Dashboard Admin **tidak** diberi FAB. Satu-satunya aksi mobile yang pantas (siaran darurat) memang sengaja berada di balik konfirmasi di layarnya sendiri.
+    - Tab lain (Jadwal, Nilai, Notifikasi yang sudah punya tombol sendiri, Profil) tidak diberi FAB.
+    - FAB hanya muncul di rute tab, jadi **tidak pernah muncul di alur CBT** (`CbtRoom`, `CbtTokenEntry`, `CbtList`). Ini dijamin oleh konstruksinya: rute yang tidak terdaftar selalu menghasilkan `null`, bukan oleh pengecualian satu per satu.
+  - **Back/swipe-back di ruang ujian dinonaktifkan secara sadar:**
+    - **Bug sebelumnya:** satu *edge-swipe* back yang tidak sengaja di HP bergestur **langsung menutup paksa dan mengumpulkan ujian** (`BackHandler` memanggil `forceCloseExam` tanpa bertanya).
+    - **Kode mati:** dialog "Keluar dari Ujian?" sudah ada tapi tidak pernah dimunculkan (`showExitWarningDialog` tidak pernah di-set `true`). Tombol konfirmasinya pun hanya `onNavigateBack()` tanpa menutup ujian, jadi jika sempat dipakai, ujian bisa ditinggal dalam keadaan terbuka.
+    - **Sekarang:** back/swipe selama ujian berjalan hanya membuka dialog tersebut, dengan teks jujur: berapa soal terjawab, ujian langsung ditutup, tidak bisa masuk lagi, dan tercatat untuk pengawas. Konfirmasi menjalankan `exitAndForceClose("back_button_pressed")`, alur force-close yang sama dengan sebelumnya.
+    - Aturan FASE 26 ("keluar = ujian ditutup") **tetap berlaku**, hanya kini lewat aksi eksplisit, bukan satu gestur. Keluar karena minimize, split-screen, atau app ditutup tetap langsung force-close (tidak berubah).
+    - Karena back dikonsumsi selama sesi, *predictive back* juga tidak mengintip layar sebelumnya.
+  - **Bug navigasi per-role yang ditemukan dan diperbaiki (fondasi FAB):**
+    - Backend mengirim `users.role` apa adanya, dan seeder-nya memakai beberapa ejaan untuk peran yang sama (`orang_tua`, `kepala_sekolah`, `siswa`, `bk`).
+    - Android hanya mencocokkan `parent`/`ortu`, `admin`/`kepsek`, dan `guru`/`teacher`. Akibatnya:
+      - akun **`orang_tua` dan `kepala_sekolah` mendarat di Home siswa**;
+      - `RoleGuardedScreen` **menolak `orang_tua` masuk Portal Wali Murid** dan `kepala_sekolah` masuk dashboard Admin (403 palsu);
+      - akun **`bk`** (endpoint guru `role:guru,bk`) juga ke Home siswa.
+    - Diperbaiki dengan satu sumber kebenaran `UserRoles` (`core/common/.../ui/navigation/UserRoles.kt`):
+      - `normalize()` dipasang sekali di `SessionManager.userRoleFlow`, jadi semua guard dan pemeriksaan role ikut benar;
+      - `groupOf()`/`homeRouteFor()` dipakai `navigateToRoleHome`, `bottomNavItems`, login (`AuthNavGraph`), dan FAB.
+  - **Test:** `Fase76CompletionLogicTest` (alias role → home yang benar, `normalize` tidak menyentuh role asing, FAB per role, tidak ada FAB di rute ujian/tab lain) dan `Fase76CompletionGuardTest` (satu sumber kebenaran role, FAB di Scaffold root hanya di tab, back di ujian hanya membuka dialog).
+  - **Ditemukan, BELUM diperbaiki (di luar cakupan 76):**
+    - Role `waka_*` dan `staf_tu` tidak punya "home" mobile yang cocok. Endpoint dashboard Admin hanya menerima `admin/superadmin/kepsek/kepala_sekolah`, dan dashboard Guru hanya `guru/bk`, sehingga mereka tetap diarahkan ke Home siswa (perilaku lama).
+    - **Role Switcher** di Profil (`SettingsNavGraph`, `onRoleSwitch`) menulis sesi palsu (`token_teacher`, `token_parent`, … dengan nama/NIP contoh). Setelah berpindah, semua request API memakai token yang tidak valid.
+    - FAB **"Uji Push Notifikasi"** di `NotificationCenterScreen` tampil untuk semua pengguna rilis. Ini alat debug, sebaiknya hanya muncul di build `debug`.
 
-- [ ] **76.4 Hyper-Personalisasi Jujur (bukan ML fiktif) — Home Adaptif per Riwayat Interaksi Nyata:**
-  - Perluas `Contextual Home Screen` (FASE 40) yang saat ini adaptif per waktu-hari & role, dengan lapisan baru: urutan `HomeMinimalQuickActions`/kartu bento diurutkan ulang berdasar **frekuensi tap nyata** per pengguna (dicatat lokal via Room di `core/database`, bukan diklaim "AI" jika sebenarnya cuma penghitung frekuensi — jujur soal levelnya).
-  - **Rambu jujur:** jangan pasang klaim UI "Direkomendasikan AI untuk Anda" kecuali benar-benar ada model/endpoint di baliknya — kalau yang dibangun cuma pengurutan berbasis frekuensi count, labeli UI-nya "Sering Dipakai", bukan "AI Personalization", supaya tidak mengulang pola fake-data yang sudah berkali-kali ditemukan & dibetulkan sepanjang sesi ini (UTBK, sync engine, KPI admin).
+- [x] **76.4 Hyper-Personalisasi Jujur (bukan ML fiktif) — Home Adaptif per Riwayat Interaksi Nyata `[SELESAI 2026-09-27]`:**
+  - **Penyimpanan (Room, `core/database`):**
+    - Tabel baru `feature_usage` (`FeatureUsageEntity`, kunci `user_id` + `feature_key`), jadi HP yang dipakai bergantian oleh akun ortu dan anak menyimpan dua urutan terpisah. Data tidak pernah meninggalkan perangkat.
+    - `FeatureUsageDao.recordTap()` memakai *update-then-insert* dalam `@Transaction`. Sintaks upsert `ON CONFLICT DO UPDATE` butuh SQLite 3.24 (Android API 30+), sedangkan minSdk 26.
+    - **Temuan:** `SistaDatabase` (Room) selama ini **tidak dipakai sama sekali** (0 pemanggil `getInstance`). Karena itu kenaikan ke `version = 2` tidak bisa menghapus data nyata di perangkat mana pun. Ini sekarang pemakai nyata pertamanya, lewat Hilt (`StorageModule.provideSistaDatabase`).
+  - **Akses (FASE 73.2 dipatuhi):** fitur hanya lewat `FeatureUsageRepository` (`core/data`): `usageCounts()` (Flow per akun yang login), `recordTap()`, `reset()`.
+  - **Aturan urutan** (`UsageRanking`, murni Kotlin):
+    - Pil diurutkan dari yang paling sering diketuk, stabil (seri tetap urutan bawaan).
+    - Urutan bawaan dipertahankan sampai ada **≥ 5 ketukan**, supaya tata letak tidak berpindah di bawah jempol setelah satu ketukan.
+    - Layanan dianggap "sering" bila dibuka **≥ 3 kali**; maksimal 4 yang ditampilkan.
+  - **UI Home siswa:**
+    - Empat pil Layanan Utama diurutkan ulang; pil "Semua" selalu di akhir.
+    - Judul berubah jadi **"Sering Dipakai"** hanya jika urutannya memang berubah, disertai keterangan "Diurutkan dari yang paling sering Anda buka di HP ini".
+    - Lembar **Semua Layanan** mendapat bagian **"Sering Dipakai"** di atas, dengan keterangan cara menghitungnya dan tombol **"Atur ulang"**.
+    - Setiap ketukan pil/layanan dicatat (`HomeViewModel.recordFeatureUse`); kegagalan penyimpanan tidak pernah menghalangi navigasi.
+  - **Rambu jujur dipenuhi:** tidak ada label "AI"/"direkomendasikan AI". Test penjaga menolak frasa itu di file Home.
+  - **Test:** `UsageRanking` (ambang 5 ketukan, urutan stabil, urutan bawaan tidak disebut "dipersonalisasi", ambang "sering" dan batas 4) + penjaga Room per akun / tanpa `ON CONFLICT`.
 
-- [~] **76.5 Skeleton-First Loading — Rollout Sistematis (4/85 → standar semua layar network-bound):** `[layar prioritas selesai 2026-09-27; dashboard & layar lain belum]`
+- [x] **76.5 Skeleton-First Loading — Rollout Sistematis (4/85 → standar semua layar network-bound):** `[layar prioritas + 4 dashboard selesai 2026-09-27]`
   - **Hasil 2026-09-27:**
     - **Komponen `SulaoneTieredLoading`** (`core/designsystem/SulaoneTieredLoading.kt`):
       - 0–300 ms tanpa indikator, 300 ms–1 detik spinner kecil, lebih dari 1 detik skeleton milik layar itu.
@@ -3442,30 +3481,105 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
       - *Pull-to-refresh* e-Pustaka **palsu**: memanggil `selectTab()` yang tidak memuat ulang apa pun, lalu berputar tepat 600 ms. Kini `LibraryViewModel.refresh()` benar-benar memuat ulang, dan indikatornya mengikuti `isLoading`.
       - `errorMessage` e-Pustaka tidak pernah dikosongkan, sehingga error lama tetap tampil setelah muat ulang berhasil.
       - Katalog kosong kini menampilkan "Buku Tidak Ditemukan", bukan layar kosong.
-    - **Belum:** dashboard per-role dan layar network-bound lainnya.
+    - ~~**Belum:** dashboard per-role dan layar network-bound lainnya.~~ Dashboard per-role selesai (lihat lanjutan di bawah). Layar network-bound lain yang belum bertier masih ada; yang tersisa bukan layar prioritas riset.
     - **Test:** `app/src/test/.../ui/Fase76Wave3Test.kt` (9 test: batas waktu tier, format Rupiah ringkas, penjaga sumber). Assertion penjaga sumber diputar ulang lewat skrip terhadap kode nyata: 28/28 lolos.
     - **Belum dikompilasi dan belum dilihat di emulator:** tampilan header tembus pandang dan skeleton perlu dicek visual.
+  - **Lanjutan 2026-09-27 (sisa 76.5 diselesaikan):**
+    - **Koreksi penting:** `SulaoneTieredLoading` versi pertama **tidak menerapkan tier sama sekali**. Ia langsung menggambar skeleton pada milidetik ke-0, dan `LoadingTierTiming.tierFor()` tidak pernah dipanggil (hanya diuji terpisah). Sekarang komponen benar-benar berjalan: tanpa indikator sampai 300 ms, spinner kecil sampai 1 dtk, lalu skeleton; konstanta `SPINNER_AFTER_MS`/`SKELETON_AFTER_MS` di `LoadingTierTiming`. Semua pemakai lama (Grades, Pengumuman, e-Pustaka) otomatis ikut benar.
+    - **Skeleton dashboard bersama** (`SulaoneDashboardSkeletons.kt`): `BentoHeroSplitSkeleton`, `MetricCardSkeleton`, `SessionCardListSkeleton`, `PersonaCardSkeleton`. Bentuknya meniru blok asli dan aman di dalam `LazyColumn`.
+    - **Dashboard Guru:** muat pertama menampilkan skeleton bento + kartu sesi, bukan spinner. Hero dulu menulis **"0 Sesi"** (daftar kosong, bukan fakta) sampai data datang.
+    - **Dashboard Wali Murid:** `isLoading` layar ini **tidak pernah dibaca**, sehingga selama data anak dimuat hanya tampil header dan judul "Data Putra / Putri" kosong. Sekarang tampil skeleton kartu anak + bento. Akun tanpa anak tertaut mendapat empty state jujur "Belum Ada Data Anak". Ringkasan anak juga memakai skeleton, bukan spinner.
+    - **Dashboard Admin:** muat pertama menampilkan skeleton bento, bukan empat tile "—" yang terlihat seperti data hilang.
+    - **Home siswa:** "Tidak Ada Jadwal Hari Ini" dulu muncul **selama memuat dan setelah request gagal**, seolah siswa tidak punya kelas. Sekarang: skeleton saat memuat, "Jadwal Belum Bisa Dimuat" + "Coba Lagi" saat gagal, dan pesan kosong hanya bila memang kosong. `errorMessage` kini dikosongkan saat memuat ulang.
+    - **Pull-to-refresh Home palsu:** dulu berputar tepat 750 ms dan tidak memuat ulang data layar ini. Kini memanggil `loadHomeData()`, dan indikatornya mengikuti `isLoading`.
+    - **Test:** `Fase76CompletionGuardTest` (tier sungguhan dipakai, tiga dashboard memakai skeleton bento, urutan loading → error → kosong di Home, tidak ada `delay(750)`).
   - Terapkan pola tiering dari riset di seluruh ViewModel yang punya state `isLoading`: 0–300ms tanpa indikator, 300ms–1s `CircularProgressIndicator` kecil, 1s–10s `SkeletonLoader` yang bentuknya meniru konten asli layar tsb (bukan skeleton generik satu bentuk untuk semua layar).
   - Prioritas layar dengan request jaringan berat/lambat dulu: `GradesScreen`, `AnnouncementFeedScreen`, `LibraryScreen`, dashboard per-role.
 
-- [ ] **76.6 Promosikan Dark Mode 2.0 (True Black) yang Sudah Ada — Bukan Bangun Baru:**
-  - `AmoledColorScheme` sudah ada di kode tapi kemungkinan terkubur di menu Settings tanpa penjelasan manfaat baterai — audit `ProfileScreen.kt`'s theme picker, tambahkan copy singkat "Hemat baterai OLED hingga signifikan" pada opsi AMOLED Black mengikuti data riset, supaya adopsi user naik tanpa kerja backend/rombak apa pun.
+- [x] **76.6 Promosikan Dark Mode 2.0 (True Black) yang Sudah Ada — Bukan Bangun Baru `[SELESAI 2026-09-27]`:**
+  - Hasil audit: `AmoledColorScheme` memang hitam murni (`#000000` untuk background/surface), tapi hanya bisa dipilih dari dialog tema di **Pengaturan**.
+  - Toggle "Mode Gelap" di **Profil** selalu menyetel `DARK`, jadi pengguna AMOLED yang mematikan lalu menyalakan lagi toggle itu diam-diam kembali ke gelap biasa.
+  - Sekarang, saat mode gelap aktif, Profil menampilkan pilihan **"Gelap" / "Hitam Pekat"** tepat di bawah toggle, dengan keterangan jujur (`AMOLED_BATTERY_NOTE`): hemat baterai karena piksel OLED/AMOLED dimatikan, **dan di layar LCD tidak ada penghematan**.
+  - Deskripsi di dialog Pengaturan juga diganti. Sebelumnya "AMOLED Murni — Super hemat baterai", klaim yang tidak berlaku di LCD.
+  - Tidak ada kerja backend.
 
-- [ ] **76.7 Modernisasi Chat UI "Sultan AI Tutor" per Pola 2026:**
-  - Audit `feature/.../SultanAiTutorScreen` (FASE 47) terhadap 4 kriteria riset: transparansi kemampuan (jelas di awal chat apa yang bisa/tidak bisa dijawab AI Tutor), pola recovery saat AI gagal jawab, indikator confidence, dan aksesibilitas composer.
-  - Composer di-dock ke bawah dengan padding aman di atas keyboard, tombol kirim minimal 44dp, dan jawaban panjang dipecah jadi beberapa bubble pendek alih-alih satu blok panjang — sesuai temuan riset spesifik soal penggunaan chat AI sambil multitasking di mobile.
+- [x] **76.7 Modernisasi Chat UI "Sultan AI Tutor" per Pola 2026 `[SELESAI 2026-09-27]`:**
+  - **Temuan audit backend yang wajib diungkap:** `AiPersonalizedTutorService::replyMessage` **bukan model AI**. Ia memilih satu dari **tiga templat balasan tetap** berdasarkan jumlah kata dan kata kunci ("bingung", "tidak tahu"). `comprehension_score` = `0.4 + jumlah_kata/50`.
+  - **Transparansi kemampuan:**
+    - Kartu "Yang bisa & belum bisa" di awal percakapan: memandu dengan pertanyaan balik ✓; tidak memberi jawaban akhir/kunci ✗; belum bisa membaca foto soal atau menghitung ✗.
+    - Satu kalimat jujur (`TUTOR_ENGINE_DISCLOSURE`): versi saat ini membalas dengan pola tetap dari server sekolah, **belum model AI generatif**. Kalimat ini diganti ketika model sungguhan dipasang, bukan sebelumnya.
+    - Chip **"Online 24/7" dihapus** (aplikasi tidak tahu status server).
+    - Nama merek "Sultan AI Tutor" **tidak diubah**. Mengganti nama produk adalah keputusan pemilik; ketidaksesuaiannya dicatat di sini.
+  - **Indikator confidence sengaja TIDAK dibuat:** satu-satunya angka dari server berasal dari hitungan kata siswa, sehingga menampilkannya sebagai "keyakinan AI" berarti mengarang. Test penjaga menolak kata `comprehension` di layar.
+  - **Recovery sungguhan:**
+    - Tombol "Coba Lagi" dulu hanya `clearError()`, menyembunyikan error tanpa mengirim apa pun.
+    - Sekarang pertanyaan yang gagal tetap di utas dengan tanda **"Gagal terkirim"** (bingkai merah), dan `retryLastMessage()` mengirim ulang teks yang sama.
+    - Hanya satu request sekaligus. Dulu ketukan kedua saat menunggu memulai request paralel.
+  - **Composer:**
+    - **Bug:** aplikasi *edge-to-edge* tapi tidak ada satu pun `imePadding()` di seluruh kode, sehingga **keyboard menutupi kolom ketik** AI Tutor. Sekarang `consumeWindowInsets(paddingValues)` + `imePadding()`.
+    - Tombol kirim `FilledIconButton` 52dp dengan label TalkBack "Kirim pertanyaan", nonaktif saat kosong atau menunggu. Kolom sampai 4 baris.
+    - **Bonus, bug yang sama di `ChatScreen` (chat Ortu ↔ Guru):** keyboard menutupi composer, dan `navigationBarsPadding()` menambah jarak nav-bar dua kali. Diperbaiki dengan cara yang sama.
+  - **Balasan panjang dipecah** jadi beberapa bubble pendek (`AiReplyFormatting.splitIntoBubbles`):
+    - dipotong di paragraf, lalu di akhir kalimat bila satu paragraf terlalu panjang;
+    - blok kode ``` tidak pernah dipotong;
+    - tidak ada teks yang hilang;
+    - avatar hanya pada bubble pertama.
+  - **Detail lain:**
+    - Salam pembuka dulu menampilkan `**Sultan AI Tutor**` dengan bintang literal; sekarang `**tebal**` dirender tebal (`parseBold`).
+    - Indikator mengetik tiga titik (dengan deskripsi TalkBack).
+    - Utas otomatis bergulir ke pesan terbaru (dulu tidak).
+    - Bubble bisa diseleksi untuk menyalin petunjuk.
+    - Chip saran pertanyaan mendapat target sentuh 48dp dan nonaktif saat menunggu.
+  - **Test:** `splitIntoBubbles` (pendek tetap satu, potong paragraf tanpa kehilangan teks, potong di akhir kalimat, blok kode utuh), `parseBold` (rentang benar, `**` tak berpasangan dibiarkan), dan penjaga layar (tidak ada "Online 24/7", retry mengirim ulang, pengungkapan mesin, `imePadding` di AI Tutor dan Chat).
 
-- [ ] **76.8 Aksesibilitas Grade-Kontrak — WCAG 2.2 AA Penuh (perluasan FASE 56):**
-  - Naikkan target sentuh minimum dari 48dp (FASE 56 lama) ke konsisten 44×44pt/48×48dp di SELURUH 85 layar (bukan cuma yang pernah diaudit FASE 56), diverifikasi lewat linter/test otomatis baru, bukan audit manual satu kali — mengikuti pergeseran riset dari "audit periodik" ke "continuous, task-based testing".
-  - Dynamic type: pastikan `FontScaleManager` (sudah ada) benar-benar diterapkan konsisten di semua layar baru yang ditambahkan setelah FASE 56, tidak cuma layar lama.
+- [x] **76.8 Aksesibilitas Grade-Kontrak — WCAG 2.2 AA Penuh (perluasan FASE 56) `[SELESAI 2026-09-27]`:**
+  - **Linter target sentuh otomatis** (`TouchTargetLint` di `Fase76CompletionGuardTest`) men-scan **semua** `src/main` di `app`, `core`, `feature` setiap kali test jalan. Tiga aturan, masing-masing pola yang benar-benar ditemukan:
+    - rantai modifier klik yang ukurannya < 44dp;
+    - `Icon(...)` yang bisa diklik tanpa helper target sentuh;
+    - `Text(...)` link yang bisa diklik tanpa helper target sentuh.
+  - Linter diuji balik dengan contoh buruk (harus terdeteksi) dan contoh baik (harus lolos).
+  - **8 pelanggaran nyata ditemukan dan diperbaiki:**
+    - navigator nomor soal CBT 38→44dp;
+    - bintang rating Evaluasi Guru 26dp dan 28dp → target 44dp dengan glyph tetap. Pada survei fasilitas, label dipindah ke atas karena 5 × 44dp tidak muat di samping label pada HP 360dp;
+    - lingkaran kunci jawaban pembuat ujian 36→44dp;
+    - daftar masalah soal yang bisa diketuk;
+    - link teks "Lihat Semua", "Lihat Kalender", dan "Semua Modul" (tingginya ±24dp) → `minimumInteractiveComponentSize()`.
+    - Hasil akhir: **0 pelanggaran**.
+  - **Dynamic type:** `FontScaleManager` diterapkan global lewat `LocalDensity` di `SulaoneTheme` (dari `MainActivity`), jadi setiap layar, termasuk yang baru, otomatis ikut. Test penjaga memastikan **tidak ada file lain yang meng-override `LocalDensity`**, yang akan diam-diam membatalkan ukuran huruf pilihan pengguna.
+  - **Batasan jujur:** linter bersifat heuristik berbasis teks (bukan analisis semantik Compose). Ia tidak menangkap target kecil yang ukurannya ditentukan dari luar (mis. `modifier` parameter) dan belum memeriksa teks yang terpotong di wadah bertinggi tetap saat ukuran huruf besar. Keduanya butuh screenshot test di emulator.
 
-- [ ] **76.9 Rencana Rollout Bertahap (per modul, sesuai struktur multi-module FASE 73):**
+- [x] **76.9 Rencana Rollout Bertahap (per modul, sesuai struktur multi-module FASE 73):** `[Gelombang 1–5 terlaksana di kode per 27 Sep 2026. Gelombang 5 = linter target sentuh + penjaga dynamic type di seluruh layar; audit visual/screenshot test belum. Gerbang "lolos unit test" baru sebagian — lihat Verifikasi]`
   1. **Gelombang 1 — Fondasi** (76.1): token shape/motion, tanpa mengubah tampilan layar manapun dulu (aman, tidak ada regresi visual).
   2. **Gelombang 2 — Dashboard 4 role** (76.2, 76.3 sebagian): Home Siswa, `TeacherDashboardScreen`, `ParentDashboardScreen`, `AdminDashboardScreen` — paling sering dilihat, dampak persepsi tertinggi per rupiah kerja.
   3. **Gelombang 3 — Layar volume tinggi**: CBT, Billing, Grades, Announcement — skeleton loading (76.5) + bento partial (76.2).
   4. **Gelombang 4 — Personalisasi & Chat** (76.4, 76.7): butuh Gelombang 1–2 selesai dulu sebagai fondasi visual.
   5. **Gelombang 5 — Sisa 85 layar & sertifikasi aksesibilitas penuh** (76.8): pembersihan menyeluruh terakhir.
   - Setiap gelombang wajib lolos unit test desain-token yang ada (`DesignSystemTokensTest`, `Fase66UiOverhaulTest`, dan test baru 76.1) sebelum lanjut ke gelombang berikutnya — mencegah drift kembali ke pola hardcoded lama.
+
+- **Verifikasi 76.3–76.8 (27 Sep 2026):**
+  - **CI GitHub Actions (sumber kebenaran):** run #7 pada commit `7618752` → `testDebugUnitTest` ✅, `lintDebug` ✅ (0 error di 17 modul), `assembleDebug` ✅ (APK debug ter-upload sebagai artifact). Seluruh kode FASE 76 dikompilasi penuh (Compose, Hilt, Room kapt) dan semua unit test proyek lolos, termasuk `Fase76CompletionLogicTest` dan `Fase76CompletionGuardTest`.
+  - **Sebelum CI tersedia**, di lingkungan agen (Android SDK / Google Maven diblokir):
+    - Logika murni dikompilasi & diuji dengan Kotlin 2.2.10 + JUnit 4.13.2: 29/29 lolos.
+    - Test penjaga lama yang bisa jalan tanpa Android lolos.
+    - 36 file lolos parse sintaks.
+  - **Belum:** tampilan di emulator (FAB, skeleton, chip AMOLED, composer di atas keyboard, bubble AI, bintang 44dp) dan test instrumentasi.
+
+- **Perbaikan CI & lint yang ditemukan saat menghijaukan PR (27 Sep 2026)** — semuanya kode lama, bukan dari FASE 76, tapi memblokir CI:
+  - **CI selalu merah sejak awal, sebelum mengompilasi apa pun.** `gradle.properties` mem-pin `org.gradle.java.home=C:/Users/kemalhafizh/.jdks/...` (path JDK Windows lokal), jadi runner Linux gagal dengan "Java home supplied is invalid". Baris itu dihapus. JDK kini dipilih per mesin (Android Studio → Gradle JDK, atau `~/.gradle/gradle.properties` milik user).
+  - **Lint `MissingPermission` di modul library:** `core:common` (Firebase Analytics, `ConnectivityManager`), `core:network` (`NetworkConnectivityObserver`), `feature:profile` (`DiagnosticReportScreen`), `feature:ibadah` (`MediaRecorder`). Lint memeriksa tiap modul terhadap manifest-nya sendiri, jadi setiap modul kini mendeklarasikan izin yang dipakai kodenya. Manifest gabungan app tidak berubah.
+  - **Perekam tahsin** kini memeriksa izin `RECORD_AUDIO` sebelum merekam dan memberi tahu siswa cara mengaktifkannya, bukan bergantung pada exception dari `MediaRecorder`.
+  - **Widget Jadwal Sholat & Jadwal Pelajaran tidak bisa tampil:** layout memakai `<View>` polos sebagai garis pemisah, yang ditolak RemoteViews. Diganti `<FrameLayout>`.
+  - **QR Scanner:** memakai `ImageProxy.image` (CameraX `@ExperimentalGetImage`) tanpa opt-in; kini opt-in eksplisit.
+  - **Workflow CI:** `lintDebug --continue` dan mencetak laporan lint semua modul saat gagal, jadi satu run menampilkan seluruh temuan.
+  - Sisa lint: 158 warning (terbanyak `UnusedResources`, `HardcodedText`, `UseKtx`), tidak ada yang berasal dari baris FASE 76. Tidak menggagalkan build.
+
+- **Ditemukan saat perbaikan, diajukan sebagai task terpisah (belum diperbaiki):**
+  - **Keempat widget layar utama menampilkan data palsu.** Provider tidak pernah mengisi teks, jadi yang tampil selalu contoh di layout:
+    - Presensi selalu **"✅ HADIR (06:45 WIB)"**;
+    - SPP selalu **"Agustus 2026: LUNAS"** (klaim palsu yang sama dengan yang sudah dihapus dari dashboard di 76.2);
+    - jadwal "XII MIPA 1" dan waktu sholat tetap.
+  - Role Switcher Profil menulis sesi palsu (lihat 76.3).
+  - Tombol debug "Uji Push Notifikasi" tampil di build rilis (lihat 76.3).
 
 ---
 

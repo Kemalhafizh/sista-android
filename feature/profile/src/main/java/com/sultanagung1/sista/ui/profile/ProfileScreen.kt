@@ -42,6 +42,14 @@ import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedElement
 import com.sultanagung1.sista.core.storage.SessionManager
 
+
+/**
+ * FASE 76.6: why true black helps, without overselling. OLED pixels showing
+ * #000000 are switched off; an LCD backlight stays on whatever the colour.
+ */
+internal const val AMOLED_BATTERY_NOTE =
+    "Hitam pekat mematikan piksel di layar OLED/AMOLED, jadi lebih hemat baterai. Di layar LCD tampilannya saja yang berubah."
+
 @Composable
 fun ProfileScreen(
     sessionManager: SessionManager,
@@ -205,6 +213,40 @@ fun ProfileScreen(
                                     uncheckedTrackColor = Slate200
                                 )
                             )
+                        }
+
+                        // FASE 76.6: true-black AMOLED existed (AmoledColorScheme, pure
+                        // #000000) but was only reachable from a dialog in Settings, with a
+                        // vague "super hemat baterai" line. Offer it right where people turn
+                        // dark mode on, with an honest note on when it saves battery.
+                        val isAmoled = currentThemeMode == com.sultanagung1.sista.core.accessibility.AppThemeMode.AMOLED_BLACK
+                        val isHighContrast = currentThemeMode == com.sultanagung1.sista.core.accessibility.AppThemeMode.HIGH_CONTRAST
+                        if (isDarkEffective && !isHighContrast) {
+                            Column(modifier = Modifier.padding(start = 52.dp, bottom = 12.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(
+                                        selected = !isAmoled,
+                                        onClick = {
+                                            haptics.tapLight()
+                                            themeManager.setThemeMode(com.sultanagung1.sista.core.accessibility.AppThemeMode.DARK)
+                                        },
+                                        label = { Text("Gelap") }
+                                    )
+                                    FilterChip(
+                                        selected = isAmoled,
+                                        onClick = {
+                                            haptics.tapLight()
+                                            themeManager.setThemeMode(com.sultanagung1.sista.core.accessibility.AppThemeMode.AMOLED_BLACK)
+                                        },
+                                        label = { Text("Hitam Pekat") }
+                                    )
+                                }
+                                Text(
+                                    text = AMOLED_BATTERY_NOTE,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
                     }

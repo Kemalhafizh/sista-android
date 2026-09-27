@@ -54,7 +54,10 @@ class SessionManager(private val context: Context) {
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
-        .map { preferences -> preferences[KEY_USER_ROLE] }
+        // FASE 76.3: backend aliases (orang_tua, kepala_sekolah, siswa) folded
+        // into the app's role vocabulary, so navigation and RoleGuardedScreen
+        // treat them like parent / kepsek / student.
+        .map { preferences -> com.sultanagung1.sista.ui.navigation.UserRoles.normalize(preferences[KEY_USER_ROLE]) }
 
     val userNameFlow: Flow<String?> = context.dataStore.data
         .catch { exception ->

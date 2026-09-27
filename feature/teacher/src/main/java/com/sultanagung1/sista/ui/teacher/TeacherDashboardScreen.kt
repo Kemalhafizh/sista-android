@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -64,6 +63,10 @@ import com.sultanagung1.sista.core.designsystem.AccentBlue
 import com.sultanagung1.sista.core.designsystem.AccentPurple
 import com.sultanagung1.sista.core.designsystem.AccentRose
 import com.sultanagung1.sista.core.designsystem.BentoHeroSplit
+import com.sultanagung1.sista.core.designsystem.BentoHeroSplitSkeleton
+import com.sultanagung1.sista.core.designsystem.MetricCardSkeleton
+import com.sultanagung1.sista.core.designsystem.SessionCardListSkeleton
+import com.sultanagung1.sista.core.designsystem.SulaoneTieredLoading
 import com.sultanagung1.sista.core.designsystem.Emerald200
 import com.sultanagung1.sista.core.designsystem.Emerald50
 import com.sultanagung1.sista.core.designsystem.Emerald500
@@ -105,6 +108,8 @@ fun TeacherDashboardScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val headerScrolledOff by rememberIsItemScrolledOff(listState, HEADER_ITEM_KEY)
+    // Nothing loaded yet (a retry with data already on screen keeps the data).
+    val isFirstLoad = uiState.isLoading && uiState.todaySchedules.isEmpty() && uiState.recentJournals.isEmpty()
 
     Scaffold { paddingValues ->
         Box(
@@ -174,55 +179,66 @@ fun TeacherDashboardScreen(
                         modifier = Modifier.padding(horizontal = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        BentoHeroSplit(
-                            hero = { heroModifier ->
-                                SulaoneBentoHeroTile(
-                                    modifier = heroModifier,
-                                    label = "Jadwal Hari Ini",
-                                    value = uiState.todaySchedules.size.toString(),
-                                    unit = "Sesi",
-                                    caption = rememberTeacherHeroCaption(uiState.todaySchedules),
-                                    icon = Icons.Default.CalendarToday,
-                                    accent = Gold700
-                                )
-                            },
-                            top = { tileModifier ->
-                                SulaoneMetricCard(
-                                    modifier = tileModifier,
-                                    title = "Beban Mengajar",
-                                    value = "${uiState.teachingHoursThisWeek.let { if (it % 1.0 == 0.0) it.toInt().toString() else String.format(
-                                        Locale.US, "%.1f", it) }} Jam",
-                                    subtitle = "Total Jadwal Mingguan",
-                                    icon = Icons.Default.AccessTimeFilled,
-                                    iconTint = Emerald700,
-                                    iconBackground = Emerald50
-                                )
-                            },
-                            bottom = { tileModifier ->
-                                SulaoneMetricCard(
-                                    modifier = tileModifier,
-                                    title = "Kelas Diampu",
-                                    value = "${uiState.totalClasses} Rombel",
-                                    subtitle = "Rombongan Belajar",
-                                    icon = Icons.Default.Groups,
-                                    iconTint = AccentBlue,
-                                    iconBackground = AccentBlue.copy(alpha = 0.12f)
-                                )
+                        // FASE 76.5: on the first load the hero used to read "0 Sesi"
+                        // (an empty list, not a fact) until data arrived.
+                        if (isFirstLoad) {
+                            SulaoneTieredLoading(isLoading = true) {
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    BentoHeroSplitSkeleton()
+                                    MetricCardSkeleton()
+                                }
                             }
-                        )
+                        } else {
+                            BentoHeroSplit(
+                                hero = { heroModifier ->
+                                    SulaoneBentoHeroTile(
+                                        modifier = heroModifier,
+                                        label = "Jadwal Hari Ini",
+                                        value = uiState.todaySchedules.size.toString(),
+                                        unit = "Sesi",
+                                        caption = rememberTeacherHeroCaption(uiState.todaySchedules),
+                                        icon = Icons.Default.CalendarToday,
+                                        accent = Gold700
+                                    )
+                                },
+                                top = { tileModifier ->
+                                    SulaoneMetricCard(
+                                        modifier = tileModifier,
+                                        title = "Beban Mengajar",
+                                        value = "${uiState.teachingHoursThisWeek.let { if (it % 1.0 == 0.0) it.toInt().toString() else String.format(
+                                            Locale.US, "%.1f", it) }} Jam",
+                                        subtitle = "Total Jadwal Mingguan",
+                                        icon = Icons.Default.AccessTimeFilled,
+                                        iconTint = Emerald700,
+                                        iconBackground = Emerald50
+                                    )
+                                },
+                                bottom = { tileModifier ->
+                                    SulaoneMetricCard(
+                                        modifier = tileModifier,
+                                        title = "Kelas Diampu",
+                                        value = "${uiState.totalClasses} Rombel",
+                                        subtitle = "Rombongan Belajar",
+                                        icon = Icons.Default.Groups,
+                                        iconTint = AccentBlue,
+                                        iconBackground = AccentBlue.copy(alpha = 0.12f)
+                                    )
+                                }
+                            )
 
-                        SulaoneMetricCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            title = "Jurnal Terbaru",
-                            value = "${uiState.recentJournals.size} Jurnal",
-                            subtitle = "Tersimpan di Server",
-                            badgeText = "Terkini",
-                            badgeColor = AccentPurple,
-                            badgeBackground = AccentPurple.copy(alpha = 0.12f),
-                            icon = Icons.AutoMirrored.Filled.FactCheck,
-                            iconTint = AccentPurple,
-                            iconBackground = AccentPurple.copy(alpha = 0.12f)
-                        )
+                            SulaoneMetricCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                title = "Jurnal Terbaru",
+                                value = "${uiState.recentJournals.size} Jurnal",
+                                subtitle = "Tersimpan di Server",
+                                badgeText = "Terkini",
+                                badgeColor = AccentPurple,
+                                badgeBackground = AccentPurple.copy(alpha = 0.12f),
+                                icon = Icons.AutoMirrored.Filled.FactCheck,
+                                iconTint = AccentPurple,
+                                iconBackground = AccentPurple.copy(alpha = 0.12f)
+                            )
+                        }
                     }
                 }
 
@@ -363,13 +379,13 @@ fun TeacherDashboardScreen(
                     }
                 }
 
-                if (uiState.isLoading) {
+                if (uiState.isLoading && uiState.todaySchedules.isEmpty()) {
                     item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Emerald700)
+                        SulaoneTieredLoading(isLoading = true, modifier = Modifier.padding(horizontal = 20.dp)) {
+                            SessionCardListSkeleton()
                         }
                     }
-                } else if (uiState.todaySchedules.isEmpty()) {
+                } else if (!uiState.isLoading && uiState.todaySchedules.isEmpty()) {
                     item {
                         Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                             SulaoneEmptyState(

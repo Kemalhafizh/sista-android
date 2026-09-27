@@ -150,16 +150,30 @@ fun CbtExamRoomScreen(
         }
     }
 
-    // Intercept hardware Back Button - FASE 26: Force-close and return to dashboard
-    BackHandler(enabled = true) {
+    // FASE 26 rule kept: leaving an active exam closes it. What changed (76.3):
+    // leaving is an explicit, confirmed action, never a side effect of a single
+    // system back gesture. An edge swipe on gesture navigation is easy to make by
+    // accident, and it used to force-close and submit the exam instantly.
+    val exitAndForceClose: (String) -> Unit = { reason ->
         if (!hasExitedRef.value && !uiState.isSubmitted) {
             hasExitedRef.value = true
-            viewModel.forceCloseExam(examId, "back_button_pressed", vault)
+            viewModel.forceCloseExam(examId, reason, vault)
             if (activity != null) {
                 antiCheatEngine.deactivateExamSecurity(activity)
                 lockTaskManager.stopKioskMode(activity)
                 livenessProctor.stopMonitoring()
             }
+            onNavigateBack()
+        }
+    }
+
+    // Back (button or swipe) is consumed for the whole exam session, so there is
+    // no predictive-back peek of the previous screen either. While the exam is
+    // running it only asks; after submit/force-close it leaves normally.
+    BackHandler(enabled = true) {
+        if (!hasExitedRef.value && !uiState.isSubmitted && !uiState.isForceClosedBySystem) {
+            showExitWarningDialog = true
+        } else {
             onNavigateBack()
         }
     }
@@ -387,7 +401,7 @@ fun CbtExamRoomScreen(
 
                         Box(
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(44.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(
                                     when {
@@ -776,13 +790,13 @@ fun CbtExamRoomScreen(
                 icon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = AccentRose) },
                 title = { Text("Keluar dari Ujian?") },
                 text = {
-                    Text("Keluar saat ujian belum selesai akan dicatat sebagai tindakan mencurigakan. Jika Anda sudah selesai, gunakan tombol 'Kumpulkan'.")
+                    Text("Ujian akan langsung ditutup, jawaban yang sudah terisi (${uiState.selectedAnswers.size} dari ${questions.size} soal) dikirim apa adanya, dan Anda tidak bisa masuk kembali. Keluar juga tercatat untuk pengawas. Jika sudah selesai, gunakan tombol 'Kumpulkan'.")
                 },
                 confirmButton = {
                     Button(
                         onClick = {
                             showExitWarningDialog = false
-                            onNavigateBack()
+                            exitAndForceClose("back_button_pressed")
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRose)
                     ) {

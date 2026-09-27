@@ -12,6 +12,7 @@ import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.home.HomeScreen
 import com.sultanagung1.sista.ui.home.HomeViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
+import com.sultanagung1.sista.ui.navigation.UserRoles
 
 /**
  * Sub-Navigation Graph untuk modul Autentikasi dan Beranda (FASE 53.2).
@@ -26,12 +27,7 @@ fun NavGraphBuilder.authNavGraph(
         LoginScreen(
             viewModel = viewModel,
             onLoginSuccess = {
-                val targetRoute = when {
-                    userRole.contains("teacher", ignoreCase = true) || userRole.contains("guru", ignoreCase = true) -> Screen.TeacherDashboard.route
-                    userRole.contains("parent", ignoreCase = true) || userRole.contains("ortu", ignoreCase = true) -> Screen.ParentDashboard.route
-                    userRole.contains("admin", ignoreCase = true) || userRole.contains("kepsek", ignoreCase = true) -> Screen.AdminDashboard.route
-                    else -> Screen.Home.route
-                }
+                val targetRoute = UserRoles.homeRouteFor(userRole)
                 navController.navigate(targetRoute) {
                     popUpTo(Screen.Login.route) { inclusive = true }
                 }

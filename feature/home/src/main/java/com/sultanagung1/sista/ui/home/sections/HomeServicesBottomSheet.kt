@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
+import com.sultanagung1.sista.data.repository.UsageRanking
 import com.sultanagung1.sista.ui.navigation.Screen
 
 data class ServiceEntry(
@@ -44,7 +45,10 @@ data class ServiceCategory(
 fun HomeServicesBottomSheet(
     isVisible: Boolean,
     onDismiss: () -> Unit,
-    onNavigateRoute: ((String) -> Unit)?
+    onNavigateRoute: ((String) -> Unit)?,
+    usage: Map<String, Int> = emptyMap(),
+    onServiceUsed: (String) -> Unit = {},
+    onResetUsage: (() -> Unit)? = null
 ) {
     if (!isVisible) return
 
@@ -94,6 +98,19 @@ fun HomeServicesBottomSheet(
         )
     }
 
+    // FASE 76.4: services this account opened at least UsageRanking.MIN_TAPS_FOR_FREQUENT
+    // times on this device, most-used first. A plain counter, labelled as such.
+    val allServices = remember(categories) { categories.flatMap { it.services }.distinctBy { it.route } }
+    val frequentServices = UsageRanking.frequent(allServices.map { it.route }, usage)
+        .mapNotNull { route -> allServices.firstOrNull { it.route == route } }
+
+    val openService: (ServiceEntry) -> Unit = { service ->
+        haptics.tapLight()
+        onServiceUsed(service.route)
+        onDismiss()
+        onNavigateRoute?.invoke(service.route)
+    }
+
     SulaoneModalBottomSheet(
         isVisible = isVisible,
         onDismiss = onDismiss,
@@ -112,6 +129,59 @@ fun HomeServicesBottomSheet(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            if (frequentServices.isNotEmpty()) {
+                item(key = "frequent_services") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Sering Dipakai",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Dihitung dari layanan yang paling sering Anda buka di HP ini",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (onResetUsage != null) {
+                                TextButton(onClick = {
+                                    haptics.tapLight()
+                                    onResetUsage()
+                                }) {
+                                    Text("Atur ulang")
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        frequentServices.chunked(2).forEach { pair ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                pair.forEach { service ->
+                                    ServiceTile(
+                                        service = service,
+                                        isDark = isDark,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = { openService(service) }
+                                    )
+                                }
+                                if (pair.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             categories.forEach { category ->
@@ -133,59 +203,12 @@ fun HomeServicesBottomSheet(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 pair.forEach { service ->
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .springPressable {
-                                                haptics.tapLight()
-                                                onDismiss()
-                                                onNavigateRoute?.invoke(service.route)
-                                            },
-                                        shape = RoundedCornerShape(14.dp),
-                                        color = if (isDark) Slate900 else Slate50,
-                                        border = androidx.compose.foundation.BorderStroke(
-                                            0.5.dp,
-                                            if (isDark) Slate800 else Slate200
-                                        )
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(12.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(if (isDark) service.iconTint.copy(alpha = 0.2f) else service.bgTint),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = service.icon,
-                                                    contentDescription = null,
-                                                    tint = service.iconTint,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = service.title,
-                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = service.subtitle,
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }
-                                    }
+                                    ServiceTile(
+                                        service = service,
+                                        isDark = isDark,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = { openService(service) }
+                                    )
                                 }
                                 if (pair.size == 1) {
                                     Spacer(modifier = Modifier.weight(1f))
@@ -198,6 +221,63 @@ fun HomeServicesBottomSheet(
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServiceTile(
+    service: ServiceEntry,
+    isDark: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .springPressable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        color = if (isDark) Slate900 else Slate50,
+        border = androidx.compose.foundation.BorderStroke(
+            0.5.dp,
+            if (isDark) Slate800 else Slate200
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isDark) service.iconTint.copy(alpha = 0.2f) else service.bgTint),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = service.icon,
+                    contentDescription = null,
+                    tint = service.iconTint,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = service.title,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = service.subtitle,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
