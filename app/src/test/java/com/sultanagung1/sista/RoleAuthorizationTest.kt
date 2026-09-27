@@ -81,11 +81,6 @@ class RoleAuthorizationTest {
         return list
     }
 
-    private fun isRoleSwitcherButtonVisible(userRole: String?): Boolean {
-        return userRole?.contains("admin", ignoreCase = true) == true ||
-                userRole?.contains("superadmin", ignoreCase = true) == true
-    }
-
     @Test
     fun studentRole_isDeniedFromAdminDashboard() {
         val allowedRoles = listOf("admin", "superadmin", "principal", "kepsek")
@@ -174,19 +169,6 @@ class RoleAuthorizationTest {
         assertTrue(categories.contains("Rahasia Pimpinan"))
         assertTrue(categories.contains("Khusus Guru"))
         assertTrue(categories.contains("Wali Murid"))
-    }
-
-    @Test
-    fun roleSwitcherButton_isOnlyVisibleForAdminAndSuperadmin() {
-        assertFalse(isRoleSwitcherButtonVisible("student"))
-        assertFalse(isRoleSwitcherButtonVisible("siswa"))
-        assertFalse(isRoleSwitcherButtonVisible("parent"))
-        assertFalse(isRoleSwitcherButtonVisible("ortu"))
-        assertFalse(isRoleSwitcherButtonVisible("teacher"))
-        assertFalse(isRoleSwitcherButtonVisible("guru"))
-
-        assertTrue(isRoleSwitcherButtonVisible("admin"))
-        assertTrue(isRoleSwitcherButtonVisible("superadmin"))
     }
 
     @Test

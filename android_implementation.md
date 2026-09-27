@@ -38,6 +38,7 @@ Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa oto
 - **FASE 13 (OCR):** tidak ada ML Kit *text recognition* di dependency (yang ada hanya *barcode scanning*) dan `OcrProcessor.kt` tidak ada.
 - **FASE 18 (Kedisiplinan):** kontrak Android ↔ server tidak pernah cocok. Sudah diperbaiki; lihat catatan di FASE 18.
 - **FASE 25.2 (buat ujian guru):** layarnya palsu. Sudah ditulis ulang; lihat catatan di FASE 25.2 dan 76.2.
+- **FASE 26.1–26.3 (Role Switcher 4 persona):** bukan ganti peran sungguhan, dan sudah **dihapus** (27 September 2026). Menu "Ganti Peran Dashboard (Multi-Role)" di Profil memanggil `saveAuthSession` dengan token karangan (`token_teacher`, `token_parent`, `token_admin`, `token_student`) plus nama, email, dan NIP/NISN contoh. Backend (Sanctum) menolak token itu, jadi semua layar sesudahnya error atau kosong atas nama orang lain, dan sesi asli pengguna tertimpa sehingga harus login ulang. `MobileAuthController` di backend hanya punya login, biometrik, dan manajemen perangkat — tidak ada endpoint ganti peran — jadi tidak ada cara jujur untuk mempertahankannya. Yang dihapus: `RoleSwitcherBottomSheet.kt`, menu di `ProfileScreen`, handler `onRoleSwitch` di `SettingsNavGraph`, dan `SessionManager.updateUserRole()` (tidak dipakai, dan bisa dipakai untuk menulis peran yang tidak berasal dari server). Pil "• Ganti Peran" di header dashboard (26.3) memang tidak pernah ada di kode. Sekarang `saveAuthSession` hanya dipanggil dari login dan verifikasi biometrik di `Repositories.kt`, dan dijaga oleh `ProfessionalUiUxOverhaulTest.testAuthSessionIsOnlyWrittenFromServerResponses`. Untuk pindah peran, logout lalu login dengan akun peran tersebut.
 - **FASE 26.8 (token di `CbtExamListScreen` versi guru):** tidak pernah dibangun. Yang ada adalah `TeacherProctorExamsScreen` + ruang pengawas dengan token dari server.
 - **FASE 44 (grafik):** `AnimatedLineChart`, `AnimatedDonutChart`, `StreakHeatmap`, dan `SparklineChart` tidak ada. Komponen grafik yang ada: `RadarChart`, `HeatmapCalendar`, `AnimatedKpiCard`.
 - **Presensi GPS (FASE 25.3):** koordinat di dokumen tidak pernah dipakai. Sekarang satu sumber di server; lihat catatan di 25.3.
@@ -82,7 +83,7 @@ Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa oto
 | 23 | **FASE 23** | Evaluasi Kinerja Guru (EKG) Anonim, Survey Fasilitas & E-Voting OSIS | **SELESAI 100% ✅** |
 | 24 | **FASE 24** | Mode Hemat Kuota (Lite Mode) & Optimasi Perangkat Low-End RAM 2GB | **SELESAI 100% ✅** |
 | 25 | **FASE 25** | CBT Anti-Cheat Native (FLAG_SECURE, Split-Screen Block) & Presensi GPS | **SELESAI 100% ✅** |
-| 26 | **FASE 26** | Live Role Switcher BottomSheet 4 Persona & Persistensi DataStore | **SELESAI 100% ✅** |
+| 26 | **FASE 26** | ~~Live Role Switcher BottomSheet 4 Persona & Persistensi DataStore~~ | **DIHAPUS ❌** (sesi palsu; lihat koreksi di atas) |
 | 27 | **FASE 27** | Chat Konsultasi Ortu ↔ Guru, Surat Edaran Resmi & Notification Center | **SELESAI 100% ✅** |
 | 28 | **FASE 28** | Integrasi Komprehensif Layanan Kesiswaan & Operasional Sekolah | **SELESAI 100% ✅** |
 | 29 | **FASE 29** | Bank Soal Terpusat Guru & Auto-Generate Paket CBT | **SELESAI 100% ✅** |
@@ -252,7 +253,7 @@ Aplikasi dibangun murni menggunakan pendekatan **Android Native Modern** tanpa W
   - [`EnterpriseCatalogScreen.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/home/src/main/java/com/sultanagung1/sista/ui/portal/EnterpriseCatalogScreen.kt) — Katalog pencarian interaktif 74 modul SISTA.
 
 ### 👨‍🏫 FASE 8: Role-Based Native Dashboards & Multi-User UX (Sprint 8) — [SELESAI 100%]
-- [x] **8.0 Seamless Multi-Role Switcher Engine:**
+- [ ] **8.0 Seamless Multi-Role Switcher Engine:** — **DIHAPUS 27 September 2026.** Menulis sesi dengan token karangan; lihat koreksi FASE 26 di bagian Status Verifikasi Terkini.
   - [`RoleSwitcherBottomSheet.kt`](file:///c:/project/portofolio/project-super-web/sista-android/core/designsystem/src/main/java/com/sultanagung1/sista/ui/common/RoleSwitcherBottomSheet.kt) — Modal ganti peran interaktif live antara 4 persona (Siswa ↔ Guru ↔ Orang Tua ↔ Admin/Kepala Sekolah) terintegrasi pada top bar seluruh dashboard.
   - [`SessionManager.kt`](file:///c:/project/portofolio/project-super-web/sista-android/core/common/src/main/java/com/sultanagung1/sista/core/storage/SessionManager.kt) — Method `updateUserRole()` untuk persistensi peran aktif di Jetpack DataStore.
 - [x] **8.1 Student Native Dashboard & Holistic Portal:**
@@ -528,7 +529,9 @@ Membangun fondasi keamanan ujian dan layanan akademik terpadu tingkat enterprise
     - Stempel resmi, Tanda Tangan Digital Kepala Sekolah (Drs. H. Sukarno, M.Pd), dan QR Code verifikasi dokumen digital SHA-256 (`https://sista.sultanagung1.sch.id/verify/...`).
     - Kontrol Zoom Dokumen & Ekspor Unduh PDF resmi.
 
-### 👥 FASE 26: Dashboard Multi-Role & Live Role Switcher — [SELESAI 100% ✅]
+### 👥 FASE 26: Dashboard Multi-Role & Live Role Switcher — [DIHAPUS ❌]
+
+> **Koreksi (27 September 2026):** fitur ini tidak pernah mengganti peran sungguhan. Ia menimpa sesi dengan token karangan yang ditolak backend, dan backend tidak punya endpoint ganti peran. Seluruh 26.1–26.3 sudah dihapus dari kode; poin 26.3 (pil header dashboard) bahkan tidak pernah dibangun. Dashboard per peran tetap ada — peran ditentukan oleh akun yang login. Detail di bagian Status Verifikasi Terkini.
 
 Membangun kapabilitas multi-persona terpadu agar aplikasi adaptif terhadap 4 pilar civitas akademika:
 
@@ -844,7 +847,7 @@ BUILD SUCCESSFUL in 5s
 | Prioritas | Fitur Utama | Dampak Operasional | Status Verifikasi |
 |---|---|---|:---:|
 | 🔴 **P0** | Presensi GPS + QR, SPP Billing, Rapor KKTP, CBT Anti-Cheat | Operasional harian wajib | **SELESAI 100% ✅** |
-| 🔴 **P0** | Dashboard Multi-Role (Siswa/Guru/Ortu/Admin) & Role Switcher | Seluruh stakeholder terlayani | **SELESAI 100% ✅** |
+| 🔴 **P0** | Dashboard Multi-Role (Siswa/Guru/Ortu/Admin) | Seluruh stakeholder terlayani | **SELESAI 100% ✅** (Role Switcher dihapus — lihat koreksi FASE 26) |
 | 🟠 **P1** | Chat Ortu ↔ Guru, Pengumuman Resmi & Push Notification Native | Komunikasi real-time terpadu | **SELESAI 100% ✅** |
 | 🟠 **P1** | Buku Saku Poin Kedisiplinan, Ekskul, E-Pustaka Pintar | Administrasi kesiswaan | **SELESAI 100% ✅** |
 | 🟡 **P2** | Simulasi UTBK Rasch, Portofolio Prestasi CV, E-Voting OSIS | Persiapan kuliah & demokrasi | **SELESAI 100% ✅** |
@@ -3038,7 +3041,7 @@ Karena Anda telah menginstal **Figma Dev MCP**, fase ini menetapkan prosedur waj
     8. **GradesScreen (`GradesScreen.kt`)**: Rapor Kurikulum Merdeka, summary banner KKTP, score pill tugas/UTS/UAS, predikat nilai huruf.
     9. **AnnouncementFeedScreen (`AnnouncementFeedScreen.kt`)**: Feed berita lembaga resmi, live alert banner, pencarian instan & filter pill, single LazyColumn mulus.
     10. **AnnouncementDetailScreen (`AnnouncementDetailScreen.kt`)**: KOP surat resmi YBWSA & Sultan Agung 1, tanda tangan digital Kepala Sekolah, stempel resmi terverifikasi, aksi unduh PDF & kirim WhatsApp.
-    11. **ProfileScreen (`ProfileScreen.kt`)**: Kartu tanda pelajar digital T.A. 2026/2027, toggle dark mode, adaptive refresh rate dialog, multi-role switcher.
+    11. **ProfileScreen (`ProfileScreen.kt`)**: Kartu tanda pelajar digital T.A. 2026/2027, toggle dark mode, adaptive refresh rate dialog. (Multi-role switcher dihapus 27 September 2026 — lihat koreksi FASE 26.)
     12. **Chat & Konsultasi (`ConversationListScreen.kt` & `ChatScreen.kt`)**: Portal konsultasi wali kelas/BK/Tahfidz, gelembung chat modern dengan border 0.5dp, lampiran resmi surat dokter/prestasi, quick replies.
   - **Kualitas & Verifikasi**: 111/111 unit test lulus di 20 test suite (`testDebugUnitTest`), 0 pelanggaran warna hardcoded (`DesignSystemTokensTest`), dan build APK `assembleDebug` sukses 100%. MVI Architecture & Hilt DI 100% utuh.
 
@@ -3218,7 +3221,7 @@ Mengubah arsitektur proyek dari satu modul tunggal raksasa `:app` menjadi arsite
   │   ├── common/          # DispatcherProvider, ResultWrapper, StringExtensions, DateTimeFormatter
   │   └── testing/         # Mock repositories, Fake data generators, Test rules
   ├── feature/
-  │   ├── auth/            # Login, Role Switcher, Biometric Vault
+  │   ├── auth/            # Login, Biometric Vault
   │   ├── home/            # Smart Contextual Hub, Banner, Sholat Widget
   │   ├── academic/        # Jadwal KBM, E-Rapor Kurikulum Merdeka, Presensi GPS
   │   ├── cbt/             # Exam Room, Anti-Cheat Engine, Token Entry, Timer

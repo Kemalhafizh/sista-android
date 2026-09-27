@@ -159,7 +159,33 @@ class ProfessionalUiUxOverhaulTest {
         assertTrue("Must include verified smart card token", content.contains("SMART CARD TOKEN • VERIFIED"))
         assertTrue("Must use ModernProfileMenuItem with 48dp target", content.contains("ModernProfileMenuItem("))
         assertTrue("Must support Dark Mode toggle", content.contains("Mode Gelap (Dark Mode)"))
-        assertTrue("Must support Multi-Role switcher", content.contains("Ganti Peran Dashboard (Multi-Role)"))
+        // The old "Ganti Peran Dashboard (Multi-Role)" item wrote a fake
+        // session (token_teacher, token_parent, ...) that the backend rejects.
+        // The backend has no role-switch endpoint, so the switcher is gone.
+        assertFalse("Must not offer a client-side role switcher", content.contains("Ganti Peran"))
+        assertFalse("Must not reference RoleSwitcherBottomSheet", content.contains("RoleSwitcherBottomSheet"))
+    }
+
+    @Test
+    fun testAuthSessionIsOnlyWrittenFromServerResponses() {
+        val repoRoot = listOf(File(".."), File(".")).first { File(it, "settings.gradle").exists() }.canonicalFile
+        val mainSources = repoRoot.walkTopDown()
+            .onEnter { it.name != "build" && !it.name.startsWith(".") }
+            .filter { it.isFile && it.extension == "kt" && it.invariantSeparatorsPath.contains("/src/main/") }
+            .associateWith { it.readText() }
+
+        // Only the login and biometric-verify flows in the auth repository may
+        // persist a session; both take the token and user from the API response.
+        val offenders = mainSources
+            .filter { (file, text) -> text.contains(".saveAuthSession(") && file.name != "Repositories.kt" }
+            .keys.map { it.path }
+        assertTrue("saveAuthSession called outside the auth repository: $offenders", offenders.isEmpty())
+
+        val fakeTokens = listOf("token_teacher", "token_parent", "token_admin", "token_student")
+        val fakeTokenFiles = mainSources
+            .filter { (_, text) -> fakeTokens.any { text.contains(it) } }
+            .keys.map { it.path }
+        assertTrue("Hardcoded demo tokens found in: $fakeTokenFiles", fakeTokenFiles.isEmpty())
     }
 
     @Test
