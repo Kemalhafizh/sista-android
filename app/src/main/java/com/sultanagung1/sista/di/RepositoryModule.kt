@@ -3,6 +3,7 @@ package com.sultanagung1.sista.di
 import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.api.*
+import com.sultanagung1.sista.data.local.SistaDatabase
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.data.repository.*
 import dagger.Module
@@ -21,6 +22,13 @@ object RepositoryModule {
         apiClient: ApiClient,
         sessionManager: SessionManager
     ): AuthRepository = AuthRepository(apiClient, sessionManager)
+
+    @Provides
+    @Singleton
+    fun provideFeatureUsageRepository(
+        database: SistaDatabase,
+        sessionManager: SessionManager
+    ): FeatureUsageRepository = FeatureUsageRepository(database.featureUsageDao(), sessionManager)
 
     @Provides
     @Singleton

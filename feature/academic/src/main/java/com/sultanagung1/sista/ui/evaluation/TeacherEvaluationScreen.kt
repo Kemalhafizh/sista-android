@@ -277,26 +277,22 @@ fun TeacherEvaluationScreen(
 
                                     Spacer(modifier = Modifier.height(10.dp))
 
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    // FASE 76.8: label above the stars (5 x 44dp targets don't
+                                    // fit beside it on a 360dp phone); the star glyph stays 26dp.
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Text("Tingkat Kepuasan:", style = MaterialTheme.typography.bodySmall, color = Slate600)
                                         Row {
                                             for (star in 1..5) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
+                                                StarTarget(
+                                                    filled = star <= survey.satisfactionLevel,
+                                                    glyphSize = 26.dp,
                                                     contentDescription = "Beri rating $star bintang",
-                                                    tint = if (star <= survey.satisfactionLevel) Gold400 else Slate300,
-                                                    modifier = Modifier
-                                                        .size(26.dp)
-                                                        .springPressable {
-                                                            if (!survey.isSubmitted) {
-                                                                haptics.tapLight()
-                                                                viewModel.rateFacility(survey.id, star)
-                                                            }
+                                                    onClick = {
+                                                        if (!survey.isSubmitted) {
+                                                            haptics.tapLight()
+                                                            viewModel.rateFacility(survey.id, star)
                                                         }
+                                                    }
                                                 )
                                             }
                                         }
@@ -573,18 +569,44 @@ private fun RatingRow(title: String, currentRating: Int, onRatingSelected: (Int)
         Spacer(modifier = Modifier.height(4.dp))
         Row {
             for (star in 1..5) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = if (star <= currentRating) Gold400 else Slate300,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .springPressable {
-                            haptics.tapLight()
-                            onRatingSelected(star)
-                        }
+                StarTarget(
+                    filled = star <= currentRating,
+                    glyphSize = 28.dp,
+                    contentDescription = "Nilai $star dari 5",
+                    onClick = {
+                        haptics.tapLight()
+                        onRatingSelected(star)
+                    }
                 )
             }
         }
+    }
+}
+
+/**
+ * FASE 76.8: a rating star with a 44dp touch target around a smaller glyph.
+ * The old stars were 26-28dp and directly adjacent, so a thumb aiming at one
+ * star regularly landed on its neighbour.
+ */
+@Composable
+private fun StarTarget(
+    filled: Boolean,
+    glyphSize: androidx.compose.ui.unit.Dp,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .springPressable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = contentDescription,
+            tint = if (filled) Gold400 else Slate300,
+            modifier = Modifier.size(glyphSize)
+        )
     }
 }

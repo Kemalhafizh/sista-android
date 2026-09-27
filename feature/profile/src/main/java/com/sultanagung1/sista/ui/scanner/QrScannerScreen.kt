@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -39,6 +40,9 @@ import com.google.mlkit.vision.common.InputImage
 import com.sultanagung1.sista.core.designsystem.*
 import java.util.concurrent.Executors
 
+// ImageProxy.image (read in the barcode analyzer below) is CameraX's
+// @ExperimentalGetImage API; ML Kit needs the underlying media Image.
+@androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScannerScreen(

@@ -21,7 +21,13 @@ data class AiUiState(
     val messages: List<AiChatMessage> = emptyList(),
     val suggestions: List<String> = emptyList(),
     val essayFeedback: EssayFeedbackResponse? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /**
+     * FASE 76.7: the student message whose request failed. Shown with a
+     * "gagal terkirim" mark and resent as-is by [AiViewModel.retryLastMessage];
+     * the old retry button only hid the error and resent nothing.
+     */
+    val failedMessageId: Long? = null
 )
 
 
@@ -53,17 +59,49 @@ class AiViewModel @Inject constructor(
         val initialMessages = listOf(
             AiChatMessage(
                 sender = "AI",
-                message = "Assalamu'alaikum! Saya **Sultan AI Tutor**, asisten belajarmu di SMA Islam Sultan Agung 1 Semarang. Apa materi atau soal yang ingin kamu diskusikan hari ini?"
+                message = "Assalamu'alaikum! Saya **Sultan AI Tutor**. Saya tidak memberi jawaban jadi; saya bertanya balik supaya kamu menemukan jawabannya sendiri. Materi apa yang ingin kamu pahami hari ini?"
             )
         )
         _uiState.value = _uiState.value.copy(messages = initialMessages)
     }
 
     fun sendMessage(userText: String) {
-        if (userText.isBlank()) return
+        // One request at a time: a second tap while waiting used to start a
+        // parallel request and interleave the replies.
+        if (userText.isBlank() || _uiState.value.isLoading) return
 
         val userMessage = AiChatMessage(sender = "USER", message = userText)
-        _uiState.value = _uiState.value.copy(messages = _uiState.value.messages + userMessage, isLoading = true, errorMessage = null)
+        _uiState.value = _uiState.value.copy(
+            messages = _uiState.value.messages + userMessage,
+            isLoading = true,
+            errorMessage = null,
+            failedMessageId = null
+        )
+        deliver(userMessage)
+    }
+
+    /** Resend the message that failed (same text, same bubble), instead of making the student retype it. */
+    fun retryLastMessage() {
+        val state = _uiState.value
+        val failed = state.messages.firstOrNull { it.id == state.failedMessageId } ?: run {
+            clearError()
+            return
+        }
+        if (state.isLoading) return
+        _uiState.value = state.copy(isLoading = true, errorMessage = null, failedMessageId = null)
+        deliver(failed)
+    }
+
+    private fun markFailed(userMessage: AiChatMessage, message: String?) {
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            errorMessage = message ?: "Gagal mengirim pertanyaan ke Sultan AI Tutor.",
+            failedMessageId = userMessage.id
+        )
+    }
+
+    private fun deliver(userMessage: AiChatMessage) {
+        val userText = userMessage.message
 
         viewModelScope.launch {
             val existingSessionId = _uiState.value.sessionId
@@ -72,9 +110,7 @@ class AiViewModel @Inject constructor(
                 aiRepository.startTutorSession(subjectName = "Umum", topic = userText.take(255)).collect { result ->
                     when (result) {
                         is NetworkResult.Success -> resolvedId = result.data.id
-                        is NetworkResult.Error -> {
-                            _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.message)
-                        }
+                        is NetworkResult.Error -> markFailed(userMessage, result.message)
                         is NetworkResult.Loading -> Unit
                     }
                 }
@@ -83,7 +119,7 @@ class AiViewModel @Inject constructor(
 
             if (sessionId == null) {
                 if (_uiState.value.errorMessage == null) {
-                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Gagal memulai sesi belajar dengan Sultan AI Tutor.")
+                    markFailed(userMessage, "Gagal memulai sesi belajar dengan Sultan AI Tutor.")
                 }
                 return@launch
             }
@@ -102,7 +138,7 @@ class AiViewModel @Inject constructor(
                     is NetworkResult.Error -> {
                         // Never fabricate a substantive AI answer on failure — surface the
                         // real error so the user can retry instead of trusting a fake reply.
-                        _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.message)
+                        markFailed(userMessage, result.message)
                     }
                     is NetworkResult.Loading -> {
                         _uiState.value = _uiState.value.copy(isLoading = true)
@@ -113,6 +149,6 @@ class AiViewModel @Inject constructor(
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
+        _uiState.value = _uiState.value.copy(errorMessage = null, failedMessageId = null)
     }
 }

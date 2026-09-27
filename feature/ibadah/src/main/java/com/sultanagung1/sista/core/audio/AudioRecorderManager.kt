@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.audio
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
@@ -43,6 +45,13 @@ class AudioRecorderManager(private val context: Context) {
     fun startRecording() {
         if (_isRecording.value) return
         _errorMessage.value = null
+
+        // RECORD_AUDIO is a runtime permission: check it explicitly instead of
+        // relying on MediaRecorder throwing, so the student gets a clear reason.
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            _errorMessage.value = "Izin mikrofon belum diberikan. Aktifkan izin Mikrofon untuk Sulaone di Setelan HP, lalu coba lagi."
+            return
+        }
 
         val audioDir = File(context.cacheDir, "tahsin_records").apply { mkdirs() }
         val outputFile = File(audioDir, "tahsin_${System.currentTimeMillis()}.m4a")

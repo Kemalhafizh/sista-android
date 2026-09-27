@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,11 +30,15 @@ import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedBounds
 import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.ScheduleItem
+import androidx.compose.material3.minimumInteractiveComponentSize
 
 @Composable
 internal fun HomeSchedulePreview(
     todaySchedules: List<ScheduleItem>,
-    onNavigateToSchedule: () -> Unit
+    onNavigateToSchedule: () -> Unit,
+    isLoading: Boolean = false,
+    loadError: String? = null,
+    onRetry: (() -> Unit)? = null
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
         Row(
@@ -52,6 +57,7 @@ internal fun HomeSchedulePreview(
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = Emerald700,
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(6.dp))
                     .springPressable { onNavigateToSchedule() }
                     .padding(4.dp)
@@ -60,7 +66,22 @@ internal fun HomeSchedulePreview(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (todaySchedules.isEmpty()) {
+        // FASE 76.5: "Tidak Ada Jadwal Hari Ini" used to show while the schedule was
+        // still loading and after the request failed, telling a student they
+        // had no classes when the app simply didn't know yet.
+        if (todaySchedules.isEmpty() && isLoading) {
+            SulaoneTieredLoading(isLoading = true) {
+                SessionCardListSkeleton(rows = 2)
+            }
+        } else if (todaySchedules.isEmpty() && loadError != null) {
+            SulaoneEmptyState(
+                title = "Jadwal Belum Bisa Dimuat",
+                description = loadError,
+                icon = Icons.Default.CloudOff,
+                ctaLabel = if (onRetry != null) "Coba Lagi" else null,
+                onCtaClick = onRetry
+            )
+        } else if (todaySchedules.isEmpty()) {
             SulaoneEmptyState(
                 title = "Tidak Ada Jadwal Hari Ini",
                 description = "Belum ada jadwal pelajaran yang tercatat untuk hari ini.",
