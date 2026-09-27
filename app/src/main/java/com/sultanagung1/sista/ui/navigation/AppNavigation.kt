@@ -54,6 +54,18 @@ import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.navigation.graphs.*
 
+/**
+ * FASE 77: the admin group's second tab. Class-session management for the
+ * roles backend FASE 117 lets in; the principal (not on `admin/class-sessions`)
+ * gets the executive KPIs, whose endpoint does accept kepala_sekolah.
+ */
+private fun adminSecondTab(userRole: String?, strings: com.sultanagung1.sista.core.accessibility.StringsDefinition): BottomNavItem =
+    if (UserRoles.canManageClassSessions(userRole)) {
+        BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent)
+    } else {
+        BottomNavItem(Screen.ExecutiveAnalytics.route, Screen.ExecutiveAnalytics.title, Icons.Default.Insights)
+    }
+
 data class BottomNavItem(
     val route: String,
     val title: String,
@@ -179,9 +191,12 @@ fun AppNavigation(
 
     // Role-Based Multilingual Bottom Navigation Bar Items (FASE 60.3: Consolidated 4-Tab System)
     val bottomNavItems = when (UserRoles.groupOf(userRole)) {
+        // FASE 77: "Jadwal" opened the student schedule (student/schedule, role:student)
+        // and always 403'd for teachers and admins; their second tab is now the
+        // class-session screen of their role.
         RoleGroup.TEACHER -> listOf(
             BottomNavItem(Screen.TeacherDashboard.route, strings.teacherTab, Icons.Default.Dashboard),
-            BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
+            BottomNavItem(Screen.TeacherTodaySessions.route, strings.teachingTab, Icons.Default.CoPresent),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
@@ -193,13 +208,19 @@ fun AppNavigation(
         )
         RoleGroup.ADMIN -> listOf(
             BottomNavItem(Screen.AdminDashboard.route, strings.executiveTab, Icons.Default.AdminPanelSettings),
-            BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
+            adminSecondTab(userRole, strings),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
         RoleGroup.STUDENT -> listOf(
             BottomNavItem(Screen.Home.route, strings.homeTab, Icons.Default.Home),
             BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
+            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
+            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
+        )
+        // Waka Kurikulum / TU: three tabs; there is no fourth screen of theirs yet.
+        RoleGroup.ACADEMIC_STAFF -> listOf(
+            BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )

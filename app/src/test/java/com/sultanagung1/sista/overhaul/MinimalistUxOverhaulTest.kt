@@ -106,7 +106,16 @@ class MinimalistUxOverhaulTest {
         // FASE 76.3: the when is keyed by RoleGroup now (one branch per group,
         // exhaustive), so the anchor above changed; the 4x4 rule did not.
         assertTrue("bottomNavItems anchor must exist", navItemsSection.length < content.length)
-        val totalNavItems = navItemsSection.split("BottomNavItem(").size - 1
-        assertEquals("Total nav items across 4 roles must be 16 (4 tabs per role)", 16, totalNavItems)
+        // FASE 77: tabs per role group. The four original groups keep exactly 4;
+        // Waka Kurikulum/TU (ACADEMIC_STAFF) has 3, since it has no fourth screen.
+        // The admin group's second tab depends on the role (adminSecondTab).
+        val tabsPerGroup = navItemsSection.split("RoleGroup.").drop(1).associate { branch ->
+            branch.substringBefore(" ").trim() to
+                (branch.split("BottomNavItem(").size - 1 + branch.split("adminSecondTab(").size - 1)
+        }
+        assertEquals(
+            mapOf("TEACHER" to 4, "PARENT" to 4, "ADMIN" to 4, "STUDENT" to 4, "ACADEMIC_STAFF" to 3),
+            tabsPerGroup
+        )
     }
 }

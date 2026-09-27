@@ -6,10 +6,14 @@ import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.AttendanceStudentStatus
+import com.sultanagung1.sista.data.model.ClassSessionDto
+import com.sultanagung1.sista.data.model.ClassSessionErrorKind
+import com.sultanagung1.sista.data.model.ClassSessionResult
 import com.sultanagung1.sista.data.model.StudentAttendanceInputItem
 import com.sultanagung1.sista.data.model.SubmitClassAttendanceRequest
 import com.sultanagung1.sista.data.model.TeacherScheduleSlot
 import com.sultanagung1.sista.data.model.TeachingJournalEntry
+import com.sultanagung1.sista.data.repository.ClassSessionRepository
 import com.sultanagung1.sista.data.repository.TeacherRepository
 import com.sultanagung1.sista.data.repository.TeachingJournalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +40,12 @@ data class TeacherUiState(
     val isLoadingStudents: Boolean = false,
     val isSubmittingAttendance: Boolean = false,
     val attendanceSubmittedSuccess: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** FASE 77.7.2: today's class sessions for the dashboard's "Mulai/Kembali ke Kelas" card. */
+    val classSessions: List<ClassSessionDto> = emptyList(),
+    /** False until loaded, and while the server has no class-session routes (the card hides). */
+    val classSessionsAvailable: Boolean = false,
+    val nowMinutes: Int = DateUtils.nowMinutesOfDay()
 )
 
 /**
@@ -55,7 +64,8 @@ data class TeacherUiState(
 class TeacherViewModel @Inject constructor(
     private val teacherRepository: TeacherRepository,
     private val journalRepository: TeachingJournalRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val classSessionRepository: ClassSessionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TeacherUiState())
@@ -69,6 +79,7 @@ class TeacherViewModel @Inject constructor(
 
     fun loadDashboard() {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        loadClassSessions()
         viewModelScope.launch {
             val name = sessionManager.userNameFlow.first().orEmpty()
             val nip = sessionManager.userIdentifierFlow.first().orEmpty()
@@ -84,6 +95,21 @@ class TeacherViewModel @Inject constructor(
                         _uiState.update { it.copy(isLoading = false, errorMessage = classResult.message) }
                     }
                     is NetworkResult.Loading -> Unit
+                }
+            }
+        }
+    }
+
+    /** Separate from the rest: a missing FASE 117 backend must not fail the dashboard. */
+    fun loadClassSessions() {
+        viewModelScope.launch {
+            when (val result = classSessionRepository.getTodaySessions()) {
+                is ClassSessionResult.Success -> _uiState.update {
+                    it.copy(classSessions = result.data, classSessionsAvailable = true, nowMinutes = DateUtils.nowMinutesOfDay())
+                }
+                is ClassSessionResult.Failure -> _uiState.update {
+                    // Keep the last card on a transient failure; hide it if the backend is missing.
+                    it.copy(classSessionsAvailable = it.classSessionsAvailable && result.error.kind != ClassSessionErrorKind.NOT_DEPLOYED)
                 }
             }
         }

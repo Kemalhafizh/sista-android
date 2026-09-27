@@ -179,6 +179,12 @@ object RepositoryModule {
     fun provideTeachingJournalRepository(journalApi: TeachingJournalMobileApiService): TeachingJournalRepository =
         TeachingJournalRepository(journalApi)
 
+    // FASE 77: Sesi Kelas Hidup — guru, siswa, dan admin/Waka Kurikulum/TU.
+    @Provides
+    @Singleton
+    fun provideClassSessionRepository(classSessionApi: ClassSessionApiService): ClassSessionRepository =
+        ClassSessionRepository(classSessionApi)
+
     @Provides
     @Singleton
     fun provideGamificationRepository(gamificationApi: GamificationApiService): GamificationRepository =

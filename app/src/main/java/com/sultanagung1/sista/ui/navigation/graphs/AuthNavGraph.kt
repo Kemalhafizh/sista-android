@@ -54,7 +54,8 @@ fun NavGraphBuilder.authNavGraph(
                 onNavigateToAnnouncements = { navController.navigate(Screen.NotificationCenter.route) },
                 onNavigateRoute = { route -> navController.navigate(route) },
                 syncManager = syncManager,
-                onNavigateToGamification = { navController.navigate(Screen.GamificationDashboard.route) }
+                onNavigateToGamification = { navController.navigate(Screen.GamificationDashboard.route) },
+                onNavigateToClassSessionScan = { navController.navigate(Screen.StudentSessionQrScan.route) { launchSingleTop = true } }
             )
         }
     }

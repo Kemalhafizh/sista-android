@@ -225,6 +225,12 @@ object NetworkModule {
     fun provideTeachingJournalApiService(retrofit: Retrofit): TeachingJournalMobileApiService =
         retrofit.create(TeachingJournalMobileApiService::class.java)
 
+    // FASE 77: Sesi Kelas Hidup (backend FASE 117)
+    @Provides
+    @Singleton
+    fun provideClassSessionApiService(retrofit: Retrofit): ClassSessionApiService =
+        retrofit.create(ClassSessionApiService::class.java)
+
     @Provides
     @Singleton
     fun provideContextualHomeApiService(retrofit: Retrofit): ContextualHomeApiService =

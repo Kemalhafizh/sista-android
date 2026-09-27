@@ -40,7 +40,8 @@ fun HomeScreen(
     onNavigateToAnnouncements: () -> Unit = {},
     onNavigateRoute: ((String) -> Unit)? = null,
     syncManager: com.sultanagung1.sista.core.sync.SyncManager? = null,
-    onNavigateToGamification: (() -> Unit)? = null
+    onNavigateToGamification: (() -> Unit)? = null,
+    onNavigateToClassSessionScan: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val strings = LocalAppStrings.current
@@ -66,6 +67,12 @@ fun HomeScreen(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val heroScrolledOff by rememberIsItemScrolledOff(listState, "hero_section")
+
+    // FASE 77.5.3: poll for a running class only while Home is on screen.
+    LifecycleStartStopEffect(
+        onStart = viewModel::startActiveClassPolling,
+        onStop = viewModel::stopActiveClassPolling
+    )
 
     SulaonePullToRefreshBox(
         isRefreshing = refreshRequested && uiState.isLoading,
@@ -104,6 +111,17 @@ fun HomeScreen(
                     onNavigateToAnnouncements = onNavigateToAnnouncements,
                     onNavigateRoute = onNavigateRoute
                 )
+            }
+
+            // 1.4. A class of this student is running: scan the teacher's QR (FASE 77.5.3)
+            uiState.activeClassSession?.let { active ->
+                item(key = "active_class_session", contentType = "active_class") {
+                    HomeActiveClassBanner(
+                        session = active,
+                        onScan = onNavigateToClassSessionScan,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                    )
+                }
             }
 
             // 1.5. Next-Class Countdown (FASE 71.1, server-time corrected)

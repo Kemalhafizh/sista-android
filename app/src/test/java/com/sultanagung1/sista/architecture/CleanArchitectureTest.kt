@@ -65,7 +65,14 @@ class CleanArchitectureTest {
         com.sultanagung1.sista.ui.portal.ModuleCatalogViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.CbtProctorViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.TeacherCreateExamViewModel::class.java,
-        com.sultanagung1.sista.ui.teacher.TeacherProctorExamsViewModel::class.java
+        com.sultanagung1.sista.ui.teacher.TeacherProctorExamsViewModel::class.java,
+        // FASE 77: Sesi Kelas Hidup
+        com.sultanagung1.sista.ui.teacher.sessions.TeacherTodaySessionsViewModel::class.java,
+        com.sultanagung1.sista.ui.teacher.sessions.TeacherActiveSessionViewModel::class.java,
+        com.sultanagung1.sista.ui.teacher.sessions.TeacherAttendanceListViewModel::class.java,
+        com.sultanagung1.sista.ui.attendance.StudentSessionQrScanViewModel::class.java,
+        com.sultanagung1.sista.ui.admin.sessions.AdminSessionManagementViewModel::class.java,
+        com.sultanagung1.sista.ui.admin.sessions.AdminAttendanceOverrideViewModel::class.java
     )
     /**
      * Every `@HiltViewModel class` in the main source sets of all modules. The
@@ -180,7 +187,8 @@ class CleanArchitectureTest {
             "SpmbRepository",
             "CalendarRepository",
             "TeachingJournalRepository",
-            "GamificationRepository"
+            "GamificationRepository",
+            "ClassSessionRepository"
         )
 
         for (expected in expectedRepositories) {

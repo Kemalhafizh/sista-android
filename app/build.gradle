@@ -145,6 +145,8 @@ dependencies {
     // (ETag/Last-Modified headers, error-body safety) — exercises the real
     // Retrofit/OkHttp/Gson stack instead of hand-rolled fakes.
     testImplementation libs.okhttp.mockwebserver
+    // FASE 77: decode the drawn class-session QR back in SulaoneQrCodeTest.
+    testImplementation libs.zxing.core
     androidTestImplementation platform(libs.androidx.compose.bom)
     androidTestImplementation libs.androidx.compose.ui.test.junit4
     androidTestImplementation libs.androidx.espresso.core

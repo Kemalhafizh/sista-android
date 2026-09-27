@@ -61,6 +61,13 @@ dependencies {
     implementation libs.androidx.datastore.preferences
     implementation libs.play.services.location
 
+    // FASE 77.5: student scans the class-session QR (same stack as feature:profile's scanner)
+    implementation libs.androidx.camera.core
+    implementation libs.androidx.camera.camera2
+    implementation libs.androidx.camera.lifecycle
+    implementation libs.androidx.camera.view
+    implementation libs.mlkit.barcode.scanning
+
     implementation libs.hilt.android
     implementation libs.androidx.hilt.navigation.compose
     kapt libs.hilt.compiler
