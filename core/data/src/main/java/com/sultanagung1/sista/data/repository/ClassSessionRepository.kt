@@ -45,6 +45,14 @@ class ClassSessionRepository(
     private val gson: Gson = Gson()
 ) {
 
+    /**
+     * Sessions seen in the admin list, so the correction screen (which only
+     * gets a session id) can show which class it is without another endpoint.
+     */
+    private val adminSessionCache = java.util.concurrent.ConcurrentHashMap<Long, ClassSessionDto>()
+
+    fun cachedAdminSession(sessionId: Long): ClassSessionDto? = adminSessionCache[sessionId]
+
     // ── Guru ────────────────────────────────────────────────────────────
 
     suspend fun getTodaySessions(): ClassSessionResult<List<ClassSessionDto>> =
@@ -93,7 +101,11 @@ class ClassSessionRepository(
     // ── Admin / Waka Kurikulum / TU ─────────────────────────────────────
 
     suspend fun getAdminSessions(date: String?, status: ClassSessionStatus?, page: Int): ClassSessionResult<ClassSessionPageDto> =
-        call { api.getAdminSessions(date, status?.let(::wireValueOf), page) }
+        call { api.getAdminSessions(date, status?.let(::wireValueOf), page) }.also { result ->
+            if (result is ClassSessionResult.Success) {
+                result.data.items.orEmpty().forEach { s -> s.sessionId?.let { adminSessionCache[it] = s } }
+            }
+        }
 
     suspend fun getSessionAttendances(sessionId: Long): ClassSessionResult<List<SessionAttendanceDto>> =
         call(emptyOnNull = { emptyList() }) { api.getSessionAttendances(sessionId) }

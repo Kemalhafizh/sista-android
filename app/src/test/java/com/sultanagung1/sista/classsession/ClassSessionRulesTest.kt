@@ -238,6 +238,20 @@ class ClassSessionRulesTest {
         assertTrue(ClassSessionRules.isOverrideReasonValid("Terlambat karena upacara pramuka."))
     }
 
+    @Test
+    fun auditTrailIsReadable() {
+        assertEquals("8 Okt 2026, 07:10", ClassSessionRules.formatDateId("2026-10-08T07:10:00+07:00"))
+        assertEquals("7 Okt 2026", ClassSessionRules.formatDateId("2026-10-07"))
+        assertNull(ClassSessionRules.formatDateId("kemarin"))
+        assertNull(ClassSessionRules.formatDateId("2026-13-01"))
+        assertEquals(
+            "Dikoreksi oleh Bu Ani pada 8 Okt 2026, 07:10",
+            ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true, overrideByName = "Bu Ani", overrideAt = "2026-10-08T07:10:00+07:00"))
+        )
+        assertEquals("Dikoreksi oleh admin", ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true)))
+        assertNull(ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = false, overrideByName = "x")))
+    }
+
     // ── error wording (cases 2, 3, 6–8) ─────────────────────────────────
 
     private fun err(kind: ClassSessionErrorKind, code: String? = null, checkedInAt: String? = null, message: String = "") =

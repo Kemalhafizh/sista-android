@@ -284,6 +284,29 @@ object ClassSessionRules {
 
     fun isOverrideReasonValid(reason: String): Boolean = reason.trim().length >= OVERRIDE_REASON_MIN_CHARS
 
+    private val MONTHS_SHORT = arrayOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+    private val ISO_DATE = Regex("""(\d{4})-(\d{2})-(\d{2})""")
+
+    /** "2026-10-08T07:10:00+07:00" → "8 Okt 2026, 07:10"; "2026-10-08" → "8 Okt 2026". */
+    fun formatDateId(iso: String?): String? {
+        if (iso.isNullOrBlank()) return null
+        val m = ISO_DATE.find(iso) ?: return null
+        val (y, mo, d) = m.destructured
+        val month = mo.toInt()
+        if (month !in 1..12) return null
+        val date = "${d.toInt()} ${MONTHS_SHORT[month - 1]} $y"
+        val time = if (iso.contains('T')) clockOf(iso) else null
+        return if (time != null) "$date, $time" else date
+    }
+
+    /** "Dikoreksi oleh Bu Ani pada 8 Okt 2026, 07:10". */
+    fun overrideAuditLabel(row: SessionAttendanceDto): String? {
+        if (!row.isOverride) return null
+        val by = row.overrideByName?.takeIf { it.isNotBlank() } ?: "admin"
+        val at = formatDateId(row.overrideAt)
+        return if (at != null) "Dikoreksi oleh $by pada $at" else "Dikoreksi oleh $by"
+    }
+
     // ── Labels ──────────────────────────────────────────────────────────
 
     fun label(status: SessionAttendanceStatus): String = when (status) {
