@@ -21,6 +21,9 @@ data class StringsDefinition(
     val cbtTab: String = "Ujian CBT",
     val gradesTab: String = "Rapor KKTP",
     val notificationsTab: String = "Pengumuman",
+    // FASE 77: guru → "Mengajar" (sesi kelas hari ini); admin/Waka/TU → "Sesi Kelas".
+    val teachingTab: String = "Mengajar",
+    val classSessionsTab: String = "Sesi Kelas",
 
     // Settings & Configuration
     val settingsTitle: String,
@@ -111,6 +114,8 @@ val IndonesianStrings = StringsDefinition(
     cbtTab = "Ujian CBT",
     gradesTab = "Rapor KKTP",
     notificationsTab = "Pengumuman",
+    teachingTab = "Mengajar",
+    classSessionsTab = "Sesi Kelas",
     settingsTitle = "Pengaturan SuperApp",
     languageTitle = "Pengaturan Bahasa",
     themeTitle = "Tema & Mode Gelap",
@@ -183,6 +188,8 @@ val EnglishStrings = StringsDefinition(
     cbtTab = "CBT Exam",
     gradesTab = "KKTP Grades",
     notificationsTab = "Announcements",
+    teachingTab = "Teaching",
+    classSessionsTab = "Class Sessions",
     settingsTitle = "SuperApp Settings",
     languageTitle = "Language Settings",
     themeTitle = "Theme & Dark Mode",
@@ -255,6 +262,8 @@ val ArabicStrings = StringsDefinition(
     cbtTab = "اختبار CBT",
     gradesTab = "درجات KKTP",
     notificationsTab = "الإعلانات",
+    teachingTab = "التدريس",
+    classSessionsTab = "الحصص الدراسية",
     settingsTitle = "إعدادات التطبيق",
     languageTitle = "إعدادات اللغة",
     themeTitle = "المظهر والوضع الداكن",

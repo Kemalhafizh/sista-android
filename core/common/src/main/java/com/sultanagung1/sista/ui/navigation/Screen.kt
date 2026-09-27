@@ -205,6 +205,20 @@ sealed class Screen(val route: String, val title: String = "") {
 
     // Fase 64: Production Observability & Crash Analytics
     object DiagnosticReport : Screen("diagnostic_report", "Pusat Diagnostik & Laporan Kendala")
+
+    // FASE 77: Sesi Kelas Hidup & Presensi Per-Mapel
+    object TeacherTodaySessions : Screen("teacher_today_sessions", "Sesi Kelas Hari Ini")
+    object TeacherActiveSession : Screen("teacher_active_session/{sessionId}", "Sesi Kelas Aktif") {
+        fun createRoute(sessionId: Long) = "teacher_active_session/$sessionId"
+    }
+    object TeacherAttendanceList : Screen("teacher_attendance_list/{sessionId}", "Daftar Hadir") {
+        fun createRoute(sessionId: Long) = "teacher_attendance_list/$sessionId"
+    }
+    object StudentSessionQrScan : Screen("student_session_qr_scan", "Presensi Kelas")
+    object AdminSessionManagement : Screen("admin_session_management", "Manajemen Sesi Kelas")
+    object AdminAttendanceOverride : Screen("admin_attendance_override/{sessionId}", "Koreksi Absensi") {
+        fun createRoute(sessionId: Long) = "admin_attendance_override/$sessionId"
+    }
 }
 
 

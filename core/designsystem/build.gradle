@@ -59,5 +59,7 @@ dependencies {
     // api: AsyncImage is called directly from several feature screens, not
     // just from within this module.
     api libs.coil.compose
+    // FASE 77.3: SulaoneQrCode draws the class-session QR on the teacher's screen.
+    implementation libs.zxing.core
     debugImplementation libs.androidx.compose.ui.tooling
 }

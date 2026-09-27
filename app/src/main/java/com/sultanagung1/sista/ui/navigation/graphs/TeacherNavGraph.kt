@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.sultanagung1.sista.ui.common.RoleGuardedScreen
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.teacher.*
+import com.sultanagung1.sista.ui.teacher.sessions.*
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
@@ -293,4 +294,72 @@ fun NavGraphBuilder.teacherNavGraph(
             )
         }
     }
+
+    // ── FASE 77: Sesi Kelas Hidup (guru) ─────────────────────────────────
+    // Backend teacher routes are role:guru,bk; admins have their own screens (77.6).
+
+    composable(Screen.TeacherTodaySessions.route) {
+        val viewModel: TeacherTodaySessionsViewModel = hiltViewModel()
+        RoleGuardedScreen(
+            currentRole = userRole,
+            allowedRoles = CLASS_SESSION_TEACHER_ROLES,
+            featureTitle = "Sesi Kelas Hari Ini",
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateHome = navigateToRoleHome
+        ) {
+            TeacherTodaySessionsScreen(
+                viewModel = viewModel,
+                onOpenActiveSession = { sessionId ->
+                    navController.navigate(Screen.TeacherActiveSession.createRoute(sessionId)) { launchSingleTop = true }
+                },
+                // teacher/schedule (the week) lives in the journal screen's schedule tab.
+                onOpenWeeklySchedule = { navController.navigate(Screen.TeachingJournalMobile.route) },
+                onNavigateBack = if (navController.previousBackStackEntry != null) { { navController.popBackStack() } } else null
+            )
+        }
+    }
+
+    composable(
+        route = Screen.TeacherActiveSession.route,
+        arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
+    ) {
+        val viewModel: TeacherActiveSessionViewModel = hiltViewModel()
+        RoleGuardedScreen(
+            currentRole = userRole,
+            allowedRoles = CLASS_SESSION_TEACHER_ROLES,
+            featureTitle = "Sesi Kelas Aktif",
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateHome = navigateToRoleHome
+        ) {
+            TeacherActiveSessionScreen(
+                viewModel = viewModel,
+                onOpenAttendanceList = { sessionId ->
+                    navController.navigate(Screen.TeacherAttendanceList.createRoute(sessionId)) { launchSingleTop = true }
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    }
+
+    composable(
+        route = Screen.TeacherAttendanceList.route,
+        arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
+    ) {
+        val viewModel: TeacherAttendanceListViewModel = hiltViewModel()
+        RoleGuardedScreen(
+            currentRole = userRole,
+            allowedRoles = CLASS_SESSION_TEACHER_ROLES,
+            featureTitle = "Daftar Hadir Sesi Kelas",
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateHome = navigateToRoleHome
+        ) {
+            TeacherAttendanceListScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    }
 }
+
+/** Matches the backend `teacher/…` group (role:guru,bk); "teacher" is the app's own spelling of guru. */
+private val CLASS_SESSION_TEACHER_ROLES = listOf("teacher", "guru", "bk")

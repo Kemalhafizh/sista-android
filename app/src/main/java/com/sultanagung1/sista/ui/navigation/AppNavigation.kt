@@ -179,9 +179,12 @@ fun AppNavigation(
 
     // Role-Based Multilingual Bottom Navigation Bar Items (FASE 60.3: Consolidated 4-Tab System)
     val bottomNavItems = when (UserRoles.groupOf(userRole)) {
+        // FASE 77: "Jadwal" opened the student schedule (student/schedule, role:student)
+        // and always 403'd for teachers and admins; their second tab is now the
+        // class-session screen of their role.
         RoleGroup.TEACHER -> listOf(
             BottomNavItem(Screen.TeacherDashboard.route, strings.teacherTab, Icons.Default.Dashboard),
-            BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
+            BottomNavItem(Screen.TeacherTodaySessions.route, strings.teachingTab, Icons.Default.CoPresent),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
@@ -193,13 +196,19 @@ fun AppNavigation(
         )
         RoleGroup.ADMIN -> listOf(
             BottomNavItem(Screen.AdminDashboard.route, strings.executiveTab, Icons.Default.AdminPanelSettings),
-            BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
+            BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
         RoleGroup.STUDENT -> listOf(
             BottomNavItem(Screen.Home.route, strings.homeTab, Icons.Default.Home),
             BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
+            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
+            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
+        )
+        // Waka Kurikulum / TU: three tabs; there is no fourth screen of theirs yet.
+        RoleGroup.ACADEMIC_STAFF -> listOf(
+            BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )

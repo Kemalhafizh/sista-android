@@ -12,7 +12,19 @@ package com.sultanagung1.sista.ui.navigation
  * aliases into the vocabulary the rest of the app already checks for; it is
  * applied once, in SessionManager.userRoleFlow.
  */
-enum class RoleGroup { STUDENT, TEACHER, PARENT, ADMIN }
+enum class RoleGroup {
+    STUDENT,
+    TEACHER,
+    PARENT,
+    ADMIN,
+    /**
+     * FASE 77.6: Waka Kurikulum and TU. They have no dashboard endpoint of
+     * their own (the admin one refuses them), but backend FASE 117 lets them
+     * run class-session management and attendance correction, so that is
+     * their home. They used to land on the student Home, where every call 403s.
+     */
+    ACADEMIC_STAFF
+}
 
 object UserRoles {
 
@@ -36,6 +48,7 @@ object UserRoles {
                 r.contains("guru", ignoreCase = true) ||
                 r.equals("bk", ignoreCase = true) -> RoleGroup.TEACHER
             r.contains("parent", ignoreCase = true) || r.contains("ortu", ignoreCase = true) -> RoleGroup.PARENT
+            ACADEMIC_STAFF_ROLES.any { it.equals(r, ignoreCase = true) } -> RoleGroup.ACADEMIC_STAFF
             r.contains("admin", ignoreCase = true) ||
                 r.contains("kepsek", ignoreCase = true) ||
                 r.contains("principal", ignoreCase = true) -> RoleGroup.ADMIN
@@ -48,5 +61,22 @@ object UserRoles {
         RoleGroup.PARENT -> Screen.ParentDashboard.route
         RoleGroup.ADMIN -> Screen.AdminDashboard.route
         RoleGroup.STUDENT -> Screen.Home.route
+        RoleGroup.ACADEMIC_STAFF -> Screen.AdminSessionManagement.route
     }
+
+    /** Only these two; other `waka_*` roles are not allowed on the class-session endpoints. */
+    private val ACADEMIC_STAFF_ROLES = listOf("waka_kurikulum", "staf_tu")
+
+    /**
+     * FASE 77.6 / backend 117: who may open class-session management (read).
+     * Mirrors the route middleware in the contract (android_implementation.md → 77.0).
+     */
+    val CLASS_SESSION_VIEWER_ROLES = listOf("admin", "superadmin", "kepsek", "kepala_sekolah", "waka_kurikulum", "staf_tu")
+
+    /** Who may correct a recorded attendance. The principal can read, not correct. */
+    val CLASS_SESSION_CORRECTOR_ROLES = listOf("admin", "superadmin", "waka_kurikulum", "staf_tu")
+
+    fun canViewClassSessions(role: String?): Boolean = normalize(role)?.lowercase() in CLASS_SESSION_VIEWER_ROLES
+
+    fun canCorrectClassAttendance(role: String?): Boolean = normalize(role)?.lowercase() in CLASS_SESSION_CORRECTOR_ROLES
 }

@@ -136,7 +136,7 @@ object WidgetTextMapper {
     fun rupiah(amount: Double): String =
         "Rp " + String.format(Locale.US, "%,d", Math.round(amount)).replace(',', '.')
 
-    private val STAFF = setOf(RoleGroup.TEACHER, RoleGroup.ADMIN)
+    private val STAFF = setOf(RoleGroup.TEACHER, RoleGroup.ADMIN, RoleGroup.ACADEMIC_STAFF)
 
     /** Both spellings the backend stores: codes from class attendance, words from GPS check-in. */
     private fun statusLabel(record: AttendanceSnapshot): WidgetText = when (record.statusCode?.trim()?.uppercase()) {
