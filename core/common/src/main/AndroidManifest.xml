@@ -1,2 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Permissions this library's own code needs, declared here so they travel
+        with it (lint checks each module against its own manifest). The merged
+        app manifest is unchanged: :app already requests INTERNET and
+        ACCESS_NETWORK_STATE, and Firebase Analytics' own manifest adds WAKE_LOCK.
+        - INTERNET, ACCESS_NETWORK_STATE, WAKE_LOCK: FirebaseAnalytics.getInstance
+          in core/telemetry/FirebaseTelemetrySink.
+        - ACCESS_NETWORK_STATE: ConnectivityManager.activeNetwork /
+          getNetworkCapabilities in core/telemetry/SulaoneCrashHandler.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+</manifest>
