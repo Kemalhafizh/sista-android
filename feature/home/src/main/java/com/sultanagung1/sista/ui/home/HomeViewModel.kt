@@ -9,6 +9,7 @@ import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.model.PrayerSchedule
 import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.repository.AttendanceRepository
 import com.sultanagung1.sista.data.repository.FeatureUsageRepository
 import com.sultanagung1.sista.data.repository.StudentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +49,8 @@ private val INDONESIAN_DAY_NAMES = mapOf(
 class HomeViewModel @Inject constructor(
     private val studentRepository: StudentRepository,
     private val sessionManager: SessionManager,
-    private val featureUsageRepository: FeatureUsageRepository
+    private val featureUsageRepository: FeatureUsageRepository,
+    private val attendanceRepository: AttendanceRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -127,6 +129,12 @@ class HomeViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = result.message)
                     }
                 }
+            }
+
+            // Home has no attendance card; this load only feeds the attendance
+            // home-screen widget (AttendanceRepository writes its snapshot).
+            viewModelScope.launch {
+                attendanceRepository.getAttendanceHistory().collect { }
             }
 
             viewModelScope.launch {

@@ -100,4 +100,41 @@
     <string name="settings_accessibility">إمكانية الوصول وحجم الخط</string>
     <string name="settings_biometric">أمان بصمة الإصبع المصرفي</string>
     <string name="settings_about">حول مدرسة السلطان أجونج 1</string>
+
+    <!-- Home-screen widgets (FASE 14) -->
+    <string name="widget_title_attendance">حضور اليوم</string>
+    <string name="widget_title_spp">الرسوم المدرسية</string>
+    <string name="widget_title_schedule">جدول اليوم</string>
+    <string name="widget_title_prayer">مواقيت الصلاة</string>
+    <string name="widget_loading">جارٍ التحميل…</string>
+    <string name="widget_no_data">لا توجد بيانات بعد</string>
+    <string name="widget_open_app">افتح Sulaone لتحميل البيانات</string>
+    <string name="widget_unknown_value">–</string>
+    <string name="widget_updated_at">آخر تحديث %1$s</string>
+    <string name="widget_only_student_parent">متاح لحسابات الطلاب وأولياء الأمور</string>
+    <string name="widget_only_student">متاح لحسابات الطلاب</string>
+    <string name="widget_tap_for_detail">اضغط للتفاصيل ➔</string>
+    <string name="widget_attendance_today">%1$s اليوم</string>
+    <string name="widget_attendance_today_at">%1$s اليوم (%2$s)</string>
+    <string name="widget_attendance_not_yet_today">لم يُسجَّل اليوم بعد</string>
+    <string name="widget_attendance_none">لا يوجد حضور مسجَّل بعد</string>
+    <string name="widget_attendance_last">آخر سجل: %1$s (%2$s)</string>
+    <string name="widget_attendance_child_last">%1$s • آخر سجل %2$s (%3$s)</string>
+    <string name="widget_attendance_status_h">حاضر</string>
+    <string name="widget_attendance_status_s">مريض</string>
+    <string name="widget_attendance_status_i">مستأذن</string>
+    <string name="widget_attendance_status_a">غائب</string>
+    <string name="widget_attendance_status_t">متأخر</string>
+    <string name="widget_spp_unpaid">غير مدفوعة: %1$d</string>
+    <string name="widget_spp_clear">لا توجد مستحقات متأخرة</string>
+    <string name="widget_spp_none">لا توجد فواتير مسجلة بعد</string>
+    <string name="widget_spp_remaining">المتبقي %1$s</string>
+    <string name="widget_schedule_count">%1$d حصص</string>
+    <string name="widget_schedule_lesson">%1$s  %2$s (%3$s)</string>
+    <string name="widget_schedule_lesson_no_room">%1$s  %2$s</string>
+    <string name="widget_schedule_more">+%1$d حصص أخرى</string>
+    <string name="widget_schedule_free_day">لا توجد حصص اليوم</string>
+    <string name="widget_prayer_unavailable">مواقيت الصلاة غير متاحة بعد</string>
+    <string name="widget_prayer_no_source">لا يوجد مصدر رسمي لمواقيت الصلاة في التطبيق بعد</string>
+    <string name="widget_prayer_tap">اضغط لفتح المتابعة ➔</string>
 </resources>

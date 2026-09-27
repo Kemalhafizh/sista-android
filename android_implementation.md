@@ -330,6 +330,17 @@ Aplikasi dibangun murni menggunakan pendekatan **Android Native Modern** tanpa W
 ### 🔗 FASE 14: Android Widgets, Deep Linking & Quick Actions (Sprint 14) — [SELESAI 100%]
 - [x] **14.1 Android App Widgets (4 Widget):**
   - [`ScheduleWidgetProvider.kt`](file:///c:/project/portofolio/project-super-web/sista-android/app/src/main/java/com/sultanagung1/sista/widget/ScheduleWidgetProvider.kt), [`PrayerTimeWidgetProvider.kt`](file:///c:/project/portofolio/project-super-web/sista-android/app/src/main/java/com/sultanagung1/sista/widget/PrayerTimeWidgetProvider.kt), [`AttendanceWidgetProvider.kt`](file:///c:/project/portofolio/project-super-web/sista-android/app/src/main/java/com/sultanagung1/sista/widget/AttendanceWidgetProvider.kt), [`SppWidgetProvider.kt`](file:///c:/project/portofolio/project-super-web/sista-android/app/src/main/java/com/sultanagung1/sista/widget/SppWidgetProvider.kt).
+  - > **Koreksi 2026-09-27:** keempat widget ternyata tidak pernah memuat data. Provider hanya memasang `PendingIntent` dan tidak pernah memanggil `setTextViewText`, jadi setiap pengguna melihat teks contoh dari layout sebagai status miliknya: "✅ HADIR (06:45 WIB)", "Agustus 2026: LUNAS" (LUNAS palsu yang sama dengan yang dihapus di 76.2), tiga pelajaran karangan, dan jam salat tetap. Sekarang:
+    - Repository menulis snapshot kecil per akun (`core/common` → `core/widget/WidgetSnapshotStore`) setiap kali data asli berhasil dimuat, lalu me-render ulang widget. `onUpdate` tidak memanggil jaringan sama sekali.
+      - Jadwal: `StudentRepository.getSchedule`, difilter ke hari ini saat render (seperti `HomeViewModel`).
+      - Presensi: `student/attendance` (dimuat dari Home) atau `parent/child/{uuid}/attendance`. Setelah check-in GPS berhasil, baris presensi asli dibaca ulang; respons check-in sendiri tidak dipakai karena tidak berisi status, dan tetap 200 untuk akun tanpa data siswa.
+      - SPP: daftar tagihan siswa, atau `unpaid_billings_count` dari ringkasan anak. Untuk wali murid, nominal tidak diketahui dan tidak ditampilkan.
+    - Wali murid: widget mengikuti anak yang terakhir dibuka di dashboard, dan memakai nama anak itu. Guru dan admin mendapat keterangan "Tersedia untuk akun siswa …".
+    - Data yang belum ada tampil sebagai "Belum ada data" / "–". Presensi yang terakhir tercatat di hari lain tampil sebagai "Belum tercatat hari ini" plus tanggal catatan terakhir. Setiap widget menampilkan "Diperbarui HH:mm".
+    - Widget salat menyatakan "Jadwal salat belum tersedia", karena belum ada sumber jadwal resmi (lihat `HomeUiState.prayerSchedule`).
+    - Snapshot dihapus saat login dan logout.
+    - Semua teks widget dipindah ke `strings.xml` (id/en/ar).
+    - Tes: `WidgetTextMapperTest`, `WidgetSnapshotsTest`, `WidgetResourcesGuardTest` (tidak ada teks literal atau `<View>` di layout, dan tidak ada "LUNAS"/jam di string widget).
 - [x] **14.2 App Links & Deep Linking:**
   - [`DeepLinkRouter.kt`](file:///c:/project/portofolio/project-super-web/sista-android/core/common/src/main/java/com/sultanagung1/sista/core/deeplink/DeepLinkRouter.kt) — `sulaone://` + HTTPS `sista.sultanagung1.sch.id/app/*`.
 - [x] **14.3 App Shortcuts (4 Aksi Cepat):**

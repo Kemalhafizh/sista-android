@@ -100,4 +100,41 @@
     <string name="settings_accessibility">Accessibility &amp; Font Scaling</string>
     <string name="settings_biometric">Fingerprint Security (m-Banking)</string>
     <string name="settings_about">About SMA Islam Sultan Agung 1</string>
+
+    <!-- Home-screen widgets (FASE 14) -->
+    <string name="widget_title_attendance">TODAY\'S ATTENDANCE</string>
+    <string name="widget_title_spp">SCHOOL FEES</string>
+    <string name="widget_title_schedule">TODAY\'S SCHEDULE</string>
+    <string name="widget_title_prayer">PRAYER TIMES</string>
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_no_data">No data yet</string>
+    <string name="widget_open_app">Open Sulaone to load data</string>
+    <string name="widget_unknown_value">–</string>
+    <string name="widget_updated_at">Updated %1$s</string>
+    <string name="widget_only_student_parent">Available for student &amp; parent accounts</string>
+    <string name="widget_only_student">Available for student accounts</string>
+    <string name="widget_tap_for_detail">Tap for details ➔</string>
+    <string name="widget_attendance_today">%1$s today</string>
+    <string name="widget_attendance_today_at">%1$s today (%2$s)</string>
+    <string name="widget_attendance_not_yet_today">Not recorded today yet</string>
+    <string name="widget_attendance_none">No attendance recorded yet</string>
+    <string name="widget_attendance_last">Last: %1$s (%2$s)</string>
+    <string name="widget_attendance_child_last">%1$s • last %2$s (%3$s)</string>
+    <string name="widget_attendance_status_h">Present</string>
+    <string name="widget_attendance_status_s">Sick</string>
+    <string name="widget_attendance_status_i">Excused</string>
+    <string name="widget_attendance_status_a">Absent</string>
+    <string name="widget_attendance_status_t">Late</string>
+    <string name="widget_spp_unpaid">Unpaid: %1$d bill(s)</string>
+    <string name="widget_spp_clear">No outstanding bills</string>
+    <string name="widget_spp_none">No bills recorded yet</string>
+    <string name="widget_spp_remaining">%1$s remaining</string>
+    <string name="widget_schedule_count">%1$d sessions</string>
+    <string name="widget_schedule_lesson">%1$s  %2$s (%3$s)</string>
+    <string name="widget_schedule_lesson_no_room">%1$s  %2$s</string>
+    <string name="widget_schedule_more">+%1$d more lessons</string>
+    <string name="widget_schedule_free_day">No lessons today</string>
+    <string name="widget_prayer_unavailable">Prayer times not available yet</string>
+    <string name="widget_prayer_no_source">The app has no official prayer-time source yet</string>
+    <string name="widget_prayer_tap">Tap to open Mutaba\'ah ➔</string>
 </resources>

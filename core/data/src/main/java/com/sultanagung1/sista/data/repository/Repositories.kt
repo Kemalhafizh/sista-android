@@ -4,6 +4,11 @@ package com.sultanagung1.sista.data.repository
 import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
+import com.sultanagung1.sista.core.util.DateUtils
+import com.sultanagung1.sista.core.widget.WidgetSnapshotStore
+import com.sultanagung1.sista.core.widget.WidgetSnapshots
+import com.sultanagung1.sista.core.widget.withAttendance
+import com.sultanagung1.sista.core.widget.withBilling
 import com.sultanagung1.sista.data.local.dao.UserDao
 import com.sultanagung1.sista.data.local.entity.UserEntity
 import com.sultanagung1.sista.data.model.AdminDashboardData
@@ -73,6 +78,7 @@ import com.sultanagung1.sista.data.model.TeacherClassSummary
 import com.sultanagung1.sista.data.model.TeacherDirectoryItem
 import com.sultanagung1.sista.data.model.UserProfile
 import com.sultanagung1.sista.data.model.WeeklyDigest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -87,7 +93,8 @@ import retrofit2.Response
 class AuthRepository(
     private val apiClient: ApiClient,
     private val sessionManager: SessionManager,
-    private val userDao: UserDao? = null
+    private val userDao: UserDao? = null,
+    private val widgetSnapshots: WidgetSnapshotStore? = null
 ) {
     fun getLocalUser(): Flow<UserProfile?> {
         return userDao?.getLoggedInUser()?.map { it?.toUserProfile() } ?: flow { emit(null) }
@@ -113,6 +120,8 @@ class AuthRepository(
                     )
                     // Simpan data profil ke Database Room (SQLite)
                     userDao?.insertUser(UserEntity.fromUserProfile(user))
+                    // Home-screen widgets start empty for the new session.
+                    widgetSnapshots?.startNewSession()
 
                     emit(NetworkResult.Success(loginResponse))
                 } else {
@@ -168,6 +177,7 @@ class AuthRepository(
                         classroom = user.classroom
                     )
                 }
+                widgetSnapshots?.startNewSession()
                 emit(NetworkResult.Success(body))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Verifikasi biometrik gagal.", response.code()))
@@ -199,12 +209,14 @@ class AuthRepository(
         } catch (_: Exception) {}
         sessionManager.clearSession()
         userDao?.deleteAllUsers()
+        widgetSnapshots?.clear()
     }
 }
 
 class StudentRepository(
     private val apiClient: ApiClient,
-    private val localStore: com.sultanagung1.sista.data.local.SulaoneLocalStore? = null
+    private val localStore: com.sultanagung1.sista.data.local.SulaoneLocalStore? = null,
+    private val widgetSnapshots: WidgetSnapshotStore? = null
 ) {
 
     fun getSchedule(): Flow<NetworkResult<List<ScheduleItem>>> = flow {
@@ -219,6 +231,7 @@ class StudentRepository(
             val data = response.body()?.data
             if (response.isSuccessful && data != null) {
                 localStore?.saveSchedule(data)
+                widgetSnapshots?.update { it.copy(schedule = WidgetSnapshots.schedule(data, DateUtils.nowMillis())) }
                 emit(NetworkResult.Success(data))
             } else if (localStore?.getCachedSchedule() == null) {
                 emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat jadwal pelajaran", response.code()))
@@ -251,6 +264,7 @@ class StudentRepository(
             val response = apiClient.studentApi.getBillings()
             val data = response.body()?.data
             if (response.isSuccessful && data != null) {
+                widgetSnapshots?.update { it.withBilling(WidgetSnapshots.studentBilling(data, DateUtils.nowMillis())) }
                 emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat tagihan SPP", response.code()))
@@ -341,14 +355,22 @@ class StudentRepository(
     }.flowOn(Dispatchers.IO)
 }
 
-class AttendanceRepository(private val apiClient: ApiClient) {
+class AttendanceRepository(
+    private val apiClient: ApiClient,
+    private val widgetSnapshots: WidgetSnapshotStore? = null
+) {
 
     fun submitGpsCheckin(request: GpsCheckinRequest): Flow<NetworkResult<AttendanceCheckinResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.attendanceApi.submitGpsCheckin(request)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                // The response only says the GPS check passed (it is also 200 for
+                // accounts without a student row, where nothing is recorded), so
+                // the widget re-reads the real attendance row instead of assuming "Hadir".
+                recordLatestAttendance()
+                emit(NetworkResult.Success(body))
             } else {
                 emit(NetworkResult.Error(response.message().ifEmpty { "Presensi gagal. Anda di luar radius sekolah." }, response.code()))
             }
@@ -377,6 +399,7 @@ class AttendanceRepository(private val apiClient: ApiClient) {
             val response = apiClient.attendanceApi.getAttendanceHistory()
             val data = response.body()?.data
             if (response.isSuccessful && data != null) {
+                recordAttendanceSnapshot(data)
                 emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat riwayat presensi", response.code()))
@@ -385,6 +408,24 @@ class AttendanceRepository(private val apiClient: ApiClient) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
+
+    private suspend fun recordLatestAttendance() {
+        if (widgetSnapshots == null) return
+        try {
+            val response = apiClient.attendanceApi.getAttendanceHistory()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) recordAttendanceSnapshot(data)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // The check-in itself succeeded; a failed widget refresh must not hide that.
+        }
+    }
+
+    private suspend fun recordAttendanceSnapshot(history: List<AttendanceHistoryItem>) {
+        val latest = WidgetSnapshots.studentAttendance(history, DateUtils.nowMillis()) ?: return
+        widgetSnapshots?.update { it.withAttendance(latest) }
+    }
 }
 
 class CbtRepository(private val apiClient: ApiClient) {
@@ -841,7 +882,10 @@ class TeacherRepository(private val apiClient: ApiClient) {
     }.flowOn(Dispatchers.IO)
 }
 
-class ParentRepository(private val apiClient: ApiClient) {
+class ParentRepository(
+    private val apiClient: ApiClient,
+    private val widgetSnapshots: WidgetSnapshotStore? = null
+) {
 
     fun getChildren(): Flow<NetworkResult<List<ParentChildItem>>> = flow {
         emit(NetworkResult.Loading)
@@ -865,6 +909,8 @@ class ParentRepository(private val apiClient: ApiClient) {
             val body = response.body()
             val data = body?.data
             if (response.isSuccessful && body?.success == true && data != null) {
+                // The widgets follow the child the parent last opened here.
+                widgetSnapshots?.update { it.withBilling(WidgetSnapshots.childBilling(uuid, data, DateUtils.nowMillis())) }
                 emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat rangkuman anak", response.code()))
@@ -880,6 +926,9 @@ class ParentRepository(private val apiClient: ApiClient) {
             val response = apiClient.parentApi.getChildAttendanceHistory(uuid)
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
+                WidgetSnapshots.childAttendance(uuid, body.data.orEmpty(), DateUtils.nowMillis())?.let { latest ->
+                    widgetSnapshots?.update { it.withAttendance(latest) }
+                }
                 emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat riwayat presensi anak", response.code()))

@@ -2,6 +2,7 @@ package com.sultanagung1.sista.di
 
 import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.core.storage.SessionManager
+import com.sultanagung1.sista.core.widget.WidgetSnapshotStore
 import com.sultanagung1.sista.data.api.*
 import com.sultanagung1.sista.data.local.SistaDatabase
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
@@ -20,8 +21,9 @@ object RepositoryModule {
     @Singleton
     fun provideAuthRepository(
         apiClient: ApiClient,
-        sessionManager: SessionManager
-    ): AuthRepository = AuthRepository(apiClient, sessionManager)
+        sessionManager: SessionManager,
+        widgetSnapshots: WidgetSnapshotStore
+    ): AuthRepository = AuthRepository(apiClient, sessionManager, widgetSnapshots = widgetSnapshots)
 
     @Provides
     @Singleton
@@ -34,13 +36,16 @@ object RepositoryModule {
     @Singleton
     fun provideStudentRepository(
         apiClient: ApiClient,
-        localStore: SulaoneLocalStore
-    ): StudentRepository = StudentRepository(apiClient, localStore)
+        localStore: SulaoneLocalStore,
+        widgetSnapshots: WidgetSnapshotStore
+    ): StudentRepository = StudentRepository(apiClient, localStore, widgetSnapshots)
 
     @Provides
     @Singleton
-    fun provideAttendanceRepository(apiClient: ApiClient): AttendanceRepository =
-        AttendanceRepository(apiClient)
+    fun provideAttendanceRepository(
+        apiClient: ApiClient,
+        widgetSnapshots: WidgetSnapshotStore
+    ): AttendanceRepository = AttendanceRepository(apiClient, widgetSnapshots)
 
     @Provides
     @Singleton
@@ -59,8 +64,10 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideParentRepository(apiClient: ApiClient): ParentRepository =
-        ParentRepository(apiClient)
+    fun provideParentRepository(
+        apiClient: ApiClient,
+        widgetSnapshots: WidgetSnapshotStore
+    ): ParentRepository = ParentRepository(apiClient, widgetSnapshots)
 
     @Provides
     @Singleton

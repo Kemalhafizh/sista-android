@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Texts are neutral placeholders; ScheduleWidgetProvider replaces them with
+     today's lessons from the cached snapshot (WidgetTextMapper). Never put
+     sample lessons here: they are what the widget shows until the first render. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_schedule_root"
     android:layout_width="match_parent"
@@ -17,16 +20,16 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="JADWAL HARI INI • SMA SA 1"
+            android:text="@string/widget_title_schedule"
             android:textColor="#FACC15"
             android:textSize="10sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/widget_schedule_date"
+            android:id="@+id/widget_schedule_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="XII MIPA 1"
+            android:text="@string/widget_unknown_value"
             android:textColor="#A7F3D0"
             android:textSize="9sp" />
     </LinearLayout>
@@ -44,7 +47,7 @@
         android:id="@+id/widget_schedule_item1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="07:00 - Matematika Peminatan (Lab 2)"
+        android:text="@string/widget_loading"
         android:textColor="#FFFFFF"
         android:textSize="11sp"
         android:textStyle="bold" />
@@ -54,7 +57,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
-        android:text="08:30 - Fisika Modern (Lab Fisika)"
+        android:text="@string/widget_open_app"
         android:textColor="#E2E8F0"
         android:textSize="10sp" />
 
@@ -63,8 +66,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
-        android:text="10:15 - PAI &amp; Budi Pekerti (Masjid)"
         android:textColor="#CBD5E1"
-        android:textSize="10sp" />
+        android:textSize="10sp"
+        android:visibility="gone" />
 
 </LinearLayout>
