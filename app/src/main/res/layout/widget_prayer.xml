@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- There is no prayer-time source yet (sistem-terpadu has no JSON API for it,
+     see HomeUiState.prayerSchedule), so this widget states that instead of
+     showing fixed times. Do not add sample times here. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_prayer_root"
     android:layout_width="match_parent"
@@ -10,7 +13,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="JADWAL SALAT SEMARANG"
+        android:text="@string/widget_title_prayer"
         android:textColor="#FACC15"
         android:textSize="10sp"
         android:textStyle="bold" />
@@ -20,7 +23,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:text="Menuju Ashar (15:10)"
+        android:text="@string/widget_prayer_unavailable"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
         android:textStyle="bold" />
@@ -29,7 +32,7 @@
         android:id="@+id/widget_prayer_countdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="-01:15:20 lagi"
+        android:text="@string/widget_prayer_no_source"
         android:textColor="#A7F3D0"
         android:textSize="10sp" />
 
@@ -45,7 +48,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Subuh 04:32 • Dzuhur 11:52 • Ashar 15:10 • Maghrib 17:54"
+        android:text="@string/widget_prayer_tap"
         android:textColor="#CBD5E1"
         android:textSize="9sp" />
 

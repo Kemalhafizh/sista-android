@@ -17,9 +17,11 @@ import com.sultanagung1.sista.core.sync.OfflineActionQueue
 import com.sultanagung1.sista.core.sync.SyncManager
 import com.sultanagung1.sista.core.time.ServerTimeProvider
 import com.sultanagung1.sista.core.update.InAppUpdateManager
+import com.sultanagung1.sista.core.widget.WidgetSnapshotStore
 import com.sultanagung1.sista.core.websocket.ReverbWebSocketManager
 import com.sultanagung1.sista.data.local.SistaDatabase
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
+import com.sultanagung1.sista.widget.SulaoneWidgetRefresher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,6 +43,16 @@ object StorageModule {
     @Singleton
     fun provideSulaoneLocalStore(@ApplicationContext context: Context): SulaoneLocalStore {
         return SulaoneLocalStore.getInstance(context)
+    }
+
+    // FASE 14: what the home-screen widgets render (real, cached, per account).
+    @Provides
+    @Singleton
+    fun provideWidgetSnapshotStore(
+        @ApplicationContext context: Context,
+        sessionManager: SessionManager
+    ): WidgetSnapshotStore {
+        return WidgetSnapshotStore(context, sessionManager, SulaoneWidgetRefresher(context))
     }
 
     // FASE 76.4: the Room database's first real consumer (feature_usage).

@@ -46,3 +46,6 @@
     public static int v(...);
     public static int d(...);
 }
+
+# Home-screen widget snapshot (Gson → SharedPreferences, read by the widget providers)
+-keep class com.sultanagung1.sista.core.widget.** { *; }

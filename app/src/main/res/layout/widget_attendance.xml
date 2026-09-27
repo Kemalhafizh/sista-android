@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Texts are neutral placeholders; AttendanceWidgetProvider replaces them with
+     the cached snapshot (WidgetTextMapper). Never put a sample status here: it
+     is what the widget shows until the first render. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_attendance_root"
     android:layout_width="match_parent"
@@ -10,7 +13,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="PRESENSI HARI INI"
+        android:text="@string/widget_title_attendance"
         android:textColor="#FACC15"
         android:textSize="10sp"
         android:textStyle="bold" />
@@ -20,24 +23,32 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="✅ HADIR (06:45 WIB)"
+        android:text="@string/widget_loading"
         android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/widget_attendance_gate"
+        android:id="@+id/widget_attendance_detail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Gerbang Utama SMA SA 1"
+        android:text="@string/widget_open_app"
         android:textColor="#A7F3D0"
         android:textSize="9sp" />
+
+    <TextView
+        android:id="@+id/widget_attendance_updated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#A7F3D0"
+        android:textSize="8.5sp"
+        android:visibility="gone" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:text="Ketuk untuk Presensi GPS ➔"
+        android:text="@string/widget_tap_for_detail"
         android:textColor="#CBD5E1"
         android:textSize="8.5sp" />
 

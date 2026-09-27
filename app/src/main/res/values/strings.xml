@@ -100,4 +100,43 @@
     <string name="settings_accessibility">Aksesibilitas &amp; Font Scaling</string>
     <string name="settings_biometric">Keamanan Sidik Jari (m-Banking)</string>
     <string name="settings_about">Tentang SMA Islam Sultan Agung 1</string>
+
+    <!-- Home-screen widgets (FASE 14). Rendered from real cached data only;
+         see WidgetTextMapper. No sample status (LUNAS, HADIR, lessons, prayer
+         times) belongs in these strings. -->
+    <string name="widget_title_attendance">PRESENSI HARI INI</string>
+    <string name="widget_title_spp">TAGIHAN SPP</string>
+    <string name="widget_title_schedule">JADWAL HARI INI</string>
+    <string name="widget_title_prayer">JADWAL SALAT</string>
+    <string name="widget_loading">Memuat…</string>
+    <string name="widget_no_data">Belum ada data</string>
+    <string name="widget_open_app">Buka Sulaone untuk memuat data</string>
+    <string name="widget_unknown_value">–</string>
+    <string name="widget_updated_at">Diperbarui %1$s</string>
+    <string name="widget_only_student_parent">Tersedia untuk akun siswa &amp; wali murid</string>
+    <string name="widget_only_student">Tersedia untuk akun siswa</string>
+    <string name="widget_tap_for_detail">Ketuk untuk detail ➔</string>
+    <string name="widget_attendance_today">%1$s hari ini</string>
+    <string name="widget_attendance_today_at">%1$s hari ini (%2$s)</string>
+    <string name="widget_attendance_not_yet_today">Belum tercatat hari ini</string>
+    <string name="widget_attendance_none">Belum ada presensi tercatat</string>
+    <string name="widget_attendance_last">Terakhir: %1$s (%2$s)</string>
+    <string name="widget_attendance_child_last">%1$s • terakhir %2$s (%3$s)</string>
+    <string name="widget_attendance_status_h">Hadir</string>
+    <string name="widget_attendance_status_s">Sakit</string>
+    <string name="widget_attendance_status_i">Izin</string>
+    <string name="widget_attendance_status_a">Alpa</string>
+    <string name="widget_attendance_status_t">Terlambat</string>
+    <string name="widget_spp_unpaid">Belum dibayar: %1$d tagihan</string>
+    <string name="widget_spp_clear">Tidak ada tunggakan</string>
+    <string name="widget_spp_none">Belum ada tagihan tercatat</string>
+    <string name="widget_spp_remaining">Sisa %1$s</string>
+    <string name="widget_schedule_count">%1$d sesi</string>
+    <string name="widget_schedule_lesson">%1$s  %2$s (%3$s)</string>
+    <string name="widget_schedule_lesson_no_room">%1$s  %2$s</string>
+    <string name="widget_schedule_more">+%1$d pelajaran lainnya</string>
+    <string name="widget_schedule_free_day">Tidak ada pelajaran hari ini</string>
+    <string name="widget_prayer_unavailable">Jadwal salat belum tersedia</string>
+    <string name="widget_prayer_no_source">Belum ada sumber jadwal resmi di aplikasi</string>
+    <string name="widget_prayer_tap">Ketuk untuk membuka Mutaba\'ah ➔</string>
 </resources>
