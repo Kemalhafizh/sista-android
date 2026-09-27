@@ -68,6 +68,22 @@ fun KeepScreenAwake(enabled: Boolean, maxBrightness: Boolean = false) {
     }
 }
 
+/**
+ * Blocks screenshots, screen recording and casting of this window while
+ * [enabled] (FLAG_SECURE), and lifts it when the screen leaves — for codes a
+ * student must not be able to forward to a friend.
+ */
+@Composable
+fun SecureWindowEffect(enabled: Boolean = true) {
+    val activity = LocalContext.current.findActivity()
+    DisposableEffect(enabled, activity) {
+        val window = activity?.window
+        if (!enabled || window == null) return@DisposableEffect onDispose { }
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+    }
+}
+
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()

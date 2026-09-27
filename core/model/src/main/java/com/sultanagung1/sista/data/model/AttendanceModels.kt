@@ -17,10 +17,20 @@ data class AttendanceCheckinResponse(
     @SerializedName("status_type") val statusType: String // HADIR, TERLAMBAT
 )
 
+/**
+ * `GET mobile/attendance/dynamic-qr` — raw JSON, no envelope
+ * (GeofenceAttendanceService::generateDynamicTotpQr): `{success, qr_token,
+ * expires_in_seconds, timestamp}`. [qrToken] is what the gate scanner sends to
+ * `mobile/attendance/verify-qr`. The model used to expect `qr_payload` and a
+ * numeric `timestamp`; the server sends `qr_token` and an ISO-8601 string, so
+ * Gson failed on every response and the screen could only show an error.
+ */
 data class DynamicQrResponse(
-    @SerializedName("qr_payload") val qrPayload: String,
-    @SerializedName("expires_in_seconds") val expiresInSeconds: Int,
-    @SerializedName("timestamp") val timestamp: Long
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("qr_token") val qrToken: String? = null,
+    /** Seconds until the 30 s slice rolls over (1–30). */
+    @SerializedName("expires_in_seconds") val expiresInSeconds: Int = 0,
+    @SerializedName("timestamp") val timestamp: String? = null
 )
 
 data class AttendanceHistoryItem(
