@@ -59,6 +59,7 @@ import com.sultanagung1.sista.data.model.ChatAttachment
 import com.sultanagung1.sista.data.model.ChatMessage
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChatScreen(
     conversationId: String,
@@ -242,6 +243,11 @@ fun ChatScreen(
                 .fillMaxSize()
                 .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
                 .padding(paddingValues)
+                // FASE 76.7: the app is edge-to-edge, so the keyboard used to cover
+                // the composer. Consuming the Scaffold insets also stops the input
+                // row's navigationBarsPadding() from adding the nav-bar gap twice.
+                .consumeWindowInsets(paddingValues)
+                .imePadding()
         ) {
             // Message History
             LazyColumn(

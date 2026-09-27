@@ -114,8 +114,32 @@ fun ParentDashboardScreen(
                     }
                 }
 
+                // FASE 76.5: first load used to render only the header and an empty
+                // "Data Putra / Putri" row (isLoading was never read on this screen).
+                if (uiState.isLoading && uiState.children.isEmpty()) {
+                    item(key = "children_loading") {
+                        SulaoneTieredLoading(isLoading = true, modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                PersonaCardSkeleton()
+                                BentoHeroSplitSkeleton()
+                                MetricCardSkeleton()
+                            }
+                        }
+                    }
+                } else if (!uiState.isLoading && uiState.children.isEmpty() && uiState.errorMessage == null) {
+                    item(key = "children_empty") {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            SulaoneEmptyState(
+                                icon = Icons.Default.ChildCare,
+                                title = "Belum Ada Data Anak",
+                                description = "Akun wali murid ini belum ditautkan ke data siswa. Hubungi Tata Usaha sekolah untuk menautkannya."
+                            )
+                        }
+                    }
+                }
+
                 // 2. Children Switcher Selector (Multi-Child Support)
-                item {
+                if (uiState.children.isNotEmpty()) item {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         Text(
                             text = "Data Putra / Putri Tercinta",
@@ -204,8 +228,11 @@ fun ParentDashboardScreen(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             if (uiState.isLoadingChildDetail && summary == null) {
-                                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = Emerald700)
+                                SulaoneTieredLoading(isLoading = true) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        BentoHeroSplitSkeleton()
+                                        MetricCardSkeleton()
+                                    }
                                 }
                             } else {
                                 val stats = summary?.statistics

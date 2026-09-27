@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -93,12 +95,7 @@ fun AppNavigation(
 
     val navigateToRoleHome = remember(userRole) {
         {
-            val targetRoute = when {
-                userRole.contains("teacher", ignoreCase = true) || userRole.contains("guru", ignoreCase = true) -> Screen.TeacherDashboard.route
-                userRole.contains("parent", ignoreCase = true) || userRole.contains("ortu", ignoreCase = true) -> Screen.ParentDashboard.route
-                userRole.contains("admin", ignoreCase = true) || userRole.contains("kepsek", ignoreCase = true) -> Screen.AdminDashboard.route
-                else -> Screen.Home.route
-            }
+            val targetRoute = UserRoles.homeRouteFor(userRole)
             navController.navigate(targetRoute) {
                 popUpTo(0) { inclusive = false }
             }
@@ -181,26 +178,26 @@ fun AppNavigation(
     val liteModeManager = remember { LiteModeManager(context) }
 
     // Role-Based Multilingual Bottom Navigation Bar Items (FASE 60.3: Consolidated 4-Tab System)
-    val bottomNavItems = when {
-        userRole.contains("teacher", ignoreCase = true) || userRole.contains("guru", ignoreCase = true) -> listOf(
+    val bottomNavItems = when (UserRoles.groupOf(userRole)) {
+        RoleGroup.TEACHER -> listOf(
             BottomNavItem(Screen.TeacherDashboard.route, strings.teacherTab, Icons.Default.Dashboard),
             BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
-        userRole.contains("parent", ignoreCase = true) || userRole.contains("ortu", ignoreCase = true) -> listOf(
+        RoleGroup.PARENT -> listOf(
             BottomNavItem(Screen.ParentDashboard.route, strings.parentTab, Icons.Default.FamilyRestroom),
             BottomNavItem(Screen.Grades.route, strings.gradesTab, Icons.Default.AutoGraph),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
-        userRole.contains("admin", ignoreCase = true) || userRole.contains("kepsek", ignoreCase = true) || userRole.contains("principal", ignoreCase = true) -> listOf(
+        RoleGroup.ADMIN -> listOf(
             BottomNavItem(Screen.AdminDashboard.route, strings.executiveTab, Icons.Default.AdminPanelSettings),
             BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )
-        else -> listOf(
+        RoleGroup.STUDENT -> listOf(
             BottomNavItem(Screen.Home.route, strings.homeTab, Icons.Default.Home),
             BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
@@ -320,6 +317,31 @@ fun AppNavigation(
                         }
                     }
                 }
+            }
+        },
+        // FASE 76.3: one contextual action per role home (see ContextualFab).
+        // Hidden everywhere else, including the whole CBT flow: the rule is
+        // "only on a home tab", so an exam screen can never show it.
+        floatingActionButton = {
+            val fabAction = ContextualFab.actionFor(currentRoute, userRole)
+            if (fabAction != null && isTabRoute) {
+                val fabHaptics = rememberHapticFeedbackHelper()
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        fabHaptics.tapLight()
+                        navController.navigate(fabAction.targetRoute) { launchSingleTop = true }
+                    },
+                    icon = { Icon(imageVector = fabAction.icon(), contentDescription = null) },
+                    text = {
+                        Text(
+                            text = fabAction.label,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.testTag("contextual_fab")
+                )
             }
         }
     ) { innerPadding ->
@@ -451,4 +473,8 @@ fun AppNavigation(
 }
 }
 
-
+private fun ContextualFabAction.icon(): ImageVector = when (this) {
+    ContextualFabAction.QUICK_ATTENDANCE -> Icons.Default.LocationOn
+    ContextualFabAction.TEACHING_JOURNAL -> Icons.Default.EditNote
+    ContextualFabAction.MESSAGE_TEACHER -> Icons.AutoMirrored.Filled.Chat
+}

@@ -18,6 +18,7 @@ import com.sultanagung1.sista.core.sync.SyncManager
 import com.sultanagung1.sista.core.time.ServerTimeProvider
 import com.sultanagung1.sista.core.update.InAppUpdateManager
 import com.sultanagung1.sista.core.websocket.ReverbWebSocketManager
+import com.sultanagung1.sista.data.local.SistaDatabase
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import dagger.Module
 import dagger.Provides
@@ -40,6 +41,13 @@ object StorageModule {
     @Singleton
     fun provideSulaoneLocalStore(@ApplicationContext context: Context): SulaoneLocalStore {
         return SulaoneLocalStore.getInstance(context)
+    }
+
+    // FASE 76.4: the Room database's first real consumer (feature_usage).
+    @Provides
+    @Singleton
+    fun provideSistaDatabase(@ApplicationContext context: Context): SistaDatabase {
+        return SistaDatabase.getInstance(context)
     }
 
     @Provides

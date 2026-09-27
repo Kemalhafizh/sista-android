@@ -106,27 +106,43 @@ class DesignSystemTokensTest {
 
     @Test
     fun testNoHardcodedColorsInUiScreens() {
-        val candidates = listOf(
-            File("src/main/java/com/sultanagung1/sista/ui"),
-            File("app/src/main/java/com/sultanagung1/sista/ui"),
-            File("../app/src/main/java/com/sultanagung1/sista/ui")
+        // FASE 76.1 fix: since the FASE 73 multi-module split the real screens live
+        // in feature/*/src/main, not app/.../ui (which now only holds navigation).
+        // Scanning app/ alone checked an almost empty folder and always passed.
+        val repoRoot = listOf(File(".."), File("."))
+            .map { it.canonicalFile }
+            .firstOrNull { File(it, "settings.gradle").exists() }
+        assertNotNull("Repo root (with settings.gradle) must be found from the test working dir", repoRoot)
+
+        val roots = buildList {
+            add(File(repoRoot, "app/src/main/java/com/sultanagung1/sista/ui"))
+            File(repoRoot, "feature").listFiles()?.sortedBy { it.name }?.forEach { module ->
+                add(File(module, "src/main/java"))
+            }
+        }.filter { it.isDirectory }
+        assertTrue(
+            "Must scan app ui plus every feature module (found ${roots.size} roots)",
+            roots.size >= 2 && roots.any { it.path.contains("feature") }
         )
-        val rootDir = candidates.firstOrNull { it.exists() && it.isDirectory }
-        assertNotNull("UI directory should exist in one of the candidate paths", rootDir)
 
         val hardcodedRegex = Regex("""Color\s*\(\s*0x[0-9a-fA-F]{6,8}\s*\)""")
         val violations = mutableListOf<String>()
+        var scannedFiles = 0
 
-        rootDir!!.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
-            // Exclude theme definition file where palettes are intentionally defined
-            if (!file.name.contains("Color.kt")) {
-                file.readLines().forEachIndexed { index, line ->
-                    if (hardcodedRegex.containsMatchIn(line)) {
-                        violations.add("${file.name}:${index + 1}: ${line.trim()}")
+        roots.forEach { rootDir ->
+            rootDir.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
+                scannedFiles++
+                // Exclude theme definition file where palettes are intentionally defined
+                if (!file.name.contains("Color.kt")) {
+                    file.readLines().forEachIndexed { index, line ->
+                        if (hardcodedRegex.containsMatchIn(line)) {
+                            violations.add("${file.path}:${index + 1}: ${line.trim()}")
+                        }
                     }
                 }
             }
         }
+        assertTrue("Should scan the real screens, scanned only $scannedFiles files", scannedFiles > 50)
 
         assertTrue(
             "Found ${violations.size} hardcoded color usages in UI screens:\n${violations.joinToString("\n")}",

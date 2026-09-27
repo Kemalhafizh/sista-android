@@ -26,8 +26,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # --continue: lint every module and report all failures in one run,
+      # instead of stopping at the first module with an error.
       - name: Run Lint Check
-        run: ./gradlew lintDebug
+        run: ./gradlew lintDebug --continue
+
+      - name: Print Lint Reports
+        if: failure()
+        run: find . -path '*lint_intermediate_text_report*' -name 'lint-results-debug.txt' -exec sh -c 'echo "=== $1"; cat "$1"' _ {} \;
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
