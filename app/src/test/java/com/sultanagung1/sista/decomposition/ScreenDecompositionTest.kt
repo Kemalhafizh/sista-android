@@ -99,8 +99,8 @@ class ScreenDecompositionTest {
         val loadingState: QrDisplayState = QrDisplayState.Loading
         assertNotNull(loadingState)
 
-        val contentState = QrDisplayState.Content("SULA-TOTP-TOKEN-9821")
-        assertEquals("SULA-TOTP-TOKEN-9821", contentState.qrPayload)
+        val contentState = QrDisplayState.Content("SULA-TOTP-TOKEN-9821", com.sultanagung1.sista.data.model.ClassSessionRules.QrFreshness.FRESH)
+        assertEquals("SULA-TOTP-TOKEN-9821", contentState.qrToken)
 
         val errorState = QrDisplayState.Error("Server presensi sedang sibuk")
         assertEquals("Server presensi sedang sibuk", errorState.message)

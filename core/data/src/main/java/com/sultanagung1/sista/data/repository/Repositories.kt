@@ -383,8 +383,9 @@ class AttendanceRepository(
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.attendanceApi.getDynamicQr()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val body = response.body()
+            if (response.isSuccessful && body != null && !body.qrToken.isNullOrBlank()) {
+                emit(NetworkResult.Success(body))
             } else {
                 emit(NetworkResult.Error("Gagal memuat QR presensi dinamis", response.code()))
             }

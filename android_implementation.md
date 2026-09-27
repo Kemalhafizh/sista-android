@@ -237,6 +237,15 @@ Aplikasi dibangun murni menggunakan pendekatan **Android Native Modern** tanpa W
 ### 🕌 FASE 6: Identitas Islami & Fitur Perangkat Keras (Sprint 6) — [SELESAI 100%]
 - [x] **6.1 Dynamic Rotating TOTP QR Code:**
   - [`DynamicQrScreen.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/academic/src/main/java/com/sultanagung1/sista/ui/attendance/DynamicQrScreen.kt) — QR berputar 30 detik, anti-screenshot joki.
+  - > **Koreksi 2026-09-27:** layar ini tidak pernah menampilkan QR yang bisa dipindai.
+    - Yang digambar adalah **ikon** QR plus 16 karakter pertama token dalam bentuk teks.
+    - Modelnya menunggu `qr_payload` dan `timestamp` berupa angka, padahal server (`GeofenceAttendanceService::generateDynamicTotpQr`) mengirim `qr_token` dan `timestamp` berupa string ISO. Akibatnya parsing gagal di setiap respons, dan layar hanya bisa menampilkan error.
+    - Tidak ada "watermark" maupun proteksi screenshot.
+    - Sekarang:
+      - `qr_token` digambar sebagai QR sungguhan (`SulaoneQrCode`, ZXing) dan tidak lagi ditampilkan sebagai teks.
+      - Pergantian QR mengikuti `expires_in_seconds` dari server, hanya berjalan saat layar terlihat, dengan backoff 5→30 dtk kalau gagal. Kalau gagal diperbarui, QR lama diredupkan, lalu disembunyikan satu menit setelah kedaluwarsa.
+      - `FLAG_SECURE` (tidak bisa di-screenshot/direkam) serta layar tetap menyala dengan kecerahan penuh untuk scanner gerbang.
+      - Test: `DynamicQrTest` (JSON server, QR yang digambar terbaca balik persis sebagai token untuk `verify-qr`, logika tampilan, dan penjaga agar ikon tidak kembali).
 - [x] **6.2 Audio Perekam Setoran Tahsin & Tahfidz:**
   - [`TahsinRecorderScreen.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/ibadah/src/main/java/com/sultanagung1/sista/ui/ibadah/TahsinRecorderScreen.kt) — Perekam tilawah resolusi tinggi, waveform canvas, playback speed control.
 - [x] **6.3 Mutaba'ah Yaumiyah Sultan Agung (BISA):**
@@ -3669,7 +3678,7 @@ Android awalnya ditulis mengikuti kontrak usulan di bawah ini (versi pertama 77.
 - **Pil "Absen Kelas" di quick action tidak dibuat.** Banner 77.5.3 sudah menjalankan perannya.
 
 **Temuan saat mengerjakan:**
-- **ZXing tidak pernah ada di dependency.** Rancangan 77.3.2 menyebut ZXing "sudah tersedia — digunakan oleh `DynamicQrScreen`". Kenyataannya `DynamicQrScreen` menggambar **ikon**, bukan QR. ZXing `core:3.5.3` kini ditambahkan. `QrMatrixEncoderTest` membuktikan QR yang digambar terbaca balik oleh decoder sungguhan. *`DynamicQrScreen` sendiri belum diperbaiki (di luar FASE 77).*
+- **ZXing tidak pernah ada di dependency.** Rancangan 77.3.2 menyebut ZXing "sudah tersedia — digunakan oleh `DynamicQrScreen`". Kenyataannya `DynamicQrScreen` menggambar **ikon**, bukan QR. ZXing `core:3.5.3` kini ditambahkan. `QrMatrixEncoderTest` membuktikan QR yang digambar terbaca balik oleh decoder sungguhan. *`DynamicQrScreen` sudah diperbaiki menyusul FASE 77 (lihat koreksi di FASE 6.1).*
 - **Tab "Jadwal" guru/admin selalu 403.** Tab itu memanggil `student/schedule` (`role:student,siswa`), dan kini diganti "Mengajar" / "Sesi Kelas".
 
 **Belum:**
