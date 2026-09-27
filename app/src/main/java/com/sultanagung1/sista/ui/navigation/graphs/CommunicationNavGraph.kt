@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.sultanagung1.sista.BuildConfig
 import com.sultanagung1.sista.ui.announcements.AnnouncementDetailScreen
 import com.sultanagung1.sista.ui.announcements.AnnouncementFeedScreen
 import com.sultanagung1.sista.ui.announcements.AnnouncementViewModel
@@ -80,7 +81,8 @@ fun NavGraphBuilder.communicationNavGraph(
                 navController.navigate(route)
             },
             onNavigateBack = if (navController.previousBackStackEntry != null) { { navController.popBackStack() } } else null,
-            onNavigateToSettings = { navController.navigate(Screen.NotificationSettings.route) }
+            onNavigateToSettings = { navController.navigate(Screen.NotificationSettings.route) },
+            showDebugTools = BuildConfig.DEBUG
         )
     }
 

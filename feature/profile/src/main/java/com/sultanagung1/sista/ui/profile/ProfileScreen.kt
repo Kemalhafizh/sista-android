@@ -59,7 +59,6 @@ fun ProfileScreen(
     onNavigateToAnnouncements: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToDiagnostics: () -> Unit = {},
-    onRoleSwitch: (String) -> Unit = {},
     onNavigateToComprehensiveProfile: (() -> Unit)? = null,
     onLogout: () -> Unit
 ) {
@@ -73,7 +72,6 @@ fun ProfileScreen(
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
-    var showRoleSwitcher by remember { mutableStateOf(false) }
     var showRefreshRateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val currentRefreshMode by AdaptiveRefreshRateManager.getStoredModeFlow(sessionManager)
@@ -328,19 +326,6 @@ fun ProfileScreen(
                             onNavigateToSettings()
                         }
                     )
-
-                    HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
-                    ModernProfileMenuItem(
-                        icon = Icons.Default.SupervisorAccount,
-                        iconTint = AccentPurple,
-                        iconBg = AccentPurple.copy(alpha = 0.12f),
-                        title = "Ganti Peran Dashboard (Multi-Role)",
-                        subtitle = "Beralih antara Siswa, Guru, Wali Murid, atau Kepala Sekolah",
-                        onClick = {
-                            haptics.tapLight()
-                            showRoleSwitcher = true
-                        }
-                    )
                 }
             }
 
@@ -507,17 +492,6 @@ fun ProfileScreen(
                     Text("Tutup")
                 }
             }
-        )
-    }
-
-    if (showRoleSwitcher) {
-        com.sultanagung1.sista.ui.common.RoleSwitcherBottomSheet(
-            currentRole = userRole ?: "student",
-            onRoleSelected = { selectedKey ->
-                showRoleSwitcher = false
-                onRoleSwitch(selectedKey)
-            },
-            onDismissRequest = { showRoleSwitcher = false }
         )
     }
 
