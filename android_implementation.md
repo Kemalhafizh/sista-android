@@ -3451,8 +3451,9 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
   - **Test:** `Fase76CompletionLogicTest` (alias role → home yang benar, `normalize` tidak menyentuh role asing, FAB per role, tidak ada FAB di rute ujian/tab lain) dan `Fase76CompletionGuardTest` (satu sumber kebenaran role, FAB di Scaffold root hanya di tab, back di ujian hanya membuka dialog).
   - **Ditemukan, BELUM diperbaiki (di luar cakupan 76):**
     - Role `waka_*` dan `staf_tu` tidak punya "home" mobile yang cocok. Endpoint dashboard Admin hanya menerima `admin/superadmin/kepsek/kepala_sekolah`, dan dashboard Guru hanya `guru/bk`, sehingga mereka tetap diarahkan ke Home siswa (perilaku lama).
-    - **Role Switcher** di Profil (`SettingsNavGraph`, `onRoleSwitch`) menulis sesi palsu (`token_teacher`, `token_parent`, … dengan nama/NIP contoh). Setelah berpindah, semua request API memakai token yang tidak valid.
-    - FAB **"Uji Push Notifikasi"** di `NotificationCenterScreen` tampil untuk semua pengguna rilis. Ini alat debug, sebaiknya hanya muncul di build `debug`.
+  - **Ditemukan di sini, sudah diperbaiki di PR terpisah (27 Sep 2026):**
+    - ~~**Role Switcher** di Profil menulis sesi palsu~~ → **dihapus di PR #3.** `onRoleSwitch` di `SettingsNavGraph` menulis sesi dengan token karangan (`token_teacher`, `token_parent`, … plus nama/NIP contoh), jadi semua request API sesudahnya ditolak. Backend tidak punya endpoint ganti peran, jadi fiturnya dihapus: `RoleSwitcherBottomSheet.kt`, menu di `ProfileScreen`, handler di `SettingsNavGraph`, dan `SessionManager.updateUserRole()`. Penjaga: `ProfessionalUiUxOverhaulTest.testAuthSessionIsOnlyWrittenFromServerResponses`. Detail di koreksi FASE 26.
+    - ~~FAB **"Uji Push Notifikasi"** tampil di build rilis~~ → **diperbaiki di PR #2.** `NotificationCenterScreen` kini punya parameter `showDebugTools` (default `false`); `CommunicationNavGraph` mengisinya dengan `BuildConfig.DEBUG`. FAB dan dialog simulasinya hanya ada di build `debug`. Penjaga: `NotificationDebugToolsGuardTest`.
 
 - [x] **76.4 Hyper-Personalisasi Jujur (bukan ML fiktif) — Home Adaptif per Riwayat Interaksi Nyata `[SELESAI 2026-09-27]`:**
   - **Penyimpanan (Room, `core/database`):**
@@ -3581,13 +3582,10 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
   - **Workflow CI:** `lintDebug --continue` dan mencetak laporan lint semua modul saat gagal, jadi satu run menampilkan seluruh temuan.
   - Sisa lint: 158 warning (terbanyak `UnusedResources`, `HardcodedText`, `UseKtx`), tidak ada yang berasal dari baris FASE 76. Tidak menggagalkan build.
 
-- **Ditemukan saat perbaikan, diajukan sebagai task terpisah (belum diperbaiki):**
-  - **Keempat widget layar utama menampilkan data palsu.** Provider tidak pernah mengisi teks, jadi yang tampil selalu contoh di layout:
-    - Presensi selalu **"✅ HADIR (06:45 WIB)"**;
-    - SPP selalu **"Agustus 2026: LUNAS"** (klaim palsu yang sama dengan yang sudah dihapus dari dashboard di 76.2);
-    - jadwal "XII MIPA 1" dan waktu sholat tetap.
-  - Role Switcher Profil menulis sesi palsu (lihat 76.3).
-  - Tombol debug "Uji Push Notifikasi" tampil di build rilis (lihat 76.3).
+- **Ditemukan saat perbaikan, diajukan sebagai task terpisah — semuanya sudah diperbaiki dan masuk `main` (27 Sep 2026):**
+  - **Keempat widget layar utama menampilkan data palsu** → **diperbaiki di PR #4.** Dulu provider tidak pernah mengisi teks, jadi yang tampil selalu contoh di layout: presensi selalu **"✅ HADIR (06:45 WIB)"**, SPP selalu **"Agustus 2026: LUNAS"** (klaim palsu yang sama dengan yang dihapus dari dashboard di 76.2), jadwal "XII MIPA 1" dan waktu sholat tetap. Sekarang widget membaca snapshot data asli per akun (`WidgetSnapshotStore`) atau jujur menampilkan "Belum ada data"; detail di koreksi FASE 14.1.
+  - **Role Switcher Profil menulis sesi palsu** → **dihapus di PR #3** (lihat 76.3 dan koreksi FASE 26).
+  - **Tombol debug "Uji Push Notifikasi" tampil di build rilis** → **hanya di build `debug` sejak PR #2** (lihat 76.3).
 
 ---
 
