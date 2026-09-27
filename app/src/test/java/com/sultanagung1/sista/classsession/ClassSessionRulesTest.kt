@@ -88,6 +88,24 @@ class ClassSessionRulesTest {
         )
     }
 
+    // ── 77.7.2 dashboard card ───────────────────────────────────────────
+
+    @Test
+    fun dashboardOffersTheOneThingToDoNow() {
+        val first = slot(start = "07:00", end = "07:45", jamKe = 1).copy(scheduleId = 1)
+        val second = slot(start = "08:30", end = "09:15", jamKe = 3).copy(scheduleId = 2)
+        val list = listOf(second, first)
+        assertEquals(ClassSessionRules.DashboardAction.NoClassesToday, ClassSessionRules.dashboardAction(emptyList(), 0))
+        assertEquals(ClassSessionRules.DashboardAction.NextClass(first, "06:50"), ClassSessionRules.dashboardAction(list, minutes("06:30")))
+        assertEquals(ClassSessionRules.DashboardAction.StartClass(first), ClassSessionRules.dashboardAction(list, minutes("06:55")))
+        // First slot missed, second not open yet.
+        assertEquals(ClassSessionRules.DashboardAction.NextClass(second, "08:20"), ClassSessionRules.dashboardAction(list, minutes("08:00")))
+        val running = second.copy(sessionId = 9, status = ClassSessionStatus.ACTIVE)
+        assertEquals(ClassSessionRules.DashboardAction.ReturnToClass(running), ClassSessionRules.dashboardAction(listOf(first, running), minutes("08:40")))
+        val done = listOf(first.copy(sessionId = 1, status = ClassSessionStatus.COMPLETED), second.copy(sessionId = 2, status = ClassSessionStatus.AUTO_CLOSED))
+        assertEquals(ClassSessionRules.DashboardAction.AllDone, ClassSessionRules.dashboardAction(done, minutes("12:00")))
+    }
+
     // ── 77.3 timer ──────────────────────────────────────────────────────
 
     @Test

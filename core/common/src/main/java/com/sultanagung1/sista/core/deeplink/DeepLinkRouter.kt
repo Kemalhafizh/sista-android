@@ -27,6 +27,8 @@ object DeepLinkRouter {
                 }
                 "billing", "spp" -> Screen.Billing.route
                 "schedule" -> Screen.Schedule.route
+                // FASE 77.7: class-session pushes (sesi dimulai, pengingat jadwal).
+                "class-session" -> classSessionRoute(uri.lastPathSegment)
                 "grades", "rapor" -> Screen.PdfViewer.route
                 "pdf" -> Screen.PdfViewer.route
                 "sos", "emergency" -> Screen.AntiBullyingSos.route
@@ -72,5 +74,17 @@ object DeepLinkRouter {
         }
 
         return null
+    }
+
+    /**
+     * `sulaone://class-session/scan` (student: scan the teacher's QR),
+     * `…/teach` (teacher: today's sessions), `…/manage` (admin/Waka/TU),
+     * `…/active/{sessionId}` (teacher: open that running session).
+     */
+    fun classSessionRoute(lastSegment: String?): String? = when (lastSegment) {
+        "scan" -> Screen.StudentSessionQrScan.route
+        "teach" -> Screen.TeacherTodaySessions.route
+        "manage" -> Screen.AdminSessionManagement.route
+        else -> lastSegment?.toLongOrNull()?.let { Screen.TeacherActiveSession.createRoute(it) }
     }
 }

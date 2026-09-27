@@ -113,6 +113,28 @@ object ClassSessionRules {
         else -> 2
     }
 
+    /** 77.7.2: the one class-session action the teacher dashboard offers. */
+    sealed interface DashboardAction {
+        data class ReturnToClass(val session: ClassSessionDto) : DashboardAction
+        data class StartClass(val session: ClassSessionDto) : DashboardAction
+        data class NextClass(val session: ClassSessionDto, val opensAt: String) : DashboardAction
+        /** Classes today, none left to start. */
+        data object AllDone : DashboardAction
+        data object NoClassesToday : DashboardAction
+    }
+
+    fun dashboardAction(sessions: List<ClassSessionDto>, nowMinutes: Int): DashboardAction {
+        if (sessions.isEmpty()) return DashboardAction.NoClassesToday
+        sessions.firstOrNull { it.effectiveStatus == ClassSessionStatus.ACTIVE && it.sessionId != null }
+            ?.let { return DashboardAction.ReturnToClass(it) }
+        val upcoming = sortForTeacher(sessions).filter { it.effectiveStatus == ClassSessionStatus.SCHEDULED }
+        upcoming.firstOrNull { startActionFor(it, nowMinutes) == StartAction.Available }
+            ?.let { return DashboardAction.StartClass(it) }
+        upcoming.firstNotNullOfOrNull { s -> (startActionFor(s, nowMinutes) as? StartAction.NotYet)?.let { s to it.opensAt } }
+            ?.let { (s, opensAt) -> return DashboardAction.NextClass(s, opensAt) }
+        return DashboardAction.AllDone
+    }
+
     // ── 77.3 Session timer ──────────────────────────────────────────────
 
     enum class TimerTone { NORMAL, WARNING, CRITICAL, OVERTIME }

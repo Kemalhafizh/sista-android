@@ -1,10 +1,12 @@
 package com.sultanagung1.sista.classsession
 
+import com.sultanagung1.sista.core.deeplink.DeepLinkRouter
 import com.sultanagung1.sista.ui.navigation.RoleGroup
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.navigation.UserRoles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -48,5 +50,16 @@ class ClassSessionRolesTest {
             assertFalse("$role", UserRoles.canViewClassSessions(role))
             assertFalse("$role", UserRoles.canCorrectClassAttendance(role))
         }
+    }
+
+    /** 77.7.1: `deep_link_route`-less pushes use sulaone://class-session/… links. */
+    @Test
+    fun classSessionDeepLinksResolveToTheRightScreen() {
+        assertEquals(Screen.StudentSessionQrScan.route, DeepLinkRouter.classSessionRoute("scan"))
+        assertEquals(Screen.TeacherTodaySessions.route, DeepLinkRouter.classSessionRoute("teach"))
+        assertEquals(Screen.AdminSessionManagement.route, DeepLinkRouter.classSessionRoute("manage"))
+        assertEquals("teacher_active_session/501", DeepLinkRouter.classSessionRoute("501"))
+        assertNull(DeepLinkRouter.classSessionRoute("unknown"))
+        assertNull(DeepLinkRouter.classSessionRoute(null))
     }
 }

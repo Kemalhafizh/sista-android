@@ -108,6 +108,11 @@ fun TeacherDashboardScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val headerScrolledOff by rememberIsItemScrolledOff(listState, HEADER_ITEM_KEY)
+    // FASE 77.7.2: session status changes during the day; refresh the card on return.
+    com.sultanagung1.sista.core.designsystem.LifecycleStartStopEffect(
+        onStart = viewModel::loadClassSessions,
+        onStop = {}
+    )
     // Nothing loaded yet (a retry with data already on screen keeps the data).
     val isFirstLoad = uiState.isLoading && uiState.todaySchedules.isEmpty() && uiState.recentJournals.isEmpty()
 
@@ -167,6 +172,23 @@ fun TeacherDashboardScreen(
                                 onRetry = { viewModel.loadDashboard() }
                             )
                         }
+                    }
+                }
+
+                // 1.5 FASE 77.7.2: "Kembali ke Kelas" / "Mulai Kelas" for today's class sessions.
+                if (uiState.classSessionsAvailable) {
+                    item(key = "class_session_card") {
+                        com.sultanagung1.sista.ui.teacher.sessions.TeacherClassSessionCard(
+                            sessions = uiState.classSessions,
+                            nowMinutes = uiState.nowMinutes,
+                            onOpenActive = { id ->
+                                onNavigateRoute(com.sultanagung1.sista.ui.navigation.Screen.TeacherActiveSession.createRoute(id))
+                            },
+                            onOpenSessions = {
+                                onNavigateRoute(com.sultanagung1.sista.ui.navigation.Screen.TeacherTodaySessions.route)
+                            },
+                            modifier = Modifier.padding(horizontal = 20.dp)
+                        )
                     }
                 }
 
