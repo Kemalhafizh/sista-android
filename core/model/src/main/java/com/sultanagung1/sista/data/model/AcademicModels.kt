@@ -9,7 +9,10 @@ data class ScheduleItem(
     @SerializedName("session_end") val endTime: String,
     @SerializedName("subject_name") val subjectName: String,
     @SerializedName("teacher_name") val teacherName: String,
-    @SerializedName("classroom_name") val room: String
+    /** The class this lesson belongs to (e.g. "XII MIPA 1") — not a room. */
+    @SerializedName("classroom_name") val room: String,
+    /** The physical room, when the schedule has one. */
+    @SerializedName("room_name") val roomName: String? = null
 )
 
 /** Minimal projection of NotificationResource.php — enough to compute an unread count without pulling in the full notification-center model. */

@@ -27,8 +27,6 @@ import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedBounds
 import com.sultanagung1.sista.data.model.CbtExamItem
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /**
  * FASE 67: Overhauled CBT Exam List Screen.
@@ -54,18 +52,17 @@ fun CbtExamListScreen(
             )
         }
     ) { paddingValues ->
-        var isRefreshing by remember { mutableStateOf(false) }
-        val coroutineScope = rememberCoroutineScope()
+        // The spinner follows the real request instead of a fixed 600 ms.
+        var refreshRequested by remember { mutableStateOf(false) }
+        LaunchedEffect(uiState.isLoading) {
+            if (!uiState.isLoading) refreshRequested = false
+        }
 
         SulaonePullToRefreshBox(
-            isRefreshing = isRefreshing,
+            isRefreshing = refreshRequested && uiState.isLoading,
             onRefresh = {
-                isRefreshing = true
-                coroutineScope.launch {
-                    viewModel.loadExams()
-                    delay(600)
-                    isRefreshing = false
-                }
+                refreshRequested = true
+                viewModel.loadExams()
             },
             modifier = Modifier
                 .fillMaxSize()

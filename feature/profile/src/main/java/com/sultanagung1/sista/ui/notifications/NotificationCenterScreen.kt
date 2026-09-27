@@ -24,8 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.data.model.NotificationChannelType
 import com.sultanagung1.sista.data.model.NotificationItem
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,18 +135,17 @@ fun NotificationCenterScreen(
                 }
             }
 
-            var isRefreshing by remember { mutableStateOf(false) }
-            val coroutineScope = rememberCoroutineScope()
+            // The spinner follows the real request instead of a fixed 600 ms.
+            var refreshRequested by remember { mutableStateOf(false) }
+            LaunchedEffect(uiState.isLoading) {
+                if (!uiState.isLoading) refreshRequested = false
+            }
 
             SulaonePullToRefreshBox(
-                isRefreshing = isRefreshing,
+                isRefreshing = refreshRequested && uiState.isLoading,
                 onRefresh = {
-                    isRefreshing = true
-                    coroutineScope.launch {
-                        viewModel.loadNotifications()
-                        delay(600)
-                        isRefreshing = false
-                    }
+                    refreshRequested = true
+                    viewModel.loadNotifications()
                 },
                 modifier = Modifier.fillMaxSize()
             ) {

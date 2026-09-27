@@ -177,7 +177,8 @@ class CbtViewModel @Inject constructor(
                     is NetworkResult.Success -> {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            exams = result.data
+                            exams = result.data,
+                            errorMessage = null
                         )
                     }
                     is NetworkResult.Error -> {
