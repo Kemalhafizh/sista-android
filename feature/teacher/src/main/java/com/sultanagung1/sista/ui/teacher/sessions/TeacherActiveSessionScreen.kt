@@ -75,7 +75,8 @@ import com.sultanagung1.sista.data.model.ClassSessionStatus
 fun TeacherActiveSessionScreen(
     viewModel: TeacherActiveSessionViewModel,
     onOpenAttendanceList: (sessionId: Long) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onOpenTeachingJournal: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -135,6 +136,7 @@ fun TeacherActiveSessionScreen(
                     state = state,
                     session = session,
                     onOpenAttendanceList = { onOpenAttendanceList(state.sessionId) },
+                    onOpenTeachingJournal = onOpenTeachingJournal,
                     onBack = onNavigateBack
                 )
             }
@@ -145,7 +147,13 @@ fun TeacherActiveSessionScreen(
         AlertDialog(
             onDismissRequest = { viewModel.onEvent(TeacherActiveSessionEvent.DismissTimeUp) },
             title = { Text("Waktu sesi telah habis") },
-            text = { Text("Akhiri kelas sekarang? Jika dilanjutkan, sistem menutup sesi otomatis 5 menit setelah jadwal berakhir.") },
+            text = {
+                val autoCloseAt = ClassSessionRules.clockOf(session?.autoCloseAt)
+                Text(
+                    "Akhiri kelas sekarang? Jika dilanjutkan, sistem menutup sesi otomatis " +
+                        (autoCloseAt?.let { "pukul $it." } ?: "5 menit setelah jadwal berakhir.")
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onEvent(TeacherActiveSessionEvent.DismissTimeUp)
@@ -211,7 +219,7 @@ private fun LiveSessionContent(
 @Composable
 private fun QrPanel(state: TeacherActiveSessionState) {
     val freshness = state.qrFreshness
-    val payload = state.qrPayload
+    val payload = state.qrToken
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(
             modifier = Modifier
@@ -323,6 +331,7 @@ private fun FinishedSessionContent(
     state: TeacherActiveSessionState,
     session: ClassSessionDto,
     onOpenAttendanceList: () -> Unit,
+    onOpenTeachingJournal: () -> Unit,
     onBack: () -> Unit
 ) {
     val status = session.effectiveStatus
@@ -347,6 +356,20 @@ private fun FinishedSessionContent(
             SessionAttendanceSummary(counts)
             session.topic?.takeIf { it.isNotBlank() }?.let { Text("Topik: $it", style = MaterialTheme.typography.bodyMedium) }
             session.notes?.takeIf { it.isNotBlank() }?.let { Text("Catatan: $it", style = MaterialTheme.typography.bodyMedium) }
+        }
+    }
+    // Backend creates a teaching-journal draft when a session ends with a topic.
+    if (session.teachingJournalId != null) {
+        SulaoneCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Draf Jurnal Mengajar sudah dibuat", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "Dibuat otomatis dari topik sesi ini. Lengkapi kegiatan dan metode pembelajarannya di Jurnal KBM.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SulaoneButton(text = "Buka Jurnal KBM", onClick = onOpenTeachingJournal, variant = SulaoneButtonVariant.SecondaryOutlined, modifier = Modifier.fillMaxWidth())
+            }
         }
     }
     Text(

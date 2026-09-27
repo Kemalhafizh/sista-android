@@ -50,7 +50,7 @@ fun HomeActiveClassBanner(
                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AccentGreen)
                 Text(
                     text = "Anda sudah absen di sesi $subject" +
-                        (ClassSessionRules.clockOf(session.checkedInAt)?.let { " pukul $it WIB" } ?: "") + ".",
+                        (session.attendanceStatus?.let { " (${ClassSessionRules.label(it)})" } ?: "") + ".",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )

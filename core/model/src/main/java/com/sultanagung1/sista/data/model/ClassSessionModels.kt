@@ -5,12 +5,11 @@ import com.google.gson.annotations.SerializedName
 /*
  * FASE 77 — Sesi Kelas Hidup & Presensi Per-Mapel.
  *
- * Wire models for the backend FASE 117 endpoints (`teacher/class-sessions/…`,
- * `student/class-session/…`, `admin/class-sessions/…`). The exact contract,
- * including the error codes and the QR payload format, is written down in
- * android_implementation.md → "77.0 Kontrak API". Every field the server may
- * omit is nullable or has a default, so a partial response never crashes Gson
- * into a non-null Kotlin field.
+ * Wire models for backend FASE 117 as merged in sistem-terpadu
+ * (ClassSessionResource, SessionAttendanceResource, ClassSessionService;
+ * contract: sistem-terpadu docs/modules/class_sessions.md). Every field the
+ * server may omit is nullable or has a default, so a partial response never
+ * crashes Gson into a non-null Kotlin field.
  */
 
 enum class ClassSessionStatus {
@@ -37,60 +36,69 @@ enum class SessionAttendanceStatus(val wireValue: String) {
 enum class SessionCheckInMethod {
     @SerializedName("qr_scan") QR_SCAN,
     @SerializedName("manual_teacher") MANUAL_TEACHER,
-    @SerializedName("auto_alpha") AUTO_ALPHA,
-    @SerializedName("admin_override") ADMIN_OVERRIDE
+    @SerializedName("auto_alpha") AUTO_ALPHA
 }
 
 /**
- * One teaching slot of the day. `GET teacher/class-sessions/today` returns one
- * item per schedule slot, started or not: before the teacher presses
- * "Mulai Kelas" there is no `class_sessions` row yet, so [sessionId] is null
- * and [status] is `scheduled`. Admin listings always carry a [sessionId].
+ * One lesson of the day (`ClassSessionResource`). `teacher/class-sessions/today`
+ * materialises a row per timetable entry, so even a lesson that has not been
+ * started has an [sessionId] and `status: scheduled`.
  *
- * The five `*_count` fields are disjoint and add up to [totalStudents].
+ * [presentCount] is hadir + telat, [absentCount] is alpha; sakit/izin are in
+ * neither (they are `total_students - present - absent`).
  */
 data class ClassSessionDto(
+    @SerializedName("id") val sessionId: Long? = null,
+    @SerializedName("uuid") val sessionUuid: String? = null,
     @SerializedName("schedule_id") val scheduleId: Long = 0,
-    @SerializedName("session_id") val sessionId: Long? = null,
-    @SerializedName("session_uuid") val sessionUuid: String? = null,
+    @SerializedName("subject_id") val subjectId: Long? = null,
     @SerializedName("subject_name") val subjectName: String? = null,
+    @SerializedName("classroom_id") val classroomId: Long? = null,
     @SerializedName("classroom_name") val classroomName: String? = null,
+    @SerializedName("teacher_id") val teacherId: Long? = null,
     @SerializedName("teacher_name") val teacherName: String? = null,
     @SerializedName("session_date") val sessionDate: String? = null,
     @SerializedName("jam_ke") val jamKe: Int? = null,
     @SerializedName("scheduled_start") val scheduledStart: String? = null,
     @SerializedName("scheduled_end") val scheduledEnd: String? = null,
+    /** "HH:mm" from which "Mulai Kelas" is allowed (server config, default start − 10 min). */
+    @SerializedName("startable_from") val startableFrom: String? = null,
+    /** When the scheduler closes a forgotten session (default end + 5 min). */
+    @SerializedName("auto_close_at") val autoCloseAt: String? = null,
     @SerializedName("actual_start") val actualStart: String? = null,
     @SerializedName("actual_end") val actualEnd: String? = null,
     @SerializedName("status") val status: ClassSessionStatus? = null,
+    /** Server's view at response time; the app re-evaluates the window locally between polls. */
+    @SerializedName("can_start") val canStart: Boolean = false,
     @SerializedName("topic") val topic: String? = null,
     @SerializedName("notes") val notes: String? = null,
     @SerializedName("total_students") val totalStudents: Int = 0,
-    @SerializedName("hadir_count") val hadirCount: Int = 0,
-    @SerializedName("telat_count") val telatCount: Int = 0,
-    @SerializedName("sakit_count") val sakitCount: Int = 0,
-    @SerializedName("izin_count") val izinCount: Int = 0,
-    @SerializedName("alpha_count") val alphaCount: Int = 0,
-    @SerializedName("is_auto_closed") val isAutoClosed: Boolean = false
+    @SerializedName("present_count") val presentCount: Int = 0,
+    @SerializedName("absent_count") val absentCount: Int = 0,
+    @SerializedName("is_auto_closed") val isAutoClosed: Boolean = false,
+    /** Set when ending the session with a topic created a teaching-journal draft. */
+    @SerializedName("teaching_journal_id") val teachingJournalId: Long? = null
 ) {
     /** A missing status means the slot has not been started. */
     val effectiveStatus: ClassSessionStatus get() = status ?: ClassSessionStatus.SCHEDULED
 }
 
 /**
- * `GET teacher/class-sessions/{sessionId}/qr`. [qrPayload] is opaque to the
- * app: it is drawn as-is and a student's scan sends it back as-is. It always
- * starts with [ClassSessionContract.QR_PAYLOAD_PREFIX].
+ * `GET teacher/class-sessions/{sessionId}/qr`. [qrToken] ("<session uuid>.<signature>")
+ * is drawn as-is and a student's scan sends it back as-is. The same token is
+ * served to every device during a rotation window.
  */
 data class ClassSessionQrDto(
-    @SerializedName("qr_payload") val qrPayload: String? = null,
+    @SerializedName("qr_token") val qrToken: String? = null,
     @SerializedName("expires_at") val expiresAt: String? = null,
+    @SerializedName("session_uuid") val sessionUuid: String? = null,
     @SerializedName("remaining_seconds") val remainingSeconds: Int = 0,
     @SerializedName("rotation_seconds") val rotationSeconds: Int = ClassSessionContract.DEFAULT_QR_ROTATION_SECONDS
 )
 
 data class SessionAttendanceDto(
     @SerializedName("id") val id: Long = 0,
+    @SerializedName("class_session_id") val classSessionId: Long? = null,
     @SerializedName("student_id") val studentId: Long = 0,
     @SerializedName("student_name") val studentName: String? = null,
     @SerializedName("student_nis") val studentNis: String? = null,
@@ -99,7 +107,8 @@ data class SessionAttendanceDto(
     @SerializedName("checked_in_at") val checkedInAt: String? = null,
     @SerializedName("notes") val notes: String? = null,
     @SerializedName("is_override") val isOverride: Boolean = false,
-    @SerializedName("override_by_name") val overrideByName: String? = null,
+    /** Name of who corrected it. */
+    @SerializedName("override_by") val overrideBy: String? = null,
     @SerializedName("override_at") val overrideAt: String? = null,
     @SerializedName("override_reason") val overrideReason: String? = null
 ) {
@@ -110,22 +119,28 @@ data class SessionAttendanceDto(
 /** `GET student/class-session/active` — `data` is null when no class of the student is running. */
 data class ActiveClassSessionDto(
     @SerializedName("session_id") val sessionId: Long = 0,
+    @SerializedName("session_uuid") val sessionUuid: String? = null,
     @SerializedName("subject_name") val subjectName: String? = null,
     @SerializedName("classroom_name") val classroomName: String? = null,
     @SerializedName("teacher_name") val teacherName: String? = null,
     @SerializedName("scheduled_start") val scheduledStart: String? = null,
     @SerializedName("scheduled_end") val scheduledEnd: String? = null,
-    @SerializedName("already_checked_in") val alreadyCheckedIn: Boolean = false,
-    @SerializedName("checked_in_at") val checkedInAt: String? = null
-)
+    /** The student's row in this session (alpha until scanned or marked). */
+    @SerializedName("attendance_status") val attendanceStatus: SessionAttendanceStatus? = null,
+    /** False once the student is recorded present (hadir/telat). */
+    @SerializedName("can_scan_qr") val canScanQr: Boolean = true
+) {
+    val alreadyCheckedIn: Boolean get() = !canScanQr
+}
 
 /** `POST student/class-session/scan-qr` success payload. */
 data class ScanQrResultDto(
+    @SerializedName("message") val message: String? = null,
     @SerializedName("status") val status: SessionAttendanceStatus? = null,
-    @SerializedName("checked_in_at") val checkedInAt: String? = null,
-    @SerializedName("subject_name") val subjectName: String? = null,
-    @SerializedName("classroom_name") val classroomName: String? = null,
-    @SerializedName("teacher_name") val teacherName: String? = null
+    @SerializedName("session_id") val sessionId: Long? = null,
+    @SerializedName("session_subject") val subjectName: String? = null,
+    @SerializedName("session_class") val classroomName: String? = null,
+    @SerializedName("checked_in_at") val checkedInAt: String? = null
 )
 
 data class BulkAttendanceResultDto(
@@ -134,11 +149,12 @@ data class BulkAttendanceResultDto(
     @SerializedName("errors") val errors: List<String>? = null
 )
 
-/** Laravel `LengthAwarePaginator` as returned inside the `data` envelope. */
+/** `GET admin/class-sessions` — `{ items, current_page, last_page, per_page, total }`. */
 data class ClassSessionPageDto(
-    @SerializedName("data") val items: List<ClassSessionDto>? = null,
+    @SerializedName("items") val items: List<ClassSessionDto>? = null,
     @SerializedName("current_page") val currentPage: Int = 1,
     @SerializedName("last_page") val lastPage: Int = 1,
+    @SerializedName("per_page") val perPage: Int = 20,
     @SerializedName("total") val total: Int = 0
 )
 
@@ -149,6 +165,7 @@ data class AttendanceReportDto(
 
 data class AttendanceReportSummaryDto(
     @SerializedName("total_sessions") val totalSessions: Int = 0,
+    @SerializedName("total_records") val totalRecords: Int = 0,
     @SerializedName("average_presence_rate") val averagePresenceRate: Double = 0.0,
     @SerializedName("total_hadir") val totalHadir: Int = 0,
     @SerializedName("total_telat") val totalTelat: Int = 0,
@@ -157,14 +174,19 @@ data class AttendanceReportSummaryDto(
     @SerializedName("total_alpha") val totalAlpha: Int = 0
 )
 
-/** One row of the report; [label] is the student, class or subject name depending on `group_by`. */
+/** One row of the report; which name is filled depends on `group_by`. */
 data class AttendanceReportRowDto(
-    @SerializedName("label") val label: String? = null,
+    @SerializedName("group_id") val groupId: Long? = null,
+    @SerializedName("student_nis") val studentNis: String? = null,
+    @SerializedName("student_name") val studentName: String? = null,
+    @SerializedName("classroom_name") val classroomName: String? = null,
+    @SerializedName("subject_name") val subjectName: String? = null,
     @SerializedName("hadir") val hadir: Int = 0,
     @SerializedName("telat") val telat: Int = 0,
     @SerializedName("sakit") val sakit: Int = 0,
     @SerializedName("izin") val izin: Int = 0,
     @SerializedName("alpha") val alpha: Int = 0,
+    @SerializedName("total") val total: Int = 0,
     @SerializedName("presence_rate") val presenceRate: Double = 0.0
 )
 
@@ -190,7 +212,7 @@ data class BulkAttendanceRequest(
 )
 
 data class ScanClassQrRequest(
-    @SerializedName("qr_payload") val qrPayload: String
+    @SerializedName("qr_token") val qrToken: String
 )
 
 data class OverrideAttendanceRequest(
@@ -201,40 +223,58 @@ data class OverrideAttendanceRequest(
 // ── Errors ──────────────────────────────────────────────────────────────────
 
 /**
- * Error envelopes are `{ success: false, message, data: { error_code, ... } }`
- * (or Laravel's own `{ message, errors }` for validation). [errorCode] is one
- * of [ClassSessionContract.ErrorCode]; when the server sends none, the app
- * falls back to the HTTP status.
+ * Error envelopes are `{ success: false, message, data, errors? }`. The server
+ * sends no machine error code; the rejection is recognised from the HTTP status
+ * and the (stable, documented) message — see [ClassSessionRules.rejectionOf].
+ * `data` carries `session_id` when a lesson was already started/ended, and
+ * `status`/`checked_in_at` on a second scan.
  */
 data class ClassSessionErrorDataDto(
-    @SerializedName("error_code") val errorCode: String? = null,
-    @SerializedName("checked_in_at") val checkedInAt: String? = null,
-    @SerializedName("subject_name") val subjectName: String? = null,
-    @SerializedName("session") val session: ClassSessionDto? = null
+    @SerializedName("session_id") val sessionId: Long? = null,
+    @SerializedName("status") val status: SessionAttendanceStatus? = null,
+    @SerializedName("checked_in_at") val checkedInAt: String? = null
 )
 
 enum class ClassSessionErrorKind {
-    /** HTTP 404 without an error code: the route does not exist, i.e. FASE 117 is not deployed. */
+    /** HTTP 404 outside the API envelope: the route does not exist on this server (FASE 117 not deployed). */
     NOT_DEPLOYED,
     NETWORK,
     UNAUTHORIZED,
     FORBIDDEN,
     NOT_FOUND,
     CONFLICT,
-    GONE,
     VALIDATION,
+    RATE_LIMITED,
     SERVER,
     UNKNOWN
 }
 
+/** Business-rule refusals of backend FASE 117 the app reacts to. */
+enum class ClassSessionRejection {
+    OUTSIDE_SCHEDULE_WINDOW,
+    NOT_YOUR_SCHEDULE,
+    SESSION_ALREADY_STARTED,
+    SESSION_ALREADY_ENDED,
+    SESSION_NOT_STARTED,
+    SESSION_ENDED,
+    QR_NOT_ACTIVE,
+    MANUAL_NOT_ACTIVE,
+    QR_INVALID,
+    QR_EXPIRED,
+    NOT_ENROLLED,
+    ALREADY_CHECKED_IN,
+    TRANSITION_NOT_ALLOWED
+}
+
 data class ClassSessionError(
     val kind: ClassSessionErrorKind,
+    /** The server's own message (Indonesian, user-facing), or empty. */
     val message: String,
     val httpCode: Int? = null,
-    val errorCode: String? = null,
+    val rejection: ClassSessionRejection? = null,
     val checkedInAt: String? = null,
-    val subjectName: String? = null,
-    val existingSession: ClassSessionDto? = null
+    /** The lesson that already exists when "Mulai Kelas" was pressed twice. */
+    val existingSessionId: Long? = null
 )
 
 sealed interface ClassSessionResult<out T> {
@@ -243,22 +283,8 @@ sealed interface ClassSessionResult<out T> {
 }
 
 object ClassSessionContract {
-    /** Every class-session QR starts with this; anything else is some other QR. */
-    const val QR_PAYLOAD_PREFIX = "sista-cs:"
     const val DEFAULT_QR_ROTATION_SECONDS = 30
 
-    object ErrorCode {
-        const val OUTSIDE_SCHEDULE_WINDOW = "outside_schedule_window"
-        const val NOT_YOUR_SCHEDULE = "not_your_schedule"
-        const val SESSION_ALREADY_EXISTS = "session_already_exists"
-        const val SESSION_NOT_ACTIVE = "session_not_active"
-        const val SESSION_NOT_FOUND = "session_not_found"
-        const val QR_INVALID = "qr_invalid"
-        const val QR_EXPIRED = "qr_expired"
-        const val NOT_ENROLLED = "not_enrolled"
-        const val ALREADY_CHECKED_IN = "already_checked_in"
-        const val SESSION_CLOSED = "session_closed"
-        const val TRANSITION_NOT_ALLOWED = "transition_not_allowed"
-        const val REASON_TOO_SHORT = "reason_too_short"
-    }
+    /** `qr_token` = "<session uuid>.<hex signature>" (ClassSessionService::qrTokenFor). */
+    val QR_TOKEN_PATTERN = Regex("""^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.[0-9a-fA-F]{16,128}$""")
 }

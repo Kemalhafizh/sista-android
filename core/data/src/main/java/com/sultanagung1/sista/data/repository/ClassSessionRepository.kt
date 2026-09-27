@@ -18,6 +18,7 @@ import com.sultanagung1.sista.data.model.ClassSessionErrorKind
 import com.sultanagung1.sista.data.model.ClassSessionPageDto
 import com.sultanagung1.sista.data.model.ClassSessionQrDto
 import com.sultanagung1.sista.data.model.ClassSessionResult
+import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionStatus
 import com.sultanagung1.sista.data.model.EndClassSessionRequest
 import com.sultanagung1.sista.data.model.OverrideAttendanceRequest
@@ -35,10 +36,11 @@ import java.io.IOException
 /**
  * FASE 77.1: every class-session call, returning [ClassSessionResult] instead
  * of the older `Flow<NetworkResult>` so a screen can tell *why* a call failed:
- * the server's `data.error_code` (e.g. `qr_expired`), and whether the route
- * exists at all ([ClassSessionErrorKind.NOT_DEPLOYED] until backend FASE 117
- * ships). The older repositories read only `response.body()`, which is null
- * on any non-2xx, so the server's own message never reached the user.
+ * the server's own message, the business rule behind it
+ * ([ClassSessionRules.rejectionOf]), and whether the route exists at all
+ * ([ClassSessionErrorKind.NOT_DEPLOYED] on a server without FASE 117). The
+ * older repositories read only `response.body()`, which is null on any
+ * non-2xx, so the server's own message never reached the user.
  */
 class ClassSessionRepository(
     private val api: ClassSessionApiService,
@@ -95,8 +97,8 @@ class ClassSessionRepository(
     suspend fun getActiveSessionForStudent(): ClassSessionResult<ActiveClassSessionDto?> =
         call(emptyOnNull = { null }) { api.getActiveSessionForStudent() }
 
-    suspend fun scanQr(qrPayload: String): ClassSessionResult<ScanQrResultDto> =
-        call { api.scanQr(ScanClassQrRequest(qrPayload.trim())) }
+    suspend fun scanQr(qrToken: String): ClassSessionResult<ScanQrResultDto> =
+        call { api.scanQr(ScanClassQrRequest(qrToken.trim())) }
 
     // ── Admin / Waka Kurikulum / TU ─────────────────────────────────────
 
@@ -178,17 +180,18 @@ class ClassSessionRepository(
         val data = json?.get("data")
             ?.takeIf { it.isJsonObject }
             ?.let { runCatching { gson.fromJson(it, ClassSessionErrorDataDto::class.java) }.getOrNull() }
-        val errorCode = data?.errorCode?.takeIf { it.isNotBlank() }
+        // Every FASE 117 controller answers inside the { success, message, data }
+        // envelope. A 404 without it is Laravel's "route not found": this server
+        // has no class-session routes.
+        val inEnvelope = json?.has("success") == true
 
         val kind = when (httpCode) {
             401 -> ClassSessionErrorKind.UNAUTHORIZED
             403 -> ClassSessionErrorKind.FORBIDDEN
-            // A 404 the server did not explain is Laravel's "route not found":
-            // the endpoint is not deployed yet.
-            404 -> if (errorCode == null) ClassSessionErrorKind.NOT_DEPLOYED else ClassSessionErrorKind.NOT_FOUND
+            404 -> if (inEnvelope) ClassSessionErrorKind.NOT_FOUND else ClassSessionErrorKind.NOT_DEPLOYED
             409 -> ClassSessionErrorKind.CONFLICT
-            410 -> ClassSessionErrorKind.GONE
             422 -> ClassSessionErrorKind.VALIDATION
+            429 -> ClassSessionErrorKind.RATE_LIMITED
             in 500..599 -> ClassSessionErrorKind.SERVER
             else -> ClassSessionErrorKind.UNKNOWN
         }
@@ -196,10 +199,9 @@ class ClassSessionRepository(
             kind = kind,
             message = message,
             httpCode = httpCode,
-            errorCode = errorCode,
+            rejection = ClassSessionRules.rejectionOf(httpCode, message),
             checkedInAt = data?.checkedInAt,
-            subjectName = data?.subjectName,
-            existingSession = data?.session
+            existingSessionId = data?.sessionId
         )
     }
 

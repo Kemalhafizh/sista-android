@@ -87,4 +87,16 @@ object DeepLinkRouter {
         "manage" -> Screen.AdminSessionManagement.route
         else -> lastSegment?.toLongOrNull()?.let { Screen.TeacherActiveSession.createRoute(it) }
     }
+
+    /**
+     * FASE 117 pushes carry `data.type` (+ `session_id`), not a route:
+     * started → the student's QR scanner; auto-closed → the teacher's session
+     * summary. `class_session_alpha` opens the app normally.
+     */
+    fun classSessionPushRoute(type: String?, sessionId: String?): String? = when (type) {
+        "class_session_started" -> Screen.StudentSessionQrScan.route
+        "class_session_auto_closed" ->
+            sessionId?.toLongOrNull()?.let { Screen.TeacherActiveSession.createRoute(it) } ?: Screen.TeacherTodaySessions.route
+        else -> null
+    }
 }

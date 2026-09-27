@@ -91,7 +91,7 @@ class AdminAttendanceOverrideViewModel @Inject constructor(
         setState { copy(session = repository.cachedAdminSession(sessionId)) }
         viewModelScope.launch {
             sessionManager.userRoleFlow.collect { role ->
-                setState { copy(canCorrect = UserRoles.canCorrectClassAttendance(role)) }
+                setState { copy(canCorrect = UserRoles.canManageClassSessions(role)) }
             }
         }
     }

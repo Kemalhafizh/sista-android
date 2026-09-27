@@ -9,6 +9,7 @@ import com.sultanagung1.sista.core.mvi.UiEvent
 import com.sultanagung1.sista.core.mvi.UiState
 import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.ClassSessionContract
+import com.sultanagung1.sista.data.model.ClassSessionRejection
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionErrorKind
 import com.sultanagung1.sista.data.model.ClassSessionResult
@@ -26,7 +27,8 @@ import javax.inject.Inject
 data class TeacherActiveSessionState(
     val sessionId: Long = 0,
     val session: ClassSessionDto? = null,
-    val qrPayload: String? = null,
+    /** `qr_token`, drawn as-is. */
+    val qrToken: String? = null,
     /** `SystemClock.elapsedRealtime()` at which the shown QR stops being valid. */
     val qrExpiresAtMs: Long? = null,
     val qrRotationSeconds: Int = ClassSessionContract.DEFAULT_QR_ROTATION_SECONDS,
@@ -205,15 +207,15 @@ class TeacherActiveSessionViewModel @Inject constructor(
                 is ClassSessionResult.Success -> {
                     failures = 0
                     val qr = result.data
-                    val payload = qr.qrPayload
-                    if (payload.isNullOrBlank()) {
+                    val token = qr.qrToken
+                    if (token.isNullOrBlank()) {
                         failures++
                         delay(ClassSessionRules.qrRetryDelayMs(failures))
                         continue
                     }
                     setState {
                         copy(
-                            qrPayload = payload,
+                            qrToken = token,
                             qrExpiresAtMs = SystemClock.elapsedRealtime() + qr.remainingSeconds.coerceAtLeast(0) * 1000L,
                             qrRotationSeconds = qr.rotationSeconds.takeIf { it > 0 } ?: qrRotationSeconds
                         )
@@ -221,8 +223,8 @@ class TeacherActiveSessionViewModel @Inject constructor(
                     delay(ClassSessionRules.nextQrFetchDelayMs(qr.remainingSeconds))
                 }
                 is ClassSessionResult.Failure -> {
-                    val code = result.error.errorCode
-                    if (code == ClassSessionContract.ErrorCode.SESSION_NOT_ACTIVE || code == ClassSessionContract.ErrorCode.SESSION_CLOSED) {
+                    if (result.error.rejection == ClassSessionRejection.QR_NOT_ACTIVE) {
+                        // Ended here or elsewhere, or auto-closed: show it as such.
                         refreshSession()
                         return
                     }
@@ -244,13 +246,14 @@ class TeacherActiveSessionViewModel @Inject constructor(
                 topic?.take(ClassSessionRules.TOPIC_MAX_CHARS)
             )) {
                 is ClassSessionResult.Success -> {
-                    setState { copy(session = result.data, isEnding = false, qrPayload = null, qrExpiresAtMs = null) }
+                    setState { copy(session = result.data, isEnding = false, qrToken = null, qrExpiresAtMs = null) }
                     refreshAttendance()
                     emitEffect { TeacherActiveSessionEffect.ShowMessage("Kelas diakhiri. Siswa yang belum absen tercatat alpha.") }
                 }
                 is ClassSessionResult.Failure -> {
                     setState { copy(isEnding = false) }
-                    if (result.error.errorCode == ClassSessionContract.ErrorCode.SESSION_NOT_ACTIVE) {
+                    val rejection = result.error.rejection
+                    if (rejection == ClassSessionRejection.SESSION_ENDED || rejection == ClassSessionRejection.SESSION_NOT_STARTED) {
                         refreshSession()
                         emitEffect { TeacherActiveSessionEffect.ShowMessage("Sesi ini sudah tidak aktif.") }
                     } else {

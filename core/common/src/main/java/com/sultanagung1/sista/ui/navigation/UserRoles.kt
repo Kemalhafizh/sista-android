@@ -68,15 +68,11 @@ object UserRoles {
     private val ACADEMIC_STAFF_ROLES = listOf("waka_kurikulum", "staf_tu")
 
     /**
-     * FASE 77.6 / backend 117: who may open class-session management (read).
-     * Mirrors the route middleware in the contract (android_implementation.md → 77.0).
+     * FASE 77.6: who may open class-session management and correct attendance.
+     * Mirrors backend `admin/class-sessions` (`role:admin,superadmin,waka_kurikulum,staf_tu`);
+     * the principal is not on that route.
      */
-    val CLASS_SESSION_VIEWER_ROLES = listOf("admin", "superadmin", "kepsek", "kepala_sekolah", "waka_kurikulum", "staf_tu")
+    val CLASS_SESSION_ADMIN_ROLES = listOf("admin", "superadmin", "waka_kurikulum", "staf_tu")
 
-    /** Who may correct a recorded attendance. The principal can read, not correct. */
-    val CLASS_SESSION_CORRECTOR_ROLES = listOf("admin", "superadmin", "waka_kurikulum", "staf_tu")
-
-    fun canViewClassSessions(role: String?): Boolean = normalize(role)?.lowercase() in CLASS_SESSION_VIEWER_ROLES
-
-    fun canCorrectClassAttendance(role: String?): Boolean = normalize(role)?.lowercase() in CLASS_SESSION_CORRECTOR_ROLES
+    fun canManageClassSessions(role: String?): Boolean = normalize(role)?.lowercase() in CLASS_SESSION_ADMIN_ROLES
 }

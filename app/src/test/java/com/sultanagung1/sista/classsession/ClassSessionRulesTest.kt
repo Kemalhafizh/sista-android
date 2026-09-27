@@ -1,9 +1,9 @@
 package com.sultanagung1.sista.classsession
 
-import com.sultanagung1.sista.data.model.ClassSessionContract.ErrorCode
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionError
 import com.sultanagung1.sista.data.model.ClassSessionErrorKind
+import com.sultanagung1.sista.data.model.ClassSessionRejection
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionRules.QrFreshness
 import com.sultanagung1.sista.data.model.ClassSessionRules.ScanOutcome
@@ -68,6 +68,14 @@ class ClassSessionRulesTest {
         }
         // A missing status means "not started yet".
         assertEquals(StartAction.Available, ClassSessionRules.startActionFor(slot(status = null), minutes("08:40")))
+    }
+
+    @Test
+    fun serverStartWindowWins() {
+        // CLASS_SESSION_START_EARLY_MINUTES configured to 15 on the server.
+        val s = slot().copy(startableFrom = "08:15")
+        assertEquals(StartAction.NotYet("08:15"), ClassSessionRules.startActionFor(s, minutes("08:14")))
+        assertEquals(StartAction.Available, ClassSessionRules.startActionFor(s, minutes("08:15")))
     }
 
     @Test
@@ -152,8 +160,11 @@ class ClassSessionRulesTest {
 
     @Test
     fun onlyClassSessionQrCodesAreSent() {
-        assertTrue(ClassSessionRules.isClassSessionQr("sista-cs:v1:abc:def"))
-        assertTrue(ClassSessionRules.isClassSessionQr("  sista-cs:v1:abc  "))
+        val token = "9b1f0c1e-7a2d-4c3b-9f10-1a2b3c4d5e6f.4f3c2b1a0e9d8c7b6a5f4e3d2c1b0a99"
+        assertTrue(ClassSessionRules.isClassSessionQr(token))
+        assertTrue(ClassSessionRules.isClassSessionQr("  $token  "))
+        assertFalse("uuid alone", ClassSessionRules.isClassSessionQr("9b1f0c1e-7a2d-4c3b-9f10-1a2b3c4d5e6f"))
+        assertFalse("not a uuid", ClassSessionRules.isClassSessionQr("abc.4f3c2b1a0e9d8c7b6a5f4e3d2c1b0a99"))
         assertFalse(ClassSessionRules.isClassSessionQr("https://example.com"))
         assertFalse(ClassSessionRules.isClassSessionQr("SA1-1234"))
         assertFalse(ClassSessionRules.isClassSessionQr(null))
@@ -192,10 +203,23 @@ class ClassSessionRulesTest {
     fun countsTreatLateAsPresentAndMissingStatusAsAlpha() {
         val rows = listOf(row(1, HADIR), row(2, HADIR), row(3, TELAT), row(4, SAKIT), row(5, IZIN), row(6, ALPHA), row(7, null))
         val c = ClassSessionRules.countsOf(rows)
-        assertEquals(ClassSessionRules.Counts(hadir = 2, telat = 1, sakit = 1, izin = 1, alpha = 2, total = 7), c)
         assertEquals(3, c.present)
+        assertEquals(2, c.alpha)
+        assertEquals(7, c.total)
+        assertEquals(2, c.excused)
+        assertEquals(ClassSessionRules.Counts.Breakdown(hadir = 2, telat = 1, sakit = 1, izin = 1), c.breakdown)
         assertEquals(43, ClassSessionRules.presencePercent(c.presenceRate))
         assertEquals(0.0, ClassSessionRules.Counts().presenceRate, 0.0)
+    }
+
+    @Test
+    fun sessionSummaryKnowsOnlyPresentAndAlpha() {
+        // present_count = hadir + telat, absent_count = alpha; sakit/izin are the rest.
+        val c = ClassSessionRules.countsOf(ClassSessionDto(totalStudents = 32, presentCount = 25, absentCount = 6))
+        assertEquals(25, c.present)
+        assertEquals(6, c.alpha)
+        assertEquals(1, c.excused)
+        assertNull(c.breakdown)
     }
 
     // ── 77.4 manual attendance (cases 9–10) ─────────────────────────────
@@ -264,52 +288,101 @@ class ClassSessionRulesTest {
         assertNull(ClassSessionRules.formatDateId("2026-13-01"))
         assertEquals(
             "Dikoreksi oleh Bu Ani pada 8 Okt 2026, 07:10",
-            ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true, overrideByName = "Bu Ani", overrideAt = "2026-10-08T07:10:00+07:00"))
+            ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true, overrideBy = "Bu Ani", overrideAt = "2026-10-08T07:10:00+07:00"))
         )
         assertEquals("Dikoreksi oleh admin", ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true)))
-        assertNull(ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = false, overrideByName = "x")))
+        assertNull(ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = false, overrideBy = "x")))
     }
 
     // ── error wording (cases 2, 3, 6–8) ─────────────────────────────────
 
-    private fun err(kind: ClassSessionErrorKind, code: String? = null, checkedInAt: String? = null, message: String = "") =
-        ClassSessionError(kind = kind, message = message, errorCode = code, checkedInAt = checkedInAt)
+    private fun err(kind: ClassSessionErrorKind, code: Int = 0, message: String = "", checkedInAt: String? = null) =
+        ClassSessionError(
+            kind = kind,
+            message = message,
+            httpCode = code,
+            rejection = ClassSessionRules.rejectionOf(code, message),
+            checkedInAt = checkedInAt
+        )
 
     @Test
-    fun scanErrorsAreExplainedAndSayWhetherToKeepScanning() {
-        val expired = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.GONE, ErrorCode.QR_EXPIRED))
-        assertTrue(expired is ScanOutcome.Retry && expired.keepScanning)
-        assertTrue(expired.message.contains("QR sudah berganti"))
-
-        // A bare 410 without an error code is still an expired QR.
-        assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.GONE)) is ScanOutcome.Retry)
-
-        val notMine = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.FORBIDDEN, ErrorCode.NOT_ENROLLED))
-        assertTrue(notMine is ScanOutcome.Blocked && !notMine.keepScanning)
-        assertTrue(notMine.message.contains("bukan siswa kelas ini"))
-
-        val twice = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, ErrorCode.ALREADY_CHECKED_IN, "2026-10-07T08:03:00+07:00"))
-        assertTrue(twice is ScanOutcome.AlreadyRecorded)
-        assertEquals("Anda sudah tercatat hadir pukul 08:03 WIB.", twice.message)
-
-        val closed = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, ErrorCode.SESSION_CLOSED))
-        assertTrue(closed is ScanOutcome.Blocked && closed.message.contains("Waka Kurikulum/TU"))
-
-        val offline = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NETWORK))
-        assertTrue(offline is ScanOutcome.Retry)
+    fun backendMessagesAreRecognised() {
+        // Every message ClassSessionService throws that the app reacts to.
+        val cases = mapOf(
+            (422 to "QR token sudah kedaluwarsa") to ClassSessionRejection.QR_EXPIRED,
+            (422 to "QR tidak valid. Pastikan Anda memindai QR sesi kelas dari layar guru.") to ClassSessionRejection.QR_INVALID,
+            (403 to "Anda tidak terdaftar di kelas ini") to ClassSessionRejection.NOT_ENROLLED,
+            (409 to "Anda sudah tercatat hadir di sesi ini") to ClassSessionRejection.ALREADY_CHECKED_IN,
+            (409 to "Sesi kelas sudah berakhir") to ClassSessionRejection.SESSION_ENDED,
+            (409 to "Sesi kelas sudah berakhir.") to ClassSessionRejection.SESSION_ENDED,
+            (409 to "Sesi kelas belum dimulai") to ClassSessionRejection.SESSION_NOT_STARTED,
+            (409 to "Sesi kelas ini sudah dimulai.") to ClassSessionRejection.SESSION_ALREADY_STARTED,
+            (409 to "Sesi kelas ini sudah berakhir hari ini.") to ClassSessionRejection.SESSION_ALREADY_ENDED,
+            (409 to "QR hanya tersedia saat sesi kelas aktif.") to ClassSessionRejection.QR_NOT_ACTIVE,
+            (409 to "Absensi manual hanya bisa dilakukan saat sesi kelas aktif. Untuk koreksi …") to ClassSessionRejection.MANUAL_NOT_ACTIVE,
+            (422 to "Kelas baru bisa dimulai pukul 06:50.") to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
+            (422 to "Waktu jadwal kelas ini sudah lewat.") to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
+            (422 to "Jadwal ini untuk hari Senin, bukan hari ini.") to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
+            (403 to "Anda tidak dijadwalkan mengajar pada jadwal ini.") to ClassSessionRejection.NOT_YOUR_SCHEDULE,
+            (403 to "Anda bukan guru pengampu sesi kelas ini.") to ClassSessionRejection.NOT_YOUR_SCHEDULE,
+            (422 to "Presensi berstatus 'hadir' tidak dapat dikoreksi. Kehadiran yang sudah tercatat tidak boleh dihapus.") to ClassSessionRejection.TRANSITION_NOT_ALLOWED,
+            (422 to "Koreksi dari 'sakit' hanya boleh ke: hadir.") to ClassSessionRejection.TRANSITION_NOT_ALLOWED
+        )
+        for ((input, expected) in cases) {
+            assertEquals(input.second, expected, ClassSessionRules.rejectionOf(input.first, input.second))
+        }
+        assertNull(ClassSessionRules.rejectionOf(500, "Server Error"))
+        assertNull(ClassSessionRules.rejectionOf(422, "The reason field is required."))
     }
 
     @Test
-    fun startRefusalsAreExplained() {
-        assertTrue(ClassSessionRules.startFailureMessage(err(ClassSessionErrorKind.VALIDATION, ErrorCode.OUTSIDE_SCHEDULE_WINDOW)).contains("10 menit sebelum"))
-        assertEquals("Jadwal ini bukan milik Anda.", ClassSessionRules.startFailureMessage(err(ClassSessionErrorKind.FORBIDDEN, ErrorCode.NOT_YOUR_SCHEDULE)))
+    fun scanErrorsAreExplainedAndSayWhetherToKeepScanning() {
+        val expired = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.VALIDATION, 422, "QR token sudah kedaluwarsa"))
+        assertTrue(expired is ScanOutcome.Retry && expired.keepScanning)
+        assertTrue(expired.message.contains("QR sudah berganti"))
+
+        val notMine = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.FORBIDDEN, 403, "Anda tidak terdaftar di kelas ini"))
+        assertTrue(notMine is ScanOutcome.Blocked && !notMine.keepScanning)
+        assertTrue(notMine.message.contains("bukan siswa kelas ini"))
+
+        val twice = ClassSessionRules.scanOutcome(
+            err(ClassSessionErrorKind.CONFLICT, 409, "Anda sudah tercatat hadir di sesi ini", "2026-10-07T08:03:00+07:00")
+        )
+        assertTrue(twice is ScanOutcome.AlreadyRecorded)
+        assertEquals("Anda sudah tercatat hadir pukul 08:03 WIB.", twice.message)
+
+        val closed = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, 409, "Sesi kelas sudah berakhir"))
+        assertTrue(closed is ScanOutcome.Blocked && closed.message.contains("Waka Kurikulum/TU"))
+
+        assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, 409, "Sesi kelas belum dimulai")) is ScanOutcome.Retry)
+        assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NETWORK)) is ScanOutcome.Retry)
+        assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.RATE_LIMITED, 429)) is ScanOutcome.Retry)
+    }
+
+    @Test
+    fun startRefusalsUseTheServersWords() {
+        assertEquals(
+            "Kelas baru bisa dimulai pukul 06:50.",
+            ClassSessionRules.startFailureMessage(err(ClassSessionErrorKind.VALIDATION, 422, "Kelas baru bisa dimulai pukul 06:50."))
+        )
+        assertEquals(
+            "Anda tidak dijadwalkan mengajar pada jadwal ini.",
+            ClassSessionRules.startFailureMessage(err(ClassSessionErrorKind.FORBIDDEN, 403, "Anda tidak dijadwalkan mengajar pada jadwal ini."))
+        )
     }
 
     @Test
     fun missingBackendIsSaidPlainly() {
-        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.genericMessage(err(ClassSessionErrorKind.NOT_DEPLOYED, message = "The route api/v1/teacher/class-sessions/today could not be found.")))
-        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NOT_DEPLOYED)).message)
-        // The server's own words win when it gave some.
-        assertEquals("Validasi gagal.", ClassSessionRules.genericMessage(err(ClassSessionErrorKind.VALIDATION, message = "Validasi gagal.")))
+        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.genericMessage(err(ClassSessionErrorKind.NOT_DEPLOYED, 404, "The route … could not be found.")))
+        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NOT_DEPLOYED, 404)).message)
+        assertEquals("Validasi gagal.", ClassSessionRules.genericMessage(err(ClassSessionErrorKind.VALIDATION, 422, "Validasi gagal.")))
+    }
+
+    @Test
+    fun reportLabelFollowsGroupBy() {
+        assertEquals("Andi (NIS-0012)", ClassSessionRules.reportLabel(com.sultanagung1.sista.data.model.AttendanceReportRowDto(studentName = "Andi", studentNis = "NIS-0012", classroomName = "X-1")))
+        assertEquals("X-1 (IPA)", ClassSessionRules.reportLabel(com.sultanagung1.sista.data.model.AttendanceReportRowDto(classroomName = "X-1 (IPA)")))
+        assertEquals("Fisika", ClassSessionRules.reportLabel(com.sultanagung1.sista.data.model.AttendanceReportRowDto(subjectName = "Fisika")))
+        assertEquals("—", ClassSessionRules.reportLabel(com.sultanagung1.sista.data.model.AttendanceReportRowDto()))
     }
 }

@@ -54,6 +54,18 @@ import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.navigation.graphs.*
 
+/**
+ * FASE 77: the admin group's second tab. Class-session management for the
+ * roles backend FASE 117 lets in; the principal (not on `admin/class-sessions`)
+ * gets the executive KPIs, whose endpoint does accept kepala_sekolah.
+ */
+private fun adminSecondTab(userRole: String?, strings: com.sultanagung1.sista.core.accessibility.StringsDefinition): BottomNavItem =
+    if (UserRoles.canManageClassSessions(userRole)) {
+        BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent)
+    } else {
+        BottomNavItem(Screen.ExecutiveAnalytics.route, Screen.ExecutiveAnalytics.title, Icons.Default.Insights)
+    }
+
 data class BottomNavItem(
     val route: String,
     val title: String,
@@ -196,7 +208,7 @@ fun AppNavigation(
         )
         RoleGroup.ADMIN -> listOf(
             BottomNavItem(Screen.AdminDashboard.route, strings.executiveTab, Icons.Default.AdminPanelSettings),
-            BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent),
+            adminSecondTab(userRole, strings),
             BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
             BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
         )

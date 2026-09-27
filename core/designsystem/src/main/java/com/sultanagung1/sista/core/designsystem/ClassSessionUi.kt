@@ -109,19 +109,26 @@ fun SessionAttendanceSummary(counts: ClassSessionRules.Counts, modifier: Modifie
             )
         }
         if (showBreakdown) {
+            val b = counts.breakdown
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                BreakdownItem(SessionAttendanceStatus.HADIR, counts.hadir)
-                BreakdownItem(SessionAttendanceStatus.TELAT, counts.telat)
-                BreakdownItem(SessionAttendanceStatus.SAKIT, counts.sakit)
-                BreakdownItem(SessionAttendanceStatus.IZIN, counts.izin)
-                BreakdownItem(SessionAttendanceStatus.ALPHA, counts.alpha)
+                if (b != null) {
+                    BreakdownItem(SessionAttendanceStatus.HADIR, "Hadir", b.hadir)
+                    BreakdownItem(SessionAttendanceStatus.TELAT, "Telat", b.telat)
+                    BreakdownItem(SessionAttendanceStatus.SAKIT, "Sakit", b.sakit)
+                    BreakdownItem(SessionAttendanceStatus.IZIN, "Izin", b.izin)
+                } else {
+                    // A session summary only knows present (incl. late), alpha and the rest.
+                    BreakdownItem(SessionAttendanceStatus.HADIR, "Hadir/Telat", counts.present)
+                    BreakdownItem(SessionAttendanceStatus.SAKIT, "Sakit/Izin", counts.excused)
+                }
+                BreakdownItem(SessionAttendanceStatus.ALPHA, "Alpha", counts.alpha)
             }
         }
     }
 }
 
 @Composable
-private fun BreakdownItem(status: SessionAttendanceStatus, count: Int) {
+private fun BreakdownItem(status: SessionAttendanceStatus, label: String, count: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -131,7 +138,7 @@ private fun BreakdownItem(status: SessionAttendanceStatus, count: Int) {
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = "${ClassSessionRules.label(status)} $count",
+            text = "$label $count",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

@@ -300,7 +300,7 @@ private fun ReportSheet(state: AdminSessionManagementState) {
                         .sortedBy { it.presenceRate }
                         .forEach { row ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(row.label ?: "—", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                Text(ClassSessionRules.reportLabel(row), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                                 Text(
                                     "${ClassSessionRules.presencePercent(row.presenceRate)}% • ${row.alpha} alpha",
                                     style = MaterialTheme.typography.bodyMedium,

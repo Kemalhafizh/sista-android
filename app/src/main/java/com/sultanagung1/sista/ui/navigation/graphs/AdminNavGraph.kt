@@ -61,13 +61,13 @@ fun NavGraphBuilder.adminNavGraph(
         }
     }
 
-    // ── FASE 77.6: Sesi Kelas — admin, kepala sekolah (lihat), Waka Kurikulum, TU ──
+    // ── FASE 77.6: Sesi Kelas — admin, superadmin, Waka Kurikulum, TU ──
 
     composable(Screen.AdminSessionManagement.route) {
         val viewModel: AdminSessionManagementViewModel = hiltViewModel()
         RoleGuardedScreen(
             currentRole = userRole,
-            allowedRoles = UserRoles.CLASS_SESSION_VIEWER_ROLES,
+            allowedRoles = UserRoles.CLASS_SESSION_ADMIN_ROLES,
             featureTitle = "Manajemen Sesi Kelas",
             onNavigateBack = { navController.popBackStack() },
             onNavigateHome = navigateToRoleHome
@@ -90,7 +90,7 @@ fun NavGraphBuilder.adminNavGraph(
         val viewModel: AdminAttendanceOverrideViewModel = hiltViewModel()
         RoleGuardedScreen(
             currentRole = userRole,
-            allowedRoles = UserRoles.CLASS_SESSION_VIEWER_ROLES,
+            allowedRoles = UserRoles.CLASS_SESSION_ADMIN_ROLES,
             featureTitle = "Koreksi Absensi Sesi Kelas",
             onNavigateBack = { navController.popBackStack() },
             onNavigateHome = navigateToRoleHome

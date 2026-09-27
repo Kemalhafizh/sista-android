@@ -109,8 +109,13 @@ fun TeacherAttendanceListScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         val c = state.previewCounts
+                        val b = c.breakdown
                         Text(
-                            "Ringkasan: ${c.hadir} Hadir • ${c.telat} Telat • ${c.sakit} Sakit • ${c.izin} Izin • ${c.alpha} Alpha",
+                            if (b != null) {
+                                "Ringkasan: ${b.hadir} Hadir • ${b.telat} Telat • ${b.sakit} Sakit • ${b.izin} Izin • ${c.alpha} Alpha"
+                            } else {
+                                "Ringkasan: ${c.present} Hadir • ${c.alpha} Alpha"
+                            },
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

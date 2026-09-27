@@ -6,7 +6,7 @@ import com.sultanagung1.sista.core.mvi.MviViewModel
 import com.sultanagung1.sista.core.mvi.UiEffect
 import com.sultanagung1.sista.core.mvi.UiEvent
 import com.sultanagung1.sista.core.mvi.UiState
-import com.sultanagung1.sista.data.model.ClassSessionContract
+import com.sultanagung1.sista.data.model.ClassSessionRejection
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionErrorKind
 import com.sultanagung1.sista.data.model.ClassSessionResult
@@ -168,7 +168,7 @@ class TeacherAttendanceListViewModel @Inject constructor(
                 }
                 is ClassSessionResult.Failure -> {
                     setState { copy(isSaving = false) }
-                    if (result.error.errorCode == ClassSessionContract.ErrorCode.SESSION_NOT_ACTIVE) {
+                    if (result.error.rejection == ClassSessionRejection.MANUAL_NOT_ACTIVE) {
                         refreshSession()
                         emitEffect {
                             TeacherAttendanceListEffect.ShowMessage("Sesi sudah berakhir; perubahan tidak tersimpan. Koreksi lewat Waka Kurikulum/TU.")

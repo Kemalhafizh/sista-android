@@ -336,7 +336,8 @@ fun NavGraphBuilder.teacherNavGraph(
                 onOpenAttendanceList = { sessionId ->
                     navController.navigate(Screen.TeacherAttendanceList.createRoute(sessionId)) { launchSingleTop = true }
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onOpenTeachingJournal = { navController.navigate(Screen.TeachingJournalMobile.route) }
             )
         }
     }

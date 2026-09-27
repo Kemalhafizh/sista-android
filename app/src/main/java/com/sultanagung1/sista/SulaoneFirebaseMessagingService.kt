@@ -51,10 +51,14 @@ class SulaoneFirebaseMessagingService : FirebaseMessagingService() {
         val channelManager = NotificationChannelManager(applicationContext)
         val title = message.notification?.title ?: message.data["title"] ?: "Notifikasi Sulaone"
         val body = message.notification?.body ?: message.data["body"] ?: ""
+        val channel = message.data["channel"]
         val channelType = NotificationChannelType.values()
-            .firstOrNull { it.channelId == message.data["channel"] }
+            .firstOrNull { it.channelId == channel }
+            // FASE 117 sends class-session pushes on "channel_class_session".
+            ?: NotificationChannelType.ATTENDANCE.takeIf { channel == "channel_class_session" || message.data["type"]?.startsWith("class_session_") == true }
             ?: NotificationChannelType.GENERAL
         val deepLinkRoute = message.data["deep_link_route"]
+            ?: com.sultanagung1.sista.core.deeplink.DeepLinkRouter.classSessionPushRoute(message.data["type"], message.data["session_id"])
 
         channelManager.createNotificationChannels()
         channelManager.dispatchLocalNotification(

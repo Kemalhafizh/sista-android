@@ -87,7 +87,7 @@ class StudentSessionQrScanViewModel @Inject constructor(
                             isCheckingActive = false,
                             notDeployed = false,
                             phase = if (active?.alreadyCheckedIn == true && phase == StudentScanPhase.Scanning) {
-                                StudentScanPhase.AlreadyRecorded(alreadyRecordedMessage(active.checkedInAt))
+                                StudentScanPhase.AlreadyRecorded(alreadyRecordedMessage(active.attendanceStatus))
                             } else {
                                 phase
                             }
@@ -145,8 +145,10 @@ class StudentSessionQrScanViewModel @Inject constructor(
         }
     }
 
-    private fun alreadyRecordedMessage(checkedInAt: String?): String {
-        val at = ClassSessionRules.clockOf(checkedInAt)
-        return if (at != null) "Anda sudah tercatat hadir pukul $at WIB." else "Anda sudah tercatat hadir di sesi ini."
-    }
+    private fun alreadyRecordedMessage(status: com.sultanagung1.sista.data.model.SessionAttendanceStatus?): String =
+        if (status != null) {
+            "Anda sudah tercatat ${ClassSessionRules.label(status).lowercase()} di sesi ini."
+        } else {
+            "Anda sudah tercatat hadir di sesi ini."
+        }
 }

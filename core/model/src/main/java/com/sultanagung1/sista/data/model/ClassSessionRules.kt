@@ -91,7 +91,8 @@ object ClassSessionRules {
         val end = minutesOf(session.scheduledEnd)
         // Unparsable times: let the server decide rather than lock the teacher out.
         if (start == null || end == null) return StartAction.Available
-        val opensAt = start - START_EARLY_MINUTES
+        // The server's own window (config CLASS_SESSION_START_EARLY_MINUTES); 10 min if absent.
+        val opensAt = minutesOf(session.startableFrom) ?: (start - START_EARLY_MINUTES)
         return when {
             nowMinutes < opensAt -> StartAction.NotYet(formatMinutes(opensAt))
             nowMinutes >= end -> StartAction.Missed
@@ -192,8 +193,9 @@ object ClassSessionRules {
     /** Refetch when the server says the token rotates; never busy-loop on a bad value. */
     fun nextQrFetchDelayMs(remainingSeconds: Int): Long = max(1, remainingSeconds) * 1000L
 
+    /** "<session uuid>.<signature>"; anything else is some other QR (a gate pass, a URL…). */
     fun isClassSessionQr(raw: String?): Boolean =
-        raw != null && raw.trim().startsWith(ClassSessionContract.QR_PAYLOAD_PREFIX)
+        raw != null && ClassSessionContract.QR_TOKEN_PATTERN.matches(raw.trim())
 
     /**
      * 77.5: the camera reports the same QR many times a second. Send a payload
@@ -227,39 +229,45 @@ object ClassSessionRules {
 
     // ── Attendance counts ───────────────────────────────────────────────
 
+    /**
+     * Presence of one session. From the roster every status is known
+     * ([breakdown]); from a session summary only present/alpha/total are
+     * (`present_count` = hadir + telat, `absent_count` = alpha), and sakit/izin
+     * are the rest.
+     */
     data class Counts(
-        val hadir: Int = 0,
-        val telat: Int = 0,
-        val sakit: Int = 0,
-        val izin: Int = 0,
+        val present: Int = 0,
         val alpha: Int = 0,
-        val total: Int = 0
+        val total: Int = 0,
+        val breakdown: Breakdown? = null
     ) {
-        val present: Int get() = hadir + telat
+        data class Breakdown(val hadir: Int, val telat: Int, val sakit: Int, val izin: Int)
+
+        /** Sakit + izin. */
+        val excused: Int get() = breakdown?.let { it.sakit + it.izin } ?: (total - present - alpha).coerceAtLeast(0)
         /** 0.0–1.0; 0 when the class has no students. */
         val presenceRate: Double get() = if (total <= 0) 0.0 else present.toDouble() / total
     }
 
     fun countsOf(rows: List<SessionAttendanceDto>): Counts {
         val byStatus = rows.groupingBy { it.effectiveStatus }.eachCount()
+        val hadir = byStatus[SessionAttendanceStatus.HADIR] ?: 0
+        val telat = byStatus[SessionAttendanceStatus.TELAT] ?: 0
         return Counts(
-            hadir = byStatus[SessionAttendanceStatus.HADIR] ?: 0,
-            telat = byStatus[SessionAttendanceStatus.TELAT] ?: 0,
-            sakit = byStatus[SessionAttendanceStatus.SAKIT] ?: 0,
-            izin = byStatus[SessionAttendanceStatus.IZIN] ?: 0,
+            present = hadir + telat,
             alpha = byStatus[SessionAttendanceStatus.ALPHA] ?: 0,
-            total = rows.size
+            total = rows.size,
+            breakdown = Counts.Breakdown(
+                hadir = hadir,
+                telat = telat,
+                sakit = byStatus[SessionAttendanceStatus.SAKIT] ?: 0,
+                izin = byStatus[SessionAttendanceStatus.IZIN] ?: 0
+            )
         )
     }
 
-    fun countsOf(session: ClassSessionDto): Counts = Counts(
-        hadir = session.hadirCount,
-        telat = session.telatCount,
-        sakit = session.sakitCount,
-        izin = session.izinCount,
-        alpha = session.alphaCount,
-        total = session.totalStudents
-    )
+    fun countsOf(session: ClassSessionDto): Counts =
+        Counts(present = session.presentCount, alpha = session.absentCount, total = session.totalStudents)
 
     fun presencePercent(rate: Double): Int = (rate.coerceIn(0.0, 1.0) * 100).let { kotlin.math.round(it).toInt() }
 
@@ -324,7 +332,7 @@ object ClassSessionRules {
     /** "Dikoreksi oleh Bu Ani pada 8 Okt 2026, 07:10". */
     fun overrideAuditLabel(row: SessionAttendanceDto): String? {
         if (!row.isOverride) return null
-        val by = row.overrideByName?.takeIf { it.isNotBlank() } ?: "admin"
+        val by = row.overrideBy?.takeIf { it.isNotBlank() } ?: "admin"
         val at = formatDateId(row.overrideAt)
         return if (at != null) "Dikoreksi oleh $by pada $at" else "Dikoreksi oleh $by"
     }
@@ -353,7 +361,6 @@ object ClassSessionRules {
         return when (row.checkInMethod) {
             SessionCheckInMethod.QR_SCAN -> if (at != null) "Scan QR $at" else "Scan QR"
             SessionCheckInMethod.MANUAL_TEACHER -> if (at != null) "Manual $at" else "Manual guru"
-            SessionCheckInMethod.ADMIN_OVERRIDE -> "Koreksi admin"
             SessionCheckInMethod.AUTO_ALPHA, null -> "Belum absen"
         }
     }
@@ -363,20 +370,51 @@ object ClassSessionRules {
     const val NOT_DEPLOYED_MESSAGE =
         "Fitur Sesi Kelas belum aktif di server sekolah. Hubungi admin/TU untuk mengaktifkannya."
 
-    /** Messages shared by every screen; screen-specific codes are handled before this. */
+    /**
+     * Backend FASE 117 sends no error code, only an HTTP status and a
+     * documented message (sistem-terpadu docs/modules/class_sessions.md §4,
+     * ClassSessionService). This recognises the refusals the app reacts to;
+     * the message itself is still what the user reads.
+     */
+    fun rejectionOf(httpCode: Int, message: String): ClassSessionRejection? {
+        val m = message.trim()
+        fun has(fragment: String) = m.contains(fragment, ignoreCase = true)
+        return when {
+            has("QR token sudah kedaluwarsa") -> ClassSessionRejection.QR_EXPIRED
+            has("QR tidak valid") -> ClassSessionRejection.QR_INVALID
+            has("tidak terdaftar di kelas ini") -> ClassSessionRejection.NOT_ENROLLED
+            has("sudah tercatat hadir") -> ClassSessionRejection.ALREADY_CHECKED_IN
+            has("Sesi kelas ini sudah dimulai") -> ClassSessionRejection.SESSION_ALREADY_STARTED
+            has("Sesi kelas ini sudah berakhir") -> ClassSessionRejection.SESSION_ALREADY_ENDED
+            has("Sesi kelas belum dimulai") -> ClassSessionRejection.SESSION_NOT_STARTED
+            has("Sesi kelas sudah berakhir") -> ClassSessionRejection.SESSION_ENDED
+            has("QR hanya tersedia saat sesi kelas aktif") -> ClassSessionRejection.QR_NOT_ACTIVE
+            has("Absensi manual hanya bisa dilakukan saat sesi kelas aktif") -> ClassSessionRejection.MANUAL_NOT_ACTIVE
+            has("baru bisa dimulai pukul") || has("sudah lewat") || has("bukan hari ini") ->
+                ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW
+            has("tidak dijadwalkan mengajar") || has("bukan guru pengampu") -> ClassSessionRejection.NOT_YOUR_SCHEDULE
+            httpCode == 422 && (has("tidak dapat dikoreksi") || has("hanya boleh ke")) ->
+                ClassSessionRejection.TRANSITION_NOT_ALLOWED
+            else -> null
+        }
+    }
+
+    /** Messages shared by every screen: the server's words when it gave some. */
     fun genericMessage(error: ClassSessionError): String = when (error.kind) {
         ClassSessionErrorKind.NOT_DEPLOYED -> NOT_DEPLOYED_MESSAGE
         ClassSessionErrorKind.NETWORK -> "Tidak ada koneksi ke server. Periksa internet lalu coba lagi."
         ClassSessionErrorKind.UNAUTHORIZED -> "Sesi login berakhir. Silakan masuk ulang."
+        ClassSessionErrorKind.RATE_LIMITED -> "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
         ClassSessionErrorKind.FORBIDDEN -> error.message.ifBlank { "Akun Anda tidak punya akses ke fitur ini." }
         else -> error.message.ifBlank { "Terjadi kesalahan. Coba lagi." }
     }
 
-    /** 77.8 cases 2–3: why "Mulai Kelas" was refused. */
-    fun startFailureMessage(error: ClassSessionError): String = when (error.errorCode) {
-        ClassSessionContract.ErrorCode.OUTSIDE_SCHEDULE_WINDOW ->
+    /** 77.8 cases 2–3: why "Mulai Kelas" was refused (the server says it best, e.g. "Kelas baru bisa dimulai pukul 06:50."). */
+    fun startFailureMessage(error: ClassSessionError): String = when {
+        error.message.isNotBlank() && error.rejection != null -> error.message
+        error.rejection == ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW ->
             "Kelas hanya bisa dimulai mulai $START_EARLY_MINUTES menit sebelum jadwal hingga jam pelajaran berakhir."
-        ClassSessionContract.ErrorCode.NOT_YOUR_SCHEDULE -> "Jadwal ini bukan milik Anda."
+        error.rejection == ClassSessionRejection.NOT_YOUR_SCHEDULE -> "Jadwal ini bukan milik Anda."
         else -> genericMessage(error)
     }
 
@@ -393,40 +431,43 @@ object ClassSessionRules {
     }
 
     /** 77.5.2 error handling. */
-    fun scanOutcome(error: ClassSessionError): ScanOutcome {
-        val code = error.errorCode ?: when (error.kind) {
-            ClassSessionErrorKind.GONE -> ClassSessionContract.ErrorCode.QR_EXPIRED
-            else -> null
+    fun scanOutcome(error: ClassSessionError): ScanOutcome = when (error.rejection) {
+        ClassSessionRejection.QR_EXPIRED ->
+            ScanOutcome.Retry("QR sudah berganti. Scan ulang QR yang sedang tampil di layar guru.")
+        ClassSessionRejection.QR_INVALID ->
+            ScanOutcome.Retry("QR tidak dikenali. Pastikan Anda memindai QR sesi kelas dari layar guru.")
+        ClassSessionRejection.NOT_ENROLLED ->
+            ScanOutcome.Blocked("Anda bukan siswa kelas ini. Hubungi guru pengampu.")
+        ClassSessionRejection.ALREADY_CHECKED_IN -> {
+            val at = clockOf(error.checkedInAt)
+            ScanOutcome.AlreadyRecorded(
+                if (at != null) "Anda sudah tercatat hadir pukul $at WIB." else "Anda sudah tercatat hadir di sesi ini.",
+                error.checkedInAt
+            )
         }
-        return when (code) {
-            ClassSessionContract.ErrorCode.QR_EXPIRED ->
-                ScanOutcome.Retry("QR sudah berganti. Scan ulang QR yang sedang tampil di layar guru.")
-            ClassSessionContract.ErrorCode.QR_INVALID ->
-                ScanOutcome.Retry("QR tidak dikenali. Pastikan Anda memindai QR sesi kelas dari layar guru.")
-            ClassSessionContract.ErrorCode.NOT_ENROLLED ->
-                ScanOutcome.Blocked("Anda bukan siswa kelas ini. Hubungi guru pengampu.")
-            ClassSessionContract.ErrorCode.ALREADY_CHECKED_IN -> {
-                val at = clockOf(error.checkedInAt)
-                ScanOutcome.AlreadyRecorded(
-                    if (at != null) "Anda sudah tercatat hadir pukul $at WIB." else "Anda sudah tercatat hadir di sesi ini.",
-                    error.checkedInAt
-                )
-            }
-            ClassSessionContract.ErrorCode.SESSION_CLOSED, ClassSessionContract.ErrorCode.SESSION_NOT_ACTIVE ->
-                ScanOutcome.Blocked("Sesi kelas sudah selesai. Minta koreksi ke Waka Kurikulum/TU.")
-            else -> when (error.kind) {
-                ClassSessionErrorKind.NETWORK -> ScanOutcome.Retry(genericMessage(error))
-                else -> ScanOutcome.Blocked(genericMessage(error))
-            }
+        ClassSessionRejection.SESSION_ENDED ->
+            ScanOutcome.Blocked("Sesi kelas sudah selesai. Minta koreksi ke Waka Kurikulum/TU.")
+        ClassSessionRejection.SESSION_NOT_STARTED ->
+            ScanOutcome.Retry("Sesi kelas ini belum dimulai guru. Coba lagi setelah guru memulai kelas.")
+        else -> when (error.kind) {
+            ClassSessionErrorKind.NETWORK, ClassSessionErrorKind.RATE_LIMITED -> ScanOutcome.Retry(genericMessage(error))
+            else -> ScanOutcome.Blocked(genericMessage(error))
         }
     }
 
     /** 77.6.3: server-side refusals of an override, in words for the admin. */
-    fun overrideFailureMessage(error: ClassSessionError): String = when (error.errorCode) {
-        ClassSessionContract.ErrorCode.TRANSITION_NOT_ALLOWED ->
+    fun overrideFailureMessage(error: ClassSessionError): String =
+        if (error.rejection == ClassSessionRejection.TRANSITION_NOT_ALLOWED && error.message.isBlank()) {
             "Perubahan status ini tidak diizinkan. Kehadiran yang sudah tercatat tidak bisa diubah menjadi alpha."
-        ClassSessionContract.ErrorCode.REASON_TOO_SHORT ->
-            "Alasan koreksi minimal $OVERRIDE_REASON_MIN_CHARS karakter."
-        else -> genericMessage(error)
-    }
+        } else {
+            genericMessage(error)
+        }
+
+    /** Report row name for the chosen `group_by`. */
+    fun reportLabel(row: AttendanceReportRowDto): String =
+        listOfNotNull(
+            row.studentName?.let { name -> row.studentNis?.let { "$name ($it)" } ?: name },
+            row.classroomName.takeIf { row.studentName == null },
+            row.subjectName.takeIf { row.studentName == null && row.classroomName == null }
+        ).firstOrNull() ?: "—"
 }

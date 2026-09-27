@@ -37,18 +37,14 @@ class ClassSessionRolesTest {
     }
 
     @Test
-    fun principalReadsButDoesNotCorrect() {
+    fun rolesMatchTheBackendAdminRoute() {
+        // routes/api.php: admin/class-sessions → role:admin,superadmin,waka_kurikulum,staf_tu
         for (role in listOf("admin", "superadmin", "waka_kurikulum", "staf_tu")) {
-            assertTrue(role, UserRoles.canViewClassSessions(role))
-            assertTrue(role, UserRoles.canCorrectClassAttendance(role))
+            assertTrue(role, UserRoles.canManageClassSessions(role))
         }
-        for (role in listOf("kepsek", "kepala_sekolah")) {
-            assertTrue(role, UserRoles.canViewClassSessions(role))
-            assertFalse(role, UserRoles.canCorrectClassAttendance(role))
-        }
-        for (role in listOf("guru", "student", "parent", "bk", null)) {
-            assertFalse("$role", UserRoles.canViewClassSessions(role))
-            assertFalse("$role", UserRoles.canCorrectClassAttendance(role))
+        // The principal is not on that route (gets the KPI tab instead).
+        for (role in listOf("kepsek", "kepala_sekolah", "guru", "student", "parent", "bk", null)) {
+            assertFalse("$role", UserRoles.canManageClassSessions(role))
         }
     }
 
@@ -61,5 +57,15 @@ class ClassSessionRolesTest {
         assertEquals("teacher_active_session/501", DeepLinkRouter.classSessionRoute("501"))
         assertNull(DeepLinkRouter.classSessionRoute("unknown"))
         assertNull(DeepLinkRouter.classSessionRoute(null))
+    }
+
+    /** Backend FASE 117 pushes (`data.type`, `data.session_id`). */
+    @Test
+    fun classSessionPushesOpenTheRightScreen() {
+        assertEquals(Screen.StudentSessionQrScan.route, DeepLinkRouter.classSessionPushRoute("class_session_started", "45"))
+        assertEquals("teacher_active_session/45", DeepLinkRouter.classSessionPushRoute("class_session_auto_closed", "45"))
+        assertEquals(Screen.TeacherTodaySessions.route, DeepLinkRouter.classSessionPushRoute("class_session_auto_closed", null))
+        assertNull(DeepLinkRouter.classSessionPushRoute("class_session_alpha", "45"))
+        assertNull(DeepLinkRouter.classSessionPushRoute("announcement", null))
     }
 }

@@ -82,7 +82,7 @@ class AdminSessionManagementViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             sessionManager.userRoleFlow.collect { role ->
-                setState { copy(canCorrect = UserRoles.canCorrectClassAttendance(role)) }
+                setState { copy(canCorrect = UserRoles.canManageClassSessions(role)) }
             }
         }
     }

@@ -6,7 +6,7 @@ import com.sultanagung1.sista.core.mvi.UiEffect
 import com.sultanagung1.sista.core.mvi.UiEvent
 import com.sultanagung1.sista.core.mvi.UiState
 import com.sultanagung1.sista.core.util.DateUtils
-import com.sultanagung1.sista.data.model.ClassSessionContract
+import com.sultanagung1.sista.data.model.ClassSessionRejection
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionErrorKind
 import com.sultanagung1.sista.data.model.ClassSessionResult
@@ -139,9 +139,13 @@ class TeacherTodaySessionsViewModel @Inject constructor(
                 }
                 is ClassSessionResult.Failure -> {
                     setState { copy(startingScheduleId = null) }
-                    val existing = result.error.existingSession?.sessionId
-                    if (result.error.errorCode == ClassSessionContract.ErrorCode.SESSION_ALREADY_EXISTS && existing != null) {
-                        // Started from another device (or a retried tap): open it instead of failing.
+                    val existing = result.error.existingSessionId
+                    val rejection = result.error.rejection
+                    if (existing != null &&
+                        (rejection == ClassSessionRejection.SESSION_ALREADY_STARTED || rejection == ClassSessionRejection.SESSION_ALREADY_ENDED)
+                    ) {
+                        // Started (or already finished) from another device, or a retried tap:
+                        // open that session instead of failing.
                         emitEffect { TeacherTodaySessionsEffect.OpenActiveSession(existing) }
                     } else {
                         emitEffect { TeacherTodaySessionsEffect.ShowMessage(ClassSessionRules.startFailureMessage(result.error)) }
