@@ -96,6 +96,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideScannerRepository(scannerApi: ScannerMobileApiService): ScannerRepository =
+        ScannerRepository(scannerApi)
+
+    @Provides
+    @Singleton
     fun provideExtracurricularRepository(extracurricularApi: ExtracurricularApiService): ExtracurricularRepository =
         ExtracurricularRepository(extracurricularApi)
 

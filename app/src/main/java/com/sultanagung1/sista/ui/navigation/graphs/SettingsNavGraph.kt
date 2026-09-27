@@ -3,6 +3,8 @@ package com.sultanagung1.sista.ui.navigation.graphs
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -475,7 +477,15 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Kesiswaan & Operasional Sekolah ---
-    composable(Screen.Discipline.route) {
+    composable(
+        route = Screen.Discipline.route,
+        // Read by DisciplineViewModel through its SavedStateHandle.
+        arguments = listOf(navArgument("studentUuid") {
+            type = NavType.StringType
+            nullable = true
+            defaultValue = null
+        })
+    ) {
         val viewModel: DisciplineViewModel = hiltViewModel()
         DisciplineScreen(
             viewModel = viewModel,
@@ -596,10 +606,13 @@ fun NavGraphBuilder.settingsNavGraph(
             onNavigateBack = { navController.popBackStack() },
             onNavigateHome = navigateToRoleHome
         ) {
+            val uksUiState by viewModel.uiState.collectAsState()
             UksVisitScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToHealthHistory = { navController.navigate(Screen.HealthHistory.createRoute(null)) }
+                onNavigateToHealthHistory = {
+                    navController.navigate(Screen.HealthHistory.createRoute(uksUiState.selectedStudent?.id?.toString()))
+                }
             )
         }
     }

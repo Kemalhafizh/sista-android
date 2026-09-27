@@ -1,5 +1,7 @@
 package com.sultanagung1.sista.ui.elearning
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,11 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import android.provider.OpenableColumns
 import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.data.model.ElearningAttachment
 
 @Composable
 fun AssignmentSubmitScreen(
@@ -25,12 +30,36 @@ fun AssignmentSubmitScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val assignment = uiState.assignments.find { it.id == assignmentId }
+    val context = LocalContext.current
 
     var notesText by remember {
         mutableStateOf(assignment?.submission?.content ?: "")
     }
+    // The already-submitted file (if any) lives on the server — only a real,
+    // freshly-picked attachment (below) can be uploaded from this screen.
     var attachedFileName by remember {
-        mutableStateOf(if (assignment?.submission?.filePath != null) "laporan_terunggah.pdf" else null)
+        mutableStateOf(assignment?.submission?.filePath?.substringAfterLast('/'))
+    }
+    var pickedAttachment by remember { mutableStateOf<ElearningAttachment?>(null) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (bytes != null) {
+                val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                var fileName = "berkas_tugas"
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (cursor.moveToFirst() && nameIndex >= 0) {
+                        fileName = cursor.getString(nameIndex)
+                    }
+                }
+                pickedAttachment = ElearningAttachment(bytes, fileName, mimeType)
+                attachedFileName = fileName
+            }
+        }
     }
 
     LaunchedEffect(uiState.submitSuccess) {
@@ -97,7 +126,7 @@ fun AssignmentSubmitScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            // File Attachment Simulation Picker
+            // Real file picker — reads actual bytes via ContentResolver
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -107,7 +136,7 @@ fun AssignmentSubmitScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
                     .clickable {
-                        attachedFileName = "Tugas_Siswa_${assignmentId}_Final.pdf"
+                        filePickerLauncher.launch("*/*")
                     }
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
@@ -140,7 +169,7 @@ fun AssignmentSubmitScreen(
 
             Button(
                 onClick = {
-                    viewModel.submitAssignment(assignmentId, notesText) {
+                    viewModel.submitAssignment(assignmentId, notesText, pickedAttachment) {
                         // callback handled by LaunchedEffect
                     }
                 },

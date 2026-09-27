@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import com.sultanagung1.sista.core.designsystem.tokens.SulaoneRadiusTokens
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
@@ -36,18 +37,31 @@ import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 
+/**
+ * @param translucent FASE 76.2 — for long lists: the bar is see-through
+ *   (surface at 88% opacity, no tonal elevation) so the list visibly scrolls
+ *   underneath it. The screen must then let its list run under the bar: put
+ *   the Scaffold's top inset into the list's contentPadding instead of padding
+ *   the list. Not a real backdrop blur (minSdk 26; RenderEffect needs 31) —
+ *   same trade-off as SulaoneGlassTopBar.
+ * @param showDivider a hairline under the bar, typically only once the list
+ *   has scrolled, so the edge is visible when content passes beneath it.
+ */
 @Composable
 fun SulaoneTopBar(
     title: String,
     subtitle: String? = null,
     onNavigateBack: (() -> Unit)? = null,
+    translucent: Boolean = false,
+    showDivider: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        color = if (translucent) MaterialTheme.colorScheme.surface.copy(alpha = 0.88f) else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (translucent) 0.dp else 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
+      Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -95,6 +109,10 @@ fun SulaoneTopBar(
                 actions()
             }
         }
+        if (showDivider) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        }
+      }
     }
 }
 
@@ -420,7 +438,9 @@ fun SulaoneErrorBanner(
 @Composable
 fun ModernBentoCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(20.dp),
+    // FASE 76.1: sourced from SulaoneRadiusTokens.xl (also 20.dp) instead of
+    // a local magic number — same rendered value, now centrally controlled.
+    shape: RoundedCornerShape = RoundedCornerShape(SulaoneRadiusTokens.xl),
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
     elevation: Dp = 0.dp,

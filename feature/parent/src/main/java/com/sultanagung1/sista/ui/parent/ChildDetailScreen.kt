@@ -171,8 +171,9 @@ fun ChildDetailScreen(
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Column {
                                             Text(text = log.date, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                            if (!log.notes.isNullOrBlank()) {
-                                                Text(text = log.notes, style = MaterialTheme.typography.bodySmall, color = Slate500, fontSize = 11.sp)
+                                            val notes = log.notes
+                                            if (!notes.isNullOrBlank()) {
+                                                Text(text = notes, style = MaterialTheme.typography.bodySmall, color = Slate500, fontSize = 11.sp)
                                             }
                                         }
                                     }

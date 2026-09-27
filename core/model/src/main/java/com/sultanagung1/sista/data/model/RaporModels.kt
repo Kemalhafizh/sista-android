@@ -5,8 +5,10 @@ import com.google.gson.annotations.SerializedName
 data class RaporStudentData(
     val id: Long,
     val name: String,
-    val nisn: String,
-    @SerializedName("class_name") val className: String
+    // Null when this user has no linked Student profile row yet — the
+    // backend no longer fabricates a placeholder NISN/class for everyone.
+    val nisn: String? = null,
+    @SerializedName("class_name") val className: String? = null
 )
 
 data class RaporAcademicSummary(

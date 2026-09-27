@@ -67,7 +67,7 @@ internal fun HomeModuleCarousel(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             val kesiswaanItems = listOf(
-                Triple("Buku Saku Poin", "Pelanggaran & SP", Screen.Discipline.route),
+                Triple("Buku Saku Poin", "Pelanggaran & SP", Screen.Discipline.createRoute()),
                 Triple("Simulasi UTBK", "Tryout IRT & PTN", Screen.UtbkTryout.route),
                 Triple("E-Pustaka Pintar", "Katalog & Checkout", Screen.LibraryCatalog.route),
                 Triple("Ekskul & OSIS", "Pendaftaran & Jadwal", Screen.Extracurricular.route),

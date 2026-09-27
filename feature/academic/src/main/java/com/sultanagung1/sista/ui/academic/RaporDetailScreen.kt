@@ -44,9 +44,10 @@ fun RaporDetailScreen(
                 onNavigateBack = onNavigateBack,
                 actions = {
                     val pdfStatus = uiState.raporData?.pdfStatus
-                    if (pdfStatus?.isReady == true && !pdfStatus.filePath.isNullOrBlank()) {
+                    val filePath = pdfStatus?.filePath
+                    if (pdfStatus?.isReady == true && !filePath.isNullOrBlank()) {
                         val studentName = uiState.raporData?.student?.name ?: "Siswa"
-                        IconButton(onClick = { onNavigateToPdfViewer(pdfStatus.filePath, "Rapor $studentName") }) {
+                        IconButton(onClick = { onNavigateToPdfViewer(filePath, "Rapor $studentName") }) {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = "Buka PDF", tint = Emerald700)
                         }
                     }
@@ -95,7 +96,7 @@ fun RaporDetailScreen(
                                         color = Color.White
                                     )
                                     Text(
-                                        text = "NISN: ${data.student.nisn} | ${data.student.className}",
+                                        text = "NISN: ${data.student.nisn ?: "-"} | ${data.student.className ?: "-"}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Emerald100
                                     )
@@ -210,7 +211,8 @@ private fun RaporEntryCard(entry: RaporEntryItem) {
             }
         }
 
-        if (!entry.capaianKompetensi.isNullOrBlank()) {
+        val capaian = entry.capaianKompetensi
+        if (!capaian.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Capaian Kompetensi:",
@@ -219,7 +221,7 @@ private fun RaporEntryCard(entry: RaporEntryItem) {
                 color = Emerald700
             )
             Text(
-                text = entry.capaianKompetensi,
+                text = capaian,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -263,10 +265,11 @@ private fun RaporCharacterCard(character: RaporCharacterItem) {
                 )
             }
         }
-        if (!character.description.isNullOrBlank()) {
+        val description = character.description
+        if (!description.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = character.description,
+                text = description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

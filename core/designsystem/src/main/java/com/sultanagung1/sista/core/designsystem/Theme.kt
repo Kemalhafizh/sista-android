@@ -2,7 +2,9 @@ package com.sultanagung1.sista.core.designsystem
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -16,6 +18,27 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 import com.sultanagung1.sista.core.accessibility.*
+import com.sultanagung1.sista.core.designsystem.tokens.SulaoneRadiusTokens
+
+/**
+ * FASE 76.1: MaterialTheme.shapes formally sourced from [SulaoneRadiusTokens]
+ * (which existed since FASE 70.1 but, like several other tokens in that
+ * file, had zero real call sites anywhere in the app until now). Only
+ * `small`/`medium`/`large` are overridden — those three happen to already
+ * equal Compose's own M3 defaults (8dp/12dp/16dp), so this is a genuine
+ * zero-visual-change wiring, not a redesign. `extraSmall` (M3 default 4dp)
+ * and `extraLarge` (M3 default 28dp, and asymmetric top-only in some
+ * components like bottom sheets) are deliberately left at Compose's
+ * defaults rather than mapped to a same-named SulaoneRadiusTokens value
+ * that would actually change their rendered corner radius — that's a real
+ * design decision for a later, dedicated pass, not an accidental side
+ * effect of this token-wiring commit.
+ */
+private val SulaoneShapes = Shapes(
+    small = RoundedCornerShape(SulaoneRadiusTokens.sm),
+    medium = RoundedCornerShape(SulaoneRadiusTokens.md),
+    large = RoundedCornerShape(SulaoneRadiusTokens.lg)
+)
 
 val DarkColorScheme = darkColorScheme(
     primary = Emerald400,
@@ -304,6 +327,7 @@ fun SulaoneTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,
+            shapes = SulaoneShapes,
             content = content
         )
     }

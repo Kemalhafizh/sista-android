@@ -33,6 +33,13 @@ data class SpmbTrackingInfo(
     val notes: String? = null
 )
 
+/** A real file picked from the device for one of the 4 SPMB document slots. */
+data class SpmbDocumentAttachment(
+    val bytes: ByteArray,
+    val fileName: String,
+    val mimeType: String
+)
+
 data class SpmbRegistrationDraft(
     val fullName: String = "",
     val nisn: String = "",

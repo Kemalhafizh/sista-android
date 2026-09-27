@@ -82,5 +82,6 @@ class ApiClient(private val context: Context) {
     val syncApi: SyncApiService by lazy { retrofit.create(SyncApiService::class.java) }
     val mobileConfigApi: MobileConfigApiService by lazy { retrofit.create(MobileConfigApiService::class.java) }
     val tahsinApi: TahsinApiService by lazy { retrofit.create(TahsinApiService::class.java) }
+    val scannerApi: ScannerMobileApiService by lazy { retrofit.create(ScannerMobileApiService::class.java) }
 }
 

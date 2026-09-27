@@ -254,7 +254,8 @@ fun StudentSessionCard(session: CounselingSessionItem) {
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            if (!session.sessionNotes.isNullOrBlank()) {
+            val notes = session.sessionNotes
+            if (!notes.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -270,7 +271,7 @@ fun StudentSessionCard(session: CounselingSessionItem) {
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            session.sessionNotes,
+                            notes,
                             fontSize = 12.sp,
                             color = Emerald900
                         )

@@ -254,4 +254,9 @@ object NetworkModule {
     @Singleton
     fun provideTahsinApiService(retrofit: Retrofit): TahsinApiService =
         retrofit.create(TahsinApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideScannerApiService(retrofit: Retrofit): ScannerMobileApiService =
+        retrofit.create(ScannerMobileApiService::class.java)
 }

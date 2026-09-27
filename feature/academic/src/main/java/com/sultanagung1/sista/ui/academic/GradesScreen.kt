@@ -15,22 +15,59 @@ package com.sultanagung1.sista.ui.academic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.core.designsystem.AccentAmber
+import com.sultanagung1.sista.core.designsystem.Emerald100
+import com.sultanagung1.sista.core.designsystem.Emerald200
+import com.sultanagung1.sista.core.designsystem.Emerald700
+import com.sultanagung1.sista.core.designsystem.Emerald800
+import com.sultanagung1.sista.core.designsystem.Emerald900
+import com.sultanagung1.sista.core.designsystem.EmeraldGlow
+import com.sultanagung1.sista.core.designsystem.Gold400
+import com.sultanagung1.sista.core.designsystem.ModernBentoCard
+import com.sultanagung1.sista.core.designsystem.Slate200
+import com.sultanagung1.sista.core.designsystem.Slate50
+import com.sultanagung1.sista.core.designsystem.Slate500
+import com.sultanagung1.sista.core.designsystem.Slate800
+import com.sultanagung1.sista.core.designsystem.Slate950
+import com.sultanagung1.sista.core.designsystem.SulaoneEmptyState
+import com.sultanagung1.sista.core.designsystem.SulaoneErrorBanner
+import com.sultanagung1.sista.core.designsystem.SkeletonBox
+import com.sultanagung1.sista.core.designsystem.SulaoneTieredLoading
+import com.sultanagung1.sista.core.designsystem.SulaoneTopBar
 import com.sultanagung1.sista.data.model.GradeEntry
 import kotlin.math.roundToInt
 
@@ -57,23 +94,33 @@ fun GradesScreen(
         uiState.grades.takeIf { it.isNotEmpty() }?.map { it.score }?.average()
     }
 
+    // FASE 76.2: the list scrolls under a see-through top bar; the hairline
+    // appears once content is actually passing beneath it.
+    val listState = rememberLazyListState()
+    val listScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
+
     Scaffold(
         topBar = {
             SulaoneTopBar(
                 title = "Nilai & Capaian",
                 subtitle = "Berdasarkan nilai yang diinput guru",
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                translucent = true,
+                showDivider = listScrolled
             )
         }
     ) { paddingValues ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
-                .padding(paddingValues)
+                .padding(bottom = paddingValues.calculateBottomPadding())
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp)
+            contentPadding = PaddingValues(top = paddingValues.calculateTopPadding() + 4.dp, bottom = 28.dp)
         ) {
             item {
                 ModernBentoCard(
@@ -142,6 +189,9 @@ fun GradesScreen(
                         onRetry = { viewModel.loadGrades() }
                     )
                 }
+            } else if (uiState.grades.isEmpty() && uiState.isLoading) {
+                // FASE 76.5: this state used to render nothing at all.
+                item { SulaoneTieredLoading(isLoading = true) { GradesSkeleton() } }
             } else if (uiState.grades.isEmpty() && !uiState.isLoading) {
                 item {
                     SulaoneEmptyState(
@@ -203,9 +253,10 @@ fun GradesScreen(
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    if (!entry.description.isNullOrBlank()) {
+                                    val description = entry.description
+                                    if (!description.isNullOrBlank()) {
                                         Text(
-                                            text = entry.description,
+                                            text = description,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -225,6 +276,30 @@ fun GradesScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Mirrors a subject card: subject name + average pill, then assessment rows. */
+@Composable
+private fun GradesSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        repeat(3) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Slate200, RoundedCornerShape(18.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    SkeletonBox(modifier = Modifier.weight(1f).height(18.dp))
+                    Spacer(modifier = Modifier.width(24.dp))
+                    SkeletonBox(modifier = Modifier.width(52.dp).height(26.dp), shape = RoundedCornerShape(13.dp))
+                }
+                SkeletonBox(modifier = Modifier.fillMaxWidth().height(12.dp))
+                SkeletonBox(modifier = Modifier.fillMaxWidth(0.7f).height(12.dp))
             }
         }
     }

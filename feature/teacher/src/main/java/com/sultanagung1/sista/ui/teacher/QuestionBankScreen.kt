@@ -238,10 +238,11 @@ private fun CategoryCardItem(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
-                    if (!category.curriculumRef.isNullOrBlank()) {
+                    val curriculumRef = category.curriculumRef
+                    if (!curriculumRef.isNullOrBlank()) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = category.curriculumRef,
+                            text = curriculumRef,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -253,10 +254,11 @@ private fun CategoryCardItem(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (!category.description.isNullOrBlank()) {
+                val desc = category.description
+                if (!desc.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = category.description,
+                        text = desc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2

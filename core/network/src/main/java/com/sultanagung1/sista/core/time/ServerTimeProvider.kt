@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.core.util.DateUtils
+import com.sultanagung1.sista.core.util.GeoUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -66,6 +67,9 @@ class ServerTimeProvider(
         try {
             val response = apiClient.mobileConfigApi.getConfig(platform = "android", build = currentBuildNumber())
             val responseReceivedElapsed = SystemClock.elapsedRealtime()
+            // Same round trip carries the attendance geofence; adopt it so the
+            // app's pre-check uses the point the server will actually enforce.
+            response.body()?.campus?.let { GeoUtils.updateCampus(it.latitude, it.longitude, it.radiusMeters) }
             val serverTimeRaw = response.body()?.serverTime
             if (!response.isSuccessful || serverTimeRaw.isNullOrBlank()) {
                 Log.w(tag, "Server time sync failed: HTTP ${response.code()}")

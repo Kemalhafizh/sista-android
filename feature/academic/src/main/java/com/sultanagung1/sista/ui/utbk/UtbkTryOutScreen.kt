@@ -97,6 +97,12 @@ fun UtbkTryOutScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Real average across the student's own completed tryouts —
+                // null when they haven't finished any yet, rather than a
+                // fabricated score/percentile.
+                val avgIrtScore = uiState.tryouts.mapNotNull { it.irtScore }.takeIf { it.isNotEmpty() }?.average()
+                val avgPercentile = uiState.tryouts.mapNotNull { it.nationalPercentile }.takeIf { it.isNotEmpty() }?.average()
+
                 when (uiState.selectedTab) {
                     0 -> {
                         // 1. Hero IRT Score Summary Banner
@@ -126,7 +132,7 @@ fun UtbkTryOutScreen(
                                                     color = Gold400
                                                 )
                                                 Text(
-                                                    text = "685.5",
+                                                    text = avgIrtScore?.let { "%.1f".format(it) } ?: "-",
                                                     style = MaterialTheme.typography.displayMedium.copy(
                                                         fontWeight = FontWeight.ExtraBold,
                                                         letterSpacing = (-1).sp
@@ -139,7 +145,8 @@ fun UtbkTryOutScreen(
                                                 color = Color.White.copy(alpha = 0.2f)
                                             ) {
                                                 Text(
-                                                    text = "Top 5.8% Nasional",
+                                                    text = avgPercentile?.let { "Top ${"%.1f".format(100 - it)}% Nasional" }
+                                                        ?: "Belum Ada Tryout Selesai",
                                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                                     color = Color.White,
                                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -233,8 +240,33 @@ fun UtbkTryOutScreen(
                             )
                         }
 
+                        if (uiState.estimatedScore <= 0.0 || uiState.recommendations.isEmpty()) {
+                            item {
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Slate100
+                                ) {
+                                    Text(
+                                        text = uiState.recommendationMessage
+                                            ?: "Belum ada rekomendasi. Kerjakan tryout UTBK terlebih dahulu untuk mendapatkan estimasi skor.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Slate700,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    text = "Estimasi skor rata-rata kamu: ${uiState.estimatedScore}",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
                         items(uiState.recommendations) { rec ->
-                            val isHigh = rec.passProbability >= 80
+                            val isHigh = rec.acceptanceChance == "Tinggi"
                             ModernBentoCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(18.dp),
@@ -249,7 +281,7 @@ fun UtbkTryOutScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = rec.universityName,
+                                            text = rec.university,
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.weight(1f)
@@ -259,7 +291,7 @@ fun UtbkTryOutScreen(
                                             color = if (isHigh) Emerald100 else AccentAmber.copy(alpha = 0.2f)
                                         ) {
                                             Text(
-                                                text = "${rec.passProbability}% Peluang",
+                                                text = "Peluang ${rec.acceptanceChance}",
                                                 style = MaterialTheme.typography.labelMedium.copy(
                                                     fontWeight = FontWeight.ExtraBold,
                                                     color = if (isHigh) Emerald800 else AccentAmber
@@ -271,28 +303,15 @@ fun UtbkTryOutScreen(
 
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "${rec.majorName} (${rec.category})",
+                                        text = "${rec.program} (${rec.category})",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = Emerald700
                                     )
 
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = Slate100
-                                    ) {
-                                        Text(
-                                            text = "💡 Analisis AI: ${rec.kktpReportAlignment}",
-                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                            color = Slate700,
-                                            modifier = Modifier.padding(10.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "🎓 ${rec.historicalAlumniCount} Alumni SMA Islam Sultan Agung 1 aktif berkuliah di jurusan ini.",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        text = "Passing grade: ${rec.passingGrade}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                         color = Slate500
                                     )
                                 }
@@ -337,17 +356,18 @@ fun UtbkTryOutScreen(
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = alumni.name,
+                                            text = alumni.name ?: "Alumni",
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = "${alumni.major} • ${alumni.university}",
+                                            text = "${alumni.major ?: "Jurusan belum diisi"} • ${alumni.university}",
                                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Text(
-                                            text = "Jalur: ${alumni.admissionPath} • ${alumni.graduationYear}",
+                                            text = alumni.admissionPath?.let { "Jalur: $it • ${alumni.graduationYear}" }
+                                                ?: alumni.graduationYear,
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                             color = Emerald700,
                                             fontWeight = FontWeight.SemiBold

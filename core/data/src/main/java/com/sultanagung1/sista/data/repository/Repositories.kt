@@ -22,7 +22,9 @@ import com.sultanagung1.sista.data.model.BiometricVerifyResponse
 import com.sultanagung1.sista.data.model.CbtExamItem
 import com.sultanagung1.sista.data.model.CbtForceCloseRequest
 import com.sultanagung1.sista.data.model.CbtForceCloseResponse
+import com.sultanagung1.sista.data.model.CbtImageAttachment
 import com.sultanagung1.sista.data.model.CbtMicroSyncRequest
+import com.sultanagung1.sista.data.model.CbtQuestionImageUpload
 import com.sultanagung1.sista.data.model.CbtQuestionItem
 import com.sultanagung1.sista.data.model.CbtResetStudentData
 import com.sultanagung1.sista.data.model.CbtResetStudentRequest
@@ -56,12 +58,17 @@ import com.sultanagung1.sista.data.model.NotificationPreferences
 import com.sultanagung1.sista.data.model.ParentChildItem
 import com.sultanagung1.sista.data.model.ParentMessageDto
 import com.sultanagung1.sista.data.model.PaymentVaResponse
+import com.sultanagung1.sista.data.model.PendingApprovalItem
 import com.sultanagung1.sista.data.model.RegisterBiometricRequest
 import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.model.SchoolKpiSummary
 import com.sultanagung1.sista.data.model.SmartSuggestion
 import com.sultanagung1.sista.data.model.SubmitClassAttendanceRequest
 import com.sultanagung1.sista.data.model.TahfidzLogItem
+import com.sultanagung1.sista.data.model.TeacherCbtExamItem
 import com.sultanagung1.sista.data.model.TeacherClassStudent
+import com.sultanagung1.sista.data.model.TeacherCreateExamRequest
+import com.sultanagung1.sista.data.model.TeacherCreatedExam
 import com.sultanagung1.sista.data.model.TeacherClassSummary
 import com.sultanagung1.sista.data.model.TeacherDirectoryItem
 import com.sultanagung1.sista.data.model.UserProfile
@@ -317,13 +324,19 @@ class StudentRepository(
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.contextualHomeApi.getContextualHome()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data))
+            if (response.isSuccessful) {
+                // A successful response with no data field is a real "nothing
+                // contextual today" state — Success(null) is honest here.
+                // A non-2xx response is a real failure and must not be
+                // repainted as an empty success (that's how the Home screen
+                // ended up permanently showing a fabricated 14-day streak
+                // card on any backend error).
+                emit(NetworkResult.Success(response.body()?.data))
             } else {
-                emit(NetworkResult.Success(null))
+                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat data kontekstual beranda" }, response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(null))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat memuat beranda"))
         }
     }.flowOn(Dispatchers.IO)
 }
@@ -499,6 +512,21 @@ class CbtRepository(private val apiClient: ApiClient) {
         }
     }.flowOn(Dispatchers.IO)
 
+    fun getTeacherProctorExams(): Flow<NetworkResult<List<TeacherCbtExamItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.cbtApi.getTeacherProctorExams()
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar ujian (${response.code()}).", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
     fun getProctorToken(examId: Long): Flow<NetworkResult<CbtTokenInfoResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
@@ -543,6 +571,89 @@ class CbtRepository(private val apiClient: ApiClient) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
+
+    // === Teacher manual exam authoring (ApiTeacherController) ===
+
+    fun createTeacherExam(request: TeacherCreateExamRequest): Flow<NetworkResult<TeacherCreatedExam>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.cbtApi.createTeacherExam(request)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
+            } else {
+                emit(
+                    NetworkResult.Error(
+                        describeServerError(response.code(), response.errorBody()?.string(), body?.message, "Gagal menerbitkan ujian"),
+                        response.code()
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat menerbitkan ujian."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun uploadExamImage(attachment: CbtImageAttachment): Flow<NetworkResult<CbtQuestionImageUpload>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val part = MultipartBody.Part.createFormData(
+                "image",
+                attachment.fileName,
+                attachment.bytes.toRequestBody(attachment.mimeType.toMediaTypeOrNull())
+            )
+            val response = apiClient.cbtApi.uploadExamImage(part)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
+            } else {
+                emit(
+                    NetworkResult.Error(
+                        describeServerError(response.code(), response.errorBody()?.string(), body?.message, "Gagal mengunggah gambar"),
+                        response.code()
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat mengunggah gambar."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    companion object {
+        /**
+         * Readable message for a non-2xx Laravel response. A 422 from
+         * `$request->validate()` is `{message, errors: {field: [...]}}`, where
+         * `message` only carries the FIRST error — so every distinct error line
+         * is surfaced, letting a teacher fix a long exam form in one pass
+         * instead of one error per submit. Validation text is already
+         * Indonesian (the backend runs with APP_LOCALE=id).
+         */
+        fun describeServerError(code: Int, errorBody: String?, envelopeMessage: String?, fallback: String): String {
+            val json = errorBody?.takeIf { it.isNotBlank() }?.let {
+                runCatching { com.google.gson.JsonParser.parseString(it).asJsonObject }.getOrNull()
+            }
+            val fieldErrors = json?.get("errors")
+                ?.takeIf { it.isJsonObject }
+                ?.asJsonObject
+                ?.entrySet()
+                ?.flatMap { entry ->
+                    val value = entry.value
+                    if (value.isJsonArray) value.asJsonArray.mapNotNull { e -> e.takeIf { it.isJsonPrimitive }?.asString } else emptyList()
+                }
+                ?.distinct()
+                .orEmpty()
+            if (fieldErrors.isNotEmpty()) return fieldErrors.joinToString("\n")
+
+            val serverMessage = envelopeMessage
+                ?: json?.get("message")?.takeIf { it.isJsonPrimitive }?.asString
+            return when (code) {
+                401 -> "Sesi Anda berakhir. Silakan masuk kembali."
+                403 -> "Akun ini tidak berwenang melakukan tindakan ini."
+                413 -> "Ukuran file terlalu besar untuk diterima server."
+                else -> serverMessage?.takeIf { it.isNotBlank() } ?: "$fallback (kode $code)."
+            }
+        }
+    }
 
     fun forceCloseExam(examId: Long, reason: String, answersSnapshot: Map<String, String>): Flow<NetworkResult<CbtForceCloseResponse>> = flow {
         try {
@@ -718,8 +829,9 @@ class TeacherRepository(private val apiClient: ApiClient) {
         try {
             val response = apiClient.teacherApi.submitClassAttendance(request)
             val body = response.body()
-            if (response.isSuccessful && body?.success == true && body.data != null) {
-                emit(NetworkResult.Success(body.data))
+            val data = body?.data
+            if (response.isSuccessful && body?.success == true && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal menyimpan presensi kelas", response.code()))
             }
@@ -751,8 +863,9 @@ class ParentRepository(private val apiClient: ApiClient) {
         try {
             val response = apiClient.parentApi.getChildSummary(uuid)
             val body = response.body()
-            if (response.isSuccessful && body?.success == true && body.data != null) {
-                emit(NetworkResult.Success(body.data))
+            val data = body?.data
+            if (response.isSuccessful && body?.success == true && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat rangkuman anak", response.code()))
             }
@@ -795,13 +908,13 @@ class ParentRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.parentExperienceApi.getChildFeed()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data!!))
+            if (response.isSuccessful) {
+                emit(NetworkResult.Success(response.body()?.data.orEmpty()))
             } else {
-                emit(NetworkResult.Success(emptyList()))
+                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat aktivitas anak" }, response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(emptyList()))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat memuat aktivitas anak"))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -809,13 +922,13 @@ class ParentRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.parentExperienceApi.getWeeklyDigest()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data))
+            if (response.isSuccessful) {
+                emit(NetworkResult.Success(response.body()?.data))
             } else {
-                emit(NetworkResult.Success(null))
+                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat ringkasan mingguan" }, response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(null))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat memuat ringkasan mingguan"))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -823,13 +936,13 @@ class ParentRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.parentExperienceApi.getChildComparison()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data!!))
+            if (response.isSuccessful) {
+                emit(NetworkResult.Success(response.body()?.data.orEmpty()))
             } else {
-                emit(NetworkResult.Success(emptyList()))
+                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat perbandingan nilai anak" }, response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(emptyList()))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat memuat perbandingan nilai anak"))
         }
     }.flowOn(Dispatchers.IO)
 }
@@ -845,6 +958,39 @@ class AdminRepository(private val apiClient: ApiClient) {
                 emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat dashboard eksekutif", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    // FASE 71.4 follow-up: real KPI (SPP ratio per cohort, CBT server usage)
+    // — replaces the "Dummy or expanded KPI details" backend placeholder.
+    fun getSchoolKpi(): Flow<NetworkResult<SchoolKpiSummary>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.adminApi.getSchoolKpi()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat KPI sekolah", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    // FASE 71.4 follow-up: real pending-approvals list.
+    fun getPendingApprovals(): Flow<NetworkResult<List<PendingApprovalItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.adminApi.getPendingApprovals()
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
+            } else {
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat daftar persetujuan", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
@@ -1054,9 +1200,17 @@ class NotificationRepository(private val apiClient: ApiClient) {
         try {
             val req = DeviceTokenRegisterRequest(deviceId = deviceId, fcmToken = fcmToken)
             val response = apiClient.notificationApi.registerDevice(req)
-            emit(NetworkResult.Success(response.isSuccessful))
+            if (response.isSuccessful) {
+                emit(NetworkResult.Success(true))
+            } else {
+                // A failed registration must surface as a failure — silently
+                // claiming success here previously meant a device could go
+                // an entire app lifetime never actually reachable by push
+                // notifications, with no way to notice or retry.
+                emit(NetworkResult.Error("Gagal mendaftarkan perangkat untuk notifikasi push (Kode: ${response.code()}).", response.code()))
+            }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(true))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat mendaftarkan perangkat."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -1064,81 +1218,14 @@ class NotificationRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.notificationApi.getAnnouncements(category)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Success(
-                    listOf(
-                        AnnouncementItem(
-                            id = "ann1",
-                            title = "Pelaksanaan Penilaian Tengah Semester (PTS) Berbasis CBT Terpadu",
-                            summary = "Diberitahukan kepada seluruh siswa dan wali murid bahwa pelaksanaan PTS Gasal TA 2025/2026 dimulai hari Senin depan.",
-                            content = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nSehubungan dengan kalender akademik SMA Islam Sultan Agung 1 Semarang, kami menginformasikan pelaksanaan PTS Ganjil dengan ketentuan menggunakan aplikasi CBT Sulaone.\n\n1. Seluruh siswa wajib membawa gawai yang telah terpasang aplikasi Sulaone terbaru.\n2. Presensi ujian dimulai pukul 07.00 WIB di masing-masing ruang kelas.\n3. Tata tertib dan jadwal detail terlampir pada dokumen edaran resmi.",
-                            category = "Akademik",
-                            author = "Waka Kurikulum",
-                            date = "25 Agustus 2026",
-                            priority = "important",
-                            attachmentUrl = "edaran_pts_2026.pdf"
-                        ),
-                        AnnouncementItem(
-                            id = "ann2",
-                            title = "Pemberitahuan Program Shalat Dhuha dan Tadarus Al-Qur'an Berjamaah",
-                            summary = "Penguatan amalan yaumiyah pembiasaan shalat Dhuha dan tadarus 1 juz per pekan di Masjid Kampus YBWSA.",
-                            content = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nDalam rangka meningkatkan ketakwaan dan pembentukan karakter generasi khaira ummah, seluruh siswa diharapkan hadir pukul 06.30 WIB untuk Shalat Dhuha berjamaah dan tadarus dipandu guru pendamping.",
-                            category = "Ibadah",
-                            author = "Koordinator Keislaman",
-                            date = "24 Agustus 2026",
-                            priority = "normal"
-                        ),
-                        AnnouncementItem(
-                            id = "ann3",
-                            title = "Peringatan Waspada Cuaca Ekstrem dan Protokol Keselamatan Kampus",
-                            summary = "Himbauan kewaspadaan dan kepatuhan jalur evakuasi aman saat berkegiatan di lingkungan sekolah.",
-                            content = "Mengingat peringatan dini BMKG terkait potensi hujan lebat disertai angin di wilayah Kota Semarang, pihak sekolah menghimbau seluruh civitas akademika untuk tidak berteduh di bawah pohon rindang dan memarkir kendaraan pada shelter tertutup.",
-                            category = "Darurat",
-                            author = "Tim K3 & Sarpras",
-                            date = "23 Agustus 2026",
-                            priority = "emergency"
-                        )
-                    )
-                ))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat pengumuman sekolah (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                listOf(
-                    AnnouncementItem(
-                        id = "ann1",
-                        title = "Pelaksanaan Penilaian Tengah Semester (PTS) Berbasis CBT Terpadu",
-                        summary = "Diberitahukan kepada seluruh siswa dan wali murid bahwa pelaksanaan PTS Gasal TA 2025/2026 dimulai hari Senin depan.",
-                        content = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nSehubungan dengan kalender akademik SMA Islam Sultan Agung 1 Semarang, kami menginformasikan pelaksanaan PTS Ganjil dengan ketentuan menggunakan aplikasi CBT Sulaone.",
-                        category = "Akademik",
-                        author = "Waka Kurikulum",
-                        date = "25 Agustus 2026",
-                        priority = "important",
-                        attachmentUrl = "edaran_pts_2026.pdf"
-                    ),
-                    AnnouncementItem(
-                        id = "ann2",
-                        title = "Pemberitahuan Program Shalat Dhuha dan Tadarus Al-Qur'an Berjamaah",
-                        summary = "Penguatan amalan yaumiyah pembiasaan shalat Dhuha dan tadarus 1 juz per pekan di Masjid Kampus YBWSA.",
-                        content = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nDalam rangka meningkatkan ketakwaan dan pembentukan karakter generasi khaira ummah, seluruh siswa diharapkan hadir pukul 06.30 WIB.",
-                        category = "Ibadah",
-                        author = "Koordinator Keislaman",
-                        date = "24 Agustus 2026",
-                        priority = "normal"
-                    ),
-                    AnnouncementItem(
-                        id = "ann3",
-                        title = "Peringatan Waspada Cuaca Ekstrem dan Protokol Keselamatan Kampus",
-                        summary = "Himbauan kewaspadaan dan kepatuhan jalur evakuasi aman saat berkegiatan di lingkungan sekolah.",
-                        content = "Pihak sekolah menghimbau seluruh civitas akademika untuk berhati-hati dan mematuhi instruksi keselamatan.",
-                        category = "Darurat",
-                        author = "Tim K3 & Sarpras",
-                        date = "23 Agustus 2026",
-                        priority = "emergency"
-                    )
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -1146,37 +1233,14 @@ class NotificationRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.notificationApi.getAnnouncementDetail(id)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Success(
-                    AnnouncementItem(
-                        id = id,
-                        title = "Pelaksanaan Penilaian Tengah Semester (PTS) Berbasis CBT Terpadu",
-                        summary = "Diberitahukan kepada seluruh siswa dan wali murid bahwa pelaksanaan PTS Gasal TA 2025/2026 dimulai hari Senin depan.",
-                        content = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nSehubungan dengan kalender akademik SMA Islam Sultan Agung 1 Semarang, kami menginformasikan pelaksanaan PTS Ganjil dengan ketentuan menggunakan aplikasi CBT Sulaone.\n\n1. Seluruh siswa wajib membawa gawai yang telah terpasang aplikasi Sulaone terbaru.\n2. Presensi ujian dimulai pukul 07.00 WIB di masing-masing ruang kelas.\n3. Siswa wajib mematuhi kode etik ujian dan dilarang berpindah aplikasi selama ujian berlangsung.\n4. Tata tertib dan jadwal detail terlampir pada dokumen edaran resmi yayasan.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh.",
-                        category = "Akademik",
-                        author = "Waka Kurikulum SMA Islam Sultan Agung 1",
-                        date = "25 Agustus 2026",
-                        priority = "important",
-                        attachmentUrl = "surat_edaran_pts_2026.pdf"
-                    )
-                ))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat detail pengumuman (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                AnnouncementItem(
-                    id = id,
-                    title = "Pelaksanaan Penilaian Tengah Semester (PTS) Berbasis CBT Terpadu",
-                    summary = "Diberitahukan kepada seluruh siswa dan wali murid bahwa pelaksanaan PTS Gasal TA 2025/2026 dimulai hari Senin depan.",
-                    content = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nSehubungan dengan kalender akademik SMA Islam Sultan Agung 1 Semarang, kami menginformasikan pelaksanaan PTS Ganjil dengan ketentuan menggunakan aplikasi CBT Sulaone.",
-                    category = "Akademik",
-                    author = "Waka Kurikulum SMA Islam Sultan Agung 1",
-                    date = "25 Agustus 2026",
-                    priority = "important",
-                    attachmentUrl = "surat_edaran_pts_2026.pdf"
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -1184,109 +1248,14 @@ class NotificationRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.notificationApi.getNotifications()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Success(
-                    listOf(
-                        NotificationItem(
-                            id = "notif_1",
-                            title = "Presensi Gerbang Berhasil",
-                            body = "Ahmad Kemal Hafizh berhasil tercatat tiba di Gerbang Utama SMA Islam Sultan Agung 1 pada pukul 06:42 WIB.",
-                            channel = "attendance_alerts",
-                            deepLinkRoute = "geofence_attendance",
-                            timestamp = "06:42 WIB",
-                            isRead = false
-                        ),
-                        NotificationItem(
-                            id = "notif_2",
-                            title = "Nilai Rapor Formatif Fisika Diunggah",
-                            body = "Ustadz Drs. H. Bambang Suherman telah merilis nilai Capaian KKTP Bab Termodinamika (Nilai: 92).",
-                            channel = "academic_updates",
-                            deepLinkRoute = "grades",
-                            timestamp = "09:30 WIB",
-                            isRead = false
-                        ),
-                        NotificationItem(
-                            id = "notif_3",
-                            title = "Pemberitahuan Tagihan SPP September",
-                            body = "Virtual Account BSI (88219324567890) untuk pembayaran SPP bulan September telah aktif.",
-                            channel = "financial_reminders",
-                            deepLinkRoute = "billing",
-                            timestamp = "Kemarin",
-                            isRead = true
-                        ),
-                        NotificationItem(
-                            id = "notif_4",
-                            title = "Pesan Masuk dari Wali Kelas",
-                            body = "Ustadz Bambang: 'Assalamu'alaikum, jadwal konsultasi SNBP ananda sudah kami agendakan.'",
-                            channel = "academic_updates",
-                            deepLinkRoute = "chat/conv1",
-                            timestamp = "Kemarin",
-                            isRead = true
-                        ),
-                        NotificationItem(
-                            id = "notif_5",
-                            title = "Siaran Darurat: Kewaspadaan Cuaca Ekstrem",
-                            body = "Himbauan evakuasi aman dan pemindahan kendaraan ke area tertutup sehubungan hujan lebat BMKG.",
-                            channel = "emergency_broadcast",
-                            deepLinkRoute = "announcement_detail/ann3",
-                            timestamp = "2 hari lalu",
-                            isRead = true
-                        )
-                    )
-                ))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat notifikasi (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(
-                listOf(
-                    NotificationItem(
-                        id = "notif_1",
-                        title = "Presensi Gerbang Berhasil",
-                        body = "Ahmad Kemal Hafizh berhasil tercatat tiba di Gerbang Utama SMA Islam Sultan Agung 1 pada pukul 06:42 WIB.",
-                        channel = "attendance_alerts",
-                        deepLinkRoute = "geofence_attendance",
-                        timestamp = "06:42 WIB",
-                        isRead = false
-                    ),
-                    NotificationItem(
-                        id = "notif_2",
-                        title = "Nilai Rapor Formatif Fisika Diunggah",
-                        body = "Ustadz Drs. H. Bambang Suherman telah merilis nilai Capaian KKTP Bab Termodinamika (Nilai: 92).",
-                        channel = "academic_updates",
-                        deepLinkRoute = "grades",
-                        timestamp = "09:30 WIB",
-                        isRead = false
-                    ),
-                    NotificationItem(
-                        id = "notif_3",
-                        title = "Pemberitahuan Tagihan SPP September",
-                        body = "Virtual Account BSI (88219324567890) untuk pembayaran SPP bulan September telah aktif.",
-                        channel = "financial_reminders",
-                        deepLinkRoute = "billing",
-                        timestamp = "Kemarin",
-                        isRead = true
-                    ),
-                    NotificationItem(
-                        id = "notif_4",
-                        title = "Pesan Masuk dari Wali Kelas",
-                        body = "Ustadz Bambang: 'Assalamu'alaikum, jadwal konsultasi SNBP ananda sudah kami agendakan.'",
-                        channel = "academic_updates",
-                        deepLinkRoute = "chat/conv1",
-                        timestamp = "Kemarin",
-                        isRead = true
-                    ),
-                    NotificationItem(
-                        id = "notif_5",
-                        title = "Siaran Darurat: Kewaspadaan Cuaca Ekstrem",
-                        body = "Himbauan evakuasi aman dan pemindahan kendaraan ke area tertutup sehubungan hujan lebat BMKG.",
-                        channel = "emergency_broadcast",
-                        deepLinkRoute = "announcement_detail/ann3",
-                        timestamp = "2 hari lalu",
-                        isRead = true
-                    )
-                )
-            ))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -1294,27 +1263,34 @@ class NotificationRepository(private val apiClient: ApiClient) {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.notificationPreferencesApi.getPreferences()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Success(NotificationPreferences()))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat preferensi notifikasi (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(NotificationPreferences()))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * A failed save must not echo back the attempted [preferences] as if
+     * they were persisted — the user would believe a toggle was saved when
+     * the server never actually received it.
+     */
     fun updateNotificationPreferences(preferences: NotificationPreferences): Flow<NetworkResult<NotificationPreferences>> = flow {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.notificationPreferencesApi.updatePreferences(preferences)
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data!!))
+            val data = response.body()?.data
+            if (response.isSuccessful && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Success(preferences))
+                emit(NetworkResult.Error(response.body()?.message ?: "Gagal menyimpan preferensi notifikasi (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(preferences))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 }

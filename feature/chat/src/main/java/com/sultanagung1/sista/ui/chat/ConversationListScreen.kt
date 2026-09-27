@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -88,12 +89,21 @@ fun ConversationListScreen(
         }
     }
 
+    // FASE 76.2: the list scrolls under a see-through top bar; the hairline
+    // appears once content is actually passing beneath it.
+    val listState = rememberLazyListState()
+    val listScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
+
     Scaffold(
         topBar = {
             SulaoneTopBar(
                 title = "Pesan & Konsultasi Ortu ↔ Guru",
                 subtitle = "SMA Islam Sultan Agung 1 Semarang",
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                translucent = true,
+                showDivider = listScrolled
             )
         },
         floatingActionButton = {
@@ -121,11 +131,12 @@ fun ConversationListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
-                .padding(paddingValues)
+                .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp),
+                contentPadding = PaddingValues(top = paddingValues.calculateTopPadding(), bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // 1. Search Bar & Category Filter Pills

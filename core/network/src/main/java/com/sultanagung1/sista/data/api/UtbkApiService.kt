@@ -1,8 +1,8 @@
 package com.sultanagung1.sista.data.api
 
 import com.sultanagung1.sista.data.model.AlumniCampusItem
-import com.sultanagung1.sista.data.model.MajorRecommendationItem
 import com.sultanagung1.sista.data.model.UtbkQuestion
+import com.sultanagung1.sista.data.model.UtbkRecommendationResponse
 import com.sultanagung1.sista.data.model.UtbkTryoutItem
 import retrofit2.Response
 import retrofit2.http.Body
@@ -25,7 +25,7 @@ interface UtbkApiService {
     ): Response<Map<String, Any>>
 
     @GET("utbk/recommendations")
-    suspend fun getMajorRecommendations(): Response<List<MajorRecommendationItem>>
+    suspend fun getMajorRecommendations(): Response<UtbkRecommendationResponse>
 
     @GET("utbk/alumni-directory")
     suspend fun getCampusAlumniDirectory(): Response<List<AlumniCampusItem>>

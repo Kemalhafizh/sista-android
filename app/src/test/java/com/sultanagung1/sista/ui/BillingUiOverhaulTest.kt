@@ -23,7 +23,7 @@ class BillingUiOverhaulTest {
 
     @Test
     fun testBillingScreenDesignCompliance() {
-        val file = findSourceFile("src/main/java/com/sultanagung1/sista/ui/finance/BillingScreen.kt")
+        val file = findSourceFile("feature/finance/src/main/java/com/sultanagung1/sista/ui/finance/BillingScreen.kt")
         assertTrue("BillingScreen.kt must exist", file.exists())
 
         val content = file.readText()

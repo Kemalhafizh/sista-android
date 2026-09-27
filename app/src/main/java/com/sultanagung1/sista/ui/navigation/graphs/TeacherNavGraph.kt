@@ -1,5 +1,6 @@
 package com.sultanagung1.sista.ui.navigation.graphs
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -77,11 +78,9 @@ fun NavGraphBuilder.teacherNavGraph(
         }
     }
 
-    composable(
-        route = Screen.TeacherProctor.route,
-        arguments = listOf(navArgument("examId") { type = NavType.LongType })
-    ) { backStackEntry ->
-        val examId = backStackEntry.arguments?.getLong("examId") ?: 101L
+    // "Pengawas CBT" entry point: lists the exams this teacher really operates
+    // (GET teacher/cbt/exams) and jumps straight in when exactly one is ongoing.
+    composable(Screen.TeacherProctorExams.route) {
         RoleGuardedScreen(
             currentRole = userRole,
             allowedRoles = listOf("teacher", "guru", "admin", "superadmin"),
@@ -89,10 +88,45 @@ fun NavGraphBuilder.teacherNavGraph(
             onNavigateBack = { navController.popBackStack() },
             onNavigateHome = navigateToRoleHome
         ) {
-            TeacherProctorDashboardScreen(
-                examId = examId,
+            TeacherProctorExamsScreen(
+                onOpenExam = { examId, replacePicker ->
+                    navController.navigate(Screen.TeacherProctor.createRoute(examId)) {
+                        if (replacePicker) {
+                            popUpTo(Screen.TeacherProctorExams.route) { inclusive = true }
+                        }
+                    }
+                },
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+    }
+
+    composable(
+        route = Screen.TeacherProctor.route,
+        arguments = listOf(navArgument("examId") { type = NavType.LongType })
+    ) { backStackEntry ->
+        // No placeholder id: a missing/invalid id means there is no exam to
+        // proctor, so send the teacher to their real exam list instead.
+        val examId = backStackEntry.arguments?.getLong("examId")?.takeIf { it > 0 }
+        RoleGuardedScreen(
+            currentRole = userRole,
+            allowedRoles = listOf("teacher", "guru", "admin", "superadmin"),
+            featureTitle = "Pengawas Ujian Live (Proctor)",
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateHome = navigateToRoleHome
+        ) {
+            if (examId != null) {
+                TeacherProctorDashboardScreen(
+                    examId = examId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.TeacherProctorExams.route) {
+                        popUpTo(Screen.TeacherProctor.route) { inclusive = true }
+                    }
+                }
+            }
         }
     }
 
@@ -106,8 +140,14 @@ fun NavGraphBuilder.teacherNavGraph(
         ) {
             TeacherCreateExamScreen(
                 onNavigateBack = { navController.popBackStack() },
+                // Only offered when the server's create response says this
+                // teacher may view the token. The form is replaced, not
+                // stacked: going back from the proctor room must not reopen
+                // an already-published draft.
                 onExamCreated = { newExamId ->
-                    navController.navigate(Screen.TeacherProctor.createRoute(newExamId))
+                    navController.navigate(Screen.TeacherProctor.createRoute(newExamId)) {
+                        popUpTo(Screen.TeacherCreateExam.route) { inclusive = true }
+                    }
                 }
             )
         }

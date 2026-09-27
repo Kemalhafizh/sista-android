@@ -36,6 +36,15 @@ fun HealthHistoryScreen(
     val context = LocalContext.current
     val screening = uiState.screeningSummary
 
+    // This screen gets its own fresh ViewModel instance (Hilt scopes it to
+    // this destination), so the studentId nav arg has to be re-applied here
+    // rather than relying on UksVisitScreen's already-loaded state.
+    androidx.compose.runtime.LaunchedEffect(studentId) {
+        if (!studentId.isNullOrBlank()) {
+            viewModel.loadData(studentId)
+        }
+    }
+
     Scaffold(
         topBar = {
             SulaoneTopBar(
@@ -43,7 +52,7 @@ fun HealthHistoryScreen(
                 onNavigateBack = onNavigateBack,
                 actions = {
                     IconButton(onClick = {
-                        Toast.makeText(context, "Mengunduh Resume Rekam Medis UKS (PDF)...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Fitur unduh PDF rekam medis belum tersedia.", Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(Icons.Default.Download, contentDescription = "Unduh PDF", tint = Emerald700)
                     }
@@ -51,6 +60,20 @@ fun HealthHistoryScreen(
             )
         }
     ) { paddingValues ->
+        if (studentId.isNullOrBlank()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Pilih siswa terlebih dahulu di formulir Catat Pasien UKS untuk melihat riwayat kesehatannya.",
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    color = Slate500
+                )
+            }
+            return@Scaffold
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -84,15 +107,15 @@ fun HealthHistoryScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text(screening.studentName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                                        Text("NISN: ${screening.nisn}", color = Gold300, fontSize = 12.sp)
+                                        Text(screening.studentName ?: "-", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                        Text("NISN: ${screening.nisn ?: "-"}", color = Gold300, fontSize = 12.sp)
                                     }
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
                                         color = Gold500.copy(alpha = 0.25f)
                                     ) {
                                         Text(
-                                            "Gol. Darah: ${screening.bloodType}",
+                                            "Gol. Darah: ${screening.bloodType ?: "Belum tercatat"}",
                                             color = Gold300,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
@@ -108,9 +131,9 @@ fun HealthHistoryScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceAround
                                 ) {
-                                    MetricCol(label = "Tinggi", value = "${screening.heightCm} cm")
-                                    MetricCol(label = "Berat", value = "${screening.weightKg} kg")
-                                    MetricCol(label = "BMI", value = "${screening.bmi} (${screening.bmiCategory})")
+                                    MetricCol(label = "Tinggi", value = screening.heightCm?.let { "$it cm" } ?: "Belum diperiksa")
+                                    MetricCol(label = "Berat", value = screening.weightKg?.let { "$it kg" } ?: "Belum diperiksa")
+                                    MetricCol(label = "BMI", value = screening.bmi?.let { "$it (${screening.bmiCategory})" } ?: "Belum diperiksa")
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -121,11 +144,15 @@ fun HealthHistoryScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("Visus Mata: R ${screening.visionRight} / L ${screening.visionLeft}", color = Slate200, fontSize = 11.sp)
-                                    Text("Gigi: ${screening.dentalHealth}", color = Slate200, fontSize = 11.sp)
+                                    Text("Visus Mata: R ${screening.visionRight ?: "-"} / L ${screening.visionLeft ?: "-"}", color = Slate200, fontSize = 11.sp)
+                                    Text("Gigi: ${screening.dentalHealth ?: "Belum diperiksa"}", color = Slate200, fontSize = 11.sp)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Pemeriksa: ${screening.screener} (${screening.lastScreenedAt})", color = Gold200, fontSize = 10.sp)
+                                Text(
+                                    if (screening.screener != null) "Pemeriksa: ${screening.screener} (${screening.lastScreenedAt})" else "Belum ada riwayat skrining kesehatan",
+                                    color = Gold200,
+                                    fontSize = 10.sp
+                                )
                             }
                         }
                     }
@@ -181,7 +208,7 @@ fun HealthHistoryScreen(
             item {
                 Button(
                     onClick = {
-                        Toast.makeText(context, "Surat Keterangan Sakit UKS terunduh ke folder Downloads/SISTA.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Fitur unduh Surat Keterangan Sakit belum tersedia.", Toast.LENGTH_LONG).show()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -231,7 +258,7 @@ fun HealthRecordCard(record: HealthRecord) {
                     color = AccentBlue.copy(alpha = 0.15f)
                 ) {
                     Text(
-                        record.diagnosis,
+                        record.diagnosis ?: "-",
                         color = AccentBlue,
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp,

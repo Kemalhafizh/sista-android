@@ -90,6 +90,15 @@ fun ExtracurricularScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                if (uiState.errorMessage != null) {
+                    item {
+                        SulaoneErrorBanner(
+                            message = uiState.errorMessage ?: "",
+                            onRetry = { viewModel.loadData() }
+                        )
+                    }
+                }
+
                 when (uiState.selectedTab) {
                     0 -> {
                         item {

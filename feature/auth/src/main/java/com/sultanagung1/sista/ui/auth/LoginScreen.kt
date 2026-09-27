@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -202,6 +203,9 @@ fun LoginScreen(
                             color = bgColor,
                             modifier = Modifier
                                 .weight(1f)
+                                // FASE 74.1: stable per-role automation hook
+                                // ("role_tab_student", "role_tab_teacher", ...)
+                                .testTag("role_tab_${role.name.lowercase()}")
                                 .springPressable {
                                     haptics.tapLight()
                                     selectedRole = role
@@ -310,7 +314,9 @@ fun LoginScreen(
                             focusedBorderColor = Emerald700,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("login_identifier_input")
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -359,7 +365,9 @@ fun LoginScreen(
                             focusedBorderColor = Emerald700,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("login_password_input")
                     )
 
                     Spacer(modifier = Modifier.height(22.dp))
@@ -374,6 +382,7 @@ fun LoginScreen(
                         enabled = !uiState.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .testTag("login_submit_button")
                             .sulaoneInteractiveTouchTarget(48.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Emerald700),

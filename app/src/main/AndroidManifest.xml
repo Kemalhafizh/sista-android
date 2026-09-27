@@ -63,6 +63,14 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <service
+            android:name=".SulaoneFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <!-- AppWidget Receivers -->
         <receiver
             android:name=".widget.ScheduleWidgetProvider"

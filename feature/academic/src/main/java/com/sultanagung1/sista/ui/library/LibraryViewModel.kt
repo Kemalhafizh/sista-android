@@ -52,34 +52,50 @@ class LibraryViewModel @Inject constructor(private val repository: LibraryReposi
         loadData(_uiState.value.searchQuery, catFilter)
     }
 
+    /** Reloads with the current search and category (pull-to-refresh, retry). */
+    fun refresh() {
+        val state = _uiState.value
+        loadData(
+            query = state.searchQuery.ifBlank { null },
+            category = state.selectedCategory.takeUnless { it == "Semua" }
+        )
+    }
+
     fun loadData(query: String? = null, category: String? = null) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            // Clear the previous error, or it would stay on screen after a successful retry.
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             repository.getBooks(query, category).collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(books = res.data) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(books = res.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
             repository.getMyLoans().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(myLoans = res.data, isLoading = false) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(myLoans = res.data, isLoading = false) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
     }
 
-    fun borrowBookByQr(qrCode: String, studentId: String) {
+    fun borrowBookByQr(qrCode: String, studentId: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             repository.borrowBookByQr(qrCode, studentId).collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { state ->
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             checkoutSuccess = true,
                             myLoans = listOf(res.data) + state.myLoans
                         )
                     }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }

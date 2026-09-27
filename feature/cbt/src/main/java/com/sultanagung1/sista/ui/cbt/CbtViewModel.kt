@@ -331,9 +331,10 @@ class CbtViewModel @Inject constructor(
 
     fun handleProctorCommand(command: ProctorCommand) {
         _uiState.value = _uiState.value.copy(proctorIntervention = command)
-        if (command.action == "EXTEND_TIME" && command.extraMinutes != null) {
+        val extraMinutes = command.extraMinutes
+        if (command.action == "EXTEND_TIME" && extraMinutes != null) {
             _uiState.value = _uiState.value.copy(
-                remainingSeconds = _uiState.value.remainingSeconds + (command.extraMinutes * 60)
+                remainingSeconds = _uiState.value.remainingSeconds + (extraMinutes * 60)
             )
         }
     }

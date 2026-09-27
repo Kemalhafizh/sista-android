@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,8 +23,6 @@ import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedElement
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun LibraryCatalogScreen(
@@ -102,18 +99,19 @@ fun LibraryCatalogScreen(
                 }
             }
 
-            var isRefreshing by remember { mutableStateOf(false) }
-            val coroutineScope = rememberCoroutineScope()
+            // Pull-to-refresh used to call selectTab() — which reloads nothing —
+            // and spin for a fixed 600 ms. It now reloads and spins exactly as
+            // long as the real request runs.
+            var refreshRequested by remember { mutableStateOf(false) }
+            LaunchedEffect(uiState.isLoading) {
+                if (!uiState.isLoading) refreshRequested = false
+            }
 
             SulaonePullToRefreshBox(
-                isRefreshing = isRefreshing,
+                isRefreshing = refreshRequested && uiState.isLoading,
                 onRefresh = {
-                    isRefreshing = true
-                    coroutineScope.launch {
-                        viewModel.selectTab(uiState.selectedTab)
-                        delay(600)
-                        isRefreshing = false
-                    }
+                    refreshRequested = true
+                    viewModel.refresh()
                 },
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -167,6 +165,24 @@ fun LibraryCatalogScreen(
                                             color = if (isSelected) Slate950 else Slate700
                                         )
                                     }
+                                }
+                            }
+                        }
+
+                        // FASE 76.5: loading / error / empty used to render nothing here.
+                        if (uiState.books.isEmpty()) {
+                            item {
+                                when {
+                                    uiState.isLoading -> SulaoneTieredLoading(isLoading = true) { BookListSkeleton() }
+                                    uiState.errorMessage != null -> SulaoneErrorBanner(
+                                        message = uiState.errorMessage ?: "Gagal memuat katalog.",
+                                        onRetry = { viewModel.refresh() }
+                                    )
+                                    else -> SulaoneEmptyState(
+                                        title = "Buku Tidak Ditemukan",
+                                        description = "Tidak ada buku yang cocok dengan pencarian atau kategori ini.",
+                                        icon = Icons.Default.SearchOff
+                                    )
                                 }
                             }
                         }
@@ -255,8 +271,17 @@ fun LibraryCatalogScreen(
                     }
 
                     1 -> {
-                        // My Active Loans Tab
-                        if (uiState.myLoans.isEmpty()) {
+                        // My Active Loans Tab — "no loans" is only claimed once loaded.
+                        if (uiState.myLoans.isEmpty() && uiState.isLoading) {
+                            item { SulaoneTieredLoading(isLoading = true) { BookListSkeleton(rows = 2) } }
+                        } else if (uiState.myLoans.isEmpty() && uiState.errorMessage != null) {
+                            item {
+                                SulaoneErrorBanner(
+                                    message = uiState.errorMessage ?: "Gagal memuat pinjaman.",
+                                    onRetry = { viewModel.refresh() }
+                                )
+                            }
+                        } else if (uiState.myLoans.isEmpty()) {
                             item {
                                 SulaoneEmptyState(
                                     title = "Belum Ada Buku yang Dipinjam",
@@ -322,6 +347,30 @@ fun LibraryCatalogScreen(
                     Spacer(modifier = Modifier.height(80.dp)) // Space for FAB
                 }
             }
+            }
+        }
+    }
+}
+
+/** Mirrors a book card: cover on the left, title / author / meta lines. */
+@Composable
+private fun BookListSkeleton(rows: Int = 4) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        repeat(rows) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SkeletonBox(modifier = Modifier.width(56.dp).height(76.dp), shape = RoundedCornerShape(8.dp))
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+                    SkeletonBox(modifier = Modifier.fillMaxWidth(0.9f).height(16.dp))
+                    SkeletonBox(modifier = Modifier.fillMaxWidth(0.55f).height(12.dp))
+                    SkeletonBox(modifier = Modifier.width(90.dp).height(20.dp), shape = RoundedCornerShape(10.dp))
+                }
             }
         }
     }

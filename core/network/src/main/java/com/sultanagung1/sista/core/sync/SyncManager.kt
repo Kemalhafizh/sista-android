@@ -6,10 +6,13 @@ import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.data.model.CatchUpEventItem
 import com.sultanagung1.sista.data.model.TombstoneItem
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -120,8 +123,9 @@ class SyncManager(
                     }
 
                     val annResp = apiClient.notificationApi.getAnnouncements()
-                    if (annResp.isSuccessful && annResp.body() != null) {
-                        localStore.saveAnnouncements(annResp.body()!!)
+                    val annData = annResp.body()?.data
+                    if (annResp.isSuccessful && annData != null) {
+                        localStore.saveAnnouncements(annData)
                     }
                 }
 

@@ -153,8 +153,9 @@ private fun RemedialCardItem(item: RemedialItem) {
         ) {
             Text("Nilai Asli: ${item.originalScore.toInt()}", fontSize = 12.sp, color = AccentRose, fontWeight = FontWeight.Bold)
             Text("KKM: ${item.kkm.toInt()}", fontSize = 12.sp, color = Slate600)
-            if (item.remedialScore != null) {
-                Text("Nilai Remedial: ${item.remedialScore.toInt()}", fontSize = 12.sp, color = Emerald700, fontWeight = FontWeight.Bold)
+            val remedialScore = item.remedialScore
+            if (remedialScore != null) {
+                Text("Nilai Remedial: ${remedialScore.toInt()}", fontSize = 12.sp, color = Emerald700, fontWeight = FontWeight.Bold)
             }
         }
 

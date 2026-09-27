@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.sync.OfflineActionQueue
-import com.sultanagung1.sista.core.util.Constants
 import com.sultanagung1.sista.core.util.GeoUtils
 import com.sultanagung1.sista.data.model.AttendanceCheckinResponse
 import com.sultanagung1.sista.data.model.DynamicQrResponse
@@ -43,13 +42,9 @@ class AttendanceViewModel @Inject constructor(
     val uiState: StateFlow<AttendanceUiState> = _uiState.asStateFlow()
 
     fun updateCoordinates(lat: Double, lon: Double, isMock: Boolean) {
-        val distance = GeoUtils.calculateHaversineDistance(
-            lat1 = lat,
-            lon1 = lon,
-            lat2 = Constants.CAMPUS_LATITUDE,
-            lon2 = Constants.CAMPUS_LONGITUDE
-        )
-        val inside = distance <= Constants.CAMPUS_RADIUS_METERS
+        // The server's geofence (GET mobile/config), same as the check-in endpoint uses.
+        val distance = GeoUtils.distanceToCampus(lat, lon)
+        val inside = distance <= GeoUtils.campus.radiusMeters
 
         _uiState.value = _uiState.value.copy(
             distanceToCampusMeters = distance,

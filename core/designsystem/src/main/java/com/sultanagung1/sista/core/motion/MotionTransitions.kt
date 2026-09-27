@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import com.sultanagung1.sista.core.designsystem.tokens.SulaoneMotionTokens
 
 val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }
 val LocalNavAnimatedVisibilityScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
@@ -160,23 +161,6 @@ object SulaoneNavTransitions {
     }
 }
 
-object MotionSpecs {
-    val SpringBouncy = spring<Float>(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessLow
-    )
-
-    val SpringSnappy = spring<Float>(
-        dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMedium
-    )
-
-    val SpringGentle = spring<Float>(
-        dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessLow
-    )
-}
-
 enum class ButtonState { Pressed, Idle }
 
 fun Modifier.springPressable(
@@ -186,10 +170,12 @@ fun Modifier.springPressable(
     var buttonState by remember { mutableStateOf(ButtonState.Idle) }
     val scale by animateFloatAsState(
         targetValue = if (buttonState == ButtonState.Pressed) scaleDown else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        // FASE 76.1: sourced from SulaoneMotionTokens.springStandard — same
+        // exact values this already used inline, now centralized. This is
+        // the app's highest-traffic spring (every springPressable() call
+        // site), so the values are deliberately left byte-for-byte
+        // unchanged rather than "improved" here.
+        animationSpec = SulaoneMotionTokens.springStandard,
         label = "spring_press_scale"
     )
 

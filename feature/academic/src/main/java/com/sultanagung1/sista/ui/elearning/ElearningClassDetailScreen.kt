@@ -186,10 +186,11 @@ fun MaterialCardItem(item: ElearningMaterialItem) {
                 }
             }
 
-            if (!item.content.isNullOrBlank()) {
+            val content = item.content
+            if (!content.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = item.content,
+                    text = content,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
@@ -321,17 +322,20 @@ fun AssignmentCardItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            if (!item.description.isNullOrBlank()) {
+            val description = item.description
+            if (!description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = item.description,
+                    text = description,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
             }
 
-            if (item.submission?.feedback != null) {
+            val submission = item.submission
+            val feedback = submission?.feedback
+            if (feedback != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -347,7 +351,7 @@ fun AssignmentCardItem(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            item.submission.feedback,
+                            feedback,
                             fontSize = 12.sp,
                             color = Emerald900
                         )

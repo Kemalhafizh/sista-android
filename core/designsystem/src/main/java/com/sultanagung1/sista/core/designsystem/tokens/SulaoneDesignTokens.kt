@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.core.designsystem.tokens
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -14,6 +17,7 @@ import com.sultanagung1.sista.core.designsystem.DyslexicTypography
 import com.sultanagung1.sista.core.designsystem.MonospaceTextStyle
 import com.sultanagung1.sista.core.designsystem.PlusJakartaSansFontFamily
 import com.sultanagung1.sista.core.designsystem.QuranicTextStyle
+import com.sultanagung1.sista.core.designsystem.SulaoneEmphasizedTypography
 import com.sultanagung1.sista.core.designsystem.SulaoneTypography
 import com.sultanagung1.sista.core.designsystem.Emerald50 as SourceEmerald50
 import com.sultanagung1.sista.core.designsystem.Emerald100 as SourceEmerald100
@@ -117,6 +121,9 @@ object SulaoneColorTokens {
 object SulaoneTypographyTokens {
     val latin = SulaoneTypography
     val dyslexicFriendly = DyslexicTypography
+
+    /** FASE 76.1 Part B — M3 Expressive "emphasized" tier: same sizes as [latin], one weight step heavier. Opt-in per Text for highlight moments only, never a whole screen. */
+    val emphasized = SulaoneEmphasizedTypography
     val latinFontFamily = PlusJakartaSansFontFamily
     val arabicFontFamily = AmiriFontFamily
 
@@ -165,3 +172,45 @@ object SulaoneElevationTokens {
 
 /** FASE 70.3 — Minimum interactive touch target, WCAG 2.2 AA/AAA (2.5.8 / 2.5.5). */
 val SulaoneMinTouchTarget: Dp = 48.dp
+
+/**
+ * FASE 76.1 — single source of truth for spring motion, replacing two
+ * previously fragmented objects that used the SAME names for DIFFERENT
+ * values (a real landmine found during the FASE 76 audit):
+ *  - `core.designsystem.SulaoneMotion` (old `Animations.kt`, deleted here) —
+ *    its only real call site was `SwipeActions.kt`.
+ *  - `core.motion.MotionTransitions.MotionSpecs` (deleted here) — had zero
+ *    call sites anywhere in the app.
+ * Three energy tiers per Material 3 Expressive's motion guidance, named by
+ * WHEN to reach for them rather than by feel ("Bouncy"/"Gentle", which the
+ * two old objects each defined with different actual numbers).
+ */
+object SulaoneMotionTokens {
+    private val subtleDamping = Spring.DampingRatioLowBouncy
+    private val subtleStiffness = Spring.StiffnessMediumLow
+    private val standardDamping = Spring.DampingRatioMediumBouncy
+    private val standardStiffness = Spring.StiffnessMedium
+    private val expressiveDamping = Spring.DampingRatioHighBouncy
+    private val expressiveStiffness = Spring.StiffnessLow
+
+    /** Snap-back/indicator-slide feedback that shouldn't draw attention to itself (segmented filter indicator, swipe-to-reveal snap). Float-valued animations (scale, alpha) — use [springSubtleOf] for Dp/Color/etc. */
+    val springSubtle: SpringSpec<Float> = spring(dampingRatio = subtleDamping, stiffness = subtleStiffness)
+
+    /** Default interactive feedback — press-scale on buttons/cards/bento tiles. Matches the exact values `springPressable` (the app's highest-traffic spring) already used, so wiring it through this token changes nothing visually. */
+    val springStandard: SpringSpec<Float> = spring(dampingRatio = standardDamping, stiffness = standardStiffness)
+
+    /** Delight moments only — success confirmations, gamification reveals. Not for everyday feedback. */
+    val springExpressive: SpringSpec<Float> = spring(dampingRatio = expressiveDamping, stiffness = expressiveStiffness)
+
+    /** Same energy tier as [springSubtle], typed for animateDpAsState/animateColorAsState/etc. instead of animateFloatAsState. */
+    fun <T> springSubtleOf(): SpringSpec<T> = spring(dampingRatio = subtleDamping, stiffness = subtleStiffness)
+
+    /** Same energy tier as [springStandard], typed for animateDpAsState/animateColorAsState/etc. */
+    fun <T> springStandardOf(): SpringSpec<T> = spring(dampingRatio = standardDamping, stiffness = standardStiffness)
+
+    /** Same energy tier as [springExpressive], typed for animateDpAsState/animateColorAsState/etc. */
+    fun <T> springExpressiveOf(): SpringSpec<T> = spring(dampingRatio = expressiveDamping, stiffness = expressiveStiffness)
+
+    /** Staggered list/grid entrance delay (e.g. bento tiles animating in one after another). */
+    fun staggeredDelay(index: Int, delay: Int = 50): Int = index * delay
+}

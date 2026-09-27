@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.sultanagung1.sista.core.designsystem.tokens.SulaoneMotionTokens
 import kotlin.math.roundToInt
 
 @Composable
@@ -31,7 +32,13 @@ fun SwipeableListItem(
     var offsetX by remember { mutableStateOf(0f) }
     val animatedOffset by animateFloatAsState(
         targetValue = offsetX,
-        animationSpec = SulaoneMotion.SpringDefault,
+        // FASE 76.1: was SulaoneMotion.SpringDefault (damping 0.75f/stiffness
+        // 300f, Animations.kt — now removed, this was its only call site).
+        // springSubtle uses the nearest named Spring constants
+        // (DampingRatioLowBouncy=0.75f exact match, StiffnessMediumLow=400f
+        // vs the old raw 300f) — an imperceptible tuning difference in
+        // exchange for using a shared, named token instead of a bespoke value.
+        animationSpec = SulaoneMotionTokens.springSubtle,
         label = "swipeOffset"
     )
 

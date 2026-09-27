@@ -3,10 +3,12 @@ package com.sultanagung1.sista.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.sultanagung1.sista.core.accessibility.LocalAppStrings
 import com.sultanagung1.sista.core.designsystem.*
@@ -60,6 +62,8 @@ fun HomeScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     var showServicesBottomSheet by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val heroScrolledOff by rememberIsItemScrolledOff(listState, "hero_section")
 
     SulaonePullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -71,9 +75,15 @@ fun HomeScreen(
                 isRefreshing = false
             }
         },
-        modifier = Modifier.fillMaxSize()
+        // FASE 74.1: landing marker so an E2E driver can assert it reached
+        // HomeScreen after login, instead of guessing off transient text
+        // like the time-of-day greeting.
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("home_screen_root")
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
@@ -153,6 +163,16 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+
+        // FASE 76.2: sticky glass bar once the hero greeting scrolls away.
+        // Only visible when scrolled down, so it never competes with the
+        // pull-to-refresh indicator (which only appears at the very top).
+        SulaoneGlassTopBar(
+            visible = heroScrolledOff,
+            title = uiState.userName,
+            subtitle = timeGreeting,
+            onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
+        )
     }
 
     // Progressive Disclosure: Applet Modal BottomSheet for All Services

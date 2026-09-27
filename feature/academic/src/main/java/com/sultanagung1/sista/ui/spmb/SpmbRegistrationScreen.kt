@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.ui.spmb
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +33,35 @@ fun SpmbRegistrationScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var agreedToIntegrity by remember { mutableStateOf(false) }
+    var pendingDocType by remember { mutableStateOf<String?>(null) }
+
+    // Real file picker — GetContent() hands back a content:// Uri, which
+    // is read into raw bytes here (needs ContentResolver/Context) before
+    // being handed to the ViewModel as a plain SpmbDocumentAttachment.
+    val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        val docType = pendingDocType
+        pendingDocType = null
+        if (uri != null && docType != null) {
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+            var fileName: String? = null
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (cursor.moveToFirst() && nameIndex >= 0) {
+                    fileName = cursor.getString(nameIndex)
+                }
+            }
+            val resolvedFileName = fileName ?: "$docType.${mimeType.substringAfterLast('/')}"
+            if (bytes != null) {
+                viewModel.onDocumentPicked(
+                    docType,
+                    com.sultanagung1.sista.data.model.SpmbDocumentAttachment(bytes, resolvedFileName, mimeType)
+                )
+            } else {
+                Toast.makeText(context, "Gagal membaca berkas yang dipilih.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -137,8 +168,9 @@ fun SpmbRegistrationScreen(
                     Step3UploadDokumen(
                         draft = uiState.draft,
                         onUpload = { docType ->
-                            viewModel.simulateUploadDoc(docType)
-                            Toast.makeText(context, "Dokumen berhasil diunggah!", Toast.LENGTH_SHORT).show()
+                            pendingDocType = docType
+                            val mimeTypes = if (docType == "photo") "image/*" else "*/*"
+                            documentPicker.launch(mimeTypes)
                         }
                     )
                 }

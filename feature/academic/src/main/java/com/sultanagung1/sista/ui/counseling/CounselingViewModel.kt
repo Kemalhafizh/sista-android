@@ -209,8 +209,10 @@ class CounselingViewModel @Inject constructor(
     fun loadStudentAppointments() {
         viewModelScope.launch {
             repository.getMyStudentAppointments().collect { result ->
-                if (result is NetworkResult.Success) {
-                    _uiState.update { it.copy(studentAppointments = result.data) }
+                when (result) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(studentAppointments = result.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = result.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }

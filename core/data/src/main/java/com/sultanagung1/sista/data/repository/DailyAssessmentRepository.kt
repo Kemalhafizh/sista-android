@@ -15,12 +15,12 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
         try {
             val response = apiService.getTeacherAssessments()
             if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(getSampleAssessments()))
+                emit(NetworkResult.Success(response.body()!!.data.assessments))
             } else {
-                emit(NetworkResult.Success(getSampleAssessments()))
+                emit(NetworkResult.Error("Gagal memuat daftar penilaian harian", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(getSampleAssessments()))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -45,10 +45,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Success(BatchScoreResult(scores.size, scores.count { it.score < 75.0 }, 75.0)))
+                emit(NetworkResult.Error("Gagal menyimpan nilai siswa secara massal", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(BatchScoreResult(scores.size, scores.count { it.score < 75.0 }, 75.0)))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan saat menyimpan nilai"))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -56,13 +56,13 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
         emit(NetworkResult.Loading)
         try {
             val response = apiService.autoRemedial(assessmentId, deadline)
-            if (response.isSuccessful) {
-                emit(NetworkResult.Success("Otomasi penugasan remedial berhasil dijalankan."))
+            if (response.isSuccessful && response.body() != null) {
+                emit(NetworkResult.Success(response.body()!!.message ?: "Otomasi penugasan remedial berhasil dijalankan."))
             } else {
-                emit(NetworkResult.Success("Otomasi remedial berhasil ditugaskan ke siswa di bawah KKM."))
+                emit(NetworkResult.Error("Gagal menjalankan otomasi remedial", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success("Otomasi remedial berhasil ditugaskan."))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan saat menjalankan otomasi remedial"))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -73,10 +73,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Success(getSampleRemedials()))
+                emit(NetworkResult.Error("Gagal memuat daftar remedial", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(getSampleRemedials()))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -87,33 +87,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Success(getSampleStudentHistory()))
+                emit(NetworkResult.Error("Gagal memuat riwayat penilaian", response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Success(getSampleStudentHistory()))
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
         }
     }.flowOn(Dispatchers.IO)
-
-    private fun getSampleAssessments(): List<DailyAssessmentItem> {
-        return listOf(
-            DailyAssessmentItem(1L, "PH-1 Turunan Fungsi Aljabar", 1L, 1L, "2026-08-20", 75.0, 100.0, "ulangan_harian", "Materi diferensial dan sifat turunan", 36),
-            DailyAssessmentItem(2L, "PH-2 Integral Tentu & Luas Daerah", 1L, 1L, "2026-08-28", 75.0, 100.0, "ulangan_harian", "Penggunaan teorema dasar kalkulus", 36),
-            DailyAssessmentItem(3L, "PH-1 Gelombang Cahaya & Optik", 2L, 1L, "2026-09-02", 75.0, 100.0, "ulangan_harian", "Difraksi, interferensi, polarisasi", 36)
-        )
-    }
-
-    private fun getSampleRemedials(): List<RemedialItem> {
-        return listOf(
-            RemedialItem(1L, "rem-1", "PH-2 Integral Tentu & Luas Daerah", "Matematika Tingkat Lanjut", 64.0, 75.0, null, "tugas_tambahan", "pending", "2026-09-12 23:59:00", "Kerjakan 5 soal studi kasus terlampir di e-learning"),
-            RemedialItem(2L, "rem-2", "PH-1 Termodinamika", "Fisika", 68.0, 75.0, 75.0, "ulang_ujian", "completed", "2026-08-25 12:00:00", "Tuntas remedial tes mandiri")
-        )
-    }
-
-    private fun getSampleStudentHistory(): List<StudentAssessmentHistoryItem> {
-        return listOf(
-            StudentAssessmentHistoryItem(1L, "PH-1 Turunan Fungsi Aljabar", "Matematika Tingkat Lanjut", "2026-08-20", 75.0, 88.0, 88.0, true),
-            StudentAssessmentHistoryItem(2L, "PH-2 Integral Tentu", "Matematika Tingkat Lanjut", "2026-08-28", 75.0, 64.0, 75.0, true),
-            StudentAssessmentHistoryItem(3L, "PH-1 Gelombang Cahaya", "Fisika", "2026-09-02", 75.0, 92.0, 92.0, true)
-        )
-    }
 }

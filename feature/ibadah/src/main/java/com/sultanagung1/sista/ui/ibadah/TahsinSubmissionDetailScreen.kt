@@ -135,19 +135,20 @@ fun TahsinSubmissionDetailScreen(
                         }
                     }
 
+                    val annotations = detail.annotations
                     Text(
-                        "Catatan Tajwid (${detail.annotations?.size ?: 0})",
+                        "Catatan Tajwid (${annotations?.size ?: 0})",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    if (detail.annotations.isNullOrEmpty()) {
+                    if (annotations.isNullOrEmpty()) {
                         Text(
                             "Belum ada catatan tajwid pada rekaman ini.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        detail.annotations.forEach { annotation ->
+                        annotations.forEach { annotation ->
                             SulaoneCard(modifier = Modifier.fillMaxWidth(), elevation = 1.dp) {
                                 val ts = annotation.timestampSeconds
                                 Text(

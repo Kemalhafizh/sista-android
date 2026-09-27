@@ -29,6 +29,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -295,7 +296,11 @@ fun CbtTokenEntryScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .focusRequester(focusRequester),
+                            .focusRequester(focusRequester)
+                            // FASE 74.1: automation hook for the E2E CBT exam flow —
+                            // the visible 6-box OTP display is decorative Text, this
+                            // hidden field is the only real input target.
+                            .testTag("cbt_token_input"),
                         label = { Text("Ketik 6 digit token di sini") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -355,6 +360,7 @@ fun CbtTokenEntryScreen(
                         enabled = tokenInput.length == 6 && uiState.tokenValidationState !is TokenValidationState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .testTag("cbt_start_exam_button")
                             .sulaoneInteractiveTouchTarget(48.dp)
                             .springPressable(),
                         shape = RoundedCornerShape(12.dp),

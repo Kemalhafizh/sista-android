@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.model.FacilitySurveyItem
 import com.sultanagung1.sista.data.model.OsisCandidateItem
-import com.sultanagung1.sista.data.model.SubmitEvaluationRequest
 import com.sultanagung1.sista.data.model.TeacherEvaluationItem
 import com.sultanagung1.sista.data.repository.EvaluationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +24,7 @@ data class EvaluationUiState(
     val osisCandidates: List<OsisCandidateItem> = emptyList(),
     val selectedTab: Int = 0, // 0: Evaluasi Guru (EKG), 1: Survey Fasilitas, 2: E-Voting Ketua OSIS
     val evaluationSuccess: Boolean = false,
+    val facilitySurveySuccess: Boolean = false,
     val voteSuccess: Boolean = false,
     val errorMessage: String? = null
 )
@@ -48,13 +48,17 @@ class EvaluationViewModel @Inject constructor(private val repository: Evaluation
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             repository.getTeacherEvaluations().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(teacherEvaluations = res.data) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(teacherEvaluations = res.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
             repository.getFacilitySurveys().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(facilitySurveys = res.data) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(facilitySurveys = res.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
             repository.getOsisElection().collect { res ->
@@ -74,27 +78,87 @@ class EvaluationViewModel @Inject constructor(private val repository: Evaluation
     fun submitTeacherEvaluation(id: Long, pedagogy: Int, punctuality: Int, manner: Int, feedback: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val req = SubmitEvaluationRequest(id, pedagogy, punctuality, manner, feedback)
-            repository.submitTeacherEvaluation(req).collect { res ->
-                if (res is NetworkResult.Success) {
-                    val updated = _uiState.value.teacherEvaluations.map {
-                        if (it.id == id) it.copy(isSubmitted = true, pedagogyRating = pedagogy, punctualityRating = punctuality, islamicMannerRating = manner)
-                        else it
+            repository.submitTeacherEvaluation(id, pedagogy, punctuality, manner, feedback).collect { res ->
+                when (res) {
+                    is NetworkResult.Success -> {
+                        val updated = _uiState.value.teacherEvaluations.map {
+                            if (it.id == id) it.copy(isSubmitted = true, pedagogyRating = pedagogy, punctualityRating = punctuality, islamicMannerRating = manner)
+                            else it
+                        }
+                        _uiState.update { it.copy(isLoading = false, teacherEvaluations = updated, evaluationSuccess = true) }
                     }
-                    _uiState.update { it.copy(isLoading = false, teacherEvaluations = updated, evaluationSuccess = true) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
     }
 
-    fun castOsisVote(candidateId: Long) {
+    /** Stages a local star rating for [facilityId] — not yet sent to the server until submitFacilitySurveys(). */
+    fun rateFacility(facilityId: Long, rating: Int) {
+        _uiState.update { state ->
+            state.copy(
+                facilitySurveys = state.facilitySurveys.map {
+                    if (it.id == facilityId) it.copy(satisfactionLevel = rating) else it
+                }
+            )
+        }
+    }
+
+    /** Submits one real POST per rated (and not-yet-submitted) facility — the backend only accepts one facility_id per call. */
+    fun submitFacilitySurveys() {
+        val toSubmit = _uiState.value.facilitySurveys.filter { it.satisfactionLevel > 0 && !it.isSubmitted }
+        if (toSubmit.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Beri rating minimal satu fasilitas sebelum mengirim survei.") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            var anySucceeded = false
+            var lastError: String? = null
+            toSubmit.forEach { survey ->
+                repository.submitFacilityEvaluation(survey.id, survey.satisfactionLevel).collect { res ->
+                    when (res) {
+                        is NetworkResult.Success -> {
+                            anySucceeded = true
+                            _uiState.update { state ->
+                                state.copy(facilitySurveys = state.facilitySurveys.map {
+                                    if (it.id == survey.id) it.copy(isSubmitted = true) else it
+                                })
+                            }
+                        }
+                        is NetworkResult.Error -> lastError = res.message
+                        is NetworkResult.Loading -> Unit
+                    }
+                }
+            }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    facilitySurveySuccess = anySucceeded,
+                    errorMessage = if (!anySucceeded) lastError else null
+                )
+            }
+        }
+    }
+
+    /**
+     * [biometricSignature] must come from a real local BiometricVault
+     * confirmation (see TeacherEvaluationScreen's vote dialog) — the
+     * backend does not cryptographically verify this field (see
+     * EvaluationMobileApiController::castVote()'s "Simulated biometric
+     * validation" comment), so the ONLY real security value it carries is
+     * whatever the caller genuinely gated it behind, not the string's
+     * content itself.
+     */
+    fun castOsisVote(candidateId: Long, biometricSignature: String) {
         val electionId = _uiState.value.electionId ?: run {
             _uiState.update { it.copy(errorMessage = "Data pemilihan OSIS belum termuat.") }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            repository.castOsisVote(electionId, candidateId, "biometric_signature_mock").collect { res ->
+            repository.castOsisVote(electionId, candidateId, biometricSignature).collect { res ->
                 when (res) {
                     is NetworkResult.Success -> {
                         val updated = _uiState.value.osisCandidates.map {
@@ -113,6 +177,10 @@ class EvaluationViewModel @Inject constructor(private val repository: Evaluation
     }
 
     fun clearSuccessFlags() {
-        _uiState.update { it.copy(evaluationSuccess = false, voteSuccess = false) }
+        _uiState.update { it.copy(evaluationSuccess = false, facilitySurveySuccess = false, voteSuccess = false) }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

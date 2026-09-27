@@ -7,12 +7,29 @@ import java.io.File
 
 class MinimalistUxOverhaulTest {
 
+    private fun findSourceFile(relativePath: String): File {
+        val filename = relativePath.substringAfterLast("/")
+        val candidates = listOf(
+            File(relativePath),
+            File("app/$relativePath"),
+            File("../$relativePath"),
+            File("../../$relativePath")
+        )
+        candidates.firstOrNull { it.exists() }?.let { return it }
+
+        val rootDir = File("..").takeIf { File("..", "settings.gradle").exists() || File("..", "build.gradle").exists() } ?: File(".")
+        return rootDir.walkTopDown().firstOrNull { it.isFile && it.name == filename }
+            ?: File(relativePath)
+    }
+
     @Test
     fun testWeb3GimmickPurgedFromCatalog() {
-        val catalogFile = File("src/main/java/com/sultanagung1/sista/ui/portal/EnterpriseCatalogScreen.kt")
+        val catalogFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/portal/EnterpriseCatalogScreen.kt")
+        val portalModelsFile = findSourceFile("src/main/java/com/sultanagung1/sista/data/model/PortalModels.kt")
         assertTrue("EnterpriseCatalogScreen.kt must exist", catalogFile.exists())
+        assertTrue("PortalModels.kt must exist", portalModelsFile.exists())
 
-        val content = catalogFile.readText()
+        val content = catalogFile.readText() + "\n" + portalModelsFile.readText()
         assertFalse(
             "Web3 Blockchain passport gimmick must be purged from catalog",
             content.contains("Paspor Digital Web3 (DID)")
@@ -41,7 +58,7 @@ class MinimalistUxOverhaulTest {
 
     @Test
     fun testHomeServicesBottomSheetExists() {
-        val sheetFile = File("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeServicesBottomSheet.kt")
+        val sheetFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeServicesBottomSheet.kt")
         assertTrue("HomeServicesBottomSheet.kt must exist", sheetFile.exists())
 
         val content = sheetFile.readText()
@@ -54,7 +71,7 @@ class MinimalistUxOverhaulTest {
 
     @Test
     fun testHomeMinimalQuickActionsDefined() {
-        val quickActionsFile = File("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickActions.kt")
+        val quickActionsFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickActions.kt")
         assertTrue(quickActionsFile.exists())
 
         val content = quickActionsFile.readText()
@@ -68,7 +85,7 @@ class MinimalistUxOverhaulTest {
 
     @Test
     fun testHomeScreenHasAppletSheetTrigger() {
-        val homeFile = File("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
+        val homeFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
         assertTrue(homeFile.exists())
 
         val content = homeFile.readText()
@@ -79,7 +96,7 @@ class MinimalistUxOverhaulTest {
 
     @Test
     fun testBottomNavConsolidatedTo4Tabs() {
-        val appNavFile = File("src/main/java/com/sultanagung1/sista/ui/navigation/AppNavigation.kt")
+        val appNavFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/navigation/AppNavigation.kt")
         assertTrue(appNavFile.exists())
 
         val content = appNavFile.readText()

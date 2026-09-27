@@ -2,6 +2,7 @@ package com.sultanagung1.sista.data.api
 
 import com.sultanagung1.sista.core.network.ApiEnvelope
 import com.sultanagung1.sista.data.model.*
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -124,6 +125,9 @@ interface CbtApiService {
 
     // === FASE 87: Teacher Proctor — Live Token Distribution & Student Reset ===
 
+    @GET("teacher/cbt/exams")
+    suspend fun getTeacherProctorExams(): Response<CbtApiEnvelope<List<TeacherCbtExamItem>>>
+
     @GET("teacher/cbt/exams/{id}/token")
     suspend fun getProctorToken(
         @Path("id") examId: Long
@@ -139,6 +143,19 @@ interface CbtApiService {
         @Path("id") examId: Long,
         @Body request: CbtResetStudentRequest
     ): Response<CbtApiEnvelope<CbtResetStudentData>>
+
+    // === Teacher manual exam authoring (ApiTeacherController) ===
+
+    @POST("teacher/cbt/exams")
+    suspend fun createTeacherExam(
+        @Body request: TeacherCreateExamRequest
+    ): Response<CbtApiEnvelope<TeacherCreatedExam>>
+
+    @Multipart
+    @POST("teacher/cbt/upload-image")
+    suspend fun uploadExamImage(
+        @Part image: MultipartBody.Part
+    ): Response<CbtApiEnvelope<CbtQuestionImageUpload>>
 }
 
 interface AiApiService {

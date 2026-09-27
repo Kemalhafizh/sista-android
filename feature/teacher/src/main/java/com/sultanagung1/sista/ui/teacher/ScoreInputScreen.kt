@@ -36,21 +36,21 @@ fun ScoreInputScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Sample class roster
-    val students = remember {
+    LaunchedEffect(assessmentId) {
+        viewModel.loadClassStudentsForAssessment(assessmentId)
+    }
+
+    // Real class roster (teacher/classes/{id}/students) — score starts blank
+    // since it hasn't been entered yet, not pre-filled with a fake value.
+    val students = remember(uiState.classStudents) {
         mutableStateListOf(
-            LocalStudentRow(1L, "Ahmad Faiz Abdullah", "1058291048", "85"),
-            LocalStudentRow(2L, "Aisyah Nur Rahmah", "1058291049", "92"),
-            LocalStudentRow(3L, "Bagas Pratama Putra", "1058291050", "68"),
-            LocalStudentRow(4L, "Citra Dewi Lestari", "1058291051", "78"),
-            LocalStudentRow(5L, "Dimas Arya Wijaya", "1058291052", "64"),
-            LocalStudentRow(6L, "Fatimah Zahra", "1058291053", "90"),
-            LocalStudentRow(7L, "Gilang Ramadhan", "1058291054", "72"),
-            LocalStudentRow(8L, "Hafizh Al Farisi", "1058291055", "88")
+            *uiState.classStudents.map {
+                LocalStudentRow(it.id, it.name, it.nisn ?: it.nis ?: "-", "")
+            }.toTypedArray()
         )
     }
 
-    val kkm = 75.0
+    val kkm = uiState.assessments.firstOrNull { it.id == assessmentId }?.kkm ?: 75.0
 
     Scaffold(
         topBar = {
@@ -142,6 +142,23 @@ fun ScoreInputScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(6.dp))
+                }
+            }
+
+            if (uiState.isLoadingStudents) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Emerald700)
+                    }
+                }
+            } else if (students.isEmpty()) {
+                item {
+                    Text(
+                        text = "Belum ada siswa terdaftar di kelas untuk penilaian ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
                 }
             }
 

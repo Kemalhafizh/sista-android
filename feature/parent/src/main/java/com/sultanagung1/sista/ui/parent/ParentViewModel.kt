@@ -81,22 +81,28 @@ class ParentViewModel @Inject constructor(
     fun loadParentExperience() {
         viewModelScope.launch {
             parentRepository.getChildFeed().collect { result ->
-                if (result is NetworkResult.Success) {
-                    _uiState.update { it.copy(activityFeed = result.data) }
+                when (result) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(activityFeed = result.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = result.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
         viewModelScope.launch {
             parentRepository.getWeeklyDigest().collect { result ->
-                if (result is NetworkResult.Success) {
-                    _uiState.update { it.copy(weeklyDigest = result.data) }
+                when (result) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(weeklyDigest = result.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = result.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
         viewModelScope.launch {
             parentRepository.getChildComparison().collect { result ->
-                if (result is NetworkResult.Success) {
-                    _uiState.update { it.copy(classComparison = result.data) }
+                when (result) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(classComparison = result.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = result.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }

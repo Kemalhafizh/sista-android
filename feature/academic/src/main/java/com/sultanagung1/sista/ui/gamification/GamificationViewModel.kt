@@ -82,7 +82,7 @@ class GamificationViewModel @Inject constructor(
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    profile = profile ?: GamificationProfile(1420, 7, "Thalibul Ilmi Mujahid", 180, 14, 28, 12, 3),
+                    profile = profile,
                     leaderboard = leaderboard,
                     earnedBadges = earnedBadges,
                     lockedBadges = lockedBadges,

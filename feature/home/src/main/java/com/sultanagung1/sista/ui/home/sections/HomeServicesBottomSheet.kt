@@ -75,7 +75,7 @@ fun HomeServicesBottomSheet(
             ServiceCategory(
                 categoryName = "Kesiswaan & Pembinaan",
                 services = listOf(
-                    ServiceEntry("Buku Saku Poin", "Pelanggaran & SP", Icons.Default.Gavel, Screen.Discipline.route, AccentRose, AccentRose.copy(alpha = 0.12f)),
+                    ServiceEntry("Buku Saku Poin", "Pelanggaran & SP", Icons.Default.Gavel, Screen.Discipline.createRoute(), AccentRose, AccentRose.copy(alpha = 0.12f)),
                     ServiceEntry("Simulasi UTBK", "Tryout IRT & PTN", Icons.Default.Psychology, Screen.UtbkTryout.route, AccentPurple, AccentPurple.copy(alpha = 0.12f)),
                     ServiceEntry("E-Pustaka Pintar", "Katalog Buku Digital", Icons.Default.LocalLibrary, Screen.LibraryCatalog.route, Emerald700, Emerald50),
                     ServiceEntry("Ekskul & OSIS", "Pendaftaran & Jadwal", Icons.Default.SportsSoccer, Screen.Extracurricular.route, AccentGreen, AccentGreen.copy(alpha = 0.12f)),

@@ -83,3 +83,11 @@ data class ExecutiveAnalyticsData(
     val totalSppCollected: String = "",
     val collectionRatePercentage: Float = 0f
 )
+
+// A teacher's real (class, subject) teaching assignment, as returned by
+// analytics/teacher/my-classes — used to replace a hardcoded class/subject
+// pair with the teacher's actual options.
+data class TeacherClassOption(
+    val className: String = "",
+    val subjectName: String = ""
+)

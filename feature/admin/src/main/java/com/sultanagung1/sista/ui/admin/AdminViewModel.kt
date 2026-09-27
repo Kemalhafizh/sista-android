@@ -18,6 +18,10 @@ data class AdminUiState(
     val isLoading: Boolean = false,
     val principalName: String? = null,
     val dashboardData: AdminDashboardData? = null,
+    val schoolKpi: SchoolKpiSummary? = null,
+    val pendingApprovals: List<PendingApprovalItem> = emptyList(),
+    val isLoadingApprovals: Boolean = false,
+    val processingApprovalId: Long? = null,
     val isSendingEmergencyBroadcast: Boolean = false,
     val emergencyBroadcastSent: EmergencyBroadcastData? = null,
     val errorMessage: String? = null
@@ -40,6 +44,8 @@ class AdminViewModel @Inject constructor(
             }
         }
         loadDashboard()
+        loadSchoolKpi()
+        loadPendingApprovals()
     }
 
     fun loadDashboard() {
@@ -56,6 +62,61 @@ class AdminViewModel @Inject constructor(
                         isLoading = false,
                         errorMessage = result.message
                     )
+                }
+            }
+        }
+    }
+
+    /** FASE 71.4 follow-up: real SPP-per-cohort ratio & CBT server usage. */
+    fun loadSchoolKpi() {
+        viewModelScope.launch {
+            adminRepository.getSchoolKpi().collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> _uiState.value = _uiState.value.copy(schoolKpi = result.data)
+                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(errorMessage = result.message)
+                    is NetworkResult.Loading -> Unit
+                }
+            }
+        }
+    }
+
+    /** FASE 71.4 follow-up: real pending-approvals list, replacing the count-only card. */
+    fun loadPendingApprovals() {
+        viewModelScope.launch {
+            adminRepository.getPendingApprovals().collect { result ->
+                when (result) {
+                    is NetworkResult.Loading -> _uiState.value = _uiState.value.copy(isLoadingApprovals = true)
+                    is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
+                        isLoadingApprovals = false,
+                        pendingApprovals = result.data
+                    )
+                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                        isLoadingApprovals = false,
+                        errorMessage = result.message
+                    )
+                }
+            }
+        }
+    }
+
+    /** Approve/reject a single pending request, then refresh the list so the acted-on item disappears. */
+    fun processApproval(id: Long, action: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(processingApprovalId = id)
+            adminRepository.processApproval(id.toString(), action).collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            processingApprovalId = null,
+                            pendingApprovals = _uiState.value.pendingApprovals.filterNot { it.id == id }
+                        )
+                        loadDashboard() // refresh the count card on the same screen too
+                    }
+                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                        processingApprovalId = null,
+                        errorMessage = result.message
+                    )
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }

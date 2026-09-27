@@ -47,8 +47,9 @@ class TeachingJournalRepository(private val apiService: TeachingJournalMobileApi
         try {
             val response = apiService.storeJournal(request)
             val body = response.body()
-            if (response.isSuccessful && body?.success == true && body.data != null) {
-                emit(NetworkResult.Success(body.data))
+            val data = body?.data
+            if (response.isSuccessful && body?.success == true && data != null) {
+                emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal menyimpan jurnal mengajar", response.code()))
             }

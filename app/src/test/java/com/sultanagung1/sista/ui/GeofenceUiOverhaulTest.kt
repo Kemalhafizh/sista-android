@@ -23,7 +23,7 @@ class GeofenceUiOverhaulTest {
 
     @Test
     fun testGeofenceScreenDesignCompliance() {
-        val file = findSourceFile("src/main/java/com/sultanagung1/sista/ui/attendance/GeofenceAttendanceScreen.kt")
+        val file = findSourceFile("feature/academic/src/main/java/com/sultanagung1/sista/ui/attendance/GeofenceAttendanceScreen.kt")
         assertTrue("GeofenceAttendanceScreen.kt must exist", file.exists())
 
         val content = file.readText()

@@ -51,44 +51,63 @@ data class CbtOptionItem(
 
 // === Teacher Exam & Question Authoring Models ===
 
-data class TeacherCreateQuestionInput(
-    val id: String = java.util.UUID.randomUUID().toString(),
-    var questionText: String = "",
-    var imageUrl: String? = null,
-    var options: List<TeacherCreateOptionInput> = listOf(
-        TeacherCreateOptionInput(key = "A", text = ""),
-        TeacherCreateOptionInput(key = "B", text = ""),
-        TeacherCreateOptionInput(key = "C", text = ""),
-        TeacherCreateOptionInput(key = "D", text = ""),
-        TeacherCreateOptionInput(key = "E", text = "")
-    ),
-    var correctAnswer: String = "A",
-    var scoreWeight: Double = 10.0,
-    var explanation: String = ""
-)
-
-data class TeacherCreateOptionInput(
-    val key: String,
-    var text: String = "",
-    var imageUrl: String? = null
-)
-
+/**
+ * POST teacher/cbt/exams — mirrors ApiTeacherController::storeExamWithQuestions().
+ * The previous shape sent `subject_name`, `target_class` and a client-made
+ * `token`, none of which the server accepts: the subject and class are real
+ * ids (from the teacher's own schedule), and the entry token is only ever
+ * issued by the server (GET teacher/cbt/exams/{id}/token, 5-minute lifetime).
+ */
 data class TeacherCreateExamRequest(
     @SerializedName("title") val title: String,
-    @SerializedName("subject_name") val subjectName: String,
-    @SerializedName("target_class") val targetClass: String,
+    @SerializedName("subject_id") val subjectId: Long,
+    @SerializedName("classroom_id") val classroomId: Long,
     @SerializedName("duration_minutes") val durationMinutes: Int,
     @SerializedName("passing_score") val passingScore: Double,
-    @SerializedName("token") val token: String,
+    @SerializedName("max_violations") val maxViolations: Int,
+    @SerializedName("mobile_only") val mobileOnly: Boolean,
+    @SerializedName("shuffle_questions") val shuffleQuestions: Boolean,
+    @SerializedName("shuffle_options") val shuffleOptions: Boolean,
     @SerializedName("questions") val questions: List<TeacherQuestionPayload>
 )
 
 data class TeacherQuestionPayload(
     @SerializedName("question_text") val questionText: String,
+    // Must be an http(s) URL returned by POST teacher/cbt/upload-image —
+    // the server rejects a device-local content:// path.
     @SerializedName("image_url") val imageUrl: String? = null,
     @SerializedName("options") val options: List<CbtOptionItem>,
-    @SerializedName("correct_answer") val correctAnswer: String,
-    @SerializedName("weight") val weight: Double = 10.0
+    @SerializedName("correct_answer") val correctAnswer: String
+)
+
+/** Data of the POST teacher/cbt/exams 201 response. */
+data class TeacherCreatedExam(
+    @SerializedName("exam_id") val examId: Long,
+    @SerializedName("uuid") val uuid: String? = null,
+    @SerializedName("title") val title: String,
+    @SerializedName("type") val type: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("subject") val subject: String? = null,
+    @SerializedName("classroom") val classroom: String? = null,
+    @SerializedName("start_time") val startTime: String? = null,
+    @SerializedName("end_time") val endTime: String? = null,
+    @SerializedName("duration_minutes") val durationMinutes: Int,
+    @SerializedName("total_questions") val totalQuestions: Int,
+    // Same rule the token endpoint enforces — only open the proctor screen when true.
+    @SerializedName("can_view_token") val canViewToken: Boolean = false
+)
+
+/** Data of the POST teacher/cbt/upload-image response. */
+data class CbtQuestionImageUpload(
+    @SerializedName("path") val path: String,
+    @SerializedName("image_url") val imageUrl: String
+)
+
+/** A picked image read into memory, ready to send as multipart `image`. */
+class CbtImageAttachment(
+    val bytes: ByteArray,
+    val mimeType: String,
+    val fileName: String
 )
 
 data class CbtSubmitRequest(
@@ -199,6 +218,25 @@ data class CbtApiEnvelope<T>(
     @SerializedName("success") val success: Boolean = false,
     @SerializedName("message") val message: String? = null,
     @SerializedName("data") val data: T? = null
+)
+
+/**
+ * GET teacher/cbt/exams — mirrors CbtAccessControlApiController::teacherExams().
+ * Only exams this teacher can proctor (UTS/UAS as operator, others as creator),
+ * published and not yet ended.
+ */
+data class TeacherCbtExamItem(
+    @SerializedName("id") val id: Long,
+    @SerializedName("title") val title: String,
+    @SerializedName("type") val type: String,
+    @SerializedName("subject") val subject: String? = null,
+    @SerializedName("classroom") val classroom: String? = null,
+    @SerializedName("start_time") val startTime: String? = null,
+    @SerializedName("end_time") val endTime: String? = null,
+    @SerializedName("duration_minutes") val durationMinutes: Int = 0,
+    @SerializedName("total_questions") val totalQuestions: Int = 0,
+    @SerializedName("mobile_only") val mobileOnly: Boolean = false,
+    @SerializedName("is_ongoing") val isOngoing: Boolean = false
 )
 
 data class CbtResetStudentRequest(

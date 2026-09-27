@@ -26,6 +26,8 @@ import androidx.compose.ui.window.Dialog
 import com.sultanagung1.sista.core.designsystem.*
 import androidx.compose.material.icons.Icons
 import com.sultanagung1.sista.data.model.UksVisit
+import com.sultanagung1.sista.data.model.UksMedicineSelection
+import com.sultanagung1.sista.data.model.UksStudentSearchItem
 
 @Composable
 fun UksVisitScreen(
@@ -193,33 +195,40 @@ fun UksVisitScreen(
 
     if (showRecordDialog) {
         RecordVisitDialog(
-            availableMedicines = uiState.availableMedicines,
+            uiState = uiState,
+            onQueryStudent = viewModel::setStudentQuery,
+            onSelectStudent = viewModel::selectStudent,
             onDismiss = { showRecordDialog = false },
-            onSave = { name, clazz, complaint, temp, bp, diag, actions, med, notes ->
+            onSave = { complaint, temp, bp, diag, actions, medicineId, notes ->
                 viewModel.recordVisit(
-                    studentName = name,
-                    className = clazz,
                     complaint = complaint,
                     temperature = temp,
                     bloodPressure = bp,
                     diagnosis = diag,
                     actions = actions,
-                    selectedMedicine = med,
+                    selectedMedicines = medicineId?.let { listOf(UksMedicineSelection(id = it, quantity = 1)) } ?: emptyList(),
                     notes = notes,
                     onSuccess = {
                         showRecordDialog = false
-                        Toast.makeText(context, "Kunjungan UKS berhasil dicatat & WhatsApp terkirim ke Orang Tua!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Kunjungan UKS berhasil dicatat & notifikasi terkirim ke Orang Tua.", Toast.LENGTH_LONG).show()
                     }
                 )
             }
         )
     }
+
+    uiState.errorMessage?.let { error ->
+        LaunchedEffect(error) {
+            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            viewModel.onEvent(UksUiEvent.ClearMessages())
+        }
+    }
 }
 
 @Composable
 fun UksVisitCard(visit: UksVisit) {
-    val temp = visit.temperature ?: 36.8f
-    val isFever = temp >= 37.5f
+    val temp = visit.temperature
+    val isFever = temp != null && temp >= 37.5f
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -235,30 +244,36 @@ fun UksVisitCard(visit: UksVisit) {
             ) {
                 Column {
                     Text(visit.studentName, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Kelas: ${visit.className} • ${visit.time}", fontSize = 12.sp, color = Slate500)
+                    Text(
+                        (visit.className?.let { "Kelas: $it • " } ?: "") + visit.time,
+                        fontSize = 12.sp,
+                        color = Slate500
+                    )
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isFever) AccentRose.copy(alpha = 0.15f) else Emerald100
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                if (temp != null) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isFever) AccentRose.copy(alpha = 0.15f) else Emerald100
                     ) {
-                        Icon(
-                            Icons.Default.Thermostat,
-                            contentDescription = null,
-                            tint = if (isFever) AccentRose else Emerald700,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            "$temp °C",
-                            color = if (isFever) AccentRose else Emerald800,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Thermostat,
+                                contentDescription = null,
+                                tint = if (isFever) AccentRose else Emerald700,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                "$temp °C",
+                                color = if (isFever) AccentRose else Emerald800,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
             }
@@ -275,14 +290,15 @@ fun UksVisitCard(visit: UksVisit) {
                 }
             }
 
-            if (visit.diagnosis != null) {
+            val diagnosis = visit.diagnosis
+            if (diagnosis != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.Top) {
                     Icon(Icons.Default.MedicalServices, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text("Diagnosis Sementara:", fontSize = 11.sp, color = Slate500)
-                        Text(visit.diagnosis, fontSize = 13.sp, color = Slate800, fontWeight = FontWeight.SemiBold)
+                        Text(diagnosis, fontSize = 13.sp, color = Slate800, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -319,20 +335,22 @@ fun UksVisitCard(visit: UksVisit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Emerald700, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(visit.officer, fontSize = 11.sp, color = Slate600)
+                    Text(visit.officer ?: "Petugas UKS", fontSize = 11.sp, color = Slate600)
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Emerald50
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                if (visit.parentNotified) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Emerald50
                     ) {
-                        Icon(Icons.Default.Chat, contentDescription = null, tint = Emerald700, modifier = Modifier.size(12.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("WA Ortu Terkirim", color = Emerald800, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Emerald700, modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Notifikasi Ortu Terkirim", color = Emerald800, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
             }
@@ -342,18 +360,19 @@ fun UksVisitCard(visit: UksVisit) {
 
 @Composable
 fun RecordVisitDialog(
-    availableMedicines: List<com.sultanagung1.sista.data.model.MedicineItem>,
+    uiState: UksUiState,
+    onQueryStudent: (String) -> Unit,
+    onSelectStudent: (UksStudentSearchItem) -> Unit,
     onDismiss: () -> Unit,
-    onSave: (name: String, clazz: String, complaint: String, temp: Float, bp: String, diagnosis: String, actions: List<String>, medicine: String?, notes: String) -> Unit
+    onSave: (complaint: String, temp: Float?, bp: String?, diagnosis: String, actions: List<String>, medicineId: String?, notes: String) -> Unit
 ) {
-    var studentName by remember { mutableStateOf("") }
-    var className by remember { mutableStateOf("X MIPA 1") }
+    val availableMedicines = uiState.availableMedicines
     var complaint by remember { mutableStateOf("") }
-    var temperatureText by remember { mutableStateOf("36.8") }
-    var bloodPressure by remember { mutableStateOf("110/70") }
+    var temperatureText by remember { mutableStateOf("") }
+    var bloodPressure by remember { mutableStateOf("") }
     var selectedDiagnosis by remember { mutableStateOf("Pusing / Migrain") }
     val selectedActions = remember { mutableStateListOf("Istirahat di ruang UKS", "Pemberian Obat") }
-    var selectedMedicine by remember { mutableStateOf<String?>(availableMedicines.firstOrNull()?.name) }
+    var selectedMedicineId by remember { mutableStateOf<String?>(null) }
     var notes by remember { mutableStateOf("") }
 
     val diagnosisOptions = listOf(
@@ -405,21 +424,59 @@ fun RecordVisitDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = studentName,
-                        onValueChange = { studentName = it },
-                        label = { Text("Nama Siswa *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = className,
-                        onValueChange = { className = it },
-                        label = { Text("Kelas *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                    // Real student search — replaces the old free-text name
+                    // field, which had no way to resolve a real student_id
+                    // for the backend to save the visit against.
+                    Column {
+                        OutlinedTextField(
+                            value = uiState.studentQuery,
+                            onValueChange = onQueryStudent,
+                            label = { Text("Cari Nama / NISN Siswa *") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (uiState.isSearchingStudent) {
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                } else if (uiState.selectedStudent != null) {
+                                    Icon(Icons.Default.CheckCircleOutline, contentDescription = null, tint = Emerald700)
+                                }
+                            }
+                        )
+                        if (uiState.studentSearchResults.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                colors = CardDefaults.cardColors(containerColor = Slate100)
+                            ) {
+                                Column {
+                                    uiState.studentSearchResults.forEach { student ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onSelectStudent(student) }
+                                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                                        ) {
+                                            Column {
+                                                Text(student.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                                Text(
+                                                    "${student.nisn ?: "-"} • ${student.classroomName ?: "Tanpa kelas"}",
+                                                    fontSize = 11.sp,
+                                                    color = Slate500
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        uiState.selectedStudent?.let { student ->
+                            Text(
+                                "Terpilih: ${student.name} (${student.classroomName ?: "Tanpa kelas"})",
+                                fontSize = 11.sp,
+                                color = Emerald700,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
 
                     OutlinedTextField(
                         value = complaint,
@@ -488,20 +545,29 @@ fun RecordVisitDialog(
                     }
 
                     Text("Pemberian Obat dari Stok UKS:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    if (availableMedicines.isEmpty()) {
+                        Text("Data stok obat belum tersedia dari server.", fontSize = 12.sp, color = Slate500)
+                    }
                     availableMedicines.forEach { med ->
+                        val outOfStock = med.quantity <= 0
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { selectedMedicine = med.name }
+                                .clickable(enabled = !outOfStock) { selectedMedicineId = med.id }
                                 .padding(vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = selectedMedicine == med.name,
-                                onClick = { selectedMedicine = med.name }
+                                selected = selectedMedicineId == med.id,
+                                onClick = { selectedMedicineId = med.id },
+                                enabled = !outOfStock
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("${med.name} (Stok: ${med.quantity})", fontSize = 12.sp)
+                            Text(
+                                "${med.name} (Stok: ${med.quantity})" + if (outOfStock) " — Habis" else "",
+                                fontSize = 12.sp,
+                                color = if (outOfStock) Slate400 else Color.Unspecified
+                            )
                         }
                     }
 
@@ -525,7 +591,7 @@ fun RecordVisitDialog(
                             Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Emerald700, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Laporan kunjungan ini akan dikirimkan otomatis via notifikasi push & WhatsApp ke nomor orang tua siswa.",
+                                "Laporan kunjungan ini akan tercatat sebagai notifikasi di aplikasi orang tua siswa.",
                                 fontSize = 11.sp,
                                 color = Emerald900,
                                 lineHeight = 15.sp
@@ -538,9 +604,17 @@ fun RecordVisitDialog(
 
                 Button(
                     onClick = {
-                        val tempVal = temperatureText.toFloatOrNull() ?: 36.8f
-                        onSave(studentName, className, complaint, tempVal, bloodPressure, selectedDiagnosis, selectedActions.toList(), selectedMedicine, notes)
+                        onSave(
+                            complaint,
+                            temperatureText.toFloatOrNull(),
+                            bloodPressure.ifBlank { null },
+                            selectedDiagnosis,
+                            selectedActions.toList(),
+                            selectedMedicineId,
+                            notes
+                        )
                     },
+                    enabled = uiState.selectedStudent != null && complaint.isNotBlank() && !uiState.isSavingVisit,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),

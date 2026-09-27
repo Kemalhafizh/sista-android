@@ -2,7 +2,6 @@ package com.sultanagung1.sista.core.designsystem
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.sultanagung1.sista.core.designsystem.tokens.SulaoneMotionTokens
 
 /**
  * FASE 70.2 — pill-shaped segmented filter with a single sliding indicator
@@ -64,7 +65,9 @@ fun SulaoneSegmentedFilter(
         val segmentWidth = maxWidth / segmentCount
         val indicatorOffset by animateDpAsState(
             targetValue = segmentWidth * selectedIndex.coerceIn(0, segmentCount - 1),
-            animationSpec = spring(dampingRatio = 0.8f, stiffness = 380f),
+            // FASE 76.1: was a bespoke spring(0.8f, 380f) — consolidated into
+            // the shared subtle tier (0.75f/400f, imperceptibly close).
+            animationSpec = SulaoneMotionTokens.springSubtleOf<Dp>(),
             label = "segment_indicator_offset"
         )
 

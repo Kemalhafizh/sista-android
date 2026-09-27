@@ -7,7 +7,7 @@ import retrofit2.http.*
 interface DailyAssessmentMobileApiService {
 
     @GET("assessments/teacher")
-    suspend fun getTeacherAssessments(): Response<AssessmentResponse<Any>>
+    suspend fun getTeacherAssessments(): Response<AssessmentResponse<TeacherAssessmentsData>>
 
     @POST("assessments/teacher")
     suspend fun storeAssessment(

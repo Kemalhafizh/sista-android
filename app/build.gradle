@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     id 'kotlin-kapt'
 }
 
@@ -129,8 +131,20 @@ dependencies {
     implementation libs.firebase.crashlytics
     implementation libs.firebase.perf
     implementation libs.firebase.analytics
+    implementation libs.firebase.messaging
+    implementation libs.kotlinx.coroutines.play.services
 
     testImplementation libs.junit
+    // Screen::class.sealedSubclasses / .objectInstance in
+    // TypeSafeNavigationTest need kotlin-reflect at runtime — the basic
+    // ::class members (simpleName, java) work without it, but full
+    // reflection (sealedSubclasses, objectInstance) throws
+    // KotlinReflectionNotSupportedError without this on the classpath.
+    testImplementation libs.kotlin.reflect
+    // FASE 74.2: real loopback HTTP server for network-contract JVM tests
+    // (ETag/Last-Modified headers, error-body safety) — exercises the real
+    // Retrofit/OkHttp/Gson stack instead of hand-rolled fakes.
+    testImplementation libs.okhttp.mockwebserver
     androidTestImplementation platform(libs.androidx.compose.bom)
     androidTestImplementation libs.androidx.compose.ui.test.junit4
     androidTestImplementation libs.androidx.espresso.core

@@ -76,10 +76,10 @@ class ElearningViewModel @Inject constructor(
         }
     }
 
-    fun submitAssignment(assignmentId: Long, note: String, onDone: () -> Unit) {
+    fun submitAssignment(assignmentId: Long, note: String, attachment: ElearningAttachment?, onDone: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, submitSuccess = false) }
-            repository.submitAssignment(assignmentId, note, null).collect { result ->
+            repository.submitAssignment(assignmentId, note, attachment).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
                         _uiState.update {

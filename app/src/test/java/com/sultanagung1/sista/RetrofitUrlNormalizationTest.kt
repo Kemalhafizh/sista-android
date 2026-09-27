@@ -11,7 +11,10 @@ import java.lang.reflect.Method
 class RetrofitUrlNormalizationTest {
 
     private val allServiceInterfaces: List<Class<*>> = listOf(
-        // 17 Services audited & fixed in Fase 49
+        // Services audited & fixed in Fase 49. SchoolOperationsApiService was
+        // listed here but no longer exists — the reference stopped this whole
+        // test source set from compiling. listMatchesTheServicesInSource() now
+        // keeps this list honest.
         AchievementApiService::class.java,
         CalendarMobileApiService::class.java,
         CounselingMobileApiService::class.java,
@@ -23,7 +26,6 @@ class RetrofitUrlNormalizationTest {
         ExtracurricularApiService::class.java,
         LibraryApiService::class.java,
         QuestionBankApiService::class.java,
-        SchoolOperationsApiService::class.java,
         SpmbMobileApiService::class.java,
         StudentProfileApiService::class.java,
         TeachingJournalMobileApiService::class.java,
@@ -48,8 +50,34 @@ class RetrofitUrlNormalizationTest {
         TeacherApiService::class.java,
         ParentApiService::class.java,
         AdminApiService::class.java,
-        SyncApiService::class.java
+        SyncApiService::class.java,
+        TahsinApiService::class.java,
+        ScannerMobileApiService::class.java,
+        MobileConfigApiService::class.java
     )
+
+    /** Every `interface …ApiService` declared under data/api, from the source files. */
+    private fun apiServicesInSource(): Set<String> {
+        val candidates = listOf(
+            java.io.File("../core/network/src/main/java/com/sultanagung1/sista/data/api"),
+            java.io.File("core/network/src/main/java/com/sultanagung1/sista/data/api")
+        )
+        val dir = candidates.firstOrNull { it.isDirectory } ?: error("data/api source directory not found")
+        val declaration = Regex("""^interface\s+(\w+ApiService)\b""", RegexOption.MULTILINE)
+        return dir.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .flatMap { file -> declaration.findAll(file.readText()).map { it.groupValues[1] } }
+            .toSet()
+    }
+
+    @Test
+    fun listMatchesTheServicesInSource() {
+        assertEquals(
+            "Every API service in data/api must be audited here, and nothing that no longer exists",
+            apiServicesInSource(),
+            allServiceInterfaces.map { it.simpleName }.toSet()
+        )
+    }
 
     private fun extractPathFromMethod(method: Method): String? {
         method.getAnnotation(GET::class.java)?.let { return it.value }

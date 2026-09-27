@@ -24,22 +24,26 @@ data class UtbkQuestion(
     @SerializedName("irt_difficulty_theta") val irtDifficultyTheta: Double = 0.0
 )
 
-data class MajorRecommendationItem(
-    @SerializedName("university_name") val universityName: String, // e.g. "Universitas Gadjah Mada (UGM)"
-    @SerializedName("major_name") val majorName: String, // e.g. "Kedokteran", "Teknik Informatika"
-    @SerializedName("category") val category: String, // "SAINTEK" or "SOSHUM"
-    @SerializedName("pass_probability") val passProbability: Int, // 85%
-    @SerializedName("probability_badge") val probabilityBadge: String, // "TINGGI (Hijau)", "SEDANG (Kuning)", "KETAT (Merah)"
-    @SerializedName("kktp_report_alignment") val kktpReportAlignment: String, // "Sangat Selaras dengan Nilai Biologi & Kimia (94.2)"
-    @SerializedName("historical_alumni_count") val historicalAlumniCount: Int = 12
+data class UtbkRecommendationResponse(
+    @SerializedName("estimated_score") val estimatedScore: Double,
+    @SerializedName("recommendations") val recommendations: List<PtnRecommendationItem> = emptyList(),
+    @SerializedName("message") val message: String? = null // e.g. "Anda belum memiliki skor tryout." when estimatedScore is 0
+)
+
+data class PtnRecommendationItem(
+    @SerializedName("university") val university: String,
+    @SerializedName("program") val program: String,
+    @SerializedName("category") val category: String, // "Saintek" or "Soshum"
+    @SerializedName("passing_grade") val passingGrade: Double,
+    @SerializedName("acceptance_chance") val acceptanceChance: String // "Tinggi", "Sedang", "Rendah"
 )
 
 data class AlumniCampusItem(
     @SerializedName("id") val id: Long,
-    @SerializedName("name") val name: String,
+    @SerializedName("name") val name: String?,
     @SerializedName("graduation_year") val graduationYear: String, // "Angkatan 2024"
     @SerializedName("university") val university: String,
-    @SerializedName("major") val major: String,
-    @SerializedName("admission_path") val admissionPath: String, // "SNBP", "SNBT", "Mandiri"
+    @SerializedName("major") val major: String? = null, // null until the alumnus has a tracer-study response on file
+    @SerializedName("admission_path") val admissionPath: String? = null, // not tracked yet, always null for now
     @SerializedName("contact_available") val contactAvailable: Boolean = true
 )

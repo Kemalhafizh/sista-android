@@ -91,9 +91,13 @@ class ChatViewModel @Inject constructor(
             var conv = _uiState.value.conversations.find { it.id == conversationId }
             if (conv == null) {
                 chatRepository.getConversations().collect { result ->
-                    if (result is NetworkResult.Success) {
-                        _uiState.update { it.copy(conversations = result.data) }
-                        conv = result.data.find { it.id == conversationId }
+                    when (result) {
+                        is NetworkResult.Success -> {
+                            _uiState.update { it.copy(conversations = result.data) }
+                            conv = result.data.find { it.id == conversationId }
+                        }
+                        is NetworkResult.Error -> _uiState.update { it.copy(errorMessage = result.message) }
+                        is NetworkResult.Loading -> Unit
                     }
                 }
             }
@@ -214,7 +218,8 @@ class ChatViewModel @Inject constructor(
                             )
                         }
                     }
-                    else -> _uiState.update { it.copy(isSending = false) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isSending = false, errorMessage = result.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
@@ -235,6 +240,10 @@ class ChatViewModel @Inject constructor(
             val myId = sessionManager.userIdFlow.first().orEmpty()
             webSocketManager?.sendTypingStatus(conv.studentId, myId, isTyping)
         }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     private fun listenToWebSocket() {

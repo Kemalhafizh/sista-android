@@ -113,7 +113,14 @@ sealed class Screen(val route: String, val title: String = "") {
     object SecuritySettings : Screen("security_settings", "Keamanan & Biometrik")
 
     // Realistic Roadmap (Fase 18 - 24)
-    object Discipline : Screen("discipline", "Tata Tertib & Poin")
+    // studentUuid: which child a parent is looking at. Without it a parent
+    // with several children always got the first one, whatever child was
+    // selected on the dashboard. Always navigate via createRoute(), never
+    // `.route` (that would pass the literal "{studentUuid}").
+    object Discipline : Screen("discipline?studentUuid={studentUuid}", "Tata Tertib & Poin") {
+        fun createRoute(studentUuid: String? = null) =
+            if (!studentUuid.isNullOrBlank()) "discipline?studentUuid=$studentUuid" else "discipline"
+    }
     object UtbkTryout : Screen("utbk_tryout", "Simulasi UTBK & Analisis")
     object LibraryCatalog : Screen("library_catalog", "E-Pustaka Pintar")
     object Extracurricular : Screen("extracurricular", "Ekstrakurikuler & OSIS")
@@ -125,6 +132,7 @@ sealed class Screen(val route: String, val title: String = "") {
     object TeacherProctor : Screen("teacher_proctor/{examId}", "Pengawas Ujian Daring") {
         fun createRoute(examId: Long) = "teacher_proctor/$examId"
     }
+    object TeacherProctorExams : Screen("teacher_proctor_exams", "Pilih Ujian untuk Diawasi")
     object TeacherCreateExam : Screen("teacher_create_exam", "Buat Ulangan Daring")
 
     // Fase 29: Bank Soal & Auto-Generate Ujian

@@ -96,7 +96,7 @@ fun StudentProfileComprehensiveScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    "${profile.biodata.className} • NISN ${profile.biodata.nisn}",
+                                    "${profile.biodata.className ?: "-"} • NISN ${profile.biodata.nisn ?: "-"}",
                                     fontSize = 12.sp,
                                     color = Emerald100
                                 )
@@ -198,14 +198,14 @@ fun AcademicSummarySection(profile: StudentProfile360Data) {
                     Icon(Icons.Default.ThumbUp, contentDescription = null, tint = Emerald700, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Paling Unggul: ", fontSize = 12.sp, color = Slate500)
-                    Text(acad.strongestSubject, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Emerald800)
+                    Text(acad.strongestSubject ?: "Belum ada data", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Emerald800)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.TrendingUp, contentDescription = null, tint = AccentAmber, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Perlu Ditingkatkan: ", fontSize = 12.sp, color = Slate500)
-                    Text(acad.improvementNeeded, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AccentAmber)
+                    Text(acad.improvementNeeded ?: "Belum ada data", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AccentAmber)
                 }
             }
         }
@@ -242,7 +242,7 @@ fun IbadahSummarySection(profile: StudentProfile360Data) {
                     trackColor = Emerald100
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Hafalan Saat Ini: ${ibd.currentSurah}", fontSize = 12.sp, color = Slate500)
+                Text("Hafalan Saat Ini: ${ibd.currentSurah ?: "Belum ada setoran tercatat"}", fontSize = 12.sp, color = Slate500)
             }
         }
 
@@ -328,7 +328,7 @@ fun AchievementsAndEkskulSection(profile: StudentProfile360Data) {
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(ach.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Tingkat ${ach.level} • ${ach.year}", fontSize = 11.sp, color = Slate500)
+                        Text("Tingkat ${ach.level} • ${ach.year ?: "-"}", fontSize = 11.sp, color = Slate500)
                     }
                 }
             }
@@ -366,7 +366,7 @@ fun HealthSummarySection(profile: StudentProfile360Data) {
         ) {
             ProfileInfoCard(
                 title = "Golongan Darah",
-                value = hlt.bloodType,
+                value = hlt.bloodType ?: "-",
                 subtitle = "Data UKS",
                 icon = Icons.Default.Bloodtype,
                 color = AccentRose,
@@ -374,7 +374,7 @@ fun HealthSummarySection(profile: StudentProfile360Data) {
             )
             ProfileInfoCard(
                 title = "Tinggi / Berat",
-                value = "${hlt.heightCm}cm / ${hlt.weightKg}kg",
+                value = if (hlt.heightCm != null && hlt.weightKg != null) "${hlt.heightCm}cm / ${hlt.weightKg}kg" else "Belum tercatat",
                 subtitle = "BMI Ideal",
                 icon = Icons.Default.AccessibilityNew,
                 color = Emerald700,
@@ -392,9 +392,13 @@ fun HealthSummarySection(profile: StudentProfile360Data) {
                 Text("Rekam Medis & Kunjungan UKS", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Total Kunjungan UKS: ${hlt.totalUksVisits} Kali", fontSize = 12.sp)
-                Text("Kunjungan Terakhir: ${hlt.lastVisitDate}", fontSize = 12.sp, color = Slate500)
+                Text("Kunjungan Terakhir: ${hlt.lastVisitDate ?: "Belum pernah"}", fontSize = 12.sp, color = Slate500)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Catatan Alergi: ${hlt.allergies.joinToString(", ")}", fontSize = 12.sp, color = Slate500)
+                Text(
+                    "Catatan Alergi: ${hlt.allergies.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "Tidak ada catatan alergi"}",
+                    fontSize = 12.sp,
+                    color = Slate500
+                )
             }
         }
     }

@@ -3,7 +3,9 @@ package com.sultanagung1.sista.data.repository
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.api.UksMobileApiService
 import com.sultanagung1.sista.data.model.HealthScreeningData
+import com.sultanagung1.sista.data.model.MedicineItem
 import com.sultanagung1.sista.data.model.UksRecordVisitItem
+import com.sultanagung1.sista.data.model.UksStudentSearchItem
 import com.sultanagung1.sista.data.model.UksVisitRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +53,34 @@ class UksRepository(private val apiService: UksMobileApiService) {
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan skrining UKS"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun searchStudents(query: String): Flow<NetworkResult<List<UksStudentSearchItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiService.searchStudents(query)
+            if (response.isSuccessful && response.body()?.data != null) {
+                emit(NetworkResult.Success(response.body()!!.data!!))
+            } else {
+                emit(NetworkResult.Error(response.message().ifBlank { "Gagal mencari data siswa" }))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan pencarian siswa"))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getMedicines(): Flow<NetworkResult<List<MedicineItem>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiService.getMedicines()
+            if (response.isSuccessful && response.body()?.data != null) {
+                emit(NetworkResult.Success(response.body()!!.data!!))
+            } else {
+                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat stok obat UKS" }))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan stok obat"))
         }
     }.flowOn(Dispatchers.IO)
 }

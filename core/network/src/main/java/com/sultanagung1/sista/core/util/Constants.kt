@@ -26,11 +26,6 @@ object Constants {
         }
     }
 
-    // SMA Islam Sultan Agung 1 Semarang Geofence Coordinates
-    const val CAMPUS_LATITUDE = -6.996160
-    const val CAMPUS_LONGITUDE = 110.428510
-    const val CAMPUS_RADIUS_METERS = 250.0
-
     // WebSocket / Echo Config
     val REVERB_HOST: String
         get() = if (EmulatorDetector.isEmulator()) "10.0.2.2" else "127.0.0.1"

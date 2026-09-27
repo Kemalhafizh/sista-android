@@ -161,7 +161,7 @@ fun SpmbTrackingScreen(
                 item {
                     Button(
                         onClick = {
-                            Toast.makeText(context, "Mengunduh Kartu Ujian Peserta SPMB (${info.registrationNumber})...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Fitur unduh Kartu Ujian Peserta belum tersedia.", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -239,11 +239,13 @@ fun TimelineItemRow(event: TimelineEvent) {
                 fontSize = 13.sp,
                 color = if (event.isCompleted) Emerald900 else Slate700
             )
-            if (event.timestamp != null) {
-                Text(event.timestamp, fontSize = 11.sp, color = Slate500)
+            val timestamp = event.timestamp
+            if (timestamp != null) {
+                Text(timestamp, fontSize = 11.sp, color = Slate500)
             }
-            if (event.description != null) {
-                Text(event.description, fontSize = 12.sp, color = Slate600, lineHeight = 16.sp)
+            val description = event.description
+            if (description != null) {
+                Text(description, fontSize = 12.sp, color = Slate600, lineHeight = 16.sp)
             }
         }
     }

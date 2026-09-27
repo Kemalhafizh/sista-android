@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -467,6 +468,10 @@ fun CbtExamRoomScreen(
                                     shape = RoundedCornerShape(14.dp)
                                 )
                                 .background(if (isChecked) Emerald50 else MaterialTheme.colorScheme.surface)
+                                // FASE 74.1: stable per-option automation hook (A-E),
+                                // keyed on the real answer key instead of position so
+                                // it survives option shuffling.
+                                .testTag("cbt_option_${option.key}")
                                 .clickable {
                                     viewModel.selectOption(currentQuestion.id, option.key, examId)
                                 }
@@ -541,7 +546,8 @@ fun CbtExamRoomScreen(
                             Button(
                                 onClick = { showSubmitDialog = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = AccentGreen),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.testTag("cbt_collect_button")
                             ) {
                                 Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -551,7 +557,8 @@ fun CbtExamRoomScreen(
                             Button(
                                 onClick = { viewModel.goToQuestion(uiState.currentQuestionIndex + 1) },
                                 colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.testTag("cbt_next_button")
                             ) {
                                 Text("Selanjutnya")
                             }
@@ -803,7 +810,8 @@ fun CbtExamRoomScreen(
                             showSubmitDialog = false
                             viewModel.submitExam(examId, vault)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
+                        colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
+                        modifier = Modifier.testTag("cbt_confirm_submit_button")
                     ) {
                         Text("Ya, Kumpulkan")
                     }
@@ -822,6 +830,9 @@ fun CbtExamRoomScreen(
         if (uiState.isSubmitted) {
             AlertDialog(
                 onDismissRequest = onNavigateBack,
+                modifier = Modifier.testTag(
+                    if (uiState.isQueuedOffline) "cbt_submitted_offline_dialog" else "cbt_submitted_online_dialog"
+                ),
                 title = {
                     Text(if (uiState.isQueuedOffline) "Disimpan Offline" else "Ujian Terkumpul")
                 },

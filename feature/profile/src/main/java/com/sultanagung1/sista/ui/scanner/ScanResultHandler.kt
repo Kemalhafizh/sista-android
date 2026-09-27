@@ -1,5 +1,11 @@
 package com.sultanagung1.sista.ui.scanner
 
+import com.sultanagung1.sista.core.network.NetworkResult
+import com.sultanagung1.sista.data.repository.LibraryRepository
+import com.sultanagung1.sista.data.repository.ScannerRepository
+import kotlinx.coroutines.flow.first
+import javax.inject.Inject
+
 enum class ScanMode(val title: String, val description: String) {
     ATTENDANCE("Presensi QR", "Pindai QR Gerbang & Kelas"),
     LIBRARY_BOOK("Buku Perpus", "Pindai Barcode ISBN Buku"),
@@ -16,61 +22,137 @@ data class ParsedScanResult(
     val details: Map<String, String> = emptyMap()
 )
 
-object ScanResultHandler {
+/**
+ * Every branch here calls a real backend check/mutation — there is no
+ * client-side fabrication of "verified"/"valid" results. A scan failure
+ * (wrong code, already used, network error) is surfaced honestly via
+ * isValid = false with the server's real message, not papered over.
+ */
+class ScanResultHandler @Inject constructor(
+    private val scannerRepository: ScannerRepository,
+    private val libraryRepository: LibraryRepository
+) {
 
-    fun parse(rawCode: String, mode: ScanMode): ParsedScanResult {
+    suspend fun parse(rawCode: String, mode: ScanMode): ParsedScanResult {
         return when (mode) {
-            ScanMode.ATTENDANCE -> {
-                ParsedScanResult(
-                    title = "Presensi Berhasil Diverifikasi",
-                    subtitle = "Siswa Kelas XII MIPA 1 • SMA Islam Sultan Agung 1",
-                    type = mode,
-                    rawPayload = rawCode,
-                    details = mapOf(
-                        "Status" to "Hadir Tepat Waktu (06:45 WIB)",
-                        "Lokasi Gerbang" to "Gerbang Utama Jl. Mataram",
-                        "Token Validasi" to rawCode.take(16)
-                    )
-                )
-            }
-            ScanMode.LIBRARY_BOOK -> {
-                ParsedScanResult(
-                    title = "Buku Perpustakaan Teridentifikasi",
-                    subtitle = "Fisika Modern Kelas XII (Kurikulum Merdeka)",
-                    type = mode,
-                    rawPayload = rawCode,
-                    details = mapOf(
-                        "ISBN" to "978-602-244-800-6",
-                        "Penerbit" to "Pusat Kurikulum dan Perbukuan Kemendikbudristek",
-                        "Status Stok" to "Tersedia (Rak B-04)"
-                    )
-                )
-            }
-            ScanMode.EVENT_TICKET -> {
-                ParsedScanResult(
-                    title = "Tiket Acara Terverifikasi",
-                    subtitle = "Kajian Akbar & Maulid Nabi Muhammad SAW 1448 H",
-                    type = mode,
-                    rawPayload = rawCode,
-                    details = mapOf(
-                        "Nama Peserta" to "Muhammad Rizky Pratama",
-                        "Seat / Area" to "Auditorium Utama Lantai 2",
-                        "Status Tiket" to "LUNAS & VALID"
-                    )
-                )
-            }
-            ScanMode.VISITOR_PASS -> {
-                ParsedScanResult(
-                    title = "Akses Buku Tamu Terdaftar",
-                    subtitle = "Kunjungan Wali Murid / Tamu Kedinasan",
-                    type = mode,
-                    rawPayload = rawCode,
-                    details = mapOf(
-                        "Keperluan" to "Konsultasi Akademik Wali Kelas",
-                        "Masa Berlaku" to "Hari Ini (07:00 - 15:00 WIB)"
-                    )
-                )
-            }
+            ScanMode.ATTENDANCE -> parseAttendance(rawCode)
+            ScanMode.LIBRARY_BOOK -> parseLibraryBook(rawCode)
+            ScanMode.EVENT_TICKET -> parseEventTicket(rawCode)
+            ScanMode.VISITOR_PASS -> parseVisitorPass(rawCode)
         }
+    }
+
+    private suspend fun parseAttendance(rawCode: String): ParsedScanResult {
+        val result = scannerRepository.verifyAttendanceQr(rawCode).first { it !is NetworkResult.Loading }
+        return when (result) {
+            is NetworkResult.Success -> {
+                val data = result.data
+                if (data.valid) {
+                    ParsedScanResult(
+                        title = "Identitas Terverifikasi",
+                        subtitle = "${data.userName ?: "Pengguna"} • ${data.userRole ?: ""}",
+                        type = ScanMode.ATTENDANCE,
+                        rawPayload = rawCode,
+                        isValid = true,
+                        details = mapOf(
+                            "Diverifikasi Pukul" to (data.verifiedAt?.takeLast(14)?.take(8) ?: "-"),
+                            "Peran" to (data.userRole ?: "-")
+                        )
+                    )
+                } else {
+                    invalidResult(ScanMode.ATTENDANCE, rawCode, data.message ?: "QR presensi tidak valid.")
+                }
+            }
+            is NetworkResult.Error -> invalidResult(ScanMode.ATTENDANCE, rawCode, result.message)
+            is NetworkResult.Loading -> invalidResult(ScanMode.ATTENDANCE, rawCode, "Memproses...")
+        }
+    }
+
+    private suspend fun parseLibraryBook(rawCode: String): ParsedScanResult {
+        val result = libraryRepository.borrowBookByQr(rawCode).first { it !is NetworkResult.Loading }
+        return when (result) {
+            is NetworkResult.Success -> {
+                val loan = result.data
+                ParsedScanResult(
+                    title = "Peminjaman Buku Berhasil",
+                    subtitle = loan.bookTitle,
+                    type = ScanMode.LIBRARY_BOOK,
+                    rawPayload = rawCode,
+                    isValid = true,
+                    details = mapOf(
+                        "Tanggal Pinjam" to loan.borrowDate,
+                        "Jatuh Tempo" to loan.dueDate,
+                        "Status" to loan.status
+                    )
+                )
+            }
+            is NetworkResult.Error -> invalidResult(ScanMode.LIBRARY_BOOK, rawCode, result.message)
+            is NetworkResult.Loading -> invalidResult(ScanMode.LIBRARY_BOOK, rawCode, "Memproses...")
+        }
+    }
+
+    private suspend fun parseEventTicket(rawCode: String): ParsedScanResult {
+        val result = scannerRepository.scanEventTicket(rawCode).first { it !is NetworkResult.Loading }
+        return when (result) {
+            is NetworkResult.Success -> {
+                val data = result.data
+                if (data.valid) {
+                    ParsedScanResult(
+                        title = "Tiket Acara Terverifikasi",
+                        subtitle = data.eventName ?: "Acara",
+                        type = ScanMode.EVENT_TICKET,
+                        rawPayload = rawCode,
+                        isValid = true,
+                        details = mapOf(
+                            "Nama Peserta" to (data.attendeeName ?: "-"),
+                            "Jenis Tiket" to (data.ticketType ?: "-"),
+                            "Lokasi" to (data.venue ?: "-")
+                        )
+                    )
+                } else {
+                    invalidResult(ScanMode.EVENT_TICKET, rawCode, data.message ?: "Tiket tidak valid.")
+                }
+            }
+            is NetworkResult.Error -> invalidResult(ScanMode.EVENT_TICKET, rawCode, result.message)
+            is NetworkResult.Loading -> invalidResult(ScanMode.EVENT_TICKET, rawCode, "Memproses...")
+        }
+    }
+
+    private suspend fun parseVisitorPass(rawCode: String): ParsedScanResult {
+        val result = scannerRepository.scanVisitorPass(rawCode).first { it !is NetworkResult.Loading }
+        return when (result) {
+            is NetworkResult.Success -> {
+                val data = result.data
+                if (data.valid) {
+                    val actionLabel = if (data.status == "active") "Check-in Tamu Berhasil" else "Check-out Tamu Berhasil"
+                    ParsedScanResult(
+                        title = actionLabel,
+                        subtitle = data.visitorName ?: "Tamu",
+                        type = ScanMode.VISITOR_PASS,
+                        rawPayload = rawCode,
+                        isValid = true,
+                        details = mapOf(
+                            "Keperluan" to (data.purpose ?: "-"),
+                            "Status" to (data.status ?: "-")
+                        )
+                    )
+                } else {
+                    invalidResult(ScanMode.VISITOR_PASS, rawCode, data.message ?: "Kartu tamu tidak valid.")
+                }
+            }
+            is NetworkResult.Error -> invalidResult(ScanMode.VISITOR_PASS, rawCode, result.message)
+            is NetworkResult.Loading -> invalidResult(ScanMode.VISITOR_PASS, rawCode, "Memproses...")
+        }
+    }
+
+    private fun invalidResult(mode: ScanMode, rawCode: String, message: String): ParsedScanResult {
+        return ParsedScanResult(
+            title = "Kode Tidak Valid",
+            subtitle = message,
+            type = mode,
+            rawPayload = rawCode,
+            isValid = false,
+            details = emptyMap()
+        )
     }
 }

@@ -45,13 +45,17 @@ class ExtracurricularViewModel @Inject constructor(private val repository: Extra
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             repository.getEkskulList().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(ekskuls = res.data) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(ekskuls = res.data) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
             repository.getOsisFeed().collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(osisPosts = res.data, isLoading = false) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(osisPosts = res.data, isLoading = false) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
@@ -61,12 +65,16 @@ class ExtracurricularViewModel @Inject constructor(private val repository: Extra
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             repository.registerEkskul(ekskulId).collect { res ->
-                if (res is NetworkResult.Success) {
-                    val updated = _uiState.value.ekskuls.map {
-                        if (it.id == ekskulId) it.copy(isRegistered = true, memberCount = it.memberCount + 1)
-                        else it
+                when (res) {
+                    is NetworkResult.Success -> {
+                        val updated = _uiState.value.ekskuls.map {
+                            if (it.id == ekskulId) it.copy(isRegistered = true, memberCount = it.memberCount + 1)
+                            else it
+                        }
+                        _uiState.update { it.copy(isLoading = false, ekskuls = updated, registrationSuccess = true) }
                     }
-                    _uiState.update { it.copy(isLoading = false, ekskuls = updated, registrationSuccess = true) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }
@@ -76,8 +84,10 @@ class ExtracurricularViewModel @Inject constructor(private val repository: Extra
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             repository.submitEkskulAttendance(EkskulAttendanceRequest(ekskulId, qrPayload, studentId)).collect { res ->
-                if (res is NetworkResult.Success) {
-                    _uiState.update { it.copy(isLoading = false, attendanceSuccess = true) }
+                when (res) {
+                    is NetworkResult.Success -> _uiState.update { it.copy(isLoading = false, attendanceSuccess = true) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = res.message) }
+                    is NetworkResult.Loading -> Unit
                 }
             }
         }

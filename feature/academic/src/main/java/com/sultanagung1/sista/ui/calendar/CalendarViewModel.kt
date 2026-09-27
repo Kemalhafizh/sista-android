@@ -95,38 +95,35 @@ class CalendarViewModel @Inject constructor(
     fun loadEvents() {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            try {
-                calendarRepository.getEvents(
-                    month = _uiState.value.month,
-                    year = _uiState.value.year,
-                    category = _uiState.value.selectedCategory?.name?.lowercase()
-                ).collect { result ->
-                    when (result) {
-                        is NetworkResult.Success -> {
-                            val apiEvents = result.data.map { item ->
-                                CalendarEvent(
-                                    id = item.id.toString(),
-                                    title = item.title,
-                                    date = item.startTime.substringBefore("T").substringBefore(" "),
-                                    type = mapCategoryToType(item.category),
-                                    description = item.description ?: "Kegiatan resmi akademik SMA Islam Sultan Agung 1 Semarang.",
-                                    location = item.location ?: "Kampus SMA Islam Sultan Agung 1",
-                                    startTime = item.startTime,
-                                    endTime = item.endTime
-                                )
-                            }
-                            _uiState.update { it.copy(isLoading = false, events = if (apiEvents.isNotEmpty()) apiEvents else getSampleEvents()) }
+            calendarRepository.getEvents(
+                month = _uiState.value.month,
+                year = _uiState.value.year,
+                category = _uiState.value.selectedCategory?.name?.lowercase()
+            ).collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        val apiEvents = result.data.map { item ->
+                            CalendarEvent(
+                                id = item.id.toString(),
+                                title = item.title,
+                                date = item.startTime.substringBefore("T").substringBefore(" "),
+                                type = mapCategoryToType(item.category),
+                                description = item.description ?: "Kegiatan resmi akademik SMA Islam Sultan Agung 1 Semarang.",
+                                location = item.location ?: "Kampus SMA Islam Sultan Agung 1",
+                                startTime = item.startTime,
+                                endTime = item.endTime
+                            )
                         }
-                        is NetworkResult.Error -> {
-                            _uiState.update { it.copy(isLoading = false, events = getSampleEvents()) }
-                        }
-                        is NetworkResult.Loading -> {
-                            _uiState.update { it.copy(isLoading = true) }
-                        }
+                        // An empty result is a real, honest state (no events
+                        // this month) — no longer silently replaced with
+                        // fabricated events.
+                        _uiState.update { it.copy(isLoading = false, events = apiEvents) }
                     }
+                    is NetworkResult.Error -> _uiState.update {
+                        it.copy(isLoading = false, errorMessage = result.message, events = emptyList())
+                    }
+                    is NetworkResult.Loading -> _uiState.update { it.copy(isLoading = true) }
                 }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, events = getSampleEvents()) }
             }
         }
     }
@@ -200,87 +197,4 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    private fun getSampleEvents(): List<CalendarEvent> {
-        return listOf(
-            CalendarEvent(
-                id = "cal-101",
-                title = "Asesmen Sumatif Tengah Semester (ASTS) Ganjil",
-                date = "2026-09-15",
-                type = EventType.UJIAN,
-                description = "Pelaksanaan asesmen sumatif semester ganjil berbasis Android CBT Sula-One anti-cheat untuk seluruh siswa kelas X, XI, dan XII.",
-                location = "Ruang Kelas X, XI, XII & Lab CBT",
-                startTime = "07:15 WIB",
-                endTime = "13:00 WIB",
-                attachments = listOf("Jadwal_ASTS_Ganjil_2026.pdf", "Tata_Tertib_CBT.pdf")
-            ),
-            CalendarEvent(
-                id = "cal-102",
-                title = "Kajian Dhuha Bersama & Doa Kelulusan",
-                date = "2026-09-15",
-                type = EventType.KEISLAMAN,
-                description = "Amaliyah rutin Dhuha berjamaah dan istighotsah doa bersama mengharap kemudahan ujian dan keberkahan ilmu.",
-                location = "Masjid Baitul Ihsan Kampus Sula-One",
-                startTime = "06:30 WIB",
-                endTime = "07:10 WIB"
-            ),
-            CalendarEvent(
-                id = "cal-103",
-                title = "Pembukaan SPMB Jalur Prestasi Tahfidz Gelombang 1",
-                date = "2026-09-18",
-                type = EventType.SPMB,
-                description = "Pendaftaran calon siswa baru SMA Islam Sultan Agung 1 Semarang melalui jalur minat bakat & beasiswa tahfidz Al-Qur'an 3 Juz.",
-                location = "Gedung Pusat Pelayanan Terpadu & Portal SPMB Online",
-                startTime = "08:00 WIB",
-                endTime = "15:00 WIB",
-                attachments = listOf("Brosur_SPMB_2027_2028.pdf", "Alur_Pendaftaran.png")
-            ),
-            CalendarEvent(
-                id = "cal-104",
-                title = "Libur Maulid Nabi Muhammad SAW 1448 H",
-                date = "2026-09-24",
-                type = EventType.LIBUR,
-                description = "Hari libur nasional peringatan Maulid Nabi Muhammad SAW 1448 Hijriyah. KBM ditiadakan dan diganti amaliyah sholawat mandiri di rumah.",
-                location = "Nasional"
-            ),
-            CalendarEvent(
-                id = "cal-105",
-                title = "Latihan Gabungan Paskibra & Robotika Antar SMA",
-                date = "2026-09-20",
-                type = EventType.EKSKUL,
-                description = "Latihan gabungan ekstrakurikuler kepemimpinan dan demonstrasi karya sains robotika menyambut Dies Natalis YBWSA.",
-                location = "Lapangan Utama & Lab Sains Sula-One",
-                startTime = "08:30 WIB",
-                endTime = "12:00 WIB"
-            ),
-            CalendarEvent(
-                id = "cal-106",
-                title = "Rapat Koordinasi Dewan Guru & Komite Sekolah",
-                date = "2026-09-22",
-                type = EventType.RAPAT,
-                description = "Evaluasi ketercapaian KBM Kurikulum Merdeka dan persiapan pembagian rapor asesmen tengah semester bersama komite wali murid.",
-                location = "Aula Utama Lantai 3",
-                startTime = "13:30 WIB",
-                endTime = "15:45 WIB"
-            ),
-            CalendarEvent(
-                id = "cal-107",
-                title = "Batas Akhir Verifikasi Nilai Harian & Deskripsi KKTP",
-                date = "2026-09-28",
-                type = EventType.DEADLINE,
-                description = "Tenggat waktu akhir bagi bapak/ibu guru pengampu mata pelajaran untuk memvalidasi nilai ulangan harian dan deskripsi capaian pembelajaran di E-Rapor.",
-                location = "Sistem Informasi Terpadu Akademik (SISTA)",
-                startTime = "23:59 WIB"
-            ),
-            CalendarEvent(
-                id = "cal-108",
-                title = "Pekan Proyek Penguatan Profil Pelajar Pancasila (P5)",
-                date = "2026-09-08",
-                type = EventType.KBM,
-                description = "Gelar karya dan expo kewirausahaan Islami peserta didik tema Berekayasa dan Berteknologi untuk Membangun NKRI.",
-                location = "Gedung Serbaguna Kampus Sultan Agung",
-                startTime = "07:30 WIB",
-                endTime = "14:00 WIB"
-            )
-        )
-    }
 }

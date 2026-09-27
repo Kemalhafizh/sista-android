@@ -16,7 +16,7 @@ import javax.inject.Singleton
 
 class HiltDependencyInjectionTest {
 
-    private val all35ViewModelClasses: List<Class<*>> = listOf(
+    private val allViewModelClasses: List<Class<*>> = listOf(
         com.sultanagung1.sista.ui.auth.LoginViewModel::class.java,
         com.sultanagung1.sista.ui.home.HomeViewModel::class.java,
         com.sultanagung1.sista.ui.attendance.AttendanceViewModel::class.java,
@@ -47,18 +47,60 @@ class HiltDependencyInjectionTest {
         com.sultanagung1.sista.ui.elearning.ElearningViewModel::class.java,
         com.sultanagung1.sista.ui.counseling.CounselingViewModel::class.java,
         com.sultanagung1.sista.ui.profile.StudentProfileViewModel::class.java,
-        com.sultanagung1.sista.ui.schoolops.SchoolOperationsViewModel::class.java,
         com.sultanagung1.sista.ui.calendar.CalendarViewModel::class.java,
         com.sultanagung1.sista.ui.spmb.SpmbViewModel::class.java,
         com.sultanagung1.sista.ui.uks.UksViewModel::class.java,
-        com.sultanagung1.sista.ui.teacher.JournalMobileViewModel::class.java
+        com.sultanagung1.sista.ui.teacher.JournalMobileViewModel::class.java,
+        com.sultanagung1.sista.core.websocket.WebSocketSessionViewModel::class.java,
+        com.sultanagung1.sista.ui.document.DocumentScannerViewModel::class.java,
+        com.sultanagung1.sista.ui.document.SignatureViewModel::class.java,
+        com.sultanagung1.sista.ui.finance.BillingViewModel::class.java,
+        com.sultanagung1.sista.ui.ibadah.TahsinRecorderViewModel::class.java,
+        com.sultanagung1.sista.ui.ibadah.TahsinViewModel::class.java,
+        com.sultanagung1.sista.ui.portal.ModuleCatalogViewModel::class.java,
+        com.sultanagung1.sista.ui.teacher.CbtProctorViewModel::class.java,
+        com.sultanagung1.sista.ui.teacher.TeacherCreateExamViewModel::class.java,
+        com.sultanagung1.sista.ui.teacher.TeacherProctorExamsViewModel::class.java
     )
+    /**
+     * Every `@HiltViewModel class` in the main source sets of all modules. The
+     * list above used to be kept by hand: it named SchoolOperationsViewModel,
+     * which no longer exists (so this source set didn't compile), and missed
+     * ten real ViewModels.
+     */
+    private fun hiltViewModelsInSource(): Set<String> {
+        val roots = listOf("app", "core", "feature").map { dir ->
+            listOf(java.io.File("../$dir"), java.io.File(dir)).firstOrNull { it.isDirectory } ?: error("$dir not found")
+        }
+        val pkg = Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)
+        val vm = Regex("""@HiltViewModel\s+class\s+(\w+)""")
+        return roots.flatMap { root ->
+            root.walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .filter { f -> f.path.replace('\\', '/').let { "/src/main/" in it && "/build/" !in it } }
+                .flatMap { f ->
+                    val text = f.readText()
+                    val p = pkg.find(text)?.groupValues?.get(1) ?: ""
+                    vm.findAll(text).map { "$p.${it.groupValues[1]}" }
+                }
+                .toList()
+        }.toSet()
+    }
 
     @Test
-    fun testAll35ViewModelsHaveHiltViewModelAnnotation() {
-        assertEquals("Total ViewModels harus berjumlah tepat 35", 35, all35ViewModelClasses.size)
+    fun testViewModelListMatchesSource() {
+        assertEquals(
+            "Every @HiltViewModel must be listed here, and nothing that no longer exists",
+            hiltViewModelsInSource(),
+            allViewModelClasses.map { it.name }.toSet()
+        )
+    }
 
-        for (vmClass in all35ViewModelClasses) {
+
+    @Test
+    fun testAllViewModelsHaveHiltViewModelAnnotation() {
+
+        for (vmClass in allViewModelClasses) {
             // Hilt menghasilkan class <ViewModel>_HiltModules saat @HiltViewModel diproses
             val hiltModuleClassName = "${vmClass.name}_HiltModules"
             val hiltModuleClass = try {
@@ -74,8 +116,8 @@ class HiltDependencyInjectionTest {
     }
 
     @Test
-    fun testAll35ViewModelsHaveInjectConstructors() {
-        for (vmClass in all35ViewModelClasses) {
+    fun testAllViewModelsHaveInjectConstructors() {
+        for (vmClass in allViewModelClasses) {
             val constructors = vmClass.constructors
             val hasInjectConstructor = constructors.any { it.isAnnotationPresent(Inject::class.java) }
             assertTrue(

@@ -1,0 +1,34 @@
+// FASE 74.1: plain JVM module — this is a black-box driver of the already-
+// built & installed app APK over Appium, not Android app code, so it needs
+// none of the Android Gradle plugin.
+plugins {
+    id 'java-library'
+    id 'org.jetbrains.kotlin.jvm' version '2.2.10'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+dependencies {
+    testImplementation 'io.appium:java-client:9.3.0'
+    testImplementation 'org.seleniumhq.selenium:selenium-java:4.25.0'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+test {
+    useJUnit()
+    // Real device state changes (GPS mock, wifi/data toggle) are not safe to
+    // parallelize against a single emulator/device.
+    maxParallelForks = 1
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}

@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt.android)
+    id 'kotlin-kapt'
 }
 
 // FASE 73.1: Retrofit/OkHttp client, every Retrofit service interface
@@ -44,4 +46,8 @@ dependencies {
     api libs.retrofit.converter.gson
     api libs.okhttp.logging
     api libs.gson
+
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.hilt.android
+    kapt libs.hilt.compiler
 }

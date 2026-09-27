@@ -74,3 +74,10 @@ data class AssessmentResponse<T>(
     val message: String? = null,
     val data: T
 )
+
+// GET assessments/teacher's real shape is {assessments: [...], remedial_dashboard: {...}}
+// — remedial_dashboard has no consumer anywhere in the app yet, so only the
+// assessments list is modeled here.
+data class TeacherAssessmentsData(
+    val assessments: List<DailyAssessmentItem> = emptyList()
+)

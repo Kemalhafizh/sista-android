@@ -23,7 +23,7 @@ class CbtUiOverhaulTest {
 
     @Test
     fun testCbtExamListScreenDesignCompliance() {
-        val file = findSourceFile("src/main/java/com/sultanagung1/sista/ui/cbt/CbtExamListScreen.kt")
+        val file = findSourceFile("feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtExamListScreen.kt")
         assertTrue("CbtExamListScreen.kt must exist", file.exists())
 
         val content = file.readText()
@@ -68,7 +68,7 @@ class CbtUiOverhaulTest {
 
     @Test
     fun testCbtTokenEntryScreenDesignCompliance() {
-        val file = findSourceFile("src/main/java/com/sultanagung1/sista/ui/cbt/CbtTokenEntryScreen.kt")
+        val file = findSourceFile("feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtTokenEntryScreen.kt")
         assertTrue("CbtTokenEntryScreen.kt must exist", file.exists())
 
         val content = file.readText()

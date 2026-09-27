@@ -75,8 +75,12 @@ class AdaptiveLayoutTest {
         val questionBankClass = Class.forName("com.sultanagung1.sista.ui.teacher.QuestionBankScreenKt")
         assertNotNull("QuestionBankScreenKt harus ada", questionBankClass)
 
-        val teachingJournalClass = Class.forName("com.sultanagung1.sista.ui.teacher.TeachingJournalScreenKt")
-        assertNotNull("TeachingJournalScreenKt harus ada", teachingJournalClass)
+        // Was "TeachingJournalScreenKt": that file doesn't exist, so this threw
+        // ClassNotFoundException. The journal screen is TeachingJournalMobileScreen.
+        // Note these checks only prove the classes exist — the journal screen has
+        // no dual-pane layout of its own.
+        val teachingJournalClass = Class.forName("com.sultanagung1.sista.ui.teacher.TeachingJournalMobileScreenKt")
+        assertNotNull("TeachingJournalMobileScreenKt harus ada", teachingJournalClass)
     }
 
     @Test

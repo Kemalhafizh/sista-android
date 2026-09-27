@@ -29,7 +29,6 @@ import androidx.compose.ui.window.Dialog
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
-import com.sultanagung1.sista.data.model.DisciplineRecord
 import com.sultanagung1.sista.data.model.WarningLetterItem
 import com.sultanagung1.sista.ui.common.SignaturePad
 import com.sultanagung1.sista.ui.common.SignatureStroke
@@ -41,13 +40,25 @@ fun DisciplineScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val summary = uiState.summary
     val haptics = rememberHapticFeedbackHelper()
 
     var activeSignLetter by remember { mutableStateOf<WarningLetterItem?>(null) }
-    var parentNameInput by remember { mutableStateOf("") }
-    var parentPhoneInput by remember { mutableStateOf("") }
     val signatureStrokes = remember { androidx.compose.runtime.mutableStateListOf<SignatureStroke>() }
     var signatureCanvasSize by remember { mutableStateOf(IntSize.Zero) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // The dialog stays open until the server confirms, so a failed save
+    // doesn't throw away the parent's drawn signature.
+    LaunchedEffect(uiState.signatureSuccess) {
+        if (uiState.signatureSuccess) {
+            haptics.success()
+            activeSignLetter = null
+            signatureStrokes.clear()
+            viewModel.clearSignatureSuccess()
+            snackbarHostState.showSnackbar("Tanda tangan tersimpan di server.")
+        }
+    }
 
     val tabs = listOf("Buku Saku Poin", "Riwayat Kasus", "Surat Peringatan (SP)")
 
@@ -64,7 +75,8 @@ fun DisciplineScreen(
                 subtitle = "Buku Saku Digital SMA Islam Sultan Agung 1",
                 onNavigateBack = onNavigateBack
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -72,6 +84,39 @@ fun DisciplineScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
+            // Parent with several children: pick whose record to show. The
+            // server used to always answer with the first child, whatever
+            // child was selected on the dashboard.
+            if (uiState.children.size > 1) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    item {
+                        Text("Anak:", style = MaterialTheme.typography.labelMedium, color = Slate600)
+                    }
+                    items(uiState.children, key = { it.uuid }) { child ->
+                        FilterChip(
+                            selected = child.uuid == uiState.selectedChildUuid,
+                            onClick = {
+                                haptics.tapLight()
+                                viewModel.selectChild(child.uuid)
+                            },
+                            label = {
+                                Text(
+                                    text = listOfNotNull(child.name, child.classroom).joinToString(" • "),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+
             // Tabs Row
             LazyRow(
                 modifier = Modifier
@@ -112,6 +157,19 @@ fun DisciplineScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Failures used to be stored and never shown, which is how an
+                // endpoint that failed on every request went unnoticed.
+                uiState.errorMessage?.let { message ->
+                    item {
+                        SulaoneErrorBanner(message = message, onRetry = { viewModel.loadData() })
+                    }
+                }
+                if (uiState.isLoading) {
+                    item {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Emerald600)
+                    }
+                }
+
                 when (uiState.selectedTab) {
                     0 -> {
                         // 1. Point Gauge & Summary Banner
@@ -140,8 +198,19 @@ fun DisciplineScreen(
                                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                                     color = Gold400
                                                 )
+                                                // Parents always see whose record this is
+                                                // before reading — or signing — anything.
+                                                if (uiState.children.isNotEmpty()) {
+                                                    summary?.student?.let { student ->
+                                                        Text(
+                                                            text = listOfNotNull(student.name, student.classroom).joinToString(" • "),
+                                                            style = MaterialTheme.typography.labelMedium,
+                                                            color = Emerald100
+                                                        )
+                                                    }
+                                                }
                                                 Text(
-                                                    text = "Predikat: ${uiState.summary.pointStatus ?: "BAIK"}",
+                                                    text = "Predikat: ${summary?.status ?: "–"}",
                                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                                     color = Color.White
                                                 )
@@ -151,7 +220,7 @@ fun DisciplineScreen(
                                                 color = Color.White.copy(alpha = 0.2f)
                                             ) {
                                                 Text(
-                                                    text = "Maks 100 Poin",
+                                                    text = summary?.let { "Saldo ${it.totalPoints} poin" } ?: "Saldo –",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = Color.White,
                                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -176,11 +245,21 @@ fun DisciplineScreen(
                                                     Text("Poin Pelanggaran", style = MaterialTheme.typography.labelSmall, color = Emerald100)
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
-                                                        text = "${uiState.summary.totalViolationPoints}",
+                                                        text = summary?.totalViolationPoints?.toString() ?: "–",
                                                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                                        color = if (uiState.summary.totalViolationPoints > 30) AccentRose else Gold400
+                                                        // 30 = the server's "Perlu Perhatian" level, measured on the net balance.
+                                                        color = if ((summary?.totalPoints ?: 0) >= 30) AccentRose else Gold400
                                                     )
-                                                    Text("Batas SP1: 25 Poin", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Emerald200)
+                                                    Text(
+                                                        text = when {
+                                                            summary == null -> "–"
+                                                            summary.nextWarningLevel != null && summary.nextWarningThreshold != null ->
+                                                                "${summary.nextWarningLevel} saat saldo ${summary.nextWarningThreshold} poin"
+                                                            else -> "Batas SP3 sudah tercapai"
+                                                        },
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        color = Emerald200
+                                                    )
                                                 }
                                             }
 
@@ -194,11 +273,11 @@ fun DisciplineScreen(
                                                     Text("Poin Kebaikan", style = MaterialTheme.typography.labelSmall, color = Emerald100)
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
-                                                        text = "+${uiState.summary.totalRewardPoints}",
+                                                        text = summary?.let { "+${it.totalRewardPoints}" } ?: "–",
                                                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
                                                         color = Emerald300
                                                     )
-                                                    Text("Pengurang Poin SP", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Emerald200)
+                                                    Text("Mengurangi saldo poin", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Emerald200)
                                                 }
                                             }
                                         }
@@ -222,14 +301,31 @@ fun DisciplineScreen(
                                 backgroundColor = MaterialTheme.colorScheme.surface,
                                 borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                             ) {
+                                // The school's active point categories from the server
+                                // (this used to be a hardcoded list of four rules).
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    RuleItem("Keterlambatan Hadir (> 07:00)", "5 Poin")
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Slate200)
-                                    RuleItem("Atribut Seragam / Peci Tidak Lengkap", "10 Poin")
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Slate200)
-                                    RuleItem("Meninggalkan KBM Tanpa Izin Guru Piket", "15 Poin")
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Slate200)
-                                    RuleItem("Meraih Prestasi / Juara Lomba Mewakili Sekolah", "-25 Poin (Bonus)")
+                                    val rules = summary?.rules.orEmpty()
+                                    when {
+                                        summary == null -> Text(
+                                            text = "Aturan poin tampil setelah data dimuat.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Slate500
+                                        )
+                                        rules.isEmpty() -> Text(
+                                            text = "Sekolah belum mengatur kategori poin tata tertib.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Slate500
+                                        )
+                                        else -> rules.forEachIndexed { index, rule ->
+                                            if (index > 0) {
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Slate200)
+                                            }
+                                            RuleItem(
+                                                title = rule.name,
+                                                points = if (rule.type == "reward") "−${rule.points} poin (kebaikan)" else "+${rule.points} poin"
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -237,8 +333,27 @@ fun DisciplineScreen(
 
                     1 -> {
                         // Riwayat Kasus Pelanggaran & Reward
-                        items(uiState.records) { record ->
-                            val isReward = record.category == "REWARD"
+                        if (uiState.recordsLoaded && uiState.records.isEmpty()) {
+                            item {
+                                SulaoneEmptyState(
+                                    title = "Belum Ada Catatan Poin",
+                                    description = "Belum ada pelanggaran maupun poin kebaikan yang dicatat.",
+                                    icon = Icons.Default.CheckCircle
+                                )
+                            }
+                        }
+                        items(uiState.records, key = { it.id }) { record ->
+                            val isReward = record.type == "reward"
+                            val badge = when (record.type) {
+                                "reward" -> "−${kotlin.math.abs(record.points)} POIN KEBAIKAN"
+                                "penalty" -> "+${kotlin.math.abs(record.points)} POIN"
+                                else -> "PENYESUAIAN ${if (record.points > 0) "+" else ""}${record.points}"
+                            }
+                            val title = record.categoryName ?: when (record.type) {
+                                "reward" -> "Poin Kebaikan"
+                                "penalty" -> "Pelanggaran"
+                                else -> "Penyesuaian Poin"
+                            }
                             ModernBentoCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(18.dp),
@@ -256,7 +371,7 @@ fun DisciplineScreen(
                                             color = if (isReward) Emerald700 else AccentRose
                                         ) {
                                             Text(
-                                                text = if (isReward) "+${record.points} REWARD" else "-${record.points} POIN",
+                                                text = badge,
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
                                                 color = Color.White,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -272,31 +387,17 @@ fun DisciplineScreen(
                                     Spacer(modifier = Modifier.height(10.dp))
 
                                     Text(
-                                        text = record.title.orEmpty(),
+                                        text = title,
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                         color = if (isReward) Emerald800 else AccentRose
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = record.description.orEmpty(),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Slate700
-                                    )
-
-                                    if (!record.actionTaken.isNullOrBlank()) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            border = androidx.compose.foundation.BorderStroke(1.dp, Slate200)
-                                        ) {
-                                            Text(
-                                                text = "Tindakan: ${record.actionTaken}",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                                color = Slate800,
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                            )
-                                        }
+                                    if (!record.description.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = record.description.orEmpty(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Slate700
+                                        )
                                     }
 
                                     Spacer(modifier = Modifier.height(6.dp))
@@ -312,8 +413,10 @@ fun DisciplineScreen(
 
                     2 -> {
                         // Surat Peringatan (SP) Tab
+                        // "No letters" is only claimed once the server said so —
+                        // not while loading or after a failed request.
                         if (uiState.warningLetters.isEmpty()) {
-                            item {
+                            if (uiState.lettersLoaded) item {
                                 SulaoneEmptyState(
                                     title = "Alhamdulillah, Tidak Ada Surat Peringatan",
                                     description = "Pertahankan perilaku terpuji dan kedisiplinan Anda di SMA Islam Sultan Agung 1.",
@@ -321,13 +424,13 @@ fun DisciplineScreen(
                                 )
                             }
                         } else {
-                            items(uiState.warningLetters) { letter ->
+                            items(uiState.warningLetters, key = { it.id }) { letter ->
                                 ModernBentoCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(18.dp),
                                     backgroundColor = MaterialTheme.colorScheme.surface,
-                                    borderColor = if (letter.isSignedByParent) Emerald300 else AccentRose.copy(alpha = 0.4f),
-                                    glowColor = if (letter.isSignedByParent) null else RoseGlow
+                                    borderColor = if (letter.isSigned) Emerald300 else AccentRose.copy(alpha = 0.4f),
+                                    glowColor = if (letter.isSigned) null else RoseGlow
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Row(
@@ -337,7 +440,7 @@ fun DisciplineScreen(
                                         ) {
                                             Surface(
                                                 shape = RoundedCornerShape(8.dp),
-                                                color = if (letter.isSignedByParent) Emerald700 else AccentRose
+                                                color = if (letter.isSigned) Emerald700 else AccentRose
                                             ) {
                                                 Text(
                                                     text = letter.level.orEmpty(),
@@ -347,41 +450,53 @@ fun DisciplineScreen(
                                                 )
                                             }
                                             LiveStatusChip(
-                                                text = if (letter.isSignedByParent) "Tertandatangani Ortu" else "Menunggu TTD Ortu",
-                                                color = if (letter.isSignedByParent) Emerald700 else AccentRose
+                                                text = if (letter.isSigned) "Tertandatangani Ortu" else "Menunggu TTD Ortu",
+                                                color = if (letter.isSigned) Emerald700 else AccentRose
                                             )
                                         }
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
                                         Text(
-                                            text = "No: ${letter.letterNumber.orEmpty()}",
+                                            text = listOfNotNull(
+                                                letter.issuedAt?.let { "Terbit $it" },
+                                                "saldo ≥ ${letter.pointThreshold} poin"
+                                            ).joinToString(" • "),
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                             color = Slate600
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = letter.reason.orEmpty(),
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
+                                        if (!letter.notes.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = letter.notes.orEmpty(),
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
 
                                         Spacer(modifier = Modifier.height(12.dp))
 
-                                        if (!letter.isSignedByParent) {
-                                            SulaoneButton(
+                                        when {
+                                            letter.isSigned -> Text(
+                                                text = "✓ Ditandatangani orang tua/wali pada ${letter.signedAt.orEmpty()}",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = Emerald700
+                                            )
+                                            // Only the student's own parent gets the pad; the
+                                            // server rejects anyone else's signature anyway.
+                                            letter.canSign -> SulaoneButton(
                                                 text = "Buka Lembar Tanda Tangan Digital",
                                                 onClick = {
                                                     haptics.tapHeavy()
+                                                    viewModel.clearSignError()
                                                     activeSignLetter = letter
                                                 },
                                                 icon = Icons.Default.Draw
                                             )
-                                        } else {
-                                            Text(
-                                                text = "✓ Disetujui oleh Wali Murid pada ${letter.parentSignedAt.orEmpty()}",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                color = Emerald700
+                                            else -> Text(
+                                                text = "Menunggu tanda tangan orang tua/wali melalui akun orang tua.",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Slate600
                                             )
                                         }
                                     }
@@ -402,8 +517,10 @@ fun DisciplineScreen(
     if (activeSignLetter != null) {
         val letter = activeSignLetter!!
         Dialog(onDismissRequest = {
-            activeSignLetter = null
-            signatureStrokes.clear()
+            if (!uiState.isSigning) {
+                activeSignLetter = null
+                signatureStrokes.clear()
+            }
         }) {
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -419,27 +536,20 @@ fun DisciplineScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Pengesahan Surat Peringatan ${letter.level}",
+                        text = listOfNotNull(
+                            "Pengesahan Surat Peringatan ${letter.level.orEmpty()}",
+                            summary?.student?.name?.let { "untuk $it" }
+                        ).joinToString(" "),
                         style = MaterialTheme.typography.bodySmall,
                         color = Slate600
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = parentNameInput,
-                        onValueChange = { parentNameInput = it },
-                        label = { Text("Nama Lengkap Orang Tua / Wali") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = parentPhoneInput,
-                        onValueChange = { parentPhoneInput = it },
-                        label = { Text("Nomor WhatsApp Ortu") },
-                        modifier = Modifier.fillMaxWidth()
+                    // Name/phone fields were removed: the server never read them —
+                    // the signer is the logged-in parent account.
+                    Text(
+                        text = "Ditandatangani atas nama akun orang tua yang sedang masuk.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Slate500
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -485,6 +595,15 @@ fun DisciplineScreen(
                         }
                     }
 
+                    uiState.signError?.let { message ->
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Belum tersimpan: $message",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AccentRose
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
@@ -496,33 +615,32 @@ fun DisciplineScreen(
                                 activeSignLetter = null
                                 signatureStrokes.clear()
                             },
+                            enabled = !uiState.isSigning,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("Batal")
                         }
 
-                        val canSubmit = parentNameInput.isNotBlank() && parentPhoneInput.isNotBlank() && signatureStrokes.isNotEmpty()
                         Button(
                             onClick = {
                                 val base64Signature = captureSignatureAsBase64Png(signatureStrokes, signatureCanvasSize)
-                                if (base64Signature == null) return@Button
-                                haptics.success()
-                                viewModel.signWarningLetter(
-                                    letter.id,
-                                    base64Signature,
-                                    parentNameInput,
-                                    parentPhoneInput
-                                )
-                                activeSignLetter = null
-                                signatureStrokes.clear()
+                                    ?: return@Button
+                                haptics.tapHeavy()
+                                // The dialog closes on the server's confirmation
+                                // (see the signatureSuccess effect), not here.
+                                viewModel.signWarningLetter(letter.id, base64Signature)
                             },
-                            enabled = canSubmit,
+                            enabled = signatureStrokes.isNotEmpty() && !uiState.isSigning,
                             modifier = Modifier.weight(1.5f),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
                         ) {
-                            Text("Sahkan TTD Digital", fontWeight = FontWeight.Bold)
+                            if (uiState.isSigning) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                            } else {
+                                Text("Sahkan TTD Digital", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }

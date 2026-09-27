@@ -26,6 +26,14 @@ import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.data.model.ContextualHomePayload
 
+/**
+ * Rendered only while the real contextual payload (streak, XP, Amalan
+ * Yaumiyah progress — see HomeContextualSection) hasn't loaded yet or
+ * failed to load — this used to show a permanently hardcoded "14 Hari
+ * Beruntun Aktif" / "4 dari 8 Amalan Yaumiyah" card regardless of the
+ * actual user or backend state. It now honestly says so instead, matching
+ * HomePrayerWidget's pattern for a missing real data source.
+ */
 @Composable
 internal fun HomeStreakBanner(
     streakGradient: Brush? = null,
@@ -51,62 +59,42 @@ internal fun HomeStreakBanner(
             ),
             tonalElevation = 1.dp
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Gold100),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Gold100),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("🔥", fontSize = 20.sp)
-                    }
+                    Text("🔥", fontSize = 20.sp)
+                }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            AnimatedCounterText(
-                                targetValue = 14,
-                                suffix = " Hari Beruntun Aktif",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        Text(
-                            text = "4 dari 8 Amalan Yaumiyah hari ini telah terisi",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Ringkasan Amalan Harian",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Belum berhasil dimuat. Ketuk untuk membuka Mutaba'ah.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Smooth Minimalist Progress Bar
-                LinearProgressIndicator(
-                    progress = { 0.5f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(50)),
-                    color = Emerald700,
-                    trackColor = if (isDark) Slate800 else Slate100
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

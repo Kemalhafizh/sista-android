@@ -9,6 +9,9 @@ interface AnalyticsApiService {
     @GET("analytics/student/summary")
     suspend fun getStudentAnalytics(): Response<StudentAnalyticsData>
 
+    @GET("analytics/teacher/my-classes")
+    suspend fun getTeacherClasses(): Response<List<TeacherClassOption>>
+
     @GET("analytics/teacher/class-performance")
     suspend fun getClassAnalytics(
         @Query("class") className: String,

@@ -187,7 +187,8 @@ fun ElearningClassCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            if (classItem.teacherName != null) {
+            val teacherName = classItem.teacherName
+            if (teacherName != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -198,7 +199,7 @@ fun ElearningClassCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = classItem.teacherName,
+                        text = teacherName,
                         fontSize = 12.sp,
                         color = Slate500
                     )

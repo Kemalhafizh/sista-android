@@ -6,26 +6,19 @@ import com.sultanagung1.sista.data.model.ClassAnalyticsData
 import com.sultanagung1.sista.data.model.ExecutiveAnalyticsData
 import com.sultanagung1.sista.data.model.ParentProgressData
 import com.sultanagung1.sista.data.model.StudentAnalyticsData
+import com.sultanagung1.sista.data.model.TeacherClassOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
 /**
- * NOTE ON BACKEND STATE (read before "fixing" this further): sistem-terpadu's
- * analytics/... routes this service calls do not exist in routes/api.php at all
- * (404 on every call). The closest registered equivalents (VizController /
- * DataVisualizationService — viz/radar/..., viz/trend/..., viz/distribution/...,
- * viz/comparison/..., viz/counters/live) are themselves backend-side stubs:
- * getStudentRadarChart($studentId) and getGradeDistribution($examId) never
- * use the id they're given and return the exact same hardcoded numbers for
- * every student/exam. Pointing this repository at those endpoints instead
- * would trade one kind of fake data for another — a real HTTP 200 carrying
- * the same fabricated numbers for every user — which is not meaningfully
- * "synced with the backend." Real analytics for this screen needs backend
- * work (DataVisualizationService actually querying Grade/Attendance/
- * ReportCard) before this repository can show genuine data. Until then this
- * surfaces a real error instead of silently faking success.
+ * analytics/student/summary, analytics/teacher/{my-classes,class-performance},
+ * analytics/parent/child-progress and analytics/executive/kpi are backed by
+ * App\Services\Analytics\MobileAnalyticsService, which queries real
+ * Grade/Attendance/ReportCard/TahfidzTarget/Billing/Payment rows — no
+ * fabricated data. A non-2xx or empty body surfaces a real error rather
+ * than silently faking success.
  */
 class AnalyticsRepository(private val apiClient: ApiClient) {
 
@@ -37,6 +30,20 @@ class AnalyticsRepository(private val apiClient: ApiClient) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
                 emit(NetworkResult.Error("Analitik akademik belum tersedia dari server (Kode: ${response.code()}).", response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getTeacherClasses(): Flow<NetworkResult<List<TeacherClassOption>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.analyticsApi.getTeacherClasses()
+            if (response.isSuccessful && response.body() != null) {
+                emit(NetworkResult.Success(response.body()!!))
+            } else {
+                emit(NetworkResult.Error("Daftar kelas mengajar belum tersedia dari server (Kode: ${response.code()}).", response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))

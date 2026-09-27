@@ -1,0 +1,9 @@
+// FASE 74.1: kept as a standalone Gradle project (own settings.gradle),
+// deliberately NOT included from the root ../settings.gradle. Appium E2E
+// tests need a running emulator/device plus a live Appium server — pulling
+// appium-java-client/selenium onto the main app's build classpath would add
+// dependency-resolution risk to every normal `./gradlew build` for a suite
+// that can only ever run in a device-backed CI job or a developer machine
+// with Appium installed. Run it from inside this directory instead:
+//   cd e2e && ./gradlew test
+rootProject.name = "sulaone-e2e"

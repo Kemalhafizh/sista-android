@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,7 @@ import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
-import com.sultanagung1.sista.core.util.Constants
+import com.sultanagung1.sista.core.util.GeoUtils
 import com.sultanagung1.sista.ui.common.OfflineQueuedBanner
 import java.util.Locale
 
@@ -329,7 +330,7 @@ fun GeofenceAttendanceScreen(
                         text = if (uiState.isInsideRadius)
                             "Posisi GPS Anda terverifikasi di area SMA Islam Sultan Agung 1 Semarang."
                         else
-                            "Jarak Anda: ${String.format(Locale.US, "%.1f", uiState.distanceToCampusMeters)} meter dari gerbang sekolah (Maks: ${Constants.CAMPUS_RADIUS_METERS.toInt()}m).",
+                            "Jarak Anda: ${String.format(Locale.US, "%.1f", uiState.distanceToCampusMeters)} meter dari gerbang sekolah (Maks: ${GeoUtils.campus.radiusMeters.toInt()}m).",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -433,6 +434,11 @@ fun GeofenceAttendanceScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    // FASE 74.1: stable automation hook — the GPS check-in flow's
+                    // sole entry point has no text/contentDescription that stays
+                    // constant across its enabled/loading states, so E2E drivers
+                    // (Appium/UiAutomator2) need a fixed testTag to target it.
+                    .testTag("geofence_checkin_button")
                     .sulaoneInteractiveTouchTarget(48.dp)
                     .springPressable {
                         if (uiState.isInsideRadius) haptics.tapMedium() else haptics.tapLight()

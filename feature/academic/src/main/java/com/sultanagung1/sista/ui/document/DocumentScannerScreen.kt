@@ -222,9 +222,10 @@ fun DocumentScannerScreen(
                     },
                     text = {
                         Column {
-                            if (result.status == "completed" && !result.extractedText.isNullOrBlank()) {
+                            val extractedText = result.extractedText
+                            if (result.status == "completed" && !extractedText.isNullOrBlank()) {
                                 Text(
-                                    text = result.extractedText,
+                                    text = extractedText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Slate700
                                 )

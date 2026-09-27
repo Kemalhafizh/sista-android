@@ -30,6 +30,12 @@ class AnalyticsViewModel @Inject constructor(
     private val _classAnalytics = MutableStateFlow<AnalyticsUiState<ClassAnalyticsData>>(AnalyticsUiState.Loading)
     val classAnalytics: StateFlow<AnalyticsUiState<ClassAnalyticsData>> = _classAnalytics.asStateFlow()
 
+    private val _teacherClassOptions = MutableStateFlow<List<TeacherClassOption>>(emptyList())
+    val teacherClassOptions: StateFlow<List<TeacherClassOption>> = _teacherClassOptions.asStateFlow()
+
+    private val _selectedTeacherClass = MutableStateFlow<TeacherClassOption?>(null)
+    val selectedTeacherClass: StateFlow<TeacherClassOption?> = _selectedTeacherClass.asStateFlow()
+
     private val _parentProgress = MutableStateFlow<AnalyticsUiState<ParentProgressData>>(AnalyticsUiState.Loading)
     val parentProgress: StateFlow<AnalyticsUiState<ParentProgressData>> = _parentProgress.asStateFlow()
 
@@ -63,7 +69,34 @@ class AnalyticsViewModel @Inject constructor(
     fun loadClassAnalytics() {
         viewModelScope.launch {
             _classAnalytics.value = AnalyticsUiState.Loading
-            analyticsRepository.getClassAnalytics("XII MIPA 1", "Fisika Modern").collect { res ->
+            analyticsRepository.getTeacherClasses().collect { res ->
+                when (res) {
+                    is NetworkResult.Success -> {
+                        _teacherClassOptions.value = res.data
+                        val target = _selectedTeacherClass.value ?: res.data.firstOrNull()
+                        if (target != null) {
+                            _selectedTeacherClass.value = target
+                            loadClassPerformance(target)
+                        } else {
+                            _classAnalytics.value = AnalyticsUiState.Error("Anda belum memiliki kelas/mata pelajaran yang diampu.")
+                        }
+                    }
+                    is NetworkResult.Error -> _classAnalytics.value = AnalyticsUiState.Error(res.message)
+                    is NetworkResult.Loading -> Unit
+                }
+            }
+        }
+    }
+
+    fun selectTeacherClass(option: TeacherClassOption) {
+        _selectedTeacherClass.value = option
+        loadClassPerformance(option)
+    }
+
+    private fun loadClassPerformance(option: TeacherClassOption) {
+        viewModelScope.launch {
+            _classAnalytics.value = AnalyticsUiState.Loading
+            analyticsRepository.getClassAnalytics(option.className, option.subjectName).collect { res ->
                 when (res) {
                     is NetworkResult.Success -> _classAnalytics.value = AnalyticsUiState.Success(res.data)
                     is NetworkResult.Error -> _classAnalytics.value = AnalyticsUiState.Error(res.message)

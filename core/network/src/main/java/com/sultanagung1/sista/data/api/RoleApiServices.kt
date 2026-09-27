@@ -49,6 +49,11 @@ interface AdminApiService {
     @GET("mobile/admin/kpi")
     suspend fun getSchoolKpi(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<SchoolKpiSummary>>
 
+    // FASE 71.4 follow-up: real list backing "Persetujuan Menunggu Tindakan"
+    // — previously only the count from getAdminDashboard() existed.
+    @GET("mobile/admin/approvals")
+    suspend fun getPendingApprovals(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<PendingApprovalItem>>>
+
     @POST("mobile/admin/approvals/{id}/action")
     suspend fun processApproval(
         @Path("id") id: String,

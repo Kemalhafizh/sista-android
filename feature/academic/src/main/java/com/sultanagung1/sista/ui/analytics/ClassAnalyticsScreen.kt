@@ -25,12 +25,14 @@ fun ClassAnalyticsScreen(
     onNavigateBack: () -> Unit
 ) {
     val classDataState by viewModel.classAnalytics.collectAsState()
+    val classOptions by viewModel.teacherClassOptions.collectAsState()
+    val selectedClass by viewModel.selectedTeacherClass.collectAsState()
 
     Scaffold(
         topBar = {
             SulaoneTopBar(
                 title = "Analitik Hasil Belajar Kelas",
-                subtitle = "Fisika Modern • XII MIPA 1",
+                subtitle = selectedClass?.let { "${it.subjectName} • ${it.className}" } ?: "Memuat kelas yang diampu...",
                 onNavigateBack = onNavigateBack
             )
         }
@@ -44,6 +46,20 @@ fun ClassAnalyticsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (classOptions.size > 1) {
+                val optionLabels = classOptions.map { "${it.subjectName} • ${it.className}" }
+                SulaoneDropdown(
+                    selectedValue = selectedClass?.let { "${it.subjectName} • ${it.className}" } ?: "",
+                    onValueSelected = { label ->
+                        val index = optionLabels.indexOf(label)
+                        if (index >= 0) viewModel.selectTeacherClass(classOptions[index])
+                    },
+                    options = optionLabels,
+                    label = "Pilih Kelas & Mata Pelajaran",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             when (val classResult = classDataState) {
                 is AnalyticsUiState.Loading -> Box(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),

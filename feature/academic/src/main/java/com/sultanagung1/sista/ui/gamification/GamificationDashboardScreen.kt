@@ -34,11 +34,7 @@ fun GamificationDashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showConfetti by remember { mutableStateOf(false) }
 
-    val profile = uiState.profile ?: com.sultanagung1.sista.data.model.GamificationProfile(
-        totalXp = 1420, level = 7, levelTitle = "Thalibul Ilmi Mujahid",
-        xpToNextLevel = 180, streakDays = 14, longestStreak = 28,
-        badgesEarned = 12, monthlyRank = 3
-    )
+    val profile = uiState.profile
 
     Scaffold(
         topBar = {
@@ -53,6 +49,28 @@ fun GamificationDashboardScreen(
             )
         }
     ) { padding ->
+        if (profile == null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    uiState.isLoading -> CircularProgressIndicator(color = Emerald700)
+                    uiState.errorMessage != null -> Text(
+                        uiState.errorMessage ?: "Gagal memuat data gamifikasi",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(24.dp)
+                    )
+                    else -> Text(
+                        "Belum ada data gamifikasi untuk akun ini.",
+                        color = Slate500,
+                        modifier = Modifier.padding(24.dp)
+                    )
+                }
+            }
+            return@Scaffold
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()

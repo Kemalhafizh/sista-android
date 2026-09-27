@@ -3,17 +3,37 @@ package com.sultanagung1.sista.decomposition
 import com.sultanagung1.sista.data.model.BillingInvoice
 import com.sultanagung1.sista.ui.attendance.QrDisplayState
 import com.sultanagung1.sista.ui.finance.BillingUiState
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
+/**
+ * FASE 76.2 repair: every source path here pointed at the pre-FASE-73
+ * single-module layout inside :app, which no longer exists — Home and the
+ * design system moved to feature/home and core/designsystem. The TopAppBar
+ * scan still "passed" on paper by scanning app/src/main/java, but that folder
+ * now holds only ~20 app-level files (no screens), so it also tripped its own
+ * ">= 50 files" sanity check. Paths now resolve to the real modules.
+ */
 class ScreenDecompositionTest {
+
+    /** Unit tests run with the :app module dir as working dir; sibling modules are one level up. */
+    private fun source(relativePath: String): File {
+        val candidates = listOf(File("../$relativePath"), File(relativePath))
+        return candidates.firstOrNull { it.exists() } ?: candidates.first()
+    }
+
+    private val homeDir = "feature/home/src/main/java/com/sultanagung1/sista/ui/home"
+    private val designSystemDir = "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem"
 
     @Test
     fun testHomeScreenDecompositionAndLineCountReduction() {
         // Verify HomeScreen.kt line count dropped dramatically (under 250 lines, from 1253 lines)
-        val homeScreenFile = File("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
-        assertTrue("HomeScreen.kt must exist", homeScreenFile.exists())
+        val homeScreenFile = source("$homeDir/HomeScreen.kt")
+        assertTrue("HomeScreen.kt must exist (resolved to ${homeScreenFile.absolutePath})", homeScreenFile.exists())
 
         val lines = homeScreenFile.readLines()
         assertTrue(
@@ -22,7 +42,7 @@ class ScreenDecompositionTest {
         )
 
         // Verify all 6 section files exist and are populated
-        val sectionsDir = File("src/main/java/com/sultanagung1/sista/ui/home/sections")
+        val sectionsDir = source("$homeDir/sections")
         assertTrue("sections directory must exist", sectionsDir.exists() && sectionsDir.isDirectory)
 
         val expectedSections = listOf(
@@ -51,20 +71,20 @@ class ScreenDecompositionTest {
         assertNotNull(loadingState)
 
         val sampleInvoices = listOf(
-            BillingInvoice(1, "SPP September 2026", 750000, "Rp 750.000", "10 Sep 2026", "UNPAID", "BSI", "8821900699112"),
-            BillingInvoice(2, "SPP Agustus 2026", 750000, "Rp 750.000", "10 Agu 2026", "PAID", "BSI", "8821900699112")
+            BillingInvoice(1L, "SPP", "September 2026", 750000.0, "Rp 750.000", "10 Sep 2026", "UNPAID", 750000.0),
+            BillingInvoice(2L, "SPP", "Agustus 2026", 750000.0, "Rp 750.000", "10 Agu 2026", "PAID", 0.0)
         )
 
         val contentState = BillingUiState.Content(
             invoices = sampleInvoices,
-            totalUnpaid = 750000L,
-            totalPaid = 750000L,
+            totalUnpaid = 750000.0,
+            totalPaid = 750000.0,
             selectedFilter = "SEMUA"
         )
 
         assertEquals(2, contentState.invoices.size)
-        assertEquals(750000L, contentState.totalUnpaid)
-        assertEquals(750000L, contentState.totalPaid)
+        assertEquals(750000.0, contentState.totalUnpaid, 0.01)
+        assertEquals(750000.0, contentState.totalPaid, 0.01)
         assertEquals("SEMUA", contentState.selectedFilter)
 
         val filteredUnpaid = contentState.copy(selectedFilter = "UNPAID")
@@ -88,7 +108,7 @@ class ScreenDecompositionTest {
 
     @Test
     fun testDesignSystemNewComponentsExist() {
-        val dsDir = File("src/main/java/com/sultanagung1/sista/core/designsystem")
+        val dsDir = source(designSystemDir)
         assertTrue("Design system dir must exist", dsDir.exists())
 
         val newComponents = listOf(
@@ -111,10 +131,17 @@ class ScreenDecompositionTest {
 
     @Test
     fun testNoRawTopAppBarInAppCodebase() {
-        // Traverse all kotlin files in app/src/main/java
-        val mainDir = File("src/main/java")
-        val ktFiles = mainDir.walkTopDown().filter { it.extension == "kt" }.toList()
-        assertTrue("Should have at least 50 kt files", ktFiles.size >= 50)
+        // Traverse the main sources of every module (app, core/*, feature/*) —
+        // after FASE 73 the screens live in feature/*, not app/src/main/java.
+        val repoRoot = listOf(File(".."), File(".")).first { File(it, "settings.gradle").exists() }
+        val sourceRoots = listOf(File(repoRoot, "app/src/main/java")) +
+            listOf("core", "feature").flatMap { group ->
+                File(repoRoot, group).listFiles().orEmpty()
+                    .map { File(it, "src/main/java") }
+                    .filter { it.isDirectory }
+            }
+        val ktFiles = sourceRoots.flatMap { root -> root.walkTopDown().filter { it.extension == "kt" }.toList() }
+        assertTrue("Should have at least 50 kt files across modules (found ${ktFiles.size})", ktFiles.size >= 50)
 
         for (file in ktFiles) {
             // SulaoneTopBar.kt itself defines TopBar, but screens should not call raw TopAppBar(
@@ -131,7 +158,7 @@ class ScreenDecompositionTest {
 
     @Test
     fun testHomeScreenSectionExports() {
-        val sectionsDir = File("src/main/java/com/sultanagung1/sista/ui/home/sections")
+        val sectionsDir = source("$homeDir/sections")
         val heroFile = File(sectionsDir, "HomeHeroSection.kt")
         assertTrue(heroFile.readText().contains("HomeHeroSection"))
 
@@ -144,9 +171,11 @@ class ScreenDecompositionTest {
         assertTrue(suggestionsFile.readText().contains("HomeContextualSection"))
 
         val quickActionsFile = File(sectionsDir, "HomeQuickActions.kt")
-        assertTrue(quickActionsFile.readText().contains("HomeBentoGrid"))
-        assertTrue(quickActionsFile.readText().contains("HomeQuickServicesGrid"))
+        assertTrue(quickActionsFile.readText().contains("HomeMinimalQuickActions"))
         assertTrue(quickActionsFile.readText().contains("ModernQuickActionPill"))
+        // FASE 76.2: dead code with a fake "Radius 250m" label (real geofence is 100m) was removed
+        assertFalse(quickActionsFile.readText().contains("HomeBentoGrid"))
+        assertFalse(quickActionsFile.readText().contains("HomeQuickServicesGrid"))
 
         val scheduleFile = File(sectionsDir, "HomeSchedulePreview.kt")
         assertTrue(scheduleFile.readText().contains("HomeSchedulePreview"))

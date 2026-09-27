@@ -5,16 +5,14 @@
  */
 package com.sultanagung1.sista.ui.announcements
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -63,12 +61,21 @@ fun AnnouncementFeedScreen(
         list
     }
 
+    // FASE 76.2: the list scrolls under a see-through top bar; the hairline
+    // appears once content is actually passing beneath it.
+    val listState = rememberLazyListState()
+    val listScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
+
     Scaffold(
         topBar = {
             SulaoneTopBar(
                 title = "Pusat Informasi & Pengumuman",
                 subtitle = "SMA Islam Sultan Agung 1 Semarang",
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                translucent = true,
+                showDivider = listScrolled
             )
         }
     ) { paddingValues ->
@@ -76,11 +83,12 @@ fun AnnouncementFeedScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
-                .padding(paddingValues)
+                .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(top = paddingValues.calculateTopPadding(), bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 1. Live WebSocket Alert Banner
@@ -243,15 +251,34 @@ fun AnnouncementFeedScreen(
                             color = if (isDark) Slate100 else Slate900
                         )
                         Text(
-                            text = "${filteredList.size} Pengumuman",
+                            text = if (filteredList.isEmpty() && uiState.isLoading) "Memuat…" else "${filteredList.size} Pengumuman",
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isDark) Slate400 else Slate500
                         )
                     }
                 }
 
-                // 4. Feed Items or Empty State
-                if (filteredList.isEmpty()) {
+                // 4. Feed Items, Loading, Error or Empty State.
+                // "Tidak Ada Pengumuman" used to show while still loading and
+                // after a failed request — the error was never displayed.
+                uiState.errorMessage?.let { message ->
+                    item {
+                        SulaoneErrorBanner(
+                            message = message,
+                            onRetry = { viewModel.loadAnnouncements(uiState.selectedCategory) },
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+                }
+                if (filteredList.isEmpty() && uiState.isLoading) {
+                    item {
+                        SulaoneTieredLoading(isLoading = true, modifier = Modifier.padding(horizontal = 16.dp)) {
+                            AnnouncementSkeleton(borderColor = borderColor)
+                        }
+                    }
+                } else if (filteredList.isEmpty() && uiState.errorMessage != null) {
+                    // The banner above already explains; no false "no announcements".
+                } else if (filteredList.isEmpty()) {
                     item {
                         SulaoneEmptyState(
                             icon = Icons.Default.Campaign,
@@ -411,6 +438,28 @@ private fun AnnouncementItemCard(
                         modifier = Modifier.size(16.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+/** Mirrors an announcement card: category chip, title, two body lines, meta. */
+@Composable
+private fun AnnouncementSkeleton(borderColor: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        repeat(3) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(0.5.dp, borderColor, RoundedCornerShape(16.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SkeletonBox(modifier = Modifier.width(72.dp).height(18.dp), shape = RoundedCornerShape(9.dp))
+                SkeletonBox(modifier = Modifier.fillMaxWidth(0.85f).height(16.dp))
+                SkeletonBox(modifier = Modifier.fillMaxWidth().height(12.dp))
+                SkeletonBox(modifier = Modifier.fillMaxWidth(0.6f).height(12.dp))
+                SkeletonBox(modifier = Modifier.width(120.dp).height(10.dp))
             }
         }
     }

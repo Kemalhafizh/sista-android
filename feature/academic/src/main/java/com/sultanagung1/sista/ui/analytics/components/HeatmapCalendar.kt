@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,15 +16,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.data.model.DailyAttendanceHeatmapItem
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun HeatmapCalendar(
     items: List<DailyAttendanceHeatmapItem>,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
+    // The backend always returns the current real month's data (see
+    // MobileAnalyticsService::buildAttendanceHeatmap) — this label follows
+    // the device's current date rather than a fixed month/year.
+    val monthYearLabel = remember {
+        SimpleDateFormat("MMMM yyyy", Locale("id", "ID")).format(java.util.Date())
+    }
+
     Column(modifier = modifier) {
         Text(
-            text = "Heatmap Presensi Bulan Agustus 2026",
+            text = "Heatmap Presensi Bulan $monthYearLabel",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -44,7 +54,7 @@ fun HeatmapCalendar(
                             "HADIR" -> Emerald500
                             "IZIN" -> Gold400
                             "SAKIT" -> AccentAmber
-                            "TERLAMBAT" -> AccentRose
+                            "ALPA" -> AccentRose
                             else -> Slate200
                         }
 
@@ -79,7 +89,7 @@ fun HeatmapCalendar(
             LegendItem(color = Emerald500, label = "Hadir")
             LegendItem(color = Gold400, label = "Izin")
             LegendItem(color = AccentAmber, label = "Sakit")
-            LegendItem(color = AccentRose, label = "Terlambat")
+            LegendItem(color = AccentRose, label = "Alpa")
             LegendItem(color = Slate200, label = "Libur", textColor = Slate600)
         }
     }

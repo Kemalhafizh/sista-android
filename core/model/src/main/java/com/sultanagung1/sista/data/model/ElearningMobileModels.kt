@@ -70,3 +70,12 @@ data class ElearningApiResponse<T>(
     val message: String? = null,
     val data: T? = null
 )
+
+// A real picked file's bytes, held here (pure Kotlin, no android.net.Uri)
+// so :core:model stays free of Android framework dependencies; the actual
+// ContentResolver read happens in the Screen composable.
+data class ElearningAttachment(
+    val bytes: ByteArray,
+    val fileName: String,
+    val mimeType: String
+)

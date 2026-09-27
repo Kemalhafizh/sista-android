@@ -26,8 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -110,24 +112,34 @@ fun BillingScreen(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         // =========================================================
-                        // Modern Fintech Financial Summary Card (0dp Flat, 0.5dp Border)
+                        // FASE 76.2 — bento summary: the arrears figure (what a parent
+                        // looks for first) keeps a full-width tile so a long Rupiah
+                        // amount never ellipsizes; paid total and open-bill count sit
+                        // side by side below it at equal height (BentoPair).
+                        //
+                        // The old card also printed a fixed "T.A. 2026/2027" pill and
+                        // a fixed "Status Siswa: Aktif Belajar" for every student —
+                        // neither comes from the billing data, so both are gone. The
+                        // real student name/class is shown when the app knows it.
                         // =========================================================
                         item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isDark) Slate850 else Color.White
-                                ),
-                                border = BorderStroke(0.5.dp, if (isDark) Slate800 else Slate200),
-                                elevation = CardDefaults.cardElevation(0.dp)
+                            val unpaidInvoices = state.invoices.filter { it.status != BillingStatus.PAID }
+                            val nearestDueDate = unpaidInvoices.minByOrNull { it.dueDate }?.dueDate
+                            ModernBentoCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics(mergeDescendants = true) {
+                                        contentDescription = "Total tunggakan aktif ${formatRupiah(state.totalUnpaid)}. " +
+                                            (nearestDueDate?.let { "Jatuh tempo terdekat $it" } ?: "Tidak ada tagihan tertunda")
+                                    },
+                                backgroundColor = if (isDark) Slate850 else Color.White,
+                                borderColor = if (isDark) Slate800 else Slate200
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(20.dp)
                                 ) {
-                                    // Top row: Label & School Year Pill
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
@@ -151,29 +163,33 @@ fun BillingScreen(
                                                 letterSpacing = 0.8.sp
                                             )
                                         }
-
-                                        Surface(
-                                            shape = RoundedCornerShape(20.dp),
-                                            color = if (isDark) Slate800 else Slate100,
-                                            border = BorderStroke(0.5.dp, if (isDark) Slate700 else Slate200)
-                                        ) {
-                                            Text(
-                                                text = "T.A. 2026/2027",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (isDark) Slate300 else Slate600,
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                            )
+                                        val studentLabel = listOfNotNull(studentName, studentClass).joinToString(" • ")
+                                        if (studentLabel.isNotBlank()) {
+                                            Surface(
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = if (isDark) Slate800 else Slate100,
+                                                border = BorderStroke(0.5.dp, if (isDark) Slate700 else Slate200)
+                                            ) {
+                                                Text(
+                                                    text = studentLabel,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = if (isDark) Slate300 else Slate600,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier
+                                                        .widthIn(max = 180.dp)
+                                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                                )
+                                            }
                                         }
                                     }
 
                                     Spacer(modifier = Modifier.height(10.dp))
 
-                                    // Main Amount Display
                                     Text(
-                                        text = "Rp ${"%,.0f".format(state.totalUnpaid).replace(',', '.')}",
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        fontWeight = FontWeight.ExtraBold,
+                                        text = formatRupiah(state.totalUnpaid),
+                                        style = MaterialTheme.typography.headlineLarge.emphasized(),
                                         color = if (isDark) Color.White else Slate900
                                     )
 
@@ -189,79 +205,43 @@ fun BillingScreen(
                                             tint = if (isDark) Slate400 else Slate500,
                                             modifier = Modifier.size(14.dp)
                                         )
-                                        val nearestDueDate = state.invoices
-                                            .filter { it.status != BillingStatus.PAID }
-                                            .minByOrNull { it.dueDate }?.dueDate
                                         Text(
                                             text = nearestDueDate?.let { "Jatuh tempo terdekat: $it" } ?: "Tidak ada tagihan tertunda",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (isDark) Slate400 else Slate500
                                         )
                                     }
-
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    HorizontalDivider(
-                                        thickness = 0.5.dp,
-                                        color = if (isDark) Slate800 else Slate200
-                                    )
-                                    Spacer(modifier = Modifier.height(14.dp))
-
-                                    // Bottom row: Total Paid & Student Status
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = "Total Pembayaran Lunas",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = if (isDark) Slate400 else Slate500
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "Rp ${"%,.0f".format(state.totalPaid).replace(',', '.')}",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isDark) Emerald300 else Emerald600
-                                            )
-                                        }
-
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = "Status Siswa",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = if (isDark) Slate400 else Slate500
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = if (isDark) Slate800 else Emerald50,
-                                                border = BorderStroke(0.5.dp, if (isDark) Slate700 else Emerald200)
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(6.dp)
-                                                            .clip(CircleShape)
-                                                            .background(Emerald600)
-                                                    )
-                                                    Text(
-                                                        text = "Aktif Belajar",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (isDark) Emerald300 else Emerald700
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                             }
+                        }
+
+                        item {
+                            val unpaidCount = state.invoices.count { it.status != BillingStatus.PAID }
+                            BentoPair(
+                                start = { tileModifier ->
+                                    SulaoneMetricCard(
+                                        modifier = tileModifier,
+                                        title = "Sudah Lunas",
+                                        // Compact so it fits half the width; the exact figure is the subtitle.
+                                        value = formatRupiahCompact(state.totalPaid),
+                                        subtitle = formatRupiah(state.totalPaid),
+                                        icon = Icons.Default.CheckCircle,
+                                        iconTint = Emerald700,
+                                        iconBackground = Emerald50
+                                    )
+                                },
+                                end = { tileModifier ->
+                                    SulaoneMetricCard(
+                                        modifier = tileModifier,
+                                        title = "Belum Lunas",
+                                        value = "$unpaidCount tagihan",
+                                        subtitle = if (unpaidCount == 0) "Semua tagihan lunas" else "Termasuk yang dibayar sebagian",
+                                        icon = Icons.Default.PendingActions,
+                                        iconTint = if (unpaidCount == 0) Emerald700 else AccentAmber,
+                                        iconBackground = if (unpaidCount == 0) Emerald50 else AccentAmber.copy(alpha = 0.12f)
+                                    )
+                                }
+                            )
                         }
 
                         // =========================================================
@@ -660,17 +640,50 @@ fun BillingScreen(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // The backend's own response message calls this "Simulasi
+                    // transaksi pembayaran" — no real Midtrans/Xendit gateway
+                    // is wired up (see ApiStudentController::payBilling()).
+                    // This VA number cannot actually be paid via a real bank
+                    // channel; disclosing that honestly beats letting a
+                    // parent attempt a real ATM/mobile-banking transfer that
+                    // will never reach this bill.
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Gold900.copy(alpha = 0.25f) else Gold50,
+                        border = BorderStroke(0.5.dp, Gold400)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = Gold600,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Kanal VA ini masih dalam mode simulasi/demo dan belum terhubung ke gateway pembayaran bank sungguhan — jangan mencoba mentransfer ke nomor ini melalui ATM/m-banking. Hubungi Bendahara/TU sekolah untuk pembayaran sesungguhnya.",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                                color = if (isDark) Gold200 else Gold800
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
-                        text = "Panduan Pembayaran Singkat:",
+                        text = "Cara Melunasi Tagihan Ini Saat Ini:",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (isDark) Slate300 else Slate700
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "1. Buka Mobile Banking / ATM bank pilihan Anda.\n2. Pilih menu Pembayaran / Bayar Tagihan > Institusi Akademik.\n3. Masukkan nomor VA di atas.\n4. Konfirmasi nama siswa & jumlah, lalu selesaikan pembayaran.",
+                        text = "Karena kanal VA di atas masih simulasi, silakan lakukan pembayaran resmi langsung ke Bendahara/Tata Usaha sekolah (transfer manual atau tunai) dengan menyebutkan nomor tagihan ini, lalu minta staf TU mencatatnya di sistem.",
                         fontSize = 11.sp,
                         color = if (isDark) Slate400 else Slate600,
                         lineHeight = 16.sp
@@ -852,5 +865,27 @@ fun BillingScreen(
                 }
             }
         }
+    }
+}
+
+
+/** "Rp 12.500.000" — the exact amount. */
+private fun formatRupiah(amount: Double): String =
+    "Rp ${"%,.0f".format(amount).replace(',', '.')}"
+
+/**
+ * "Rp 750 rb", "Rp 12,5 jt", "Rp 1,2 M" — for half-width bento tiles, where a
+ * full Rupiah figure would ellipsize at large font sizes. Always paired with
+ * the exact amount somewhere visible.
+ */
+fun formatRupiahCompact(amount: Double): String {
+    fun oneDecimal(v: Double): String =
+        if (v % 1.0 == 0.0) v.toLong().toString()
+        else String.format(java.util.Locale.US, "%.1f", v).trimEnd('0').trimEnd('.').replace('.', ',')
+    return when {
+        amount >= 1_000_000_000 -> "Rp ${oneDecimal(amount / 1_000_000_000)} M"
+        amount >= 1_000_000 -> "Rp ${oneDecimal(amount / 1_000_000)} jt"
+        amount >= 1_000 -> "Rp ${oneDecimal(amount / 1_000)} rb"
+        else -> "Rp ${amount.toLong()}"
     }
 }

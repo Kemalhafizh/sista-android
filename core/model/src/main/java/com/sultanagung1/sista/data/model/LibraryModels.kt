@@ -29,5 +29,8 @@ data class BookLoanItem(
 
 data class BorrowBookRequest(
     @SerializedName("book_qr_code") val bookQrCode: String,
-    @SerializedName("student_id") val studentId: String
+    // Omitted for a student's own self-checkout (backend resolves the
+    // authenticated user's own Student record); only staff acting on
+    // behalf of a specific student need to supply this.
+    @SerializedName("student_id") val studentId: String? = null
 )

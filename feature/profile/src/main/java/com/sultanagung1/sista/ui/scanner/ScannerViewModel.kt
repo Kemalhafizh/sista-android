@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class ScannerViewModel @Inject constructor() : ViewModel() {
+class ScannerViewModel @Inject constructor(
+    private val scanResultHandler: ScanResultHandler
+) : ViewModel() {
 
     private val _currentMode = MutableStateFlow(ScanMode.ATTENDANCE)
     val currentMode: StateFlow<ScanMode> = _currentMode.asStateFlow()
@@ -21,6 +23,9 @@ class ScannerViewModel @Inject constructor() : ViewModel() {
 
     private val _isScanning = MutableStateFlow(true)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
     private val _scanResult = MutableStateFlow<ParsedScanResult?>(null)
     val scanResult: StateFlow<ParsedScanResult?> = _scanResult.asStateFlow()
@@ -34,24 +39,17 @@ class ScannerViewModel @Inject constructor() : ViewModel() {
         _isTorchOn.value = !_isTorchOn.value
     }
 
+    /** [rawCode] is a real decoded barcode/QR payload from the camera analyzer — never a fabricated sample. */
     fun onCodeScanned(rawCode: String) {
-        if (!_isScanning.value) return
+        if (!_isScanning.value || _isProcessing.value) return
         _isScanning.value = false
+        _isProcessing.value = true
 
         viewModelScope.launch {
-            val parsed = ScanResultHandler.parse(rawCode, _currentMode.value)
+            val parsed = scanResultHandler.parse(rawCode, _currentMode.value)
+            _isProcessing.value = false
             _scanResult.value = parsed
         }
-    }
-
-    fun simulateScanSuccess() {
-        val samplePayload = when (_currentMode.value) {
-            ScanMode.ATTENDANCE -> "SULAONE-ATTENDANCE-QR-2026-XYZ887"
-            ScanMode.LIBRARY_BOOK -> "9786022448006"
-            ScanMode.EVENT_TICKET -> "TICKET-KAJIAN-1448H-9921"
-            ScanMode.VISITOR_PASS -> "VISITOR-PASS-YBWSA-3341"
-        }
-        onCodeScanned(samplePayload)
     }
 
     fun resetScan() {

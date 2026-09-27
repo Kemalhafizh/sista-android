@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 sealed interface SpmbUiEvent : UiEvent {
     data class LoadData(val unit: Unit = Unit) : SpmbUiEvent
@@ -63,39 +62,15 @@ class SpmbViewModel @Inject constructor(
     fun loadSpmbData() {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            try {
-                spmbRepository.getWaves().collect { result ->
-                    when (result) {
-                        is NetworkResult.Success -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    waves = result.data,
-                                    requirements = getSampleRequirements()
-                                )
-                            }
-                        }
-                        is NetworkResult.Error -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    waves = getSampleWaves(),
-                                    requirements = getSampleRequirements()
-                                )
-                            }
-                        }
-                        is NetworkResult.Loading -> {
-                            _uiState.update { it.copy(isLoading = true) }
-                        }
+            spmbRepository.getWaves().collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> _uiState.update {
+                        it.copy(isLoading = false, waves = result.data, requirements = getStaticRequirements(), errorMessage = null)
                     }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        waves = getSampleWaves(),
-                        requirements = getSampleRequirements()
-                    )
+                    is NetworkResult.Error -> _uiState.update {
+                        it.copy(isLoading = false, errorMessage = result.message, requirements = getStaticRequirements())
+                    }
+                    is NetworkResult.Loading -> _uiState.update { it.copy(isLoading = true) }
                 }
             }
         }
@@ -139,14 +114,21 @@ class SpmbViewModel @Inject constructor(
         _uiState.update { it.copy(currentStep = (it.currentStep - 1).coerceAtLeast(1), errorMessage = null) }
     }
 
-    fun simulateUploadDoc(docType: String) {
-        val randomFileId = Random.nextInt(1000, 9999)
+    // Real files picked from the device, keyed by docType — held here rather
+    // than in SpmbRegistrationDraft (a :core:model class with zero Android
+    // dependency by design) and uploaded once a real registration_number
+    // exists (registration happens at Step 4, after documents are picked at
+    // Step 3, so they can't be sent until submitRegistration() succeeds).
+    private val pickedDocuments = mutableMapOf<String, SpmbDocumentAttachment>()
+
+    fun onDocumentPicked(docType: String, attachment: SpmbDocumentAttachment) {
+        pickedDocuments[docType] = attachment
         updateDraft { draft ->
             when (docType) {
-                "photo" -> draft.copy(uploadedPhotoName = "PAS_FOTO_${draft.nisn.ifBlank { "CALON" }}_$randomFileId.jpg")
-                "kk" -> draft.copy(uploadedKkName = "KARTU_KELUARGA_${draft.nisn.ifBlank { "CALON" }}.pdf")
-                "rapor" -> draft.copy(uploadedRaporName = "RAPOR_LEGALISIR_SMP_$randomFileId.pdf")
-                "sertifikat" -> draft.copy(uploadedCertificateName = "SERTIFIKAT_TAHFIDZ_PRESTASI_$randomFileId.pdf")
+                "photo" -> draft.copy(uploadedPhotoName = attachment.fileName)
+                "kk" -> draft.copy(uploadedKkName = attachment.fileName)
+                "rapor" -> draft.copy(uploadedRaporName = attachment.fileName)
+                "sertifikat" -> draft.copy(uploadedCertificateName = attachment.fileName)
                 else -> draft
             }
         }
@@ -157,51 +139,51 @@ class SpmbViewModel @Inject constructor(
         _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
         viewModelScope.launch {
-            try {
-                val req = SpmbRegisterRequest(
-                    fullName = draft.fullName,
-                    nisn = draft.nisn,
-                    schoolOrigin = draft.schoolOrigin,
-                    phoneNumber = draft.phoneWhatsApp,
-                    trackName = draft.selectedTrack
-                )
-                var regNumber: String? = null
-                spmbRepository.register(req).collect { result ->
-                    when (result) {
-                        is NetworkResult.Success -> {
-                            regNumber = result.data.registrationNumber
+            val req = SpmbRegisterRequest(
+                fullName = draft.fullName,
+                nisn = draft.nisn,
+                schoolOrigin = draft.schoolOrigin,
+                phoneNumber = draft.phoneWhatsApp,
+                trackName = draft.selectedTrack
+            )
+            spmbRepository.register(req).collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        val regNumber = result.data.registrationNumber
+                        _uiState.update {
+                            it.copy(
+                                isSubmitting = false,
+                                submissionSuccessNumber = regNumber,
+                                successMessage = "Pendaftaran berhasil! Nomor Registrasi Anda: $regNumber"
+                            )
                         }
-                        is NetworkResult.Error -> {
-                            if (regNumber == null) {
-                                regNumber = "SPMB-2027-${Random.nextInt(10000, 99999)}"
-                            }
+                        // Real documents picked in Step 3 can only be sent now
+                        // that a real registration_number exists to attach
+                        // them to — a failure here doesn't undo the
+                        // registration, it's surfaced separately below.
+                        uploadPickedDocuments(regNumber)
+                        trackRegistration(regNumber)
+                        onSuccess(regNumber)
+                    }
+                    is NetworkResult.Error -> _uiState.update {
+                        it.copy(isSubmitting = false, errorMessage = result.message)
+                    }
+                    is NetworkResult.Loading -> Unit
+                }
+            }
+        }
+    }
+
+    private fun uploadPickedDocuments(registrationNo: String) {
+        pickedDocuments.forEach { (docType, attachment) ->
+            viewModelScope.launch {
+                spmbRepository.uploadDocument(registrationNo, docType, attachment).collect { result ->
+                    if (result is NetworkResult.Error) {
+                        _uiState.update {
+                            it.copy(errorMessage = "Sebagian dokumen gagal diunggah: ${result.message}. Anda dapat mengunggah ulang nanti.")
                         }
-                        is NetworkResult.Loading -> {}
                     }
                 }
-                val finalRegNumber = regNumber ?: "SPMB-2027-${Random.nextInt(10000, 99999)}"
-
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        submissionSuccessNumber = finalRegNumber,
-                        successMessage = "Pendaftaran berhasil! Nomor Registrasi Anda: $finalRegNumber"
-                    )
-                }
-                // Pre-populate tracking info
-                trackRegistration(finalRegNumber)
-                onSuccess(finalRegNumber)
-            } catch (e: Exception) {
-                val fallbackReg = "SPMB-2027-${Random.nextInt(10000, 99999)}"
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        submissionSuccessNumber = fallbackReg,
-                        successMessage = "Pendaftaran tersimpan secara offline. Nomor Registrasi: $fallbackReg"
-                    )
-                }
-                trackRegistration(fallbackReg)
-                onSuccess(fallbackReg)
             }
         }
     }
@@ -219,78 +201,59 @@ class SpmbViewModel @Inject constructor(
 
         _uiState.update { it.copy(isTrackingLoading = true, trackingQuery = reg, errorMessage = null) }
         viewModelScope.launch {
-            try {
-                spmbRepository.trackRegistration(reg).collect { result ->
-                    when (result) {
-                        is NetworkResult.Success -> {
-                            val status = result.data
-                            _uiState.update {
-                                it.copy(
-                                    isTrackingLoading = false,
-                                    trackingInfo = SpmbTrackingInfo(
-                                        registrationNumber = status.registrationNumber,
-                                        applicantName = status.fullName,
-                                        track = status.track,
-                                        status = status.verificationStatus,
-                                        paymentVerified = true,
-                                        timeline = buildTimeline(status.verificationStatus),
-                                        cbtDate = status.cbtTestDate ?: "20 Oktober 2026 08:00 WIB",
-                                        interviewDate = status.interviewDate ?: "20 Oktober 2026 10:30 WIB",
-                                        notes = status.notes ?: "Berkas pendaftaran telah diverifikasi oleh panitia SPMB."
-                                    )
+            spmbRepository.trackRegistration(reg).collect { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        val status = result.data
+                        _uiState.update {
+                            it.copy(
+                                isTrackingLoading = false,
+                                trackingInfo = SpmbTrackingInfo(
+                                    registrationNumber = status.registrationNumber,
+                                    applicantName = status.fullName,
+                                    track = status.track,
+                                    status = status.verificationStatus,
+                                    // No payment-gateway integration exists for
+                                    // SPMB yet, so this can't be verified — left
+                                    // false rather than always claiming "paid".
+                                    paymentVerified = false,
+                                    timeline = buildTimeline(status.verificationStatus),
+                                    cbtDate = status.cbtTestDate,
+                                    interviewDate = status.interviewDate,
+                                    notes = status.notes
                                 )
-                            }
-                        }
-                        is NetworkResult.Error -> {
-                            _uiState.update {
-                                it.copy(
-                                    isTrackingLoading = false,
-                                    trackingInfo = createSampleTrackingInfo(reg)
-                                )
-                            }
-                        }
-                        is NetworkResult.Loading -> {
-                            _uiState.update { it.copy(isTrackingLoading = true) }
+                            )
                         }
                     }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isTrackingLoading = false,
-                        trackingInfo = createSampleTrackingInfo(reg)
-                    )
+                    is NetworkResult.Error -> _uiState.update {
+                        it.copy(isTrackingLoading = false, errorMessage = result.message, trackingInfo = null)
+                    }
+                    is NetworkResult.Loading -> _uiState.update { it.copy(isTrackingLoading = true) }
                 }
             }
         }
     }
 
+    /**
+     * A best-effort visual timeline derived from the real verification
+     * status — the backend has no per-step timestamp columns (no CBT/
+     * interview scheduling exists yet either, see spmbCheckStatus()), so
+     * only the two steps backed by a real status transition get a real
+     * "completed" state; the rest show as pending with no fabricated dates.
+     */
     private fun buildTimeline(status: String): List<TimelineEvent> {
+        val isVerified = status == "terverifikasi"
         return listOf(
-            TimelineEvent("Pendaftaran Akun & Formulir", true, "10 September 2026 14:20 WIB", "Formulir online dan dokumen berhasil diserahkan."),
-            TimelineEvent("Verifikasi Berkas Administrasi", true, "11 September 2026 09:15 WIB", "Berkas telah dinyatakan valid dan memenuhi syarat."),
-            TimelineEvent("Ujian CBT Potensi Akademik & Minat", false, "20 Oktober 2026 08:00 WIB", "Ujian daring berbasis Android Sula-One anti-cheat."),
-            TimelineEvent("Wawancara Keislaman & Tahfidz", false, "20 Oktober 2026 10:30 WIB", "Uji hafalan Al-Qur'an dan wawancara kepribadian santri."),
+            TimelineEvent("Pendaftaran Formulir Online", true, null, "Formulir pendaftaran berhasil diserahkan."),
+            TimelineEvent("Verifikasi Berkas Administrasi", isVerified, null, if (isVerified) "Berkas telah diverifikasi oleh panitia." else "Menunggu verifikasi panitia."),
+            TimelineEvent("Ujian CBT Potensi Akademik & Minat", false, null, "Jadwal akan diumumkan melalui SuperApp."),
+            TimelineEvent("Wawancara Keislaman & Tahfidz", false, null, "Jadwal akan diumumkan melalui SuperApp."),
             TimelineEvent("Pengumuman Kelulusan Resmi", false, null, "Pengumuman melalui aplikasi Sulaone Mobile."),
             TimelineEvent("Daftar Ulang & Pengukuran Seragam", false, null, "Penyelesaian administrasi dan fitting seragam YBWSA.")
         )
     }
 
-    private fun createSampleTrackingInfo(regNo: String): SpmbTrackingInfo {
-        return SpmbTrackingInfo(
-            registrationNumber = regNo,
-            applicantName = _uiState.value.draft.fullName.ifBlank { "Muhammad Rasyid Al-Fatih" },
-            track = _uiState.value.draft.selectedTrack.ifBlank { "Jalur Prestasi Tahfidz (Min. 3 Juz)" },
-            status = "Terverifikasi",
-            paymentVerified = true,
-            timeline = buildTimeline("Terverifikasi"),
-            cbtDate = "20 Oktober 2026 08:00 WIB",
-            interviewDate = "20 Oktober 2026 10:30 WIB",
-            notes = "Berkas persyaratan Anda telah lengkap dan terverifikasi. Silakan download kartu peserta dan hadir tepat waktu saat tes seleksi."
-        )
-    }
-
-    private fun getSampleRequirements(): List<String> {
+    private fun getStaticRequirements(): List<String> {
         return listOf(
             "Pas Foto berwarna terbaru ukuran 3x4 (latar belakang merah/biru)",
             "Scan/Foto Asli Kartu Keluarga (KK) & Akta Kelahiran",
@@ -301,36 +264,4 @@ class SpmbViewModel @Inject constructor(
         )
     }
 
-    private fun getSampleWaves(): List<SpmbWaveItem> {
-        return listOf(
-            SpmbWaveItem(
-                id = 1,
-                name = "Gelombang 1 — Jalur Prestasi & Tahfidz Unggulan",
-                academicYear = "2027/2028",
-                startDate = "2026-09-01",
-                endDate = "2026-10-31",
-                isOpen = true,
-                fee = 250000L,
-                tracks = listOf(
-                    SpmbTrackItem(1, "Tahfidz Al-Qur'an 3 Juz (Bebas Uang Pangkal)", 40),
-                    SpmbTrackItem(2, "Prestasi Olimpiade Sains & Riset", 35),
-                    SpmbTrackItem(3, "Prestasi Seni & Olahraga Berjenjang", 25)
-                )
-            ),
-            SpmbWaveItem(
-                id = 2,
-                name = "Gelombang 2 — Jalur Reguler & Mandiri",
-                academicYear = "2027/2028",
-                startDate = "2026-11-01",
-                endDate = "2027-01-31",
-                isOpen = true,
-                fee = 300000L,
-                tracks = listOf(
-                    SpmbTrackItem(4, "Kelas Unggulan MIPA Digital", 72),
-                    SpmbTrackItem(5, "Kelas Unggulan IPS & Entrepreneurship", 72),
-                    SpmbTrackItem(6, "Kelas Bahasa & Komunikasi Global", 36)
-                )
-            )
-        )
-    }
 }

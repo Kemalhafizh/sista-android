@@ -67,22 +67,31 @@ data class UksRecordVisitItem(
     @SerializedName("blood_pressure") val bloodPressure: String? = null,
     val medicines: List<UksMedicineAdministered> = emptyList(),
     val action: String? = "kembali_ke_kelas",
-    @SerializedName("handler_name") val handlerName: String? = null
+    @SerializedName("handler_name") val handlerName: String? = null,
+    @SerializedName("parent_notified") val parentNotified: Boolean = false
 )
 
+/**
+ * Every field but studentId is nullable — a student with no screening
+ * result yet, or no blood type recorded, gets a real null rather than a
+ * fabricated placeholder value.
+ */
 data class HealthScreeningData(
     @SerializedName("student_id") val studentId: Long,
-    @SerializedName("blood_type") val bloodType: String,
-    @SerializedName("height_cm") val heightCm: Int,
-    @SerializedName("weight_kg") val weightKg: Int,
-    val bmi: Double,
-    @SerializedName("bmi_category") val bmiCategory: String,
-    @SerializedName("vision_right") val visionRight: String,
-    @SerializedName("vision_left") val visionLeft: String,
-    @SerializedName("dental_health") val dentalHealth: String,
-    val hearing: String,
-    @SerializedName("last_screened_at") val lastScreenedAt: String,
-    val screener: String
+    @SerializedName("student_name") val studentName: String? = null,
+    val nisn: String? = null,
+    @SerializedName("blood_type") val bloodType: String? = null,
+    val allergies: List<String> = emptyList(),
+    @SerializedName("height_cm") val heightCm: Int? = null,
+    @SerializedName("weight_kg") val weightKg: Int? = null,
+    val bmi: Double? = null,
+    @SerializedName("bmi_category") val bmiCategory: String? = null,
+    @SerializedName("vision_right") val visionRight: String? = null,
+    @SerializedName("vision_left") val visionLeft: String? = null,
+    @SerializedName("dental_health") val dentalHealth: String? = null,
+    val hearing: String? = null,
+    @SerializedName("last_screened_at") val lastScreenedAt: String? = null,
+    val screener: String? = null
 )
 
 data class SchoolOpsApiResponse<T>(

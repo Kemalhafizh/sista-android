@@ -1,8 +1,5 @@
 package com.sultanagung1.sista.ui.teacher
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,14 +10,20 @@ import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.FormDraftStore
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
-import com.sultanagung1.sista.data.model.*
+import com.sultanagung1.sista.data.model.JournalScheduleItem
+import com.sultanagung1.sista.data.model.JournalSummaryCompliance
+import com.sultanagung1.sista.data.model.StoreJournalRequest
+import com.sultanagung1.sista.data.model.TeacherScheduleSlot
+import com.sultanagung1.sista.data.model.TeachingJournalEntry
 import com.sultanagung1.sista.data.repository.TeachingJournalRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /** Serialized shape written to [FormDraftStore] by [JournalMobileViewModel], keyed per schedule slot. */
 private data class JournalDraftPayload(
@@ -303,10 +306,16 @@ class JournalMobileViewModel @Inject constructor(
                 slot.toJournalScheduleItem(jamKe = index + 1, entry = matched, dateOverride = today)
             }
 
-        val weekEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= DateUtils.daysAgoIso(7) }
+        val weekEntries = latestJournals.filter {
+            val date = it.teachingDate
+            date != null && date >= DateUtils.daysAgoIso(7)
+        }
             .sortedByDescending { it.teachingDate }
             .map { it.toJournalScheduleItem() }
-        val monthEntries = latestJournals.filter { it.teachingDate != null && it.teachingDate >= DateUtils.daysAgoIso(30) }
+        val monthEntries = latestJournals.filter {
+            val date = it.teachingDate
+            date != null && date >= DateUtils.daysAgoIso(30)
+        }
             .sortedByDescending { it.teachingDate }
             .map { it.toJournalScheduleItem() }
 
@@ -427,7 +436,10 @@ class JournalMobileViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isSubmitting = false,
-                                successMessage = "Jurnal Mengajar KBM berhasil disimpan dan divalidasi Kurikulum!"
+                                // The backend saves this as status "draft" awaiting
+                                // review, not an already-validated record — see
+                                // ApiTeacherController::storeJournal's comment.
+                                successMessage = "Jurnal Mengajar KBM berhasil disimpan, menunggu validasi Kurikulum."
                             )
                         }
                         onSuccess()

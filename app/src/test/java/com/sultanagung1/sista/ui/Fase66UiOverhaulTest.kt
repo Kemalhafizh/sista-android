@@ -16,12 +16,17 @@ import java.io.File
 class Fase66UiOverhaulTest {
 
     private fun findSourceFile(relativePath: String): File {
+        val filename = relativePath.substringAfterLast("/")
         val candidates = listOf(
             File(relativePath),
             File("app/$relativePath"),
-            File("../$relativePath")
+            File("../$relativePath"),
+            File("../../$relativePath")
         )
-        return candidates.firstOrNull { it.exists() }
+        candidates.firstOrNull { it.exists() }?.let { return it }
+
+        val rootDir = File("..").takeIf { File("..", "settings.gradle").exists() || File("..", "build.gradle").exists() } ?: File(".")
+        return rootDir.walkTopDown().firstOrNull { it.isFile && it.name == filename }
             ?: throw IllegalStateException("Cannot locate $relativePath in any candidate paths")
     }
 

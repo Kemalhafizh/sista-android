@@ -17,13 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.fragment.app.FragmentActivity
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.motion.springPressable
+import com.sultanagung1.sista.core.security.BiometricAvailability
+import com.sultanagung1.sista.core.security.BiometricVault
 import com.sultanagung1.sista.data.model.OsisCandidateItem
 import com.sultanagung1.sista.data.model.TeacherEvaluationItem
 
@@ -34,6 +38,7 @@ fun TeacherEvaluationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val haptics = rememberHapticFeedbackHelper()
+    val context = LocalContext.current
 
     var activeTeacherEval by remember { mutableStateOf<TeacherEvaluationItem?>(null) }
     var activeVoteCandidate by remember { mutableStateOf<OsisCandidateItem?>(null) }
@@ -45,7 +50,35 @@ fun TeacherEvaluationScreen(
 
     val tabs = listOf("Evaluasi Guru (EKG)", "Survey Fasilitas", "E-Voting OSIS")
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(uiState.evaluationSuccess) {
+        if (uiState.evaluationSuccess) {
+            snackbarHostState.showSnackbar("Evaluasi guru berhasil dikirim secara anonim.")
+            viewModel.clearSuccessFlags()
+        }
+    }
+    LaunchedEffect(uiState.facilitySurveySuccess) {
+        if (uiState.facilitySurveySuccess) {
+            snackbarHostState.showSnackbar("Survei fasilitas berhasil dikirim.")
+            viewModel.clearSuccessFlags()
+        }
+    }
+    LaunchedEffect(uiState.voteSuccess) {
+        if (uiState.voteSuccess) {
+            snackbarHostState.showSnackbar("Suara Anda berhasil dicatat. Terima kasih!")
+            viewModel.clearSuccessFlags()
+        }
+    }
+    LaunchedEffect(uiState.errorMessage) {
+        val message = uiState.errorMessage
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearError()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SulaoneTopBar(
                 title = "Kuesioner, Evaluasi & E-Voting",
@@ -166,11 +199,13 @@ fun TeacherEvaluationScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    Text(
-                                        text = "Pengampu Kelas: ${eval.className}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    if (!eval.className.isNullOrBlank()) {
+                                        Text(
+                                            text = "Pengampu Kelas: ${eval.className}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
 
                                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -222,14 +257,23 @@ fun TeacherEvaluationScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(18.dp),
                                 backgroundColor = MaterialTheme.colorScheme.surface,
-                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                borderColor = if (survey.isSubmitted) Emerald300 else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = survey.facilityName,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = survey.facilityName,
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (survey.isSubmitted) {
+                                            LiveStatusChip(text = "✓ Terkirim", color = Emerald700)
+                                        }
+                                    }
 
                                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -243,17 +287,35 @@ fun TeacherEvaluationScreen(
                                             for (star in 1..5) {
                                                 Icon(
                                                     imageVector = Icons.Default.Star,
-                                                    contentDescription = null,
+                                                    contentDescription = "Beri rating $star bintang",
                                                     tint = if (star <= survey.satisfactionLevel) Gold400 else Slate300,
                                                     modifier = Modifier
                                                         .size(26.dp)
-                                                        .springPressable { haptics.tapLight() }
+                                                        .springPressable {
+                                                            if (!survey.isSubmitted) {
+                                                                haptics.tapLight()
+                                                                viewModel.rateFacility(survey.id, star)
+                                                            }
+                                                        }
                                                 )
                                             }
                                         }
                                     }
                                 }
                             }
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            SulaoneButton(
+                                text = "Kirim Survei Fasilitas",
+                                onClick = {
+                                    haptics.success()
+                                    viewModel.submitFacilitySurveys()
+                                },
+                                icon = Icons.Default.Send,
+                                enabled = uiState.facilitySurveys.any { it.satisfactionLevel > 0 && !it.isSubmitted }
+                            )
                         }
                     }
 
@@ -457,9 +519,32 @@ fun TeacherEvaluationScreen(
 
                         Button(
                             onClick = {
-                                haptics.success()
-                                viewModel.castOsisVote(candidate.id)
-                                activeVoteCandidate = null
+                                // The backend does not cryptographically verify
+                                // biometric_signature (it's an unread, always-
+                                // required string — see castVote()'s "Simulated
+                                // biometric validation" comment), so the real
+                                // security value here is this LOCAL fingerprint
+                                // gate itself: it confirms the device owner is
+                                // the one casting the vote, not a stranger who
+                                // picked up an unlocked phone.
+                                val activity = context as? FragmentActivity
+                                if (BiometricVault.checkStatus(context) == BiometricAvailability.AVAILABLE && activity != null) {
+                                    BiometricVault.authenticate(
+                                        activity = activity,
+                                        title = "Verifikasi Sidik Jari Pemilih",
+                                        subtitle = "Konfirmasi identitas Anda sebelum suara dikirim",
+                                        negativeButtonText = "Batal",
+                                        onSuccess = {
+                                            haptics.success()
+                                            viewModel.castOsisVote(candidate.id, "biometric_verified_${System.currentTimeMillis()}")
+                                            activeVoteCandidate = null
+                                        }
+                                    )
+                                } else {
+                                    haptics.success()
+                                    viewModel.castOsisVote(candidate.id, "biometric_unavailable_on_device")
+                                    activeVoteCandidate = null
+                                }
                             },
                             modifier = Modifier.weight(1.5f),
                             shape = RoundedCornerShape(12.dp),

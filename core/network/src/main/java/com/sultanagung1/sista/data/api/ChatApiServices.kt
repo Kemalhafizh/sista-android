@@ -50,21 +50,26 @@ interface ChatApiService {
 }
 
 interface NotificationApiService {
-    @POST("mobile/devices/register")
+    // Real endpoint, finally wired: PushNotificationService::registerDeviceToken()
+    // always existed but had no HTTP entry point until now — this is the
+    // symmetric POST to the already-real GET/DELETE mobile/devices routes,
+    // returning a plain response()->json(...), not the ApiResponseTrait
+    // envelope the other 3 endpoints below use.
+    @POST("mobile/devices")
     suspend fun registerDevice(
         @Body request: DeviceTokenRegisterRequest
     ): Response<Map<String, Any>>
 
-    @GET("mobile/notifications")
-    suspend fun getNotifications(): Response<List<NotificationItem>>
+    @GET("notifications")
+    suspend fun getNotifications(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<NotificationItem>>>
 
-    @GET("mobile/announcements")
+    @GET("announcements")
     suspend fun getAnnouncements(
         @Query("category") category: String? = null
-    ): Response<List<AnnouncementItem>>
+    ): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<AnnouncementItem>>>
 
-    @GET("mobile/announcements/{id}")
+    @GET("announcements/{id}")
     suspend fun getAnnouncementDetail(
         @Path("id") id: String
-    ): Response<AnnouncementItem>
+    ): Response<com.sultanagung1.sista.core.network.ApiEnvelope<AnnouncementItem>>
 }
