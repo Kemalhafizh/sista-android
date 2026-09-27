@@ -27,15 +27,13 @@ class FirebaseTelemetrySink(private val context: Context) {
 
     fun initialize() {
         try {
-            if (FirebaseApp.getApps(context).isEmpty()) {
-                val options = com.google.firebase.FirebaseOptions.Builder()
-                    .setApplicationId("1:100961092811:android:df02284a53fea80e78474e")
-                    .setApiKey("AIzaSyBzFc7_PmoNmn4i_-mkYjYpl7NCLRGO_Lw")
-                    .setProjectId("device-streaming-31ed4203")
-                    .setStorageBucket("device-streaming-31ed4203.firebasestorage.app")
-                    .setGcmSenderId("100961092811")
-                    .build()
-                FirebaseApp.initializeApp(context, options)
+            // The google-services plugin (app module) turns app/google-services.json
+            // into resources and FirebaseInitProvider initializes from them at startup.
+            // This call only retries from the same resources; the config (API key,
+            // project id) must never be hardcoded here — it leaked once and was
+            // flagged by GitHub secret scanning.
+            if (FirebaseApp.getApps(context).isEmpty() && FirebaseApp.initializeApp(context) == null) {
+                throw IllegalStateException("Firebase config missing (app/google-services.json)")
             }
             crashlytics = FirebaseCrashlytics.getInstance()
             performance = FirebasePerformance.getInstance()

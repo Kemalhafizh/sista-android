@@ -3583,6 +3583,7 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
   - **Widget Jadwal Sholat & Jadwal Pelajaran tidak bisa tampil:** layout memakai `<View>` polos sebagai garis pemisah, yang ditolak RemoteViews. Diganti `<FrameLayout>`.
   - **QR Scanner:** memakai `ImageProxy.image` (CameraX `@ExperimentalGetImage`) tanpa opt-in; kini opt-in eksplisit.
   - **Workflow CI:** `lintDebug --continue` dan mencetak laporan lint semua modul saat gagal, jadi satu run menampilkan seluruh temuan.
+  - **Google API key Firebase ter-hardcode di kode (peringatan GitHub secret scanning, 27 Sep 2026):** `FirebaseTelemetrySink` membangun `FirebaseOptions` sendiri dengan API key sebagai string literal, padahal plugin google-services sudah membaca `app/google-services.json` dan `FirebaseInitProvider` menginisialisasi dari situ. Literal dihapus; fallback kini `FirebaseApp.initializeApp(context)` dari resource yang sama. Penjaga: `NoHardcodedApiKeysGuardTest`. Key tetap ada di `google-services.json` dan riwayat git (repo publik), jadi pengamanan sesungguhnya ada di Google Cloud Console: batasi key ke aplikasi Android `com.sultanagung1.sista` + SHA-1, batasi API-nya, lalu rotasi.
   - Sisa lint: 158 warning (terbanyak `UnusedResources`, `HardcodedText`, `UseKtx`), tidak ada yang berasal dari baris FASE 76. Tidak menggagalkan build.
 
 - **Ditemukan saat perbaikan, diajukan sebagai task terpisah — semuanya sudah diperbaiki dan masuk `main` (27 Sep 2026):**
