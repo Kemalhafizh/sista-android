@@ -1,0 +1,47 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+// FASE 73.1: Retrofit/OkHttp client, every Retrofit service interface
+// (data/api), auth/idempotency interceptors, Reverb WebSocket manager, the
+// offline sync queue, and other network-adjacent singletons (server time,
+// feature flags, downloads, in-app update checks). Retrofit service
+// interfaces are kept centralized here rather than split per-feature to
+// avoid a cycle with ApiClient, which references all of them.
+android {
+    namespace 'com.sultanagung1.sista.core.network'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += [
+            "-Xcontext-receivers"
+        ]
+    }
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation project(':core:model')
+    implementation project(':core:common')
+    implementation project(':core:database')
+
+    implementation libs.androidx.core.ktx
+    // Exposed as `api`: Retrofit's Response<T> and OkHttp's request/multipart
+    // types are part of every ApiService's public method signature, so
+    // consumers like :core:data need them on their own compile classpath too.
+    api libs.retrofit.core
+    api libs.retrofit.converter.gson
+    api libs.okhttp.logging
+    api libs.gson
+}

@@ -1,0 +1,32 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+// FASE 73.1 / 73.2: every Repository implementation lives here — the single
+// place features are allowed to reach for data, instead of depending on
+// :core:network or :core:database directly.
+android {
+    namespace 'com.sultanagung1.sista.data.repository'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+dependencies {
+    implementation project(':core:model')
+    implementation project(':core:common')
+    implementation project(':core:network')
+    implementation project(':core:database')
+
+    implementation libs.androidx.core.ktx
+}

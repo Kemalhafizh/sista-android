@@ -111,7 +111,10 @@ fun NavGraphBuilder.cbtNavGraph(
                 totalQuestions = totalQuestions,
                 viewModel = viewModel,
                 onTokenValidated = {
-                    navController.navigate(Screen.CbtRoom.createRoute(examId)) {
+                    val validated = viewModel.uiState.value
+                    navController.navigate(
+                        Screen.CbtRoom.createRoute(examId, validated.studentId, validated.maxViolations)
+                    ) {
                         popUpTo(Screen.CbtTokenEntry.route) { inclusive = true }
                     }
                 },
@@ -122,12 +125,20 @@ fun NavGraphBuilder.cbtNavGraph(
 
     composable(
         route = Screen.CbtRoom.route,
-        arguments = listOf(navArgument("examId") { type = NavType.LongType })
+        arguments = listOf(
+            navArgument("examId") { type = NavType.LongType },
+            navArgument("studentId") { type = NavType.LongType; defaultValue = -1L },
+            navArgument("maxViolations") { type = NavType.IntType; defaultValue = -1 }
+        )
     ) { backStackEntry ->
         val examId = backStackEntry.arguments?.getLong("examId") ?: 1L
+        val studentId = backStackEntry.arguments?.getLong("studentId")?.takeIf { it > 0 }
+        val maxViolations = backStackEntry.arguments?.getInt("maxViolations")?.takeIf { it > 0 }
         val viewModel: CbtViewModel = hiltViewModel()
         CbtExamRoomScreen(
             examId = examId,
+            studentId = studentId,
+            maxViolations = maxViolations,
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )

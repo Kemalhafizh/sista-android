@@ -4,4 +4,20 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.hilt.android) apply false
 }
+
+// FASE 73.3: -Xcontext-receivers (opt-in Kotlin compiler flag; no module
+// uses context-receiver syntax yet, this only unlocks it for future code)
+// is set per module in each module's own `kotlinOptions { freeCompilerArgs
+// += [...] }` block, the same DSL this project already used pre-migration —
+// not centralized here via a subprojects{} task-type block, since that API
+// couldn't be verified against this exact Kotlin/AGP version without a real
+// Gradle sync, and per-module kotlinOptions is proven to already work here.
+//
+// Compose Strong Skipping Mode is NOT configured explicitly anywhere: it has
+// been the Compose compiler's default since the version bundled with
+// Kotlin 2.2.x (this project's version, see gradle/libs.versions.toml), so
+// every module building with the `kotlin.plugin.compose` alias already gets
+// it without extra DSL.

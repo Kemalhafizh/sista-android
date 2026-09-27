@@ -277,8 +277,41 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     composable(Screen.TahsinRecorder.route) {
+        val viewModel: com.sultanagung1.sista.ui.ibadah.TahsinRecorderViewModel = hiltViewModel()
         TahsinRecorderScreen(
             recorderManager = audioRecorderManager,
+            viewModel = viewModel,
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateToHistory = { navController.navigate(Screen.TahsinHistory.route) }
+        )
+    }
+
+    composable(Screen.TahsinHistory.route) {
+        val viewModel: com.sultanagung1.sista.ui.ibadah.TahsinViewModel = hiltViewModel()
+        com.sultanagung1.sista.ui.ibadah.TahsinHistoryScreen(
+            viewModel = viewModel,
+            onOpenSubmission = { id ->
+                navController.navigate(Screen.TahsinSubmissionDetail.createRoute(id, teacherMode = false))
+            },
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    composable(
+        route = Screen.TahsinSubmissionDetail.route,
+        arguments = listOf(
+            navArgument("submissionId") { type = NavType.LongType },
+            navArgument("teacherMode") { type = NavType.BoolType; defaultValue = false }
+        )
+    ) { backStackEntry ->
+        val submissionId = backStackEntry.arguments?.getLong("submissionId") ?: 0L
+        val teacherMode = backStackEntry.arguments?.getBoolean("teacherMode") ?: false
+        val viewModel: com.sultanagung1.sista.ui.ibadah.TahsinViewModel = hiltViewModel()
+        com.sultanagung1.sista.ui.ibadah.TahsinSubmissionDetailScreen(
+            submissionId = submissionId,
+            isTeacherMode = teacherMode,
+            recorderManager = audioRecorderManager,
+            viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
     }

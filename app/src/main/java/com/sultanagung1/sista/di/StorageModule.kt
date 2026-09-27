@@ -62,8 +62,8 @@ object StorageModule {
 
     @Provides
     @Singleton
-    fun provideWebSocketManager(): ReverbWebSocketManager {
-        return ReverbWebSocketManager()
+    fun provideWebSocketManager(sessionManager: SessionManager): ReverbWebSocketManager {
+        return ReverbWebSocketManager(sessionManager)
     }
 
     @Provides

@@ -1,0 +1,50 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+// FASE 73.1: Shared infrastructure with no feature-specific knowledge —
+// SessionManager, MVI contracts, NetworkResult/ResultWrapper, accessibility
+// (theme/font/language), generic security utilities (biometric, keystore,
+// root/emulator detection), notification channels, deep-link resolution, and
+// the shared Screen route registry every feature needs to navigate.
+android {
+    namespace 'com.sultanagung1.sista.core.common'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += [
+            "-Xcontext-receivers"
+        ]
+    }
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation project(':core:model')
+    implementation project(':core:database')
+
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.datastore.preferences
+    implementation libs.androidx.biometric
+    implementation libs.gson
+    // NetworkPerformanceInterceptor implements okhttp3.Interceptor directly.
+    implementation libs.okhttp.logging
+
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.crashlytics
+    implementation libs.firebase.perf
+    implementation libs.firebase.analytics
+}

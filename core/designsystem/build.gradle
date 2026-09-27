@@ -1,0 +1,63 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
+// FASE 73.1: Theme, tokens, Sulaone Compose components, typography, haptics,
+// motion/shared-element helpers, and the shared UI widgets every feature
+// screen builds on (RoleGuardedScreen, sync/offline banners, CBT's shared
+// LaTeX/image-viewer components). Depends on :core:network in addition to
+// :core:common — a small, deliberate exception to the "features only see
+// model/designsystem/common/data" rule: a couple of shared status widgets
+// (SyncStatusHeader, OfflineQueuedBanner, EmergencyAlertDialog) render live
+// WebSocket/sync state directly rather than through a repository.
+android {
+    namespace 'com.sultanagung1.sista.core.designsystem'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        compose true
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += [
+            "-Xcontext-receivers",
+            "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi"
+        ]
+    }
+}
+
+dependencies {
+    implementation project(':core:common')
+    implementation project(':core:network')
+
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.compose.animation
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material3.windowsizeclass
+    implementation libs.androidx.compose.material3.adaptive
+    implementation libs.androidx.compose.material3.adaptive.layout
+    implementation libs.androidx.compose.material3.adaptive.navigation
+    implementation libs.androidx.compose.material.icons.extended
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.text.google.fonts
+    implementation libs.androidx.compose.ui.graphics
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    // api: AsyncImage is called directly from several feature screens, not
+    // just from within this module.
+    api libs.coil.compose
+    debugImplementation libs.androidx.compose.ui.tooling
+}

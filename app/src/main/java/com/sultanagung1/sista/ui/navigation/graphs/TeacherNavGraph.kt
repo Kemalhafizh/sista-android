@@ -6,7 +6,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.sultanagung1.sista.ui.academic.RemedialScreen
 import com.sultanagung1.sista.ui.common.RoleGuardedScreen
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.teacher.*
@@ -194,6 +193,25 @@ fun NavGraphBuilder.teacherNavGraph(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
+    }
+
+    composable(Screen.TahsinTeacherReview.route) {
+        val viewModel: com.sultanagung1.sista.ui.ibadah.TahsinViewModel = hiltViewModel()
+        RoleGuardedScreen(
+            currentRole = userRole,
+            allowedRoles = listOf("teacher", "guru", "bk", "admin", "superadmin"),
+            featureTitle = "Evaluasi Setoran Tahsin",
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateHome = navigateToRoleHome
+        ) {
+            com.sultanagung1.sista.ui.ibadah.TahsinTeacherReviewListScreen(
+                viewModel = viewModel,
+                onOpenSubmission = { id ->
+                    navController.navigate(Screen.TahsinSubmissionDetail.createRoute(id, teacherMode = true))
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 
     composable(Screen.TeachingJournalMobile.route) {

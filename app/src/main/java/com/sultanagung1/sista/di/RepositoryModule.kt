@@ -61,8 +61,8 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideChatRepository(apiClient: ApiClient): ChatRepository =
-        ChatRepository(apiClient)
+    fun provideChatRepository(apiClient: ApiClient, sessionManager: SessionManager): ChatRepository =
+        ChatRepository(apiClient, sessionManager)
 
     @Provides
     @Singleton
@@ -73,6 +73,11 @@ object RepositoryModule {
     @Singleton
     fun provideAnalyticsRepository(apiClient: ApiClient): AnalyticsRepository =
         AnalyticsRepository(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideDocumentRepository(apiClient: ApiClient): DocumentRepository =
+        DocumentRepository(apiClient)
 
     @Provides
     @Singleton
@@ -158,4 +163,9 @@ object RepositoryModule {
     @Singleton
     fun provideGamificationRepository(gamificationApi: GamificationApiService): GamificationRepository =
         GamificationRepository(gamificationApi)
+
+    @Provides
+    @Singleton
+    fun provideTahsinRepository(tahsinApi: TahsinApiService): TahsinRepository =
+        TahsinRepository(tahsinApi)
 }

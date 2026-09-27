@@ -1,0 +1,30 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+// FASE 73.1: Pure data classes (User, Grade, Attendance, Exam, ...) — zero
+// Android framework dependency by design, so every other module (including
+// :app itself) can see these types without pulling in Compose/Retrofit/Room.
+android {
+    namespace 'com.sultanagung1.sista.data.model'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += [
+            "-Xcontext-receivers"
+        ]
+    }
+}
+
+dependencies {
+    implementation libs.gson
+}

@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,7 +47,7 @@ import com.sultanagung1.sista.core.sync.OfflineActionQueue
 import com.sultanagung1.sista.core.sync.SyncManager
 import com.sultanagung1.sista.core.time.ServerTimeProvider
 import com.sultanagung1.sista.core.update.InAppUpdateManager
-import com.sultanagung1.sista.core.websocket.ReverbWebSocketManager
+import com.sultanagung1.sista.core.websocket.WebSocketSessionViewModel
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.navigation.graphs.*
@@ -103,6 +103,18 @@ fun AppNavigation(
                 popUpTo(0) { inclusive = false }
             }
         }
+    }
+
+    // Opens/closes the shared Reverb WebSocket connection as isLoggedIn changes
+    // (FASE 71.3/71.4 real-time infra) — obtained via Hilt so it shares the same
+    // ReverbWebSocketManager singleton that feature ViewModels listen to.
+    val webSocketSessionViewModel: WebSocketSessionViewModel = hiltViewModel()
+    val activeEmergencyAlert by webSocketSessionViewModel.emergencyAlert.collectAsState()
+    activeEmergencyAlert?.let { alert ->
+        com.sultanagung1.sista.ui.common.EmergencyAlertDialog(
+            alert = alert,
+            onDismiss = { webSocketSessionViewModel.dismissEmergencyAlert() }
+        )
     }
 
     // Real-Time & Offline Sync Services

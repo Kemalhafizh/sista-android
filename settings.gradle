@@ -17,4 +17,25 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Sulaone"
+
+// FASE 73.1: Full Multi-Module Codebase Migration
 include ':app'
+
+include ':core:model'
+include ':core:common'
+include ':core:database'
+include ':core:network'
+include ':core:designsystem'
+include ':core:data'
+
+include ':feature:auth'
+include ':feature:home'
+include ':feature:academic'
+include ':feature:cbt'
+include ':feature:finance'
+include ':feature:ibadah'
+include ':feature:chat'
+include ':feature:profile'
+include ':feature:parent'
+include ':feature:teacher'
+include ':feature:admin'

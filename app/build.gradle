@@ -38,6 +38,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
         freeCompilerArgs += [
+            "-Xcontext-receivers",
             "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi"
@@ -56,6 +57,30 @@ configurations.all {
 }
 
 dependencies {
+    // FASE 73.1: :app is the thin shell — Application class, MainActivity,
+    // root AppNavigation/NavGraphs, AppWidget providers, and the Hilt DI
+    // wiring files (di/NetworkModule.kt, RepositoryModule.kt, StorageModule.kt
+    // — left as single files here rather than split per-module, since :app
+    // is the one place already allowed to see every module at once).
+    implementation project(':core:model')
+    implementation project(':core:common')
+    implementation project(':core:database')
+    implementation project(':core:network')
+    implementation project(':core:designsystem')
+    implementation project(':core:data')
+
+    implementation project(':feature:auth')
+    implementation project(':feature:home')
+    implementation project(':feature:academic')
+    implementation project(':feature:cbt')
+    implementation project(':feature:finance')
+    implementation project(':feature:ibadah')
+    implementation project(':feature:chat')
+    implementation project(':feature:profile')
+    implementation project(':feature:parent')
+    implementation project(':feature:teacher')
+    implementation project(':feature:admin')
+
     implementation platform(libs.androidx.compose.bom)
     implementation libs.androidx.activity.compose
     implementation libs.androidx.compose.animation
@@ -75,12 +100,13 @@ dependencies {
     implementation libs.androidx.navigation.compose
     implementation libs.kotlinx.serialization.json
 
-    // Networking (Retrofit & OkHttp)
+    // Networking (Retrofit & OkHttp) — for di/NetworkModule.kt's own
+    // Retrofit/OkHttpClient construction.
     implementation libs.retrofit.core
     implementation libs.retrofit.converter.gson
     implementation libs.okhttp.logging
 
-    // Room Database Runtime
+    // Room Database Runtime — di/StorageModule.kt provides SistaDatabase.
     implementation libs.room.runtime
     implementation libs.room.ktx
 

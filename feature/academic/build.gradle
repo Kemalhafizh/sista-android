@@ -1,0 +1,70 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
+    id 'kotlin-kapt'
+}
+
+// FASE 73.1: :feature:academic — depends only on model/designsystem/common/data
+// (plus :core:network directly for the couple of screens that hold a live
+// WebSocket connection or the legacy ApiClient-backed repositories — see the
+// migration notes for the full list of these flagged exceptions).
+android {
+    namespace 'com.sultanagung1.sista.feature.academic'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        compose true
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += [
+            "-Xcontext-receivers",
+            "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi"
+        ]
+    }
+}
+
+dependencies {
+    implementation project(':core:model')
+    implementation project(':core:designsystem')
+    implementation project(':core:common')
+    implementation project(':core:network')
+    implementation project(':core:data')
+
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.compose.animation
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material3.windowsizeclass
+    implementation libs.androidx.compose.material3.adaptive
+    implementation libs.androidx.compose.material3.adaptive.layout
+    implementation libs.androidx.compose.material3.adaptive.navigation
+    implementation libs.androidx.compose.material.icons.extended
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.graphics
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel.compose
+    implementation libs.androidx.biometric
+    implementation libs.androidx.datastore.preferences
+    implementation libs.play.services.location
+
+    implementation libs.hilt.android
+    implementation libs.androidx.hilt.navigation.compose
+    kapt libs.hilt.compiler
+    kapt libs.kotlin.metadata.jvm
+
+    debugImplementation libs.androidx.compose.ui.tooling
+}
