@@ -1,2 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Declared here because this module's own code needs it; lint checks each
+        module against its own manifest. :app already requests it, so the merged
+        app manifest is unchanged.
+        MediaRecorder.setAudioSource(MIC) in core/audio/AudioRecorderManager (checked at runtime there).
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+</manifest>
