@@ -122,61 +122,72 @@ fun AdminDashboardScreen(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // FASE 76.2 Bento: today's student attendance is the hero.
-                        // The old "Live" badges were dropped — this data is a
-                        // one-shot REST fetch on screen open (no polling, no
-                        // WebSocket), so "Live" was a false claim.
-                        BentoHeroSplit(
-                            hero = { heroModifier ->
-                                SulaoneBentoHeroTile(
-                                    modifier = heroModifier,
-                                    label = "Kehadiran Siswa",
-                                    value = data?.attendanceRateToday
-                                        ?.let { String.format(java.util.Locale.US, "%.1f", it) }
-                                        ?: "—",
-                                    unit = if (data?.attendanceRateToday != null) "%" else null,
-                                    caption = if (uiState.isLoading) "Memuat data…" else "Presensi KBM hari ini",
-                                    icon = Icons.Default.People,
-                                    accent = Emerald700,
-                                    badgeText = "Hari Ini"
-                                )
-                            },
-                            top = { tileModifier ->
-                                SulaoneMetricCard(
-                                    modifier = tileModifier,
-                                    title = "Total Siswa Aktif",
-                                    value = data?.totalStudents?.toString() ?: "—",
-                                    subtitle = "Seluruh Rombel",
-                                    icon = Icons.Default.School,
-                                    iconTint = AccentPurple,
-                                    iconBackground = AccentPurple.copy(alpha = 0.12f)
-                                )
-                            },
-                            bottom = { tileModifier ->
-                                SulaoneMetricCard(
-                                    modifier = tileModifier,
-                                    title = "Sesi CBT Aktif",
-                                    value = uiState.schoolKpi?.cbtServerUsage?.activeSessions?.toString() ?: "—",
-                                    subtitle = "Sedang berlangsung",
-                                    icon = Icons.Default.Dns,
-                                    iconTint = AccentCyan,
-                                    iconBackground = AccentCyan.copy(alpha = 0.12f)
-                                )
+                        // FASE 76.5: first load shows a bento-shaped skeleton (tiered)
+                        // instead of four "—" tiles that look like missing data.
+                        if (uiState.isLoading && data == null) {
+                            SulaoneTieredLoading(isLoading = true) {
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    BentoHeroSplitSkeleton()
+                                    MetricCardSkeleton()
+                                }
                             }
-                        )
+                        } else {
+                            // FASE 76.2 Bento: today's student attendance is the hero.
+                            // The old "Live" badges were dropped — this data is a
+                            // one-shot REST fetch on screen open (no polling, no
+                            // WebSocket), so "Live" was a false claim.
+                            BentoHeroSplit(
+                                hero = { heroModifier ->
+                                    SulaoneBentoHeroTile(
+                                        modifier = heroModifier,
+                                        label = "Kehadiran Siswa",
+                                        value = data?.attendanceRateToday
+                                            ?.let { String.format(java.util.Locale.US, "%.1f", it) }
+                                            ?: "—",
+                                        unit = if (data?.attendanceRateToday != null) "%" else null,
+                                        caption = if (uiState.isLoading) "Memuat data…" else "Presensi KBM hari ini",
+                                        icon = Icons.Default.People,
+                                        accent = Emerald700,
+                                        badgeText = "Hari Ini"
+                                    )
+                                },
+                                top = { tileModifier ->
+                                    SulaoneMetricCard(
+                                        modifier = tileModifier,
+                                        title = "Total Siswa Aktif",
+                                        value = data?.totalStudents?.toString() ?: "—",
+                                        subtitle = "Seluruh Rombel",
+                                        icon = Icons.Default.School,
+                                        iconTint = AccentPurple,
+                                        iconBackground = AccentPurple.copy(alpha = 0.12f)
+                                    )
+                                },
+                                bottom = { tileModifier ->
+                                    SulaoneMetricCard(
+                                        modifier = tileModifier,
+                                        title = "Sesi CBT Aktif",
+                                        value = uiState.schoolKpi?.cbtServerUsage?.activeSessions?.toString() ?: "—",
+                                        subtitle = "Sedang berlangsung",
+                                        icon = Icons.Default.Dns,
+                                        iconTint = AccentCyan,
+                                        iconBackground = AccentCyan.copy(alpha = 0.12f)
+                                    )
+                                }
+                            )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                        SulaoneMetricCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            title = "Total Tunggakan SPP",
-                            value = data?.unpaidBillingsTotal?.let { formatRupiah(it) } ?: "—",
-                            subtitle = "Seluruh Siswa",
-                            icon = Icons.Default.AccountBalanceWallet,
-                            iconTint = Gold700,
-                            iconBackground = Gold50,
-                            onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
-                        )
+                            SulaoneMetricCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                title = "Total Tunggakan SPP",
+                                value = data?.unpaidBillingsTotal?.let { formatRupiah(it) } ?: "—",
+                                subtitle = "Seluruh Siswa",
+                                icon = Icons.Default.AccountBalanceWallet,
+                                iconTint = Gold700,
+                                iconBackground = Gold50,
+                                onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
+                            )
+                        }
                     }
                 }
 

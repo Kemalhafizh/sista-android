@@ -13,7 +13,7 @@ enum class AppThemeMode(val title: String, val description: String) {
     SYSTEM("Sistem Bawaan", "Mengikuti setelan tema perangkat HP"),
     LIGHT("Terang (Emerald)", "Warna hijau zamrud bersih & cerah"),
     DARK("Gelap (Islami)", "Warna gelap nyaman untuk malam hari"),
-    AMOLED_BLACK("AMOLED Murni", "Hitam pekat murni (Super hemat baterai)"),
+    AMOLED_BLACK("Hitam Pekat (AMOLED)", "Hitam #000000 murni: hemat baterai di layar OLED/AMOLED, tidak di LCD"),
     HIGH_CONTRAST("Kontras Tinggi", "Garis tebal & kontras maksimal ramah disabilitas");
 
     companion object {

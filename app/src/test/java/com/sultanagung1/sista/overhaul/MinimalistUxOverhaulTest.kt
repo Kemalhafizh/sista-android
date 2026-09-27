@@ -102,7 +102,10 @@ class MinimalistUxOverhaulTest {
         val content = appNavFile.readText()
         assertTrue("Must contain FASE 60.3 comment", content.contains("FASE 60.3: Consolidated 4-Tab System"))
 
-        val navItemsSection = content.substringAfter("val bottomNavItems = when {").substringBefore("val tabRoutes")
+        val navItemsSection = content.substringAfter("val bottomNavItems = when (UserRoles.groupOf(userRole)) {").substringBefore("val tabRoutes")
+        // FASE 76.3: the when is keyed by RoleGroup now (one branch per group,
+        // exhaustive), so the anchor above changed; the 4x4 rule did not.
+        assertTrue("bottomNavItems anchor must exist", navItemsSection.length < content.length)
         val totalNavItems = navItemsSection.split("BottomNavItem(").size - 1
         assertEquals("Total nav items across 4 roles must be 16 (4 tabs per role)", 16, totalNavItems)
     }

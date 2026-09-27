@@ -9,6 +9,7 @@ import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.data.model.PrayerSchedule
 import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.repository.FeatureUsageRepository
 import com.sultanagung1.sista.data.repository.StudentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,8 @@ data class HomeUiState(
     /** Null until a real prayer-time source is wired — sistem-terpadu has no JSON API for this yet. */
     val prayerSchedule: PrayerSchedule? = null,
     val unreadNotificationsCount: Int = 0,
+    /** FASE 76.4: feature key → how often this account opened it from Home (local only). */
+    val featureUsage: Map<String, Int> = emptyMap(),
     val errorMessage: String? = null
 )
 
@@ -44,7 +47,8 @@ private val INDONESIAN_DAY_NAMES = mapOf(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val studentRepository: StudentRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val featureUsageRepository: FeatureUsageRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -79,12 +83,31 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            featureUsageRepository.usageCounts().collect { counts ->
+                _uiState.value = _uiState.value.copy(featureUsage = counts)
+            }
+        }
         loadHomeData()
+    }
+
+    /** FASE 76.4: count one open of [featureKey] (a quick-action key or a service route). */
+    fun recordFeatureUse(featureKey: String) {
+        viewModelScope.launch {
+            // Counting is a nicety; a storage hiccup must never block navigation.
+            runCatching { featureUsageRepository.recordTap(featureKey) }
+        }
+    }
+
+    fun resetFeatureUsage() {
+        viewModelScope.launch {
+            runCatching { featureUsageRepository.reset() }
+        }
     }
 
     fun loadHomeData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
             // The backend returns the whole week's schedule (no day filter param),
             // so "today's" classes must be filtered client-side.

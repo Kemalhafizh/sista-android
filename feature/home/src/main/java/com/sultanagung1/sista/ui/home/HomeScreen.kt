@@ -16,7 +16,6 @@ import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.ui.common.SyncStatusHeader
 import com.sultanagung1.sista.ui.home.sections.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -59,21 +58,21 @@ fun HomeScreen(
         }
     }
 
-    var isRefreshing by remember { mutableStateOf(false) }
+    // Pull-to-refresh follows the real reload (it used to spin a fixed 750 ms
+    // and never reloaded this screen's own data).
+    var refreshRequested by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading) { if (!uiState.isLoading) refreshRequested = false }
     var showServicesBottomSheet by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val heroScrolledOff by rememberIsItemScrolledOff(listState, "hero_section")
 
     SulaonePullToRefreshBox(
-        isRefreshing = isRefreshing,
+        isRefreshing = refreshRequested && uiState.isLoading,
         onRefresh = {
-            isRefreshing = true
-            coroutineScope.launch {
-                syncManager?.performFullSync()
-                delay(750)
-                isRefreshing = false
-            }
+            refreshRequested = true
+            coroutineScope.launch { syncManager?.performFullSync() }
+            viewModel.loadHomeData()
         },
         // FASE 74.1: landing marker so an E2E driver can assert it reached
         // HomeScreen after login, instead of guessing off transient text
@@ -130,7 +129,9 @@ fun HomeScreen(
                     onNavigateToSchedule = onNavigateToSchedule,
                     onNavigateToCbt = onNavigateToCbt,
                     onNavigateToBilling = onNavigateToBilling,
-                    onOpenAllServices = { showServicesBottomSheet = true }
+                    onOpenAllServices = { showServicesBottomSheet = true },
+                    usage = uiState.featureUsage,
+                    onActionUsed = viewModel::recordFeatureUse
                 )
             }
 
@@ -154,7 +155,10 @@ fun HomeScreen(
             item(key = "schedule_preview", contentType = "schedule") {
                 HomeSchedulePreview(
                     todaySchedules = uiState.todaySchedules,
-                    onNavigateToSchedule = onNavigateToSchedule
+                    onNavigateToSchedule = onNavigateToSchedule,
+                    isLoading = uiState.isLoading,
+                    loadError = uiState.errorMessage,
+                    onRetry = viewModel::loadHomeData
                 )
             }
 
@@ -179,6 +183,9 @@ fun HomeScreen(
     HomeServicesBottomSheet(
         isVisible = showServicesBottomSheet,
         onDismiss = { showServicesBottomSheet = false },
-        onNavigateRoute = onNavigateRoute
+        onNavigateRoute = onNavigateRoute,
+        usage = uiState.featureUsage,
+        onServiceUsed = viewModel::recordFeatureUse,
+        onResetUsage = viewModel::resetFeatureUsage
     )
 }

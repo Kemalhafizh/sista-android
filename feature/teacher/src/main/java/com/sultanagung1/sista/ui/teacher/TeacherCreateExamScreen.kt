@@ -626,7 +626,7 @@ private fun QuestionsSection(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(if (isCorrect) Emerald700 else MaterialTheme.colorScheme.surfaceVariant)
                                 .clickable(enabled = enabled) { onCorrectKeySelected(question.localId, option.key) },
@@ -874,7 +874,15 @@ private fun PublishSection(
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .then(if (questionIndex != null) Modifier.clickable { onIssueClick(questionIndex) } else Modifier)
+                            .then(
+                                if (questionIndex != null) {
+                                    Modifier
+                                        .minimumInteractiveComponentSize()
+                                        .clickable { onIssueClick(questionIndex) }
+                                } else {
+                                    Modifier
+                                }
+                            )
                             .padding(vertical = 2.dp)
                     )
                 }
