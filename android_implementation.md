@@ -6,7 +6,7 @@ Dokumen ini adalah cetak biru (*blueprint*) dan dokumentasi implementasi teknis 
 > **Versi Dokumen:** 9.1 — Diperbarui 19 September 2026
 > **Status Proyek (dicek ulang 27 September 2026):** FASE 1–70, 73 & 76 tercatat selesai (76: kode + test logika terverifikasi, tampilan belum dilihat di emulator); FASE 71, 72, 74 sebagian; FASE 68 & 75 belum. Beberapa klaim lama ternyata tidak sesuai kode — lihat **🔎 Status Verifikasi Terkini** di bawah.
 > **Total File Kotlin (dihitung ulang 27 Sep 2026, setelah FASE 76):** 365 file produksi + 36 file test, di 1 modul `app` + 6 modul `core` + 11 modul `feature` | **Rute Navigasi (`Screen.kt`):** 87
-> **Hasil Verifikasi Kompilasi:** ⚠️ **Belum terverifikasi untuk kode saat ini.** "BUILD SUCCESSFUL" di bagian-bagian lama adalah catatan pada fase masing-masing; perubahan Kotlin sejak FASE 76 belum pernah dikompilasi (Gradle tidak bisa dijalankan di lingkungan agen: `Unable to establish loopback connection`). Kompilasi pertama harus dilakukan di Android Studio. Untuk FASE 76.3–76.8, logika murni sudah dikompilasi & diuji dengan kotlinc 2.2.10 + JUnit dan semua file yang diubah lolos parse sintaks (lihat Verifikasi di FASE 76); kompilasi penuh Compose/Hilt/Room tetap belum.
+> **Hasil Verifikasi Kompilasi (27 Sep 2026):** ✅ **Terverifikasi di CI GitHub Actions** (PR `claude/sweet-cray-1ciw98`, run #7, commit `7618752`): `./gradlew testDebugUnitTest` → BUILD SUCCESSFUL (semua modul terkompilasi penuh, termasuk Compose, Hilt, Room kapt; semua unit test lolos), `./gradlew lintDebug` → 0 error di 17 modul, `./gradlew assembleDebug` → APK debug jadi. Sebelumnya CI **selalu merah sebelum mengompilasi apa pun** karena `gradle.properties` mem-pin JDK Windows lokal (lihat "Perbaikan CI & lint" di FASE 76). Tampilan belum dilihat di emulator.
 
 ---
 
@@ -15,12 +15,12 @@ Dokumen ini adalah cetak biru (*blueprint*) dan dokumentasi implementasi teknis 
 Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa otomatis: setiap tautan file, setiap nama file `.kt` yang disebut, setiap `import` proyek, referensi kelas lengkap dan `Class.forName` di test, serta path file yang dibaca test penjaga sumber.
 
 **Build & test**
-- Kode Kotlin saat ini **belum pernah dikompilasi** sejak perubahan FASE 76 dan perbaikan-perbaikan sesudahnya (ujian guru, Kedisiplinan, presensi GPS). Kompilasi pertama: Android Studio → *Build → Make Project*.
+- ~~Kode Kotlin saat ini **belum pernah dikompilasi** sejak perubahan FASE 76.~~ **Diperbarui 27 Sep 2026:** seluruh kode kini dikompilasi dan diuji di CI (`testDebugUnitTest`, `lintDebug`, `assembleDebug` hijau). Lihat "Hasil Verifikasi Kompilasi" di atas.
 - **Diperbaiki hari ini — tiga referensi yang membuat source set test tidak bisa dikompilasi sama sekali:**
   - `RetrofitUrlNormalizationTest` memuat `SchoolOperationsApiService`, yang sudah tidak ada. Kini ada test yang mencocokkan daftarnya dengan semua `interface …ApiService` di source; tiga service yang belum tercakup (`TahsinApiService`, `ScannerMobileApiService`, `MobileConfigApiService`) ikut ditambahkan.
   - `HiltDependencyInjectionTest` dan `CleanArchitectureTest` memuat `SchoolOperationsViewModel`, yang sudah tidak ada, dan melewatkan 10 ViewModel nyata (44 ada, 35 tercantum). Daftarnya diperbaiki, dan kedua test kini mencocokkan daftarnya dengan setiap `@HiltViewModel` di source.
   - `AdaptiveLayoutTest` mencari `TeachingJournalScreenKt` (file tidak ada, `ClassNotFoundException`). Kini `TeachingJournalMobileScreenKt`.
-- **Masih akan gagal saat dijalankan:** `SharedElementMotionTest`, `AdaptiveRefreshRateTest`, `MinimalistUxOverhaulTest`, dan `Fase66UiOverhaulTest` masih membaca 32 path `src/main/java/...` modul `app` yang sudah pindah ke `feature/*` dan `core/*` (FASE 73). Test-nya bisa dikompilasi, tapi assertion-nya perlu disesuaikan.
+- ~~**Masih akan gagal saat dijalankan:** `SharedElementMotionTest`, `AdaptiveRefreshRateTest`, `MinimalistUxOverhaulTest`, dan `Fase66UiOverhaulTest` …~~ **Koreksi 27 Sep 2026:** perkiraan ini tidak terbukti. Keempat test lolos saat `testDebugUnitTest` benar-benar dijalankan di CI (run #4 dan #7).
 
 **Tautan di dokumen ini**
 - Sebelum pemeriksaan, hanya 35 dari 291 tautan file yang benar. Setelah perbaikan, 276 dari 288 benar: 359 tautan diarahkan ke lokasi modul yang sebenarnya.
@@ -45,7 +45,7 @@ Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa oto
 **Label status yang tertinggal dari kode**
 - **FASE 72:** 72.2 (heartbeat, pencatatan pelanggaran, dan intervensi pengawas lewat Reverb) sudah ada, walau label lamanya "rancangan".
 - **FASE 73:** sudah terlaksana (6 modul `core` + 11 modul `feature`), walau label lamanya "rancangan".
-- **FASE 76:** 76.0–76.9 selesai 27 Sep 2026 (lihat bagian FASE 76). Logika murni dikompilasi & diuji dengan Kotlin 2.2.10 + JUnit; layar Compose baru lolos parse sintaks, belum dikompilasi penuh.
+- **FASE 76:** 76.0–76.9 selesai 27 Sep 2026 (lihat bagian FASE 76). Terkompilasi penuh, lolos unit test, lint, dan assemble di CI; belum dilihat di emulator.
 
 **Backend yang dibutuhkan versi aplikasi ini**
 - Server harus sudah menjalankan migrasi terbaru (`php artisan migrate`).
@@ -3307,7 +3307,7 @@ Langkah pemungkas untuk memastikan Sulaone siap dirilis secara resmi ke publik m
 
 ---
 
-### 🎨 FASE 76: UI/UX RENAISSANCE 2026 — MATERIAL 3 EXPRESSIVE, BENTO-GLASS SYSTEM & HYPER-PERSONALISASI `[SELESAI 27 Sep 2026 — belum dikompilasi penuh & belum dilihat di emulator]`
+### 🎨 FASE 76: UI/UX RENAISSANCE 2026 — MATERIAL 3 EXPRESSIVE, BENTO-GLASS SYSTEM & HYPER-PERSONALISASI `[SELESAI 27 Sep 2026 — hijau di CI (test, lint, APK); belum dilihat di emulator]`
 
 Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplikasi Android/mobile 2026 dari internet (daftar sumber di 76.0), dan (2) audit jujur terhadap kode Sulaone yang sudah ada — bukan asumsi kosong. Temuan paling penting dari audit: **sebagian besar infrastruktur tren 2026 SUDAH ADA di codebase ini, tapi nyaris tidak dipakai.** Ini bukan proyek "bangun dari nol", tapi proyek "formalkan, sebarkan secara sistematis, dan tutup celah yang genuinely belum ada".
 
@@ -3554,17 +3554,29 @@ Perombakan UI/UX besar-besaran berbasis dua sumber: (1) riset tren desain aplika
   - Setiap gelombang wajib lolos unit test desain-token yang ada (`DesignSystemTokensTest`, `Fase66UiOverhaulTest`, dan test baru 76.1) sebelum lanjut ke gelombang berikutnya — mencegah drift kembali ke pola hardcoded lama.
 
 - **Verifikasi 76.3–76.8 (27 Sep 2026):**
-  - **Build Android penuh tetap tidak bisa dijalankan di lingkungan agen ini.** Network policy memblokir `dl.google.com` (Android SDK dan Google Maven untuk AGP/AndroidX/Compose).
-  - Yang **sudah** dijalankan sungguhan, dengan compiler Kotlin 2.2.10 + JUnit 4.13.2 dari Maven Central:
-    - **Kompilasi + test logika murni:** `UserRoles`, `Screen`, `ContextualFab`, `UsageRanking`, `AiReplyFormatting`, plus kedua test baru → **29/29 lolos**.
-    - **Test penjaga lama yang bisa jalan tanpa Android:** `ProfessionalUiUxOverhaulTest` 11/11, plus bagian source-guard dari `MinimalistUxOverhaulTest`, `ScreenDecompositionTest`, `Fase66UiOverhaulTest`, `TypeSafeNavigationTest`, `Fase76Wave3Test`, dan `DesignSystemTokensTest.testNoHardcodedColorsInUiScreens` (versi baru) → **semua lolos**.
-    - **Parse sintaks** 36 file Kotlin yang diubah/baru dengan compiler yang sama → **0 error**. Pemeriksanya diuji balik dengan file yang sengaja dirusak (terdeteksi).
-  - **Belum:**
-    - kompilasi penuh Compose/Hilt/Room kapt;
-    - test yang memuat kelas Compose/Android;
-    - tampilan di emulator: FAB, skeleton, chip AMOLED, composer di atas keyboard, bubble AI, bintang 44dp.
-    - Jalankan *Build → Make Project* dan `./gradlew testDebugUnitTest` di Android Studio.
+  - **CI GitHub Actions (sumber kebenaran):** run #7 pada commit `7618752` → `testDebugUnitTest` ✅, `lintDebug` ✅ (0 error di 17 modul), `assembleDebug` ✅ (APK debug ter-upload sebagai artifact). Seluruh kode FASE 76 dikompilasi penuh (Compose, Hilt, Room kapt) dan semua unit test proyek lolos, termasuk `Fase76CompletionLogicTest` dan `Fase76CompletionGuardTest`.
+  - **Sebelum CI tersedia**, di lingkungan agen (Android SDK / Google Maven diblokir):
+    - Logika murni dikompilasi & diuji dengan Kotlin 2.2.10 + JUnit 4.13.2: 29/29 lolos.
+    - Test penjaga lama yang bisa jalan tanpa Android lolos.
+    - 36 file lolos parse sintaks.
+  - **Belum:** tampilan di emulator (FAB, skeleton, chip AMOLED, composer di atas keyboard, bubble AI, bintang 44dp) dan test instrumentasi.
 
+- **Perbaikan CI & lint yang ditemukan saat menghijaukan PR (27 Sep 2026)** — semuanya kode lama, bukan dari FASE 76, tapi memblokir CI:
+  - **CI selalu merah sejak awal, sebelum mengompilasi apa pun.** `gradle.properties` mem-pin `org.gradle.java.home=C:/Users/kemalhafizh/.jdks/...` (path JDK Windows lokal), jadi runner Linux gagal dengan "Java home supplied is invalid". Baris itu dihapus. JDK kini dipilih per mesin (Android Studio → Gradle JDK, atau `~/.gradle/gradle.properties` milik user).
+  - **Lint `MissingPermission` di modul library:** `core:common` (Firebase Analytics, `ConnectivityManager`), `core:network` (`NetworkConnectivityObserver`), `feature:profile` (`DiagnosticReportScreen`), `feature:ibadah` (`MediaRecorder`). Lint memeriksa tiap modul terhadap manifest-nya sendiri, jadi setiap modul kini mendeklarasikan izin yang dipakai kodenya. Manifest gabungan app tidak berubah.
+  - **Perekam tahsin** kini memeriksa izin `RECORD_AUDIO` sebelum merekam dan memberi tahu siswa cara mengaktifkannya, bukan bergantung pada exception dari `MediaRecorder`.
+  - **Widget Jadwal Sholat & Jadwal Pelajaran tidak bisa tampil:** layout memakai `<View>` polos sebagai garis pemisah, yang ditolak RemoteViews. Diganti `<FrameLayout>`.
+  - **QR Scanner:** memakai `ImageProxy.image` (CameraX `@ExperimentalGetImage`) tanpa opt-in; kini opt-in eksplisit.
+  - **Workflow CI:** `lintDebug --continue` dan mencetak laporan lint semua modul saat gagal, jadi satu run menampilkan seluruh temuan.
+  - Sisa lint: 158 warning (terbanyak `UnusedResources`, `HardcodedText`, `UseKtx`), tidak ada yang berasal dari baris FASE 76. Tidak menggagalkan build.
+
+- **Ditemukan saat perbaikan, diajukan sebagai task terpisah (belum diperbaiki):**
+  - **Keempat widget layar utama menampilkan data palsu.** Provider tidak pernah mengisi teks, jadi yang tampil selalu contoh di layout:
+    - Presensi selalu **"✅ HADIR (06:45 WIB)"**;
+    - SPP selalu **"Agustus 2026: LUNAS"** (klaim palsu yang sama dengan yang sudah dihapus dari dashboard di 76.2);
+    - jadwal "XII MIPA 1" dan waktu sholat tetap.
+  - Role Switcher Profil menulis sesi palsu (lihat 76.3).
+  - Tombol debug "Uji Push Notifikasi" tampil di build rilis (lihat 76.3).
 
 ---
 
