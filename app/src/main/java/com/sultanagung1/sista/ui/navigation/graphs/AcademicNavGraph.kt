@@ -9,6 +9,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.sultanagung1.sista.core.motion.LocalNavAnimatedVisibilityScope
 import com.sultanagung1.sista.ui.academic.*
+import com.sultanagung1.sista.ui.attendance.StudentSessionQrScanScreen
+import com.sultanagung1.sista.ui.attendance.StudentSessionQrScanViewModel
 import com.sultanagung1.sista.ui.analytics.AcademicAnalyticsScreen
 import com.sultanagung1.sista.ui.analytics.AnalyticsViewModel
 import com.sultanagung1.sista.ui.analytics.ClassAnalyticsScreen
@@ -31,6 +33,25 @@ fun NavGraphBuilder.academicNavGraph(
     userRole: String,
     navigateToRoleHome: () -> Unit
 ) {
+    // FASE 77.5: per-subject attendance by scanning the teacher's rotating QR.
+    // Backend student/* routes are role:student,siswa.
+    composable(Screen.StudentSessionQrScan.route) {
+        val viewModel: StudentSessionQrScanViewModel = hiltViewModel()
+        RoleGuardedScreen(
+            currentRole = userRole,
+            allowedRoles = listOf("student", "siswa"),
+            featureTitle = "Presensi Kelas",
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateHome = navigateToRoleHome
+        ) {
+            StudentSessionQrScanScreen(
+                viewModel = viewModel,
+                onNavigateHome = navigateToRoleHome,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    }
+
     composable(Screen.Schedule.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val viewModel: AcademicViewModel = hiltViewModel()

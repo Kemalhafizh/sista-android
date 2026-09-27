@@ -69,7 +69,8 @@ class CleanArchitectureTest {
         // FASE 77: Sesi Kelas Hidup
         com.sultanagung1.sista.ui.teacher.sessions.TeacherTodaySessionsViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.sessions.TeacherActiveSessionViewModel::class.java,
-        com.sultanagung1.sista.ui.teacher.sessions.TeacherAttendanceListViewModel::class.java
+        com.sultanagung1.sista.ui.teacher.sessions.TeacherAttendanceListViewModel::class.java,
+        com.sultanagung1.sista.ui.attendance.StudentSessionQrScanViewModel::class.java
     )
     /**
      * Every `@HiltViewModel class` in the main source sets of all modules. The

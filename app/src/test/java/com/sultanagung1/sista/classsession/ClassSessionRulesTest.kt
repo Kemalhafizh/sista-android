@@ -141,6 +141,30 @@ class ClassSessionRulesTest {
         assertFalse(ClassSessionRules.isClassSessionQr(null))
     }
 
+    @Test
+    fun scanGateSendsEachPayloadOnceAndNeverResendsARefusedOne() {
+        val gate = ClassSessionRules.ScanGate(cooldownMs = 3_000)
+        assertTrue(gate.shouldSubmit("sista-cs:v1:a:1", 10_000))
+        // The camera sees the same QR many times a second.
+        assertFalse(gate.shouldSubmit("sista-cs:v1:a:1", 10_200))
+        assertFalse(gate.shouldSubmit(" sista-cs:v1:a:1 ", 12_999))
+        assertTrue(gate.shouldSubmit("sista-cs:v1:a:1", 13_000))
+        // The next rotation is a different payload: sent straight away.
+        assertTrue(gate.shouldSubmit("sista-cs:v1:a:2", 13_100))
+        // Once refused (e.g. expired), never again, however long we wait.
+        gate.markRefused("sista-cs:v1:a:2")
+        assertFalse(gate.shouldSubmit("sista-cs:v1:a:2", 60_000))
+        assertTrue(gate.shouldSubmit("sista-cs:v1:a:3", 60_000))
+    }
+
+    @Test
+    fun scanGateForgetsOldRefusals() {
+        val gate = ClassSessionRules.ScanGate(cooldownMs = 0)
+        (1..25).forEach { gate.markRefused("p$it") }
+        assertTrue("oldest refusal dropped", gate.shouldSubmit("p1", 1))
+        assertFalse("recent refusal kept", gate.shouldSubmit("p25", 1))
+    }
+
     // ── counts ──────────────────────────────────────────────────────────
 
     private fun row(id: Long, status: SessionAttendanceStatus?, name: String = "Siswa $id", nis: String = "1000$id") =

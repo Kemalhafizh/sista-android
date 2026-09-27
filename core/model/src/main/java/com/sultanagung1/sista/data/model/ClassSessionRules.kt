@@ -173,6 +173,36 @@ object ClassSessionRules {
     fun isClassSessionQr(raw: String?): Boolean =
         raw != null && raw.trim().startsWith(ClassSessionContract.QR_PAYLOAD_PREFIX)
 
+    /**
+     * 77.5: the camera reports the same QR many times a second. Send a payload
+     * at most once per [cooldownMs], and never again once the server refused
+     * it (an expired QR stays expired; the next one on the teacher's screen is
+     * a different payload).
+     */
+    class ScanGate(private val cooldownMs: Long = 3_000L) {
+        private var lastPayload: String? = null
+        private var lastSentAt = 0L
+        private val refused = LinkedHashSet<String>()
+
+        fun shouldSubmit(payload: String, nowMs: Long): Boolean {
+            val p = payload.trim()
+            if (p in refused) return false
+            if (p == lastPayload && nowMs - lastSentAt < cooldownMs) return false
+            lastPayload = p
+            lastSentAt = nowMs
+            return true
+        }
+
+        fun markRefused(payload: String) {
+            refused += payload.trim()
+            // Payloads rotate every 30 s; a short memory is enough.
+            while (refused.size > 20) refused.remove(refused.first())
+        }
+    }
+
+    const val NOT_A_CLASS_QR_MESSAGE =
+        "Ini bukan QR sesi kelas. Pindai QR yang tampil di layar guru saat kelas berlangsung."
+
     // ── Attendance counts ───────────────────────────────────────────────
 
     data class Counts(
