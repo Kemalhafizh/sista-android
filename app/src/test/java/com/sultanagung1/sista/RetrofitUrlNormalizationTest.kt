@@ -53,7 +53,9 @@ class RetrofitUrlNormalizationTest {
         SyncApiService::class.java,
         TahsinApiService::class.java,
         ScannerMobileApiService::class.java,
-        MobileConfigApiService::class.java
+        MobileConfigApiService::class.java,
+        // FASE 77: Sesi Kelas Hidup (backend FASE 117)
+        ClassSessionApiService::class.java
     )
 
     /** Every `interface …ApiService` declared under data/api, from the source files. */
