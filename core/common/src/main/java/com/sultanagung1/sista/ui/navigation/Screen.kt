@@ -99,7 +99,10 @@ sealed class Screen(val route: String, val title: String = "") {
     // Analytics & KPI Dashboards
     object AcademicAnalytics : Screen("academic_analytics", "Analitik Siswa")
     object ClassAnalytics : Screen("class_analytics", "Analitik Kelas")
-    object ChildProgress : Screen("child_progress", "Pantau Progres Anak")
+    object ChildProgress : Screen("child_progress?studentUuid={studentUuid}", "Pantau Progres Anak") {
+        fun createRoute(studentUuid: String? = null) =
+            if (!studentUuid.isNullOrBlank()) "child_progress?studentUuid=$studentUuid" else "child_progress"
+    }
     object ExecutiveAnalytics : Screen("executive_analytics", "KPI Eksekutif")
 
     // SuperApp Marketplace, SSO & Updates

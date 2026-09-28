@@ -79,7 +79,7 @@ fun parentShortcuts(childUuid: String?): List<ParentShortcut> = listOfNotNull(
     ParentShortcut("Tagihan", Icons.Outlined.AccountBalanceWallet, Screen.Billing.route),
     ParentShortcut("Tata tertib", Icons.Outlined.Gavel, Screen.Discipline.createRoute(childUuid)),
     ParentShortcut("Pesan guru", Icons.AutoMirrored.Outlined.Chat, Screen.ConversationList.route),
-    ParentShortcut("Progres belajar", Icons.Outlined.Insights, Screen.ChildProgress.route),
+    ParentShortcut("Progres belajar", Icons.Outlined.Insights, Screen.ChildProgress.createRoute(childUuid)),
 )
 
 /**

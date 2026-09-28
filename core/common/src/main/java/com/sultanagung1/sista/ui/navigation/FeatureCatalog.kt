@@ -186,7 +186,7 @@ object FeatureCatalog {
         "counseling.staff" to Screen.CounselingDashboard.route,
         "uks.record" to Screen.UksVisit.route,
         "parent.children" to Screen.ParentDashboard.route,
-        "parent.progress" to Screen.ChildProgress.route,
+        "parent.progress" to Screen.ChildProgress.createRoute(),
         "parent.messages" to Screen.ConversationList.route,
         "admin.dashboard" to Screen.AdminDashboard.route,
         "admin.executive" to Screen.ExecutiveAnalytics.route,

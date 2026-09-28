@@ -1,214 +1,185 @@
 package com.sultanagung1.sista.ui.analytics
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.EventAvailable
+import androidx.compose.material.icons.outlined.Grade
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.*
-import com.sultanagung1.sista.ui.analytics.components.RadarChart
+import com.sultanagung1.sista.core.ui.component.EmptyState
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SectionHeader
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatTile
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.data.model.SemesterTrendPoint
+import com.sultanagung1.sista.data.model.StudentAnalyticsData
+import com.sultanagung1.sista.data.model.SubjectAverage
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * The student's own figures for this academic year: average and attendance,
+ * every graded subject against its KKM, and the report cards so far.
+ */
 @Composable
 fun AcademicAnalyticsScreen(
-    viewModel: AnalyticsViewModel,
-    onNavigateBack: () -> Unit
+    viewModel: StudentAnalyticsViewModel,
+    onNavigateBack: () -> Unit,
 ) {
-    val analyticsState by viewModel.studentAnalytics.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    var refreshRequested by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) refreshRequested = false }
 
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Analitik Akademik & Kompetensi",
-                subtitle = "Pemetaan Capaian KKTP Kurikulum Merdeka",
-                onNavigateBack = onNavigateBack
-            )
+    StudentAnalyticsContent(
+        state = state,
+        refreshing = refreshRequested && state.isLoading,
+        onRefresh = {
+            refreshRequested = true
+            viewModel.load()
+        },
+        onRetry = viewModel::load,
+        onNavigateBack = onNavigateBack,
+    )
+}
+
+/** The student analytics screen without a ViewModel, for previews and screenshots. */
+@Composable
+fun StudentAnalyticsContent(
+    state: StudentAnalyticsUiState,
+    refreshing: Boolean,
+    onRefresh: () -> Unit,
+    onRetry: () -> Unit,
+    onNavigateBack: (() -> Unit)?,
+) {
+    val data = state.data
+    AnalyticsScaffold(
+        title = "Analitik belajar",
+        subtitle = data?.className?.takeIf { it.isNotBlank() }?.let { "Kelas $it · tahun ajaran ini" },
+        refreshing = refreshing,
+        onRefresh = onRefresh,
+        onNavigateBack = onNavigateBack,
+        testTag = "student_analytics_root",
+    ) {
+        when {
+            data == null && state.errorMessage != null -> item(key = "error") {
+                ErrorState(title = "Analitik belum bisa dimuat", body = state.errorMessage, onRetry = onRetry)
+            }
+            data == null -> item(key = "loading") { SkeletonList(rows = 4) }
+            else -> {
+                val subjects = subjectsOf(data)
+                state.errorMessage?.let { message ->
+                    item(key = "stale") { InlineBanner(message = "Data belum diperbarui. $message", tone = StatusTone.Warning) }
+                }
+                item(key = "overview") { Overview(data, subjects) }
+                item(key = "subjects_header") { SectionHeader("Per mata pelajaran") }
+                item(key = "subjects") { Subjects(subjects) }
+                item(key = "reports_header") { SectionHeader("Rapor per semester") }
+                item(key = "reports") { ReportCards(data.semesterTrends) }
+            }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            when (val analyticsResult = analyticsState) {
-                is AnalyticsUiState.Loading -> Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = Emerald700) }
+    }
+}
 
-                is AnalyticsUiState.Error -> SulaoneErrorBanner(
-                    message = analyticsResult.message,
-                    onRetry = { viewModel.loadStudentAnalytics() }
-                )
+/** Every graded subject; an older server only sent up to six, as radar axes. */
+internal fun subjectsOf(data: StudentAnalyticsData): List<SubjectAverage> =
+    data.subjects ?: data.competencyRadar.map { SubjectAverage(it.label, it.value.toDouble(), it.targetKktp.toDouble()) }
 
-                is AnalyticsUiState.Success -> {
-                val data = analyticsResult.data
-                // Overall Score Header Card
-                SulaoneGradientCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "RATA-RATA NILAI AKADEMIK",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Gold400
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${data.overallAverage} / 100",
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = data.className.ifBlank { "Rata-rata seluruh mapel" },
-                                fontSize = 11.sp,
-                                color = Emerald100
-                            )
-                        }
+@Composable
+private fun Overview(data: StudentAnalyticsData, subjects: List<SubjectAverage>) {
+    Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        StatTile(
+            label = "Rata-rata nilai",
+            value = decimal(data.overallAverage),
+            supporting = if (subjects.isEmpty()) "belum ada nilai" else "dari ${subjects.size} mapel",
+            icon = Icons.Outlined.Grade,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        )
+        StatTile(
+            label = "Kehadiran",
+            value = data.attendanceRate?.let { "${decimal(it)}%" } ?: "–",
+            supporting = data.attendanceRecorded?.takeIf { it > 0 }?.let { "dari ${thousands(it)} presensi" } ?: "belum ada presensi",
+            icon = Icons.Outlined.EventAvailable,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        )
+    }
+}
 
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(Gold400),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.EmojiEvents,
-                                contentDescription = null,
-                                tint = Slate950,
-                                modifier = Modifier.size(32.dp)
+@Composable
+private fun Subjects(subjects: List<SubjectAverage>) {
+    if (subjects.isEmpty()) {
+        EmptyState(
+            title = "Belum ada nilai tahun ini",
+            body = "Rata-rata per mapel muncul setelah guru mencatat nilai.",
+            icon = Icons.AutoMirrored.Outlined.MenuBook,
+        )
+        return
+    }
+    val below = subjects.count { it.average < it.kkm }
+    SistaCard(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            Text(
+                if (below == 0) "Semua mapel di atas KKM." else "$below dari ${subjects.size} mapel di bawah KKM.",
+                style = SistaTheme.typography.bodyMedium,
+                color = SistaTheme.colors.onSurfaceVariant,
+            )
+            subjects.sortedBy { it.average }.forEach { SubjectBar(it) }
+        }
+    }
+}
+
+@Composable
+private fun ReportCards(trends: List<SemesterTrendPoint>) {
+    if (trends.isEmpty()) {
+        EmptyState(title = "Belum ada rapor", body = "Rapor muncul setelah wali kelas menerbitkannya.")
+        return
+    }
+    SistaCard(modifier = Modifier.fillMaxWidth()) {
+        Column {
+            trends.forEachIndexed { index, trend ->
+                if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                val change = trends.getOrNull(index - 1)?.let { trend.gpaScore - it.gpaScore }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(trend.semesterName, style = SistaTheme.typography.bodyLarge)
+                        trend.rankInClass?.takeIf { it > 0 }?.let {
+                            Text(
+                                trend.totalStudents?.let { total -> "Peringkat $it dari $total" } ?: "Peringkat $it",
+                                style = SistaTheme.typography.bodySmall,
+                                color = SistaTheme.colors.onSurfaceVariant,
                             )
                         }
                     }
-                }
-
-                // 6-Axis Radar Competency Chart
-                SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Spider Radar 6-Sumbu KKTP",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            SulaoneBadge(
-                                text = "KKTP: 75",
-                                containerColor = Gold100,
-                                contentColor = Gold800
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        RadarChart(data = data.competencyRadar)
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Competency legend summary
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
-                        ) {
-                            data.competencyRadar.take(3).forEach { pt ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(pt.label, fontSize = 10.sp, color = Slate600)
-                                    Text("${pt.value.toInt()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Emerald800)
-                                }
-                            }
-                        }
+                    change?.let {
+                        StatusPill(text = signed(it.toDouble()), tone = if (it >= 0) StatusTone.Success else StatusTone.Warning)
                     }
-                }
-
-                // Semester Progress Trend
-                SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Tren Kenaikan Nilai per Semester",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    data.semesterTrends.forEach { trend ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(trend.semesterName, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Peringkat ${trend.rankInClass}/${trend.totalStudents}", fontSize = 10.sp, color = Slate500)
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(Emerald100)
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text("${trend.gpaScore}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Emerald900)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Top 5 Highest Subject Performances
-                SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Mata Pelajaran Tertinggi",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    data.topSubjects.forEach { (sub, sc) ->
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(sub, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                Text("$sc", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Emerald800)
-                            }
-                            Spacer(modifier = Modifier.height(3.dp))
-                            LinearProgressIndicator(
-                                progress = { sc / 100f },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(5.dp)
-                                    .clip(RoundedCornerShape(2.5.dp)),
-                                color = Emerald700
-                            )
-                        }
-                    }
-                }
+                    Text(decimal(trend.gpaScore.toDouble()), style = SistaTheme.typography.titleMedium)
                 }
             }
         }

@@ -6,8 +6,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
-import com.sultanagung1.sista.ui.analytics.AnalyticsViewModel
 import com.sultanagung1.sista.ui.analytics.ChildProgressScreen
+import com.sultanagung1.sista.ui.analytics.ChildProgressViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.parent.*
 
@@ -45,8 +45,11 @@ fun NavGraphBuilder.parentNavGraph(
         )
     }
 
-    guardedComposable(Screen.ChildProgress.route) {
-        val viewModel: AnalyticsViewModel = hiltViewModel()
+    guardedComposable(
+        route = Screen.ChildProgress.route,
+        arguments = listOf(navArgument("studentUuid") { type = NavType.StringType; nullable = true; defaultValue = null })
+    ) {
+        val viewModel: ChildProgressViewModel = hiltViewModel()
         ChildProgressScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
