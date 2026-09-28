@@ -35,6 +35,7 @@ class HiltDependencyInjectionTest {
         com.sultanagung1.sista.ui.scanner.ScannerViewModel::class.java,
         com.sultanagung1.sista.ui.attendance.FaceEnrollmentViewModel::class.java,
         com.sultanagung1.sista.ui.analytics.AnalyticsViewModel::class.java,
+        com.sultanagung1.sista.ui.analytics.ExecutiveAnalyticsViewModel::class.java,
         com.sultanagung1.sista.ui.settings.SettingsViewModel::class.java,
         com.sultanagung1.sista.ui.discipline.DisciplineViewModel::class.java,
         com.sultanagung1.sista.ui.utbk.UtbkViewModel::class.java,

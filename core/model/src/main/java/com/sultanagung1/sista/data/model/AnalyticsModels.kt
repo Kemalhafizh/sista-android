@@ -1,5 +1,7 @@
 package com.sultanagung1.sista.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class RadarAxisPoint(
     val label: String,
     val value: Float, // 0.0 to 100.0
@@ -67,21 +69,50 @@ data class ParentProgressData(
     val attendanceHeatmap: List<DailyAttendanceHeatmapItem> = emptyList()
 )
 
-data class ExecutiveKpiItem(
-    val title: String,
-    val value: String,
-    val changeText: String,
-    val isPositiveTrend: Boolean,
-    val progress: Float,
-    val description: String
+/**
+ * analytics/executive/kpi. Raw figures that the screen formats itself; a
+ * rate is null when there was nothing to divide by, never 0.
+ */
+data class ExecutiveAnalyticsData(
+    val totalActiveStudents: Int = 0,
+    val attendance: ExecutiveAttendance? = null,
+    val spp: ExecutiveSpp? = null,
 )
 
-data class ExecutiveAnalyticsData(
-    val kpiList: List<ExecutiveKpiItem> = emptyList(),
-    val totalActiveStudents: Int = 0,
-    val attendanceTodayPercentage: Float = 0f,
-    val totalSppCollected: String = "",
-    val collectionRatePercentage: Float = 0f
+data class ExecutiveAttendance(
+    val today: AttendanceBreakdown? = null,
+    /** Days with records in the last 14, oldest first; days without records are absent, not 0%. */
+    val days: List<AttendanceDay> = emptyList(),
+)
+
+/** Attendance records by status: H, S, I, A. */
+data class AttendanceBreakdown(
+    val recorded: Int = 0,
+    val present: Int = 0,
+    val sick: Int = 0,
+    val permit: Int = 0,
+    val absent: Int = 0,
+    val rate: Double? = null,
+)
+
+data class AttendanceDay(
+    val date: String = "",
+    val recorded: Int = 0,
+    val present: Int = 0,
+    val rate: Double = 0.0,
+)
+
+/** This month's SPP: how much of the billed amount is settled, and what came in. */
+data class ExecutiveSpp(
+    val month: String = "",
+    val billed: Double = 0.0,
+    val settled: Double = 0.0,
+    @SerializedName("settled_rate") val settledRate: Double? = null,
+    val bills: Int = 0,
+    @SerializedName("bills_paid") val billsPaid: Int = 0,
+    @SerializedName("received_this_month") val receivedThisMonth: Double = 0.0,
+    @SerializedName("received_last_month") val receivedLastMonth: Double = 0.0,
+    @SerializedName("received_change_pct") val receivedChangePct: Double? = null,
 )
 
 // A teacher's real (class, subject) teaching assignment, as returned by

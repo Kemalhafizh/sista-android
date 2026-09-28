@@ -39,9 +39,6 @@ class AnalyticsViewModel @Inject constructor(
     private val _parentProgress = MutableStateFlow<AnalyticsUiState<ParentProgressData>>(AnalyticsUiState.Loading)
     val parentProgress: StateFlow<AnalyticsUiState<ParentProgressData>> = _parentProgress.asStateFlow()
 
-    private val _executiveKpi = MutableStateFlow<AnalyticsUiState<ExecutiveAnalyticsData>>(AnalyticsUiState.Loading)
-    val executiveKpi: StateFlow<AnalyticsUiState<ExecutiveAnalyticsData>> = _executiveKpi.asStateFlow()
-
     init {
         loadAllAnalytics()
     }
@@ -50,7 +47,6 @@ class AnalyticsViewModel @Inject constructor(
         loadStudentAnalytics()
         loadClassAnalytics()
         loadParentProgress()
-        loadExecutiveKpi()
     }
 
     fun loadStudentAnalytics() {
@@ -113,19 +109,6 @@ class AnalyticsViewModel @Inject constructor(
                 when (res) {
                     is NetworkResult.Success -> _parentProgress.value = AnalyticsUiState.Success(res.data)
                     is NetworkResult.Error -> _parentProgress.value = AnalyticsUiState.Error(res.message)
-                    is NetworkResult.Loading -> Unit
-                }
-            }
-        }
-    }
-
-    fun loadExecutiveKpi() {
-        viewModelScope.launch {
-            _executiveKpi.value = AnalyticsUiState.Loading
-            analyticsRepository.getExecutiveKpi().collect { res ->
-                when (res) {
-                    is NetworkResult.Success -> _executiveKpi.value = AnalyticsUiState.Success(res.data)
-                    is NetworkResult.Error -> _executiveKpi.value = AnalyticsUiState.Error(res.message)
                     is NetworkResult.Loading -> Unit
                 }
             }

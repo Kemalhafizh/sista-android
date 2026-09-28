@@ -12,8 +12,8 @@ import com.sultanagung1.sista.ui.admin.sessions.AdminAttendanceOverrideScreen
 import com.sultanagung1.sista.ui.admin.sessions.AdminAttendanceOverrideViewModel
 import com.sultanagung1.sista.ui.admin.sessions.AdminSessionManagementScreen
 import com.sultanagung1.sista.ui.admin.sessions.AdminSessionManagementViewModel
-import com.sultanagung1.sista.ui.analytics.AnalyticsViewModel
 import com.sultanagung1.sista.ui.analytics.ExecutiveAnalyticsScreen
+import com.sultanagung1.sista.ui.analytics.ExecutiveAnalyticsViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.navigation.UserRoles
 
@@ -34,13 +34,10 @@ fun NavGraphBuilder.adminNavGraph(
     }
 
     guardedComposable(Screen.ExecutiveAnalytics.route) {
-        val viewModel: AnalyticsViewModel = hiltViewModel()
+        val viewModel: ExecutiveAnalyticsViewModel = hiltViewModel()
         ExecutiveAnalyticsScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() },
-            // No backend endpoint generates an executive-summary PDF yet — PdfViewerScreen
-            // shows an honest "not available" state rather than a fabricated document.
-            onNavigateToPdf = { navController.navigate(Screen.PdfViewer.createRoute("", "Ringkasan Eksekutif", 0L)) }
         )
     }
 

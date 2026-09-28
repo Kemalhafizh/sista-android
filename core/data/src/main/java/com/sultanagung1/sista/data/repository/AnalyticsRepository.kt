@@ -85,7 +85,9 @@ class AnalyticsRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Error("KPI eksekutif belum tersedia dari server (Kode: ${response.code()}).", response.code()))
+                val message = serverMessageOf(response.errorBody()?.string())
+                    ?: if (response.code() == 403) "Akun ini tidak memiliki akses ke analitik eksekutif." else "Analitik eksekutif belum bisa dimuat (kode ${response.code()})."
+                emit(NetworkResult.Error(message, response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))

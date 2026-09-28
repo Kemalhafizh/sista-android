@@ -40,7 +40,7 @@ Pemeriksaan ulang dokumen ini terhadap kode yang ada di repo. Yang diperiksa oto
 - **FASE 25.2 (buat ujian guru):** layarnya palsu. Sudah ditulis ulang; lihat catatan di FASE 25.2 dan 76.2.
 - **FASE 26.1–26.3 (Role Switcher 4 persona):** bukan ganti peran sungguhan, dan sudah **dihapus** (27 September 2026). Menu "Ganti Peran Dashboard (Multi-Role)" di Profil memanggil `saveAuthSession` dengan token karangan (`token_teacher`, `token_parent`, `token_admin`, `token_student`) plus nama, email, dan NIP/NISN contoh. Backend (Sanctum) menolak token itu, jadi semua layar sesudahnya error atau kosong atas nama orang lain, dan sesi asli pengguna tertimpa sehingga harus login ulang. `MobileAuthController` di backend hanya punya login, biometrik, dan manajemen perangkat — tidak ada endpoint ganti peran — jadi tidak ada cara jujur untuk mempertahankannya. Yang dihapus: `RoleSwitcherBottomSheet.kt`, menu di `ProfileScreen`, handler `onRoleSwitch` di `SettingsNavGraph`, dan `SessionManager.updateUserRole()` (tidak dipakai, dan bisa dipakai untuk menulis peran yang tidak berasal dari server). Pil "• Ganti Peran" di header dashboard (26.3) memang tidak pernah ada di kode. Sekarang `saveAuthSession` hanya dipanggil dari login dan verifikasi biometrik di `Repositories.kt`, dan dijaga oleh `ProfessionalUiUxOverhaulTest.testAuthSessionIsOnlyWrittenFromServerResponses`. Untuk pindah peran, logout lalu login dengan akun peran tersebut.
 - **FASE 26.8 (token di `CbtExamListScreen` versi guru):** tidak pernah dibangun. Yang ada adalah `TeacherProctorExamsScreen` + ruang pengawas dengan token dari server.
-- **FASE 44 (grafik):** `AnimatedLineChart`, `AnimatedDonutChart`, `StreakHeatmap`, dan `SparklineChart` tidak ada. Komponen grafik yang ada: `RadarChart`, `HeatmapCalendar`, `AnimatedKpiCard`.
+- **FASE 44 (grafik):** `AnimatedLineChart`, `AnimatedDonutChart`, `StreakHeatmap`, dan `SparklineChart` tidak ada. Komponen grafik yang ada: `RadarChart` dan `HeatmapCalendar` (`AnimatedKpiCard` dihapus saat layar analitik eksekutif dibangun ulang dengan `:core:ui`).
 - **Presensi GPS (FASE 25.3):** koordinat di dokumen tidak pernah dipakai. Sekarang satu sumber di server; lihat catatan di 25.3.
 
 **Label status yang tertinggal dari kode**
@@ -366,7 +366,7 @@ Aplikasi dibangun murni menggunakan pendekatan **Android Native Modern** tanpa W
 - [x] **15.3 Parent Child Progress:**
   - [`ChildProgressScreen.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/academic/src/main/java/com/sultanagung1/sista/ui/analytics/ChildProgressScreen.kt) & [`HeatmapCalendar.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/academic/src/main/java/com/sultanagung1/sista/ui/analytics/components/HeatmapCalendar.kt) — Heatmap presensi, pelacak tahfidz.
 - [x] **15.4 Admin KPI Visualization:**
-  - [`ExecutiveAnalyticsScreen.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/academic/src/main/java/com/sultanagung1/sista/ui/analytics/ExecutiveAnalyticsScreen.kt) & [`AnimatedKpiCard.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/academic/src/main/java/com/sultanagung1/sista/ui/analytics/components/AnimatedKpiCard.kt).
+  - [`ExecutiveAnalyticsScreen.kt`](file:///c:/project/portofolio/project-super-web/sista-android/feature/academic/src/main/java/com/sultanagung1/sista/ui/analytics/ExecutiveAnalyticsScreen.kt) (dibangun ulang dengan `:core:ui`; `AnimatedKpiCard` dihapus).
 
 ### 🛒 FASE 16: Super App Module System & SSO Bridge (Sprint 16) — [SELESAI 100%]
 - [x] **16.1 Feature Flag System:**
@@ -2113,7 +2113,7 @@ Modern notification center with priority inbox, smart grouping, actionable notif
 
 ### 🌟 FASE 44: Advanced Data Visualization Mobile — ⚠️ [TIDAK SESUAI KODE — dicek 2026-09-27]
 
-> **Koreksi:** keempat composable di bawah (`AnimatedLineChart`, `AnimatedDonutChart`, `StreakHeatmap`, `SparklineChart`) tidak ada di repo mana pun. Grafik yang benar-benar ada: `RadarChart`, `HeatmapCalendar`, `AnimatedKpiCard` (`feature/academic/.../ui/analytics/components/`).
+> **Koreksi:** keempat composable di bawah (`AnimatedLineChart`, `AnimatedDonutChart`, `StreakHeatmap`, `SparklineChart`) tidak ada di repo mana pun. Grafik yang benar-benar ada: `RadarChart` dan `HeatmapCalendar` (`feature/academic/.../ui/analytics/components/`).
 
 Modern charts using Compose Canvas.
 
