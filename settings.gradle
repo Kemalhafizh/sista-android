@@ -26,6 +26,7 @@ include ':core:common'
 include ':core:database'
 include ':core:network'
 include ':core:designsystem'
+include ':core:ui'
 include ':core:data'
 
 include ':feature:auth'

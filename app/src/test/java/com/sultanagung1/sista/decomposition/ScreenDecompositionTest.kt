@@ -144,7 +144,9 @@ class ScreenDecompositionTest {
         assertTrue("Should have at least 50 kt files across modules (found ${ktFiles.size})", ktFiles.size >= 50)
 
         for (file in ktFiles) {
-            // SulaoneTopBar.kt itself defines TopBar, but screens should not call raw TopAppBar(
+            // The design-system wrappers (SulaoneTopBar, and SistaTopBar in :core:ui) are
+            // the only places allowed to build the bar; screens should not call raw TopAppBar(
+            if (file.path.replace('\\', '/').endsWith("/core/ui/component/TopBar.kt")) continue
             val lines = file.readLines()
             for ((idx, line) in lines.withIndex()) {
                 val trimmed = line.trim()
