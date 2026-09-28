@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
@@ -50,6 +51,7 @@ fun SistaTextField(
     enabled: Boolean = true,
     singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
     var visible by rememberSaveable { mutableStateOf(false) }
     val isError = errorText != null
@@ -80,6 +82,7 @@ fun SistaTextField(
         keyboardOptions = if (isPassword && keyboardOptions == KeyboardOptions.Default) {
             KeyboardOptions(keyboardType = KeyboardType.Password)
         } else keyboardOptions,
+        keyboardActions = keyboardActions,
         shape = SistaTheme.shapes.medium,
         textStyle = SistaTheme.typography.bodyLarge,
     )

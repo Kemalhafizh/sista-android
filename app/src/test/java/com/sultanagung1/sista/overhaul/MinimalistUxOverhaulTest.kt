@@ -57,41 +57,17 @@ class MinimalistUxOverhaulTest {
     }
 
     @Test
-    fun testHomeServicesBottomSheetExists() {
-        val sheetFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeServicesBottomSheet.kt")
-        assertTrue("HomeServicesBottomSheet.kt must exist", sheetFile.exists())
+    fun testHomeShortcutsFollowTheAccountsFeatures() {
+        val quick = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickAccess.kt").readText()
+        assertTrue("Shortcuts are a short list", quick.contains("QUICK_ACCESS_LIMIT = 6"))
+        assertTrue("Everything else lives in Layanan", quick.contains("\"Semua layanan\""))
 
-        val content = sheetFile.readText()
-        assertTrue(content.contains("fun HomeServicesBottomSheet"))
-        assertTrue("Must have Akademik category", content.contains("Akademik & Ujian"))
-        assertTrue("Must have Keuangan category", content.contains("Keuangan & Presensi"))
-        assertTrue("Must have Kesiswaan category", content.contains("Kesiswaan & Pembinaan"))
-        assertTrue("Must have Bimbingan category", content.contains("Bimbingan & Layanan"))
-    }
-
-    @Test
-    fun testHomeMinimalQuickActionsDefined() {
-        val quickActionsFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickActions.kt")
-        assertTrue(quickActionsFile.exists())
-
-        val content = quickActionsFile.readText()
-        assertTrue("Must define HomeMinimalQuickActions", content.contains("fun HomeMinimalQuickActions"))
-        assertTrue(content.contains("\"Presensi\""))
-        assertTrue(content.contains("\"Jadwal\""))
-        assertTrue(content.contains("\"Ujian CBT\""))
-        assertTrue(content.contains("\"SPP\""))
-        assertTrue(content.contains("\"Semua\""))
-    }
-
-    @Test
-    fun testHomeScreenHasAppletSheetTrigger() {
-        val homeFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
-        assertTrue(homeFile.exists())
-
-        val content = homeFile.readText()
-        assertTrue("Must trigger HomeServicesBottomSheet", content.contains("HomeServicesBottomSheet"))
-        assertTrue("Must use HomeMinimalQuickActions", content.contains("HomeMinimalQuickActions"))
-        assertFalse("Must not include HomeModuleCarousel in main feed", content.contains("HomeModuleCarousel("))
+        val home = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt").readText()
+        // Only shortcuts this account may open, from the server's capability list.
+        assertTrue(home.contains("STUDENT_QUICK_ITEMS.filter { capabilities.canOpen(it.route) }"))
+        assertTrue(home.contains("Screen.ServicesHub.route"))
+        // The old all-services sheet (every tile for every account) is gone.
+        assertFalse(home.contains("HomeServicesBottomSheet"))
     }
 
     @Test

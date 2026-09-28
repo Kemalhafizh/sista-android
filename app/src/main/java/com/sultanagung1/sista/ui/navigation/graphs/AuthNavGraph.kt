@@ -36,22 +36,8 @@ fun NavGraphBuilder.authNavGraph(
             val viewModel: HomeViewModel = hiltViewModel()
             HomeScreen(
                 viewModel = viewModel,
-                onNavigateToGeofence = { navController.navigate(Screen.GeofenceAttendance.route) },
-                onNavigateToDynamicQr = { navController.navigate(Screen.DynamicQr.route) },
-                onNavigateToCbt = { navController.navigate(Screen.CbtList.route) },
-                onNavigateToAiTutor = { navController.navigate(Screen.AiTutor.route) },
-                onNavigateToMutabaah = { navController.navigate(Screen.Mutabaah.route) },
-                onNavigateToBilling = { navController.navigate(Screen.Billing.route) },
-                onNavigateToSchedule = { navController.navigate(Screen.Schedule.route) },
-                onNavigateToGrades = { navController.navigate(Screen.Grades.route) },
-                onNavigateToSos = { navController.navigate(Screen.AntiBullyingSos.route) },
-                onNavigateToCatalog = { navController.navigate(Screen.EnterpriseCatalog.route) },
-                onNavigateToChat = { navController.navigate(Screen.ConversationList.route) },
-                onNavigateToAnnouncements = { navController.navigate(Screen.NotificationCenter.route) },
-                onNavigateRoute = { route -> navController.navigate(route) },
-                syncManager = syncManager,
-                onNavigateToGamification = { navController.navigate(Screen.GamificationDashboard.route) },
-                onNavigateToClassSessionScan = { navController.navigate(Screen.StudentSessionQrScan.route) { launchSingleTop = true } }
+                onNavigateRoute = { route -> navController.navigate(route) { launchSingleTop = true } },
+                syncManager = syncManager
             )
         }
     }

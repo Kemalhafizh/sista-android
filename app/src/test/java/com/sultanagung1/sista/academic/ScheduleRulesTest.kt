@@ -48,6 +48,23 @@ class ScheduleRulesTest {
     }
 
     @Test
+    fun `today's focus is the lesson going on, else the next one`() {
+        val day = listOf(
+            lesson(1, "Senin", "07:00", "08:30"),
+            lesson(2, "Senin", "08:30", "10:00"),
+            lesson(3, "Senin", "10:15", "11:45"),
+        )
+        // 09:00: lesson 2 is on.
+        assertEquals(2L to ScheduleRules.LessonStatus.ONGOING, ScheduleRules.focusOf(day, true, 9 * 60)?.let { it.first.id to it.second })
+        // 10:05, in the break: lesson 3 is next.
+        assertEquals(3L to ScheduleRules.LessonStatus.UPCOMING, ScheduleRules.focusOf(day, true, 10 * 60 + 5)?.let { it.first.id to it.second })
+        // After school, and on other days: nothing to point at.
+        assertEquals(null, ScheduleRules.focusOf(day, true, 13 * 60))
+        assertEquals(null, ScheduleRules.focusOf(day, false, 9 * 60))
+        assertEquals("Sen", ScheduleRules.shortDay("Senin"))
+    }
+
+    @Test
     fun `default day is today on school days and Monday otherwise`() {
         assertEquals("Rabu", ScheduleRules.defaultDay(Calendar.WEDNESDAY))
         assertEquals("Jumat", ScheduleRules.defaultDay(Calendar.FRIDAY))

@@ -38,8 +38,7 @@ class AttendanceGpsFlowE2ETest : AppiumTestBase() {
 
     @Test
     fun studentCanCompleteGpsCheckInInsideCampusRadius() {
-        // Step 1: role select -> login -> land on HomeScreen.
-        driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"role_tab_student\")")).click()
+        // Step 1: login (one form for every role) -> land on HomeScreen.
         driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"login_identifier_input\")"))
             .sendKeys(STUDENT_ID)
         driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"login_password_input\")"))
@@ -53,7 +52,7 @@ class AttendanceGpsFlowE2ETest : AppiumTestBase() {
 
         // Step 2: open the GPS attendance screen. The "Presensi GPS" entry
         // may live directly on Home or behind the "see all services" sheet
-        // (HomeServicesBottomSheet.kt) depending on how many quick actions
+        // (Layanan tab) depending on how many quick actions
         // are pinned for this role — scrollIntoView handles both: it is a
         // no-op if the element is already on screen.
         driver.findElement(

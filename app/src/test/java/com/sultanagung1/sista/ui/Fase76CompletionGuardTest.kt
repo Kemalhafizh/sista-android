@@ -32,10 +32,9 @@ class Fase76CompletionGuardTest {
     private val authGraph = "app/src/main/java/com/sultanagung1/sista/ui/navigation/graphs/AuthNavGraph.kt"
     private val session = "core/common/src/main/java/com/sultanagung1/sista/core/storage/SessionManager.kt"
     private val examRoom = "feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtExamRoomScreen.kt"
-    private val quickActions = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickActions.kt"
-    private val servicesSheet = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeServicesBottomSheet.kt"
+    private val quickActions = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickAccess.kt"
     private val homeScreen = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt"
-    private val schedulePreview = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeSchedulePreview.kt"
+    private val schedulePreview = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeTodayCard.kt"
     private val database = "core/database/src/main/java/com/sultanagung1/sista/data/local/SistaDatabase.kt"
     private val usageDao = "core/database/src/main/java/com/sultanagung1/sista/data/local/dao/FeatureUsageDao.kt"
     private val tieredLoading = "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SulaoneTieredLoading.kt"
@@ -97,12 +96,11 @@ class Fase76CompletionGuardTest {
 
     @Test
     fun personalizationIsLabelledHonestly() {
-        val all = listOf(quickActions, servicesSheet, homeScreen).joinToString("\n") { code(it) }
+        val all = listOf(quickActions, homeScreen).joinToString("\n") { code(it) }
         assertTrue(all.contains("Sering Dipakai"))
         assertFalse("A tap counter is not AI", Regex("(?i)(rekomendasi|direkomendasikan)\\s+ai|ai personali").containsMatchIn(all))
         assertTrue(code(quickActions).contains("UsageRanking.rank("))
-        assertTrue(code(servicesSheet).contains("UsageRanking.frequent("))
-        assertTrue("User can reset", code(servicesSheet).contains("Atur ulang"))
+        assertTrue("User can reset", code(quickActions).contains("Atur ulang"))
         assertTrue(code(homeScreen).contains("viewModel::recordFeatureUse"))
     }
 
@@ -132,12 +130,12 @@ class Fase76CompletionGuardTest {
         val c = code(schedulePreview)
         val loading = c.indexOf("todaySchedules.isEmpty() && isLoading")
         val error = c.indexOf("todaySchedules.isEmpty() && loadError != null")
-        val empty = c.indexOf("title = \"Tidak Ada Jadwal Hari Ini\"")
+        val empty = c.indexOf("title = \"Tidak ada pelajaran hari ini\"")
         assertTrue(loading in 0 until empty)
         assertTrue(error in 0 until empty)
         val home = code(homeScreen)
         assertFalse("No fixed-duration fake refresh", home.contains("delay(750)"))
-        assertTrue(home.contains("isRefreshing = refreshRequested && uiState.isLoading"))
+        assertTrue(home.contains("refreshing = refreshRequested && uiState.isLoading"))
     }
 
     // ── 76.6 AMOLED ──────────────────────────────────────────────────────

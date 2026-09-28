@@ -116,13 +116,7 @@ class AdaptiveRefreshRateTest {
         val parentFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/parent/ParentDashboardScreen.kt")
         assertTrue(parentFile.exists())
 
-        val loginFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/auth/LoginScreen.kt")
-        assertTrue(loginFile.exists())
-        val loginContent = loginFile.readText()
-        assertTrue(
-            "Login screen aura must use graphicsLayer",
-            loginContent.contains("graphicsLayer")
-        )
+        // The rebuilt login screen has no looping animation left to keep off the main thread.
     }
 
     @Test
@@ -140,7 +134,7 @@ class AdaptiveRefreshRateTest {
 
         val homeFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
         val homeContent = homeFile.readText()
-        assertTrue(homeContent.contains("key = \"prayer_widget\""))
+        assertTrue(homeContent.contains("key = \"today\""))
         assertTrue(homeContent.contains("key = \"quick_actions\""))
     }
 

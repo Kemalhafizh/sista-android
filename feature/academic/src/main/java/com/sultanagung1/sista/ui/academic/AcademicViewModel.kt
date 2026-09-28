@@ -43,7 +43,10 @@ data class AcademicUiState(
     val scheduleErrorMessage: String? = null,
     val allSchedules: List<ScheduleItem> = emptyList(),
     val grades: List<GradeEntry> = emptyList(),
-    val errorMessage: String? = null
+    /** True until `student/grades` has answered (cache first, then network). */
+    val isGradesLoading: Boolean = false,
+    /** Why the grades could not be loaded (kept apart from schedule errors). */
+    val gradesErrorMessage: String? = null
 ) : UiState
 
 
@@ -104,14 +107,25 @@ class AcademicViewModel @Inject constructor(private val studentRepository: Stude
         }
     }
 
+    private var gradesJob: Job? = null
+
     fun loadGrades() {
-        viewModelScope.launch {
-            studentRepository.getGrades().collect { result ->
-                when (result) {
-                    is NetworkResult.Success -> _uiState.value = _uiState.value.copy(grades = result.data)
-                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(errorMessage = result.message)
-                    is NetworkResult.Loading -> Unit
+        gradesJob?.cancel()
+        gradesJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isGradesLoading = true)
+            try {
+                studentRepository.getGrades().collect { result ->
+                    when (result) {
+                        is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
+                            grades = result.data,
+                            gradesErrorMessage = null
+                        )
+                        is NetworkResult.Error -> _uiState.value = _uiState.value.copy(gradesErrorMessage = result.message)
+                        is NetworkResult.Loading -> Unit
+                    }
                 }
+            } finally {
+                _uiState.value = _uiState.value.copy(isGradesLoading = false)
             }
         }
     }

@@ -76,6 +76,22 @@ object ScheduleRules {
         }
     }
 
+    /**
+     * The lesson to put first on today's timetable: the one going on now,
+     * otherwise the next one still to come. Null on other days, or when
+     * today's lessons are over.
+     */
+    fun focusOf(lessons: List<ScheduleItem>, isToday: Boolean, nowMinutes: Int): Pair<ScheduleItem, LessonStatus>? {
+        if (!isToday) return null
+        lessons.firstOrNull { statusOf(it, true, nowMinutes) == LessonStatus.ONGOING }
+            ?.let { return it to LessonStatus.ONGOING }
+        return lessons.firstOrNull { statusOf(it, true, nowMinutes) == LessonStatus.UPCOMING }
+            ?.let { it to LessonStatus.UPCOMING }
+    }
+
+    /** "Senin" → "Sen": short labels for the day chips. */
+    fun shortDay(day: String): String = day.trim().take(3)
+
     /** Where the lesson happens: the room when known, else the class. */
     fun locationOf(item: ScheduleItem): String =
         item.roomName?.takeIf { it.isNotBlank() && it != "N/A" }

@@ -42,6 +42,6 @@ class HonestPullToRefreshGuardTest {
     fun `schedule refresh actually reloads from the server`() {
         val screen = File(projectRoot(), "feature/academic/src/main/java/com/sultanagung1/sista/ui/academic/ScheduleScreen.kt").readText()
         assertTrue(screen.contains("viewModel.loadSchedule()"))
-        assertTrue(screen.contains("isRefreshing = refreshRequested && uiState.isScheduleRefreshing"))
+        assertTrue(screen.contains("refreshing = refreshRequested && uiState.isScheduleRefreshing"))
     }
 }

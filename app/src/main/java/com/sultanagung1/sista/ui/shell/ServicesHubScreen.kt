@@ -31,6 +31,7 @@ import com.sultanagung1.sista.core.ui.component.SectionHeader
 import com.sultanagung1.sista.core.ui.component.SistaTextField
 import com.sultanagung1.sista.core.ui.component.SistaTopBar
 import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
 import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone

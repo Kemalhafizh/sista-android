@@ -1,9 +1,8 @@
-package com.sultanagung1.sista.ui.shell
+package com.sultanagung1.sista.core.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.luminance
-import com.sultanagung1.sista.core.ui.theme.SistaTheme
 
 /**
  * Design system v2 inside the current app theme: follows the light/dark
