@@ -74,7 +74,9 @@ data class JournalScheduleItem(
     val notes: String? = null,
     val followUp: String? = null,
     /** A real journal entry can no longer be edited — the backend exposes no update endpoint. */
-    val isEditable: Boolean = true
+    val isEditable: Boolean = true,
+    /** `teaching_journals.status` (draft, submitted, reviewed) once a journal exists. */
+    val status: String? = null
 )
 
 data class JournalSummaryCompliance(

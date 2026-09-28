@@ -52,6 +52,7 @@ fun SistaTextField(
     singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    minLines: Int = 1,
 ) {
     var visible by rememberSaveable { mutableStateOf(false) }
     val isError = errorText != null
@@ -78,6 +79,7 @@ fun SistaTextField(
         supportingText = (errorText ?: helperText)?.let { { Text(it) } },
         isError = isError,
         singleLine = singleLine,
+        minLines = if (singleLine) 1 else minLines,
         visualTransformation = if (isPassword && !visible) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = if (isPassword && keyboardOptions == KeyboardOptions.Default) {
             KeyboardOptions(keyboardType = KeyboardType.Password)

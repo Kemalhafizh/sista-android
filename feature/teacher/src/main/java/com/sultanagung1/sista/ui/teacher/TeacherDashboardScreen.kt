@@ -317,7 +317,7 @@ private fun RecentJournals(journals: List<TeachingJournalEntry>, onOpen: () -> U
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            listOfNotNull(shortDate(journal.teachingDate), journal.topic?.takeIf { it.isNotBlank() }).joinToString(" · "),
+                            listOfNotNull(journal.teachingDate?.let(::journalDate), journal.topic?.takeIf { it.isNotBlank() }).joinToString(" · "),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                             maxLines = 1,
@@ -330,30 +330,11 @@ private fun RecentJournals(journals: List<TeachingJournalEntry>, onOpen: () -> U
                         )
                     }
                     Spacer(Modifier.width(Spacing.sm))
-                    journalStatus(journal.status)?.let { (label, tone) -> StatusPill(label, tone) }
+                    journalReviewStatus(journal.status).let { (label, tone) -> StatusPill(label, tone) }
                 }
             }
         }
     }
-}
-
-private fun journalStatus(status: String?): Pair<String, StatusTone>? = when (status?.lowercase()) {
-    "draft" -> "Draf" to StatusTone.Warning
-    "submitted" -> "Terkirim" to StatusTone.Info
-    "approved", "verified" -> "Disetujui" to StatusTone.Success
-    "rejected" -> "Ditolak" to StatusTone.Danger
-    null, "" -> null
-    else -> status.replaceFirstChar { it.uppercase() } to StatusTone.Neutral
-}
-
-private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
-
-/** "2026-09-25" → "25 Sep"; anything else is shown as it came. */
-private fun shortDate(iso: String?): String? {
-    val parts = iso?.take(10)?.split("-") ?: return null
-    val month = parts.getOrNull(1)?.toIntOrNull()?.let { MONTHS.getOrNull(it - 1) }
-    val day = parts.getOrNull(2)?.toIntOrNull()
-    return if (month != null && day != null) "$day $month" else iso
 }
 
 private fun clock(time: String?): String =

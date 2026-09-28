@@ -189,7 +189,7 @@ fun NavGraphBuilder.teacherNavGraph(
         route = Screen.JournalForm.route,
         arguments = listOf(navArgument("scheduleId") { type = NavType.StringType })
     ) { backStackEntry ->
-        val scheduleId = backStackEntry.arguments?.getString("scheduleId") ?: "sch-1"
+        val scheduleId = backStackEntry.arguments?.getString("scheduleId").orEmpty()
         val viewModel: JournalMobileViewModel = hiltViewModel()
         JournalFormScreen(
             scheduleId = scheduleId,
