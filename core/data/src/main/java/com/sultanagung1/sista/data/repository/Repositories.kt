@@ -954,10 +954,10 @@ class ParentRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getChildFeed(): Flow<NetworkResult<List<ChildActivityEvent>>> = flow {
+    fun getChildFeed(childUuid: String): Flow<NetworkResult<List<ChildActivityEvent>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentExperienceApi.getChildFeed()
+            val response = apiClient.parentExperienceApi.getChildFeed(childUuid)
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(response.body()?.data.orEmpty()))
             } else {
@@ -968,10 +968,10 @@ class ParentRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getWeeklyDigest(): Flow<NetworkResult<WeeklyDigest?>> = flow {
+    fun getWeeklyDigest(childUuid: String): Flow<NetworkResult<WeeklyDigest?>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentExperienceApi.getWeeklyDigest()
+            val response = apiClient.parentExperienceApi.getWeeklyDigest(childUuid)
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(response.body()?.data))
             } else {
@@ -982,10 +982,10 @@ class ParentRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getChildComparison(): Flow<NetworkResult<List<ChildVsClassComparison>>> = flow {
+    fun getChildComparison(childUuid: String): Flow<NetworkResult<List<ChildVsClassComparison>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentExperienceApi.getChildComparison()
+            val response = apiClient.parentExperienceApi.getChildComparison(childUuid)
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(response.body()?.data.orEmpty()))
             } else {

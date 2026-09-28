@@ -28,7 +28,7 @@ fun NavGraphBuilder.parentNavGraph(
             },
             onNavigateToBilling = { navController.navigate(Screen.Billing.route) },
             onNavigateRoute = { route -> navController.navigate(route) },
-            onNavigateToActivityFeed = { navController.navigate(Screen.ChildActivityFeed.route) }
+            onNavigateToActivityFeed = { uuid -> navController.navigate(Screen.ChildActivityFeed.createRoute(uuid)) }
         )
     }
 
@@ -36,7 +36,7 @@ fun NavGraphBuilder.parentNavGraph(
         route = Screen.ChildDetail.route,
         arguments = listOf(navArgument("studentId") { type = NavType.StringType })
     ) { backStackEntry ->
-        val studentId = backStackEntry.arguments?.getString("studentId") ?: "c1"
+        val studentId = backStackEntry.arguments?.getString("studentId").orEmpty()
         val viewModel: ParentViewModel = hiltViewModel()
         ChildDetailScreen(
             studentId = studentId,
@@ -53,9 +53,13 @@ fun NavGraphBuilder.parentNavGraph(
         )
     }
 
-    guardedComposable(Screen.ChildActivityFeed.route) {
+    guardedComposable(
+        route = Screen.ChildActivityFeed.route,
+        arguments = listOf(navArgument("studentUuid") { type = NavType.StringType; nullable = true; defaultValue = null })
+    ) { backStackEntry ->
         val viewModel: ParentViewModel = hiltViewModel()
         ChildActivityFeedScreen(
+            studentUuid = backStackEntry.arguments?.getString("studentUuid"),
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )

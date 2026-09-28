@@ -203,7 +203,12 @@ sealed class Screen(val route: String, val title: String = "") {
     object Leaderboard : Screen("leaderboard", "Papan Peringkat Siswa")
     object BadgeCollection : Screen("badge_collection", "Koleksi Lencana & Prestasi")
     object NotificationSettings : Screen("notification_settings", "Preferensi & Saluran Notifikasi")
-    object ChildActivityFeed : Screen("child_activity_feed", "Aktivitas Harian Siswa")
+    // The child is optional so a menu can open the feed; the dashboard passes
+    // the chosen child so a parent of two sees the right one.
+    object ChildActivityFeed : Screen("child_activity_feed?studentUuid={studentUuid}", "Aktivitas Harian Siswa") {
+        fun createRoute(studentUuid: String? = null) =
+            if (!studentUuid.isNullOrBlank()) "child_activity_feed?studentUuid=$studentUuid" else "child_activity_feed"
+    }
 
     // Fase 64: Production Observability & Crash Analytics
     object DiagnosticReport : Screen("diagnostic_report", "Pusat Diagnostik & Laporan Kendala")

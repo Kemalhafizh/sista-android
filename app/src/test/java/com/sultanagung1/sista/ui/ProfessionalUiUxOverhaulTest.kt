@@ -82,19 +82,19 @@ class ProfessionalUiUxOverhaulTest {
     }
 
     @Test
-    fun testParentDashboardFollowsExecutiveStandards() {
+    fun testParentHomeSharesTheUniformHomeLayout() {
         val content = read(parentDashboard)
-        assertTrue("Must use SulaoneExecutiveHeader", content.contains("SulaoneExecutiveHeader("))
-        assertTrue("Must use SulaoneMetricCard", content.contains("SulaoneMetricCard("))
-        assertTrue("Must have ParentChildPersonaCard", content.contains("ParentChildPersonaCard("))
-        // FASE 71.3: the real WebSocket-driven gate banner replaced "Presensi Gerbang".
-        assertTrue("Must render the real live gate status banner", content.contains("LiveGateStatusBanner("))
+        assertTrue("Must use the shared GreetingHeader", content.contains("GreetingHeader("))
+        assertTrue("Must show real stats as StatTiles", content.contains("StatTile("))
+        assertTrue("Shortcuts must be capability-filtered", content.contains("capabilities.canOpen(it.route)"))
         // No phone-number field exists for teachers, so there must be no WhatsApp deep link;
-        // the in-app "Pesan Sekolah" chat is the real channel.
+        // the in-app chat is the real channel.
         assertFalse("Must not deep-link to WhatsApp", listOf("wa.me", "api.whatsapp.com", "whatsapp://").any { content.contains(it) })
-        assertTrue("Must offer in-app Pesan Sekolah chat", content.contains("Pesan Sekolah"))
-        assertTrue("Must support Rapor Digital button", content.contains("Rapor Digital"))
-        assertTrue("Must have 48dp touch targets", content.contains("sulaoneInteractiveTouchTarget(48.dp)"))
+        assertTrue("Must offer the in-app teacher chat", content.contains("Screen.ConversationList.route"))
+        for (bogus in listOf("\"scanner\"", "\"notifications\"", "\"profile\"")) {
+            assertFalse("Must not navigate to non-route $bogus", content.contains("onNavigateRoute($bogus)"))
+        }
+        assertTrue("Bell must open the real notification center", content.contains("Screen.NotificationCenter.route"))
     }
 
     @Test
@@ -114,7 +114,7 @@ class ProfessionalUiUxOverhaulTest {
 
     @Test
     fun testStaffDashboardsUseBentoHeroAndScrollAwareGlassBar() {
-        for (path in listOf(parentDashboard, adminDashboard)) {
+        for (path in listOf(adminDashboard)) {
             val content = read(path)
             assertTrue("$path must use an asymmetric BentoHeroSplit", content.contains("BentoHeroSplit("))
             assertTrue("$path must use exactly one emphasized hero tile", content.split("SulaoneBentoHeroTile(").size - 1 == 1)
@@ -136,8 +136,8 @@ class ProfessionalUiUxOverhaulTest {
     fun testParentDashboardDoesNotReportUnknownBillingAsPaid() {
         // Missing statistics used to fall through `?: 0` to "LUNAS — Aman".
         val content = read(parentDashboard)
-        assertTrue("SPP card must say there is no data instead of LUNAS", content.contains("unpaid == null -> \"-\""))
-        assertTrue("Unknown billing state must be described as no data", content.contains("Belum ada data"))
+        assertTrue("Unknown billing must show a dash, not Lunas", content.contains("unpaid == null -> \"–\""))
+        assertTrue("Unknown billing state must be described as no data", content.contains("belum ada data"))
     }
 
     @Test

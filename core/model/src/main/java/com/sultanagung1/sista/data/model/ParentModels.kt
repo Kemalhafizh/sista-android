@@ -32,10 +32,13 @@ data class ChildSummaryStudent(
     @SerializedName("homeroom_teacher") val homeroomTeacher: String? = null
 )
 
-/** GET parent/child/{uuid}/summary — nested `statistics` object, all real computed KPIs. */
+/**
+ * GET parent/child/{uuid}/summary — nested `statistics`, this academic year.
+ * Average and attendance are null when nothing has been recorded yet.
+ */
 data class ChildSummaryStatistics(
-    @SerializedName("average_grade") val averageGrade: Double,
-    @SerializedName("attendance_rate") val attendanceRate: Double,
+    @SerializedName("average_grade") val averageGrade: Double? = null,
+    @SerializedName("attendance_rate") val attendanceRate: Double? = null,
     @SerializedName("unpaid_billings_count") val unpaidBillingsCount: Int,
     @SerializedName("total_bk_points") val totalBkPoints: Int
 )
