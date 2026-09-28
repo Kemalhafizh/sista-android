@@ -11,81 +11,48 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import retrofit2.Response
 
 /**
  * analytics/student/summary, analytics/teacher/{my-classes,class-performance},
  * analytics/parent/child-progress and analytics/executive/kpi are backed by
  * App\Services\Analytics\MobileAnalyticsService, which queries real
  * Grade/Attendance/ReportCard/TahfidzTarget/Billing/Payment rows — no
- * fabricated data. A non-2xx or empty body surfaces a real error rather
- * than silently faking success.
+ * fabricated data. A non-2xx or empty body surfaces the server's own
+ * message rather than silently faking success.
  */
 class AnalyticsRepository(private val apiClient: ApiClient) {
 
-    fun getStudentAnalytics(): Flow<NetworkResult<StudentAnalyticsData>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.analyticsApi.getStudentAnalytics()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Error("Analitik akademik belum tersedia dari server (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
+    fun getStudentAnalytics(): Flow<NetworkResult<StudentAnalyticsData>> =
+        fetch("analitik belajar") { apiClient.analyticsApi.getStudentAnalytics() }
 
-    fun getTeacherClasses(): Flow<NetworkResult<List<TeacherClassOption>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.analyticsApi.getTeacherClasses()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Error("Daftar kelas mengajar belum tersedia dari server (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
+    fun getTeacherClasses(): Flow<NetworkResult<List<TeacherClassOption>>> =
+        fetch("daftar kelas mengajar") { apiClient.analyticsApi.getTeacherClasses() }
 
-    fun getClassAnalytics(className: String, subjectName: String): Flow<NetworkResult<ClassAnalyticsData>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.analyticsApi.getClassAnalytics(className, subjectName)
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Error("Analitik kelas belum tersedia dari server (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+    /** Sends the ids when known; a server without them falls back to the names. */
+    fun getClassAnalytics(option: TeacherClassOption): Flow<NetworkResult<ClassAnalyticsData>> =
+        fetch("analitik kelas") {
+            apiClient.analyticsApi.getClassAnalytics(option.className, option.subjectName, option.classroomId, option.subjectId)
         }
-    }.flowOn(Dispatchers.IO)
 
-    fun getParentProgress(): Flow<NetworkResult<ParentProgressData>> = flow {
+    /** [studentUuid] null = the first child linked to this account. */
+    fun getParentProgress(studentUuid: String? = null): Flow<NetworkResult<ParentProgressData>> =
+        fetch("progres anak") { apiClient.analyticsApi.getParentProgress(studentUuid) }
+
+    fun getExecutiveKpi(): Flow<NetworkResult<ExecutiveAnalyticsData>> =
+        fetch("analitik eksekutif") { apiClient.analyticsApi.getExecutiveKpi() }
+
+    private fun <T : Any> fetch(what: String, call: suspend () -> Response<T>): Flow<NetworkResult<T>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.analyticsApi.getParentProgress()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
+            val response = call()
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                emit(NetworkResult.Success(body))
             } else {
-                emit(NetworkResult.Error("Progres anak belum tersedia dari server (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun getExecutiveKpi(): Flow<NetworkResult<ExecutiveAnalyticsData>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.analyticsApi.getExecutiveKpi()
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Error("KPI eksekutif belum tersedia dari server (Kode: ${response.code()}).", response.code()))
+                val message = serverMessageOf(response.errorBody()?.string())
+                    ?: if (response.code() == 403) "Akun ini tidak memiliki akses ke $what." else "Data $what belum bisa dimuat (kode ${response.code()})."
+                emit(NetworkResult.Error(message, response.code()))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))

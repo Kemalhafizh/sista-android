@@ -140,6 +140,7 @@ object FeatureCatalog {
     /**
      * The screen that opens each feature from a menu. Features without an
      * entry here have no screen in this version of the app and are not listed.
+     * Values are navigable routes: never a pattern with a `{placeholder}`.
      */
     val ENTRY: Map<String, String> = mapOf(
         "student.schedule" to Screen.Schedule.route,
@@ -166,15 +167,15 @@ object FeatureCatalog {
         "tahsin.record" to Screen.TahsinRecorder.route,
         "tahsin.review" to Screen.TahsinTeacherReview.route,
         "student.billing" to Screen.Billing.route,
-        "discipline" to Screen.Discipline.route,
+        "discipline" to Screen.Discipline.createRoute(),
         "counseling.student" to Screen.StudentCounseling.route,
-        "health.history" to Screen.HealthHistory.route,
-        "student.profile360" to Screen.StudentProfileComprehensive.route,
+        "health.history" to Screen.HealthHistory.createRoute(),
+        "student.profile360" to Screen.StudentProfileComprehensive.createRoute(),
         "extracurricular" to Screen.Extracurricular.route,
         "achievements" to Screen.AchievementUpload.route,
         "student.evaluations" to Screen.TeacherEvaluation.route,
         "student.gamification" to Screen.GamificationDashboard.route,
-        "activity.feed" to Screen.ChildActivityFeed.route,
+        "activity.feed" to Screen.ChildActivityFeed.createRoute(),
         "teacher.sessions" to Screen.TeacherTodaySessions.route,
         "teacher.classes" to Screen.TeacherDashboard.route,
         "teacher.journal" to Screen.TeachingJournalMobile.route,
@@ -185,7 +186,7 @@ object FeatureCatalog {
         "counseling.staff" to Screen.CounselingDashboard.route,
         "uks.record" to Screen.UksVisit.route,
         "parent.children" to Screen.ParentDashboard.route,
-        "parent.progress" to Screen.ChildProgress.route,
+        "parent.progress" to Screen.ChildProgress.createRoute(),
         "parent.messages" to Screen.ConversationList.route,
         "admin.dashboard" to Screen.AdminDashboard.route,
         "admin.executive" to Screen.ExecutiveAnalytics.route,

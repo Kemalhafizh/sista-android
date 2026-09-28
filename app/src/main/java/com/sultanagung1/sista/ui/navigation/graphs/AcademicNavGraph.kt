@@ -12,8 +12,9 @@ import com.sultanagung1.sista.ui.academic.*
 import com.sultanagung1.sista.ui.attendance.StudentSessionQrScanScreen
 import com.sultanagung1.sista.ui.attendance.StudentSessionQrScanViewModel
 import com.sultanagung1.sista.ui.analytics.AcademicAnalyticsScreen
-import com.sultanagung1.sista.ui.analytics.AnalyticsViewModel
 import com.sultanagung1.sista.ui.analytics.ClassAnalyticsScreen
+import com.sultanagung1.sista.ui.analytics.ClassAnalyticsViewModel
+import com.sultanagung1.sista.ui.analytics.StudentAnalyticsViewModel
 import com.sultanagung1.sista.ui.calendar.AcademicCalendarScreen
 import com.sultanagung1.sista.ui.calendar.CalendarViewModel
 import com.sultanagung1.sista.ui.calendar.EventDetailScreen
@@ -141,7 +142,7 @@ fun NavGraphBuilder.academicNavGraph(
     }
 
     guardedComposable(Screen.AcademicAnalytics.route) {
-        val viewModel: AnalyticsViewModel = hiltViewModel()
+        val viewModel: StudentAnalyticsViewModel = hiltViewModel()
         AcademicAnalyticsScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
@@ -149,7 +150,7 @@ fun NavGraphBuilder.academicNavGraph(
     }
 
     guardedComposable(Screen.ClassAnalytics.route) {
-        val viewModel: AnalyticsViewModel = hiltViewModel()
+        val viewModel: ClassAnalyticsViewModel = hiltViewModel()
         ClassAnalyticsScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }

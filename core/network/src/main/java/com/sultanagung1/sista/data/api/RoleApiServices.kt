@@ -57,7 +57,8 @@ interface AdminApiService {
     @POST("mobile/admin/approvals/{id}/action")
     suspend fun processApproval(
         @Path("id") id: String,
-        @Query("action") action: String // approve / reject
+        @Query("action") action: String, // approve / reject
+        @Query("notes") notes: String? = null
     ): Response<Map<String, Any>>
 
     // FASE 71.4 "Tombol Siaran Darurat" — pushes an EmergencyBroadcastEvent to

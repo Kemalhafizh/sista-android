@@ -154,7 +154,8 @@ class DisciplineContractTest {
         val parentDashboard = source("feature/parent/src/main/java/com/sultanagung1/sista/ui/parent/ParentDashboardScreen.kt").readText()
         assertTrue(
             "The parent dashboard must open the child that is selected there",
-            parentDashboard.contains("Screen.Discipline.createRoute(child.uuid)")
+            parentDashboard.contains("Screen.Discipline.createRoute(childUuid)") &&
+                parentDashboard.contains("parentShortcuts(uiState.selectedChild?.uuid)")
         )
     }
 

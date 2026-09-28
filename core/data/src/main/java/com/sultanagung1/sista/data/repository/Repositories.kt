@@ -954,10 +954,10 @@ class ParentRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getChildFeed(): Flow<NetworkResult<List<ChildActivityEvent>>> = flow {
+    fun getChildFeed(childUuid: String): Flow<NetworkResult<List<ChildActivityEvent>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentExperienceApi.getChildFeed()
+            val response = apiClient.parentExperienceApi.getChildFeed(childUuid)
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(response.body()?.data.orEmpty()))
             } else {
@@ -968,10 +968,10 @@ class ParentRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getWeeklyDigest(): Flow<NetworkResult<WeeklyDigest?>> = flow {
+    fun getWeeklyDigest(childUuid: String): Flow<NetworkResult<WeeklyDigest?>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentExperienceApi.getWeeklyDigest()
+            val response = apiClient.parentExperienceApi.getWeeklyDigest(childUuid)
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(response.body()?.data))
             } else {
@@ -982,10 +982,10 @@ class ParentRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getChildComparison(): Flow<NetworkResult<List<ChildVsClassComparison>>> = flow {
+    fun getChildComparison(childUuid: String): Flow<NetworkResult<List<ChildVsClassComparison>>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.parentExperienceApi.getChildComparison()
+            val response = apiClient.parentExperienceApi.getChildComparison(childUuid)
             if (response.isSuccessful) {
                 emit(NetworkResult.Success(response.body()?.data.orEmpty()))
             } else {
@@ -1047,14 +1047,23 @@ class AdminRepository(private val apiClient: ApiClient) {
         }
     }.flowOn(Dispatchers.IO)
 
-    fun processApproval(id: String, action: String): Flow<NetworkResult<Boolean>> = flow {
+    /**
+     * Decides the current step of a request. Success carries the server's own
+     * outcome ("diteruskan ke langkah berikutnya" / "disetujui" / "ditolak");
+     * a refusal carries its reason (e.g. the step belongs to another role).
+     */
+    fun processApproval(id: String, action: String, notes: String? = null): Flow<NetworkResult<String>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.adminApi.processApproval(id, action)
+            val response = apiClient.adminApi.processApproval(id, action, notes?.takeIf { it.isNotBlank() })
             if (response.isSuccessful) {
-                emit(NetworkResult.Success(true))
+                val message = response.body()?.get("message") as? String
+                emit(NetworkResult.Success(message ?: if (action == "approve") "Pengajuan disetujui." else "Pengajuan ditolak."))
             } else {
-                emit(NetworkResult.Error("Gagal memproses persetujuan (Kode: ${response.code()}).", response.code()))
+                emit(NetworkResult.Error(
+                    serverMessageOf(response.errorBody()?.string()) ?: "Gagal memproses persetujuan (Kode: ${response.code()}).",
+                    response.code(),
+                ))
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))

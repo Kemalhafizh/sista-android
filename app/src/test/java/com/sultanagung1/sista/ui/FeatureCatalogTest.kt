@@ -42,6 +42,14 @@ class FeatureCatalogTest {
     }
 
     @Test
+    fun `menu entries are navigable routes, never patterns`() {
+        // Navigating to "discipline?studentUuid={studentUuid}" handed the screen the
+        // literal "{studentUuid}" as the child's id.
+        val patterns = FeatureCatalog.ENTRY.filterValues { '{' in it }
+        assertEquals(emptyMap<String, String>(), patterns)
+    }
+
+    @Test
     fun `a feature's entry screen is one that feature opens`() {
         FeatureCatalog.ENTRY.forEach { (key, route) ->
             val required = FeatureCatalog.requiredFor(route)

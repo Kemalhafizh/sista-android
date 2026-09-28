@@ -6,8 +6,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
-import com.sultanagung1.sista.ui.analytics.AnalyticsViewModel
 import com.sultanagung1.sista.ui.analytics.ChildProgressScreen
+import com.sultanagung1.sista.ui.analytics.ChildProgressViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.parent.*
 
@@ -28,7 +28,7 @@ fun NavGraphBuilder.parentNavGraph(
             },
             onNavigateToBilling = { navController.navigate(Screen.Billing.route) },
             onNavigateRoute = { route -> navController.navigate(route) },
-            onNavigateToActivityFeed = { navController.navigate(Screen.ChildActivityFeed.route) }
+            onNavigateToActivityFeed = { uuid -> navController.navigate(Screen.ChildActivityFeed.createRoute(uuid)) }
         )
     }
 
@@ -36,7 +36,7 @@ fun NavGraphBuilder.parentNavGraph(
         route = Screen.ChildDetail.route,
         arguments = listOf(navArgument("studentId") { type = NavType.StringType })
     ) { backStackEntry ->
-        val studentId = backStackEntry.arguments?.getString("studentId") ?: "c1"
+        val studentId = backStackEntry.arguments?.getString("studentId").orEmpty()
         val viewModel: ParentViewModel = hiltViewModel()
         ChildDetailScreen(
             studentId = studentId,
@@ -45,17 +45,24 @@ fun NavGraphBuilder.parentNavGraph(
         )
     }
 
-    guardedComposable(Screen.ChildProgress.route) {
-        val viewModel: AnalyticsViewModel = hiltViewModel()
+    guardedComposable(
+        route = Screen.ChildProgress.route,
+        arguments = listOf(navArgument("studentUuid") { type = NavType.StringType; nullable = true; defaultValue = null })
+    ) {
+        val viewModel: ChildProgressViewModel = hiltViewModel()
         ChildProgressScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    guardedComposable(Screen.ChildActivityFeed.route) {
+    guardedComposable(
+        route = Screen.ChildActivityFeed.route,
+        arguments = listOf(navArgument("studentUuid") { type = NavType.StringType; nullable = true; defaultValue = null })
+    ) { backStackEntry ->
         val viewModel: ParentViewModel = hiltViewModel()
         ChildActivityFeedScreen(
+            studentUuid = backStackEntry.arguments?.getString("studentUuid"),
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )

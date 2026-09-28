@@ -1,680 +1,409 @@
 package com.sultanagung1.sista.ui.admin
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FactCheck
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.CoPresent
+import androidx.compose.material.icons.outlined.EventAvailable
+import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.PendingActions
+import androidx.compose.material.icons.outlined.RateReview
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
-import com.sultanagung1.sista.core.designsystem.*
-import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
-import com.sultanagung1.sista.core.motion.springPressable
-import com.sultanagung1.sista.ui.common.HeaderMetadataChip
-import com.sultanagung1.sista.ui.common.SulaoneExecutiveHeader
+import com.sultanagung1.sista.core.designsystem.SulaonePullToRefreshBox
+import com.sultanagung1.sista.core.ui.component.ButtonVariant
+import com.sultanagung1.sista.core.ui.component.EmptyState
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.FeatureTile
+import com.sultanagung1.sista.core.ui.component.GreetingHeader
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SectionHeader
+import com.sultanagung1.sista.core.ui.component.SistaButton
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatTile
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.component.greetingFor
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.core.util.DateUtils
+import com.sultanagung1.sista.data.model.PendingApprovalItem
+import com.sultanagung1.sista.data.model.SchoolKpiSummary
+import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
 import com.sultanagung1.sista.ui.navigation.Screen
-import kotlinx.coroutines.launch
+import com.sultanagung1.sista.ui.navigation.canOpen
+import java.util.Calendar
 
+/** An admin shortcut. Shown only when the account may open [route]. */
+@Immutable
+data class AdminShortcut(val title: String, val icon: ImageVector, val route: String)
+
+val ADMIN_SHORTCUTS = listOf(
+    AdminShortcut("Analitik eksekutif", Icons.Outlined.Insights, Screen.ExecutiveAnalytics.route),
+    AdminShortcut("Sesi kelas", Icons.Outlined.CoPresent, Screen.AdminSessionManagement.route),
+    AdminShortcut("Pengumuman", Icons.Outlined.Campaign, Screen.AnnouncementFeed.route),
+    AdminShortcut("Evaluasi guru", Icons.Outlined.RateReview, Screen.TeacherEvaluation.route),
+    AdminShortcut("Tata tertib", Icons.Outlined.Gavel, Screen.Discipline.createRoute()),
+    AdminShortcut("Modul sekolah", Icons.AutoMirrored.Outlined.Assignment, Screen.EnterpriseCatalog.route),
+)
+
+/** A decision the user is about to confirm. */
+private data class PendingDecision(val item: PendingApprovalItem, val approve: Boolean)
+
+/**
+ * The admin and leadership Beranda — the same layout as every role's home:
+ * who is signed in, the school's numbers today, the requests waiting on this
+ * account's step, finance and exam figures, the emergency broadcast, and the
+ * shortcuts this account may use.
+ */
 @Composable
 fun AdminDashboardScreen(
     viewModel: AdminViewModel,
-    onNavigateRoute: (String) -> Unit
+    onNavigateRoute: (String) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val data = uiState.dashboardData
-    val haptics = rememberHapticFeedbackHelper()
+    val capabilities = LocalCapabilityState.current
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showEmergencyDialog by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-    val headerScrolledOff by rememberIsItemScrolledOff(listState, HEADER_ITEM_KEY)
+    var refreshRequested by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading) { if (!uiState.isLoading) refreshRequested = false }
+    val hour = remember(uiState.isLoading) { DateUtils.nowCalendar().get(Calendar.HOUR_OF_DAY) }
 
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
-        }
-    }
+    AdminHomeContent(
+        greeting = greetingFor(hour),
+        state = uiState,
+        nowMillis = DateUtils.nowMillis(),
+        shortcuts = ADMIN_SHORTCUTS.filter { capabilities.canOpen(it.route) },
+        refreshing = refreshRequested && uiState.isLoading,
+        onRefresh = {
+            refreshRequested = true
+            viewModel.refresh()
+        },
+        onDecide = viewModel::processApproval,
+        onDismissOutcome = viewModel::dismissApprovalOutcome,
+        onRetryApprovals = viewModel::loadPendingApprovals,
+        onBroadcast = viewModel::broadcastEmergency,
+        onDismissBroadcast = viewModel::dismissEmergencyBroadcastConfirmation,
+        onOpenRoute = onNavigateRoute,
+    )
+}
 
-    LaunchedEffect(uiState.emergencyBroadcastSent) {
-        if (uiState.emergencyBroadcastSent != null) {
-            showEmergencyDialog = false
-            snackbarHostState.showSnackbar("Siaran darurat berhasil dikirim ke seluruh pengguna aplikasi.")
-            viewModel.dismissEmergencyBroadcastConfirmation()
-        }
-    }
+/** The admin home without a ViewModel, for previews and screenshots. */
+@Composable
+fun AdminHomeContent(
+    greeting: String,
+    state: AdminUiState,
+    nowMillis: Long,
+    shortcuts: List<AdminShortcut>,
+    refreshing: Boolean,
+    onRefresh: () -> Unit,
+    onDecide: (id: Long, action: String, notes: String?) -> Unit,
+    onDismissOutcome: () -> Unit,
+    onRetryApprovals: () -> Unit,
+    onBroadcast: (title: String, message: String, location: String?) -> Unit,
+    onDismissBroadcast: () -> Unit,
+    onOpenRoute: (String) -> Unit,
+) {
+    var decision by remember { mutableStateOf<PendingDecision?>(null) }
+    var composingBroadcast by rememberSaveable { mutableStateOf(false) }
 
-    if (showEmergencyDialog) {
-        EmergencyBroadcastDialog(
-            isSending = uiState.isSendingEmergencyBroadcast,
-            onDismiss = { showEmergencyDialog = false },
-            onSend = { title, message, location -> viewModel.broadcastEmergency(title, message, location) }
-        )
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            LazyColumn(
-                state = listState,
+    ShellTheme {
+        Surface(color = SistaTheme.colors.background) {
+            SulaonePullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = onRefresh,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .testTag("admin_home_root"),
             ) {
-                // 1. Unified Executive Top App Bar (Institutional Command Cockpit)
-                item(key = HEADER_ITEM_KEY) {
-                    SulaoneExecutiveHeader(
-                        userName = uiState.principalName ?: "—",
-                        titlePrefix = "KOKPIT EKSEKUTIF PIMPINAN",
-                        chips = listOf(
-                            HeaderMetadataChip(
-                                text = "Kepala Sekolah",
-                                icon = Icons.Default.AdminPanelSettings,
-                                textColor = Emerald800,
-                                containerColor = Emerald50,
-                                borderColor = Emerald200,
-                                iconColor = Emerald700
-                            ),
-                            HeaderMetadataChip(
-                                text = "SuperAdmin",
-                                isLiveDot = true,
-                                dotColor = Emerald500,
-                                textColor = Slate700
-                            )
-                        ),
-                        unreadNotificationsCount = 0,
-                        onAvatarClick = { onNavigateRoute("profile") },
-                        onQrClick = { onNavigateRoute("scanner") },
-                        onNotificationClick = { onNavigateRoute("notifications") }
-                    )
-                }
-
-                // 2. School KPI — only fields the backend actually provides
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Text(
-                            text = "Metrik Kinerja Utama (KPI) Sekolah",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = Spacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+                ) {
+                    item(key = "header") {
+                        GreetingHeader(
+                            greeting = greeting,
+                            name = state.principalName?.takeIf { it.isNotBlank() } ?: "Pimpinan",
+                            details = listOf("Dasbor sekolah"),
+                            unreadCount = 0,
+                            onOpenNotifications = { onOpenRoute(Screen.NotificationCenter.route) },
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // FASE 76.5: first load shows a bento-shaped skeleton (tiered)
-                        // instead of four "—" tiles that look like missing data.
-                        if (uiState.isLoading && data == null) {
-                            SulaoneTieredLoading(isLoading = true) {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    BentoHeroSplitSkeleton()
-                                    MetricCardSkeleton()
-                                }
-                            }
-                        } else {
-                            // FASE 76.2 Bento: today's student attendance is the hero.
-                            // The old "Live" badges were dropped — this data is a
-                            // one-shot REST fetch on screen open (no polling, no
-                            // WebSocket), so "Live" was a false claim.
-                            BentoHeroSplit(
-                                hero = { heroModifier ->
-                                    SulaoneBentoHeroTile(
-                                        modifier = heroModifier,
-                                        label = "Kehadiran Siswa",
-                                        value = data?.attendanceRateToday
-                                            ?.let { String.format(java.util.Locale.US, "%.1f", it) }
-                                            ?: "—",
-                                        unit = if (data?.attendanceRateToday != null) "%" else null,
-                                        caption = if (uiState.isLoading) "Memuat data…" else "Presensi KBM hari ini",
-                                        icon = Icons.Default.People,
-                                        accent = Emerald700,
-                                        badgeText = "Hari Ini"
-                                    )
-                                },
-                                top = { tileModifier ->
-                                    SulaoneMetricCard(
-                                        modifier = tileModifier,
-                                        title = "Total Siswa Aktif",
-                                        value = data?.totalStudents?.toString() ?: "—",
-                                        subtitle = "Seluruh Rombel",
-                                        icon = Icons.Default.School,
-                                        iconTint = AccentPurple,
-                                        iconBackground = AccentPurple.copy(alpha = 0.12f)
-                                    )
-                                },
-                                bottom = { tileModifier ->
-                                    SulaoneMetricCard(
-                                        modifier = tileModifier,
-                                        title = "Sesi CBT Aktif",
-                                        value = uiState.schoolKpi?.cbtServerUsage?.activeSessions?.toString() ?: "—",
-                                        subtitle = "Sedang berlangsung",
-                                        icon = Icons.Default.Dns,
-                                        iconTint = AccentCyan,
-                                        iconBackground = AccentCyan.copy(alpha = 0.12f)
-                                    )
-                                }
-                            )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            SulaoneMetricCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                title = "Total Tunggakan SPP",
-                                value = data?.unpaidBillingsTotal?.let { formatRupiah(it) } ?: "—",
-                                subtitle = "Seluruh Siswa",
-                                icon = Icons.Default.AccountBalanceWallet,
-                                iconTint = Gold700,
-                                iconBackground = Gold50,
-                                onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
+                    }
+                    item(key = "stats") { HeadlineStats(state, onRefresh) }
+                    state.approvalOutcome?.let { outcome ->
+                        item(key = "outcome") {
+                            InlineBanner(
+                                message = outcome.message,
+                                tone = if (outcome.succeeded) StatusTone.Success else StatusTone.Danger,
+                                onDismiss = onDismissOutcome,
+                                modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
                         }
                     }
-                }
-
-                // 1b. FASE 71.4 follow-up: real KPI the backend used to return as
-                // "Dummy or expanded KPI details" — SPP payment ratio per
-                // academic year, CBT server usage, and an honest null for
-                // teacher attendance rate (no backing data exists for it).
-                item {
-                    val kpi = uiState.schoolKpi
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Text(
-                            text = "KPI Eksekutif Lanjutan",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground
+                    item(key = "approvals_header") {
+                        SectionHeader(
+                            "Menunggu keputusan Anda",
+                            modifier = Modifier.padding(horizontal = Spacing.screen),
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // active_teachers and monthly_revenue have been returned by
-                        // GET mobile/admin/kpi all along but were never displayed.
-                        // monthly_revenue is only shown now that its backend query
-                        // was fixed (it read a non-existent billings.payment_date
-                        // column and never scoped by year — see
-                        // AdminKpiAndApprovalsTest::test_kpi_monthly_revenue_...).
-                        BentoPair(
-                            start = { tileModifier ->
-                                SulaoneMetricCard(
-                                    modifier = tileModifier,
-                                    title = "Guru Aktif",
-                                    value = kpi?.activeTeachers?.toString() ?: "—",
-                                    subtitle = "Akun guru terdaftar",
-                                    icon = Icons.Default.CoPresent,
-                                    iconTint = Emerald700,
-                                    iconBackground = Emerald50
-                                )
-                            },
-                            end = { tileModifier ->
-                                SulaoneMetricCard(
-                                    modifier = tileModifier,
-                                    title = "Sesi CBT Hari Ini",
-                                    value = kpi?.cbtServerUsage?.sessionsToday?.toString() ?: "—",
-                                    subtitle = "Total mulai hari ini",
-                                    icon = Icons.Default.Quiz,
-                                    iconTint = AccentCyan,
-                                    iconBackground = AccentCyan.copy(alpha = 0.12f)
-                                )
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        SulaoneMetricCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            title = "Pemasukan Bulan Ini",
-                            value = kpi?.monthlyRevenue?.let { formatRupiah(it) } ?: "—",
-                            subtitle = "Pembayaran tagihan yang diterima",
-                            icon = Icons.Default.Payments,
-                            iconTint = Emerald700,
-                            iconBackground = Emerald50
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Teacher attendance: honestly not a number — no backing
-                        // data exists anywhere in the schema for it.
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Slate100,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Info, contentDescription = null, tint = Slate500, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "Persentase kehadiran guru: " +
-                                        (kpi?.teacherAttendanceRateNote ?: "Data belum tersedia."),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Slate700
-                                )
-                            }
-                        }
-
-                        if (kpi != null && kpi.sppPaymentRatioByCohort.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = "Rasio Pelunasan SPP per Tahun Ajaran",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
-                            ) {
-                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                    kpi.sppPaymentRatioByCohort.forEach { cohort ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 14.dp, vertical = 8.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column {
-                                                Text(
-                                                    text = cohort.academicYear,
-                                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                                                )
-                                                Text(
-                                                    text = "${cohort.paidBillings}/${cohort.totalBillings} tagihan lunas",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = Slate500
-                                                )
-                                            }
-                                            SulaoneBadge(
-                                                text = "${cohort.paidRatioPercent}%",
-                                                containerColor = if (cohort.paidRatioPercent >= 80.0) Emerald50 else Gold50,
-                                                contentColor = if (cohort.paidRatioPercent >= 80.0) Emerald800 else Gold800
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
-                }
-
-                // 2b. FASE 71.4 "Tombol Siaran Darurat" — pushes a real
-                // EmergencyBroadcastEvent to every connected app over WebSocket.
-                item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .springPressable {
-                                haptics.tapLight()
-                                showEmergencyDialog = true
-                            }
-                            .semantics(mergeDescendants = true) { role = Role.Button },
-                        shape = RoundedCornerShape(16.dp),
-                        color = AccentRose.copy(alpha = 0.1f),
-                        border = BorderStroke(1.dp, AccentRose.copy(alpha = 0.4f))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationImportant,
-                                contentDescription = null,
-                                tint = AccentRose,
-                                modifier = Modifier.size(28.dp)
+                    when {
+                        state.isLoadingApprovals && state.pendingApprovals.isEmpty() -> item(key = "approvals_loading") {
+                            SkeletonList(rows = 2)
+                        }
+                        state.approvalsError != null && state.pendingApprovals.isEmpty() -> item(key = "approvals_error") {
+                            ErrorState(
+                                title = "Daftar persetujuan belum bisa dimuat",
+                                body = state.approvalsError,
+                                onRetry = onRetryApprovals,
+                                modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Kirim Siaran Darurat",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AccentRose
-                                )
-                                Text(
-                                    text = "Notifikasi real-time ke seluruh siswa, guru, dan wali murid",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AccentRose.copy(alpha = 0.85f)
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = AccentRose
+                        }
+                        state.pendingApprovals.isEmpty() -> item(key = "approvals_empty") {
+                            EmptyState(
+                                title = "Tidak ada pengajuan yang menunggu Anda",
+                                body = "Pengajuan muncul di sini saat tiba di langkah persetujuan Anda.",
+                                icon = Icons.Outlined.TaskAlt,
+                                modifier = Modifier.padding(horizontal = Spacing.screen),
+                            )
+                        }
+                        else -> items(state.pendingApprovals, key = { "approval_${it.id}" }, contentType = { "approval" }) { item ->
+                            ApprovalCard(
+                                item = item,
+                                nowMillis = nowMillis,
+                                processing = state.processingApprovalId == item.id,
+                                enabled = state.processingApprovalId == null,
+                                onApprove = { decision = PendingDecision(item, approve = true) },
+                                onReject = { decision = PendingDecision(item, approve = false) },
+                                modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
                         }
                     }
-                }
-
-                // 3. Executive Fast Action Matrix (SuperApp 4-Pill Grid)
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        Text(
-                            text = "Aksi Cepat Pimpinan & Pengawasan",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            AdminActionPill(
-                                title = "Siaran",
-                                icon = Icons.Default.Campaign,
-                                accentColor = AccentGreen,
-                                onClick = { onNavigateRoute(Screen.AnnouncementFeed.route) }
-                            )
-                            AdminActionPill(
-                                title = "Analitik KPI",
-                                icon = Icons.Default.BarChart,
-                                accentColor = AccentCyan,
-                                onClick = { onNavigateRoute(Screen.ExecutiveAnalytics.route) }
-                            )
-                            AdminActionPill(
-                                title = "Evaluasi Guru",
-                                icon = Icons.AutoMirrored.Filled.FactCheck,
-                                accentColor = AccentAmber,
-                                onClick = { onNavigateRoute(Screen.TeacherEvaluation.route) }
-                            )
-                            AdminActionPill(
-                                title = "Modul Sekolah",
-                                icon = Icons.Default.Apps,
-                                accentColor = AccentPurple,
-                                onClick = { onNavigateRoute(Screen.EnterpriseCatalog.route) }
-                            )
-                        }
+                    item(key = "kpi") { SchoolFigures(state.schoolKpi, state.kpiError) }
+                    item(key = "broadcast") {
+                        BroadcastCard(sending = state.isSendingEmergencyBroadcast, onCompose = { composingBroadcast = true })
                     }
-                }
-
-                // 4. FASE 71.4 follow-up: real pending-approvals list with
-                // working approve/reject buttons — previously only a count was
-                // shown, with a note explaining the list itself wasn't available.
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Persetujuan Menunggu Tindakan",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            SulaoneBadge(
-                                text = "${uiState.pendingApprovals.size} Berkas",
-                                containerColor = if (uiState.pendingApprovals.isNotEmpty()) Gold50 else Emerald50,
-                                contentColor = if (uiState.pendingApprovals.isNotEmpty()) Gold800 else Emerald800
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        if (uiState.isLoadingApprovals && uiState.pendingApprovals.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.dp)
-                            }
-                        } else if (uiState.pendingApprovals.isEmpty()) {
-                            SulaoneEmptyState(
-                                icon = Icons.Default.CheckCircle,
-                                title = "Semua Berkas Tuntas",
-                                description = "Tidak ada permohonan yang menunggu persetujuan pimpinan."
-                            )
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                uiState.pendingApprovals.forEach { approval ->
-                                    PendingApprovalCard(
-                                        approval = approval,
-                                        isProcessing = uiState.processingApprovalId == approval.id,
-                                        onApprove = { viewModel.processApproval(approval.id, "approve") },
-                                        onReject = { viewModel.processApproval(approval.id, "reject") }
-                                    )
-                                }
-                            }
-                        }
+                    if (shortcuts.isNotEmpty()) {
+                        item(key = "shortcuts") { Shortcuts(shortcuts, onOpenRoute) }
                     }
-                }
-
-                // 5. Pengawasan Kesiswaan & Evaluasi Kampus — no backend aggregate
-                // exists for either metric yet, so no number is fabricated here.
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Text(
-                            text = "Pengawasan Kesiswaan & Evaluasi Kampus",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            SulaoneMetricCard(
-                                modifier = Modifier.weight(1f),
-                                title = "Evaluasi Guru & OSIS",
-                                value = "Data belum tersedia",
-                                subtitle = "Kuesioner EKG & Pemilu",
-                                badgeText = "Lihat Detail",
-                                badgeColor = Emerald700,
-                                badgeBackground = Emerald50,
-                                icon = Icons.Default.HowToVote,
-                                iconTint = Emerald700,
-                                iconBackground = Emerald50,
-                                onClick = { onNavigateRoute(Screen.TeacherEvaluation.route) }
-                            )
-
-                            SulaoneMetricCard(
-                                modifier = Modifier.weight(1f),
-                                title = "Tata Tertib Siswa",
-                                value = "Data belum tersedia",
-                                subtitle = "SP & Rekap Poin Digital",
-                                badgeText = "Lihat Detail",
-                                badgeColor = Gold700,
-                                badgeBackground = Gold50,
-                                icon = Icons.Default.Gavel,
-                                iconTint = Gold700,
-                                iconBackground = Gold50,
-                                onClick = { onNavigateRoute(Screen.Discipline.createRoute()) }
-                            )
-                        }
-                    }
-                }
-
-                // Space at bottom for floating nav bar
-                item {
-                    Spacer(modifier = Modifier.height(88.dp))
                 }
             }
+        }
 
-            // FASE 76.2: sticky glass bar once the executive header scrolls away.
-            SulaoneGlassTopBar(
-                visible = headerScrolledOff,
-                title = uiState.principalName ?: "Pimpinan",
-                subtitle = "Kokpit Eksekutif",
-                onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
+        decision?.let { pending ->
+            DecisionDialog(
+                item = pending.item,
+                approve = pending.approve,
+                onConfirm = { notes ->
+                    onDecide(pending.item.id, if (pending.approve) "approve" else "reject", notes)
+                    decision = null
+                },
+                onDismiss = { decision = null },
+            )
+        }
+        if (composingBroadcast || state.emergencyBroadcastSent != null || state.broadcastError != null) {
+            EmergencyBroadcastDialog(
+                sending = state.isSendingEmergencyBroadcast,
+                sent = state.emergencyBroadcastSent,
+                error = state.broadcastError,
+                onSend = onBroadcast,
+                onDismiss = {
+                    composingBroadcast = false
+                    onDismissBroadcast()
+                },
             )
         }
     }
 }
 
-private const val HEADER_ITEM_KEY = "executive_header"
-
-/** "Rp 1.234.567" — dot-grouped regardless of device locale. */
-private fun formatRupiah(amount: Double): String =
-    "Rp ${"%,.0f".format(java.util.Locale.US, amount).replace(',', '.')}"
-
 @Composable
-private fun EmergencyBroadcastDialog(
-    isSending: Boolean,
-    onDismiss: () -> Unit,
-    onSend: (title: String, message: String, location: String?) -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = { if (!isSending) onDismiss() },
-        icon = { Icon(Icons.Default.NotificationImportant, contentDescription = null, tint = AccentRose) },
-        title = { Text("Kirim Siaran Darurat", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Pesan ini akan langsung tampil ke seluruh siswa, guru, dan wali murid yang sedang membuka aplikasi.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Judul") },
-                    singleLine = true,
-                    enabled = !isSending,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = message,
-                    onValueChange = { message = it },
-                    label = { Text("Pesan") },
-                    minLines = 3,
-                    enabled = !isSending,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = { location = it },
-                    label = { Text("Lokasi (opsional)") },
-                    singleLine = true,
-                    enabled = !isSending,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSend(title.trim(), message.trim(), location.trim().ifBlank { null }) },
-                enabled = !isSending && title.isNotBlank() && message.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentRose)
-            ) {
-                if (isSending) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text("Kirim Sekarang")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isSending) {
-                Text("Batal")
-            }
+private fun HeadlineStats(state: AdminUiState, onRetry: () -> Unit) {
+    val data = state.dashboardData
+    // "–" before the numbers arrive or when they failed: never a 0 that reads as a fact.
+    val known = data != null
+    Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        if (state.errorMessage != null && data == null) {
+            InlineBanner(
+                message = "Angka sekolah belum bisa dimuat. ${state.errorMessage}",
+                tone = StatusTone.Warning,
+                actionLabel = "Coba lagi",
+                onAction = onRetry,
+            )
         }
-    )
+        Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            StatTile(
+                label = "Siswa aktif",
+                value = data?.totalStudents?.let(::thousands) ?: "–",
+                icon = Icons.Outlined.Groups,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+            StatTile(
+                label = "Kehadiran hari ini",
+                value = data?.attendanceRateToday?.let { "${decimal(it)}%" } ?: "–",
+                supporting = if (known && data?.attendanceRateToday == null) "belum ada presensi" else "dari presensi tercatat",
+                icon = Icons.Outlined.EventAvailable,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+        }
+        Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            StatTile(
+                label = "Tunggakan",
+                value = data?.let { rupiahShort(it.unpaidBillingsTotal) } ?: "–",
+                supporting = "sisa tagihan belum lunas",
+                icon = Icons.Outlined.AccountBalanceWallet,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+            val waiting = data?.pendingApprovalsCount
+            StatTile(
+                label = "Menunggu Anda",
+                value = waiting?.toString() ?: "–",
+                supporting = "pengajuan",
+                icon = Icons.Outlined.PendingActions,
+                tone = if ((waiting ?: 0) > 0) StatusTone.Warning else StatusTone.Neutral,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+        }
+    }
 }
 
-/** FASE 71.4 follow-up: one real pending WorkflowRequest, with working approve/reject actions. */
 @Composable
-private fun PendingApprovalCard(
-    approval: com.sultanagung1.sista.data.model.PendingApprovalItem,
-    isProcessing: Boolean,
+private fun ApprovalCard(
+    item: PendingApprovalItem,
+    nowMillis: Long,
+    processing: Boolean,
+    enabled: Boolean,
     onApprove: () -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(0.5.dp, if (approval.isOverdue) AccentRose.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+    SistaCard(modifier = modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Text(item.typeName, style = SistaTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        text = approval.typeName,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Diajukan oleh ${approval.requesterName}" +
-                            (approval.requesterRole?.let { " ($it)" } ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Slate500
+                        listOfNotNull(item.requesterName, item.requesterRole?.let(::roleLabel)).joinToString(" · "),
+                        style = SistaTheme.typography.bodySmall,
+                        color = SistaTheme.colors.onSurfaceVariant,
                     )
                 }
-                if (approval.totalSteps != null) {
-                    SulaoneBadge(
-                        text = "Langkah ${approval.currentStep}/${approval.totalSteps}",
-                        containerColor = Slate100,
-                        contentColor = Slate700
-                    )
-                }
+                item.totalSteps?.let { total -> StatusPill("Langkah ${item.currentStep} dari $total", StatusTone.Neutral) }
             }
-
-            approval.notes?.takeIf { it.isNotBlank() }?.let { notes ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = notes,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            item.notes?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = SistaTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            dueLabel(item, nowMillis)?.let { (label, tone) -> StatusPill(label, tone, icon = if (item.isOverdue) Icons.Outlined.Warning else null) }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                SistaButton(
+                    "Tolak",
+                    onReject,
+                    variant = ButtonVariant.Outlined,
+                    leadingIcon = Icons.Outlined.Close,
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f),
+                )
+                SistaButton(
+                    "Setujui",
+                    onApprove,
+                    leadingIcon = Icons.Outlined.Check,
+                    enabled = enabled,
+                    loading = processing,
+                    modifier = Modifier.weight(1f),
                 )
             }
+        }
+    }
+}
 
-            if (approval.isOverdue) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Melewati batas waktu",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = AccentRose
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onReject,
-                    enabled = !isProcessing,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentRose)
-                ) {
-                    Text("Tolak")
+@Composable
+private fun SchoolFigures(kpi: SchoolKpiSummary?, error: String?) {
+    Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        SectionHeader("Keuangan & ujian")
+        when {
+            kpi == null && error != null -> InlineBanner(message = "Angka keuangan belum bisa dimuat. $error", tone = StatusTone.Warning)
+            kpi == null -> SkeletonList(rows = 2)
+            else -> {
+                Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    StatTile(
+                        label = "Pemasukan bulan ini",
+                        value = rupiahShort(kpi.monthlyRevenue),
+                        supporting = "pembayaran diterima",
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    )
+                    StatTile(
+                        label = "Ujian CBT",
+                        value = kpi.cbtServerUsage?.let { "${it.activeSessions} aktif" } ?: "–",
+                        supporting = kpi.cbtServerUsage?.let { "${thousands(it.sessionsToday)} dimulai hari ini" } ?: "belum ada data",
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    )
                 }
-                Button(
-                    onClick = onApprove,
-                    enabled = !isProcessing,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
-                ) {
-                    if (isProcessing) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
-                    } else {
-                        Text("Setujui")
+                if (kpi.sppPaymentRatioByCohort.isNotEmpty()) {
+                    SistaCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            Text("Pelunasan tagihan per tahun ajaran", style = SistaTheme.typography.titleSmall)
+                            kpi.sppPaymentRatioByCohort.forEachIndexed { index, row ->
+                                if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                                Column(Modifier.padding(vertical = Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(row.academicYear, style = SistaTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                        Text("${decimal(row.paidRatioPercent)}%", style = SistaTheme.typography.titleSmall)
+                                    }
+                                    LinearProgressIndicator(
+                                        progress = { (row.paidRatioPercent / 100).toFloat().coerceIn(0f, 1f) },
+                                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(SistaTheme.shapes.small),
+                                        color = SistaTheme.colors.primary,
+                                        trackColor = SistaTheme.colors.surfaceVariant,
+                                        drawStopIndicator = {},
+                                    )
+                                    Text(
+                                        "${thousands(row.paidBillings)} dari ${thousands(row.totalBillings)} tagihan lunas",
+                                        style = SistaTheme.typography.bodySmall,
+                                        color = SistaTheme.colors.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -683,49 +412,34 @@ private fun PendingApprovalCard(
 }
 
 @Composable
-private fun AdminActionPill(
-    title: String,
-    icon: ImageVector,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
-    val haptics = rememberHapticFeedbackHelper()
-
-    Column(
-        modifier = Modifier
-            .width(80.dp)
-            .springPressable {
-                haptics.tapLight()
-                onClick()
-            }
-            .semantics(mergeDescendants = true) { role = Role.Button },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = accentColor.copy(alpha = 0.12f),
-            border = BorderStroke(0.5.dp, accentColor.copy(alpha = 0.25f)),
-            modifier = Modifier
-                .size(56.dp)
-                .sulaoneInteractiveTouchTarget(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = accentColor,
-                    modifier = Modifier.size(26.dp)
+private fun BroadcastCard(sending: Boolean, onCompose: () -> Unit) {
+    SistaCard(modifier = Modifier.padding(horizontal = Spacing.screen).fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Outlined.Campaign, tone = StatusTone.Danger)
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text("Siaran darurat", style = SistaTheme.typography.titleSmall)
+                Text(
+                    "Tampil seketika di aplikasi seluruh siswa, guru, dan wali murid.",
+                    style = SistaTheme.typography.bodySmall,
+                    color = SistaTheme.colors.onSurfaceVariant,
                 )
             }
+            Spacer(Modifier.width(Spacing.sm))
+            SistaButton("Kirim", onCompose, variant = ButtonVariant.Danger, loading = sending, enabled = !sending)
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+    }
+}
+
+@Composable
+private fun Shortcuts(shortcuts: List<AdminShortcut>, onOpenRoute: (String) -> Unit) {
+    Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        SectionHeader("Akses cepat", actionLabel = "Semua layanan", onAction = { onOpenRoute(Screen.ServicesHub.route) })
+        shortcuts.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                row.forEach { item -> FeatureTile(item.title, item.icon, onClick = { onOpenRoute(item.route) }, modifier = Modifier.weight(1f)) }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
     }
 }

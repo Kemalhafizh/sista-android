@@ -15,11 +15,14 @@ interface AnalyticsApiService {
     @GET("analytics/teacher/class-performance")
     suspend fun getClassAnalytics(
         @Query("class") className: String,
-        @Query("subject") subjectName: String
+        @Query("subject") subjectName: String,
+        @Query("classroom_id") classroomId: Long? = null,
+        @Query("subject_id") subjectId: Long? = null,
     ): Response<ClassAnalyticsData>
 
+    /** [studentUuid] null = the first child linked to this account. */
     @GET("analytics/parent/child-progress")
-    suspend fun getParentProgress(): Response<ParentProgressData>
+    suspend fun getParentProgress(@Query("student_id") studentUuid: String? = null): Response<ParentProgressData>
 
     @GET("analytics/executive/kpi")
     suspend fun getExecutiveKpi(): Response<ExecutiveAnalyticsData>
