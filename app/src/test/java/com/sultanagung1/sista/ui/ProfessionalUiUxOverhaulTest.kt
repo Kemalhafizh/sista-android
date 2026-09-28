@@ -191,11 +191,16 @@ class ProfessionalUiUxOverhaulTest {
     @Test
     fun testLoginScreenAdoptsProfessionalInstitutionalDesign() {
         val content = read(loginScreen)
-        assertTrue("Must have official school crest with aura", content.contains("logo_kotak"))
-        assertTrue("Must have SULAONE headline", content.contains("SULAONE"))
-        assertTrue("Must have UserRoleTab enum", content.contains("enum class UserRoleTab"))
-        assertTrue("Must have BiometricVault authentication", content.contains("BiometricVault.authenticate"))
-        assertTrue("Must have TEE & Keystore security assurance", content.contains("Terlindungi Keamanan Enkripsi TEE & Keystore"))
-        assertTrue("Must have 48dp WCAG touch targets", content.contains("sulaoneInteractiveTouchTarget(48.dp)"))
+        assertTrue("Must show the official school logo", content.contains("logo_kotak"))
+        assertTrue("Must keep biometric sign-in", content.contains("BiometricVault.authenticate"))
+        assertTrue("Built from the design system", content.contains("SistaTextField(") && content.contains("SistaButton("))
+        // One sign-in for every role: the server knows the role, so a role
+        // picker on this screen would decide nothing.
+        assertFalse("No role picker", content.contains("UserRoleTab"))
+        // No status the app never checked.
+        assertFalse("No fake server status", content.contains("Server Backend Aktif"))
+        listOf("login_identifier_input", "login_password_input", "login_submit_button").forEach { tag ->
+            assertTrue("Automation tag $tag must stay", content.contains("\"$tag\""))
+        }
     }
 }

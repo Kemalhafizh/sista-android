@@ -112,7 +112,6 @@ class CbtOfflineResilienceE2ETest : AppiumTestBase() {
     }
 
     private fun loginAsStudent() {
-        driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"role_tab_student\")")).click()
         driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"login_identifier_input\")"))
             .sendKeys(STUDENT_ID)
         driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"login_password_input\")"))

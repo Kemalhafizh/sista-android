@@ -25,7 +25,7 @@ import com.sultanagung1.sista.core.ui.component.ErrorState
 import com.sultanagung1.sista.core.ui.component.SistaTopBar
 import com.sultanagung1.sista.core.ui.component.SkeletonList
 import com.sultanagung1.sista.core.ui.theme.SistaTheme
-import com.sultanagung1.sista.ui.shell.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 
 /** What a gate screen can do: provided once by the app shell. */

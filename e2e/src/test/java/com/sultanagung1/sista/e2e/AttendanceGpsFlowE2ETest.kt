@@ -38,8 +38,7 @@ class AttendanceGpsFlowE2ETest : AppiumTestBase() {
 
     @Test
     fun studentCanCompleteGpsCheckInInsideCampusRadius() {
-        // Step 1: role select -> login -> land on HomeScreen.
-        driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"role_tab_student\")")).click()
+        // Step 1: login (one form for every role) -> land on HomeScreen.
         driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"login_identifier_input\")"))
             .sendKeys(STUDENT_ID)
         driver.findElement(AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"login_password_input\")"))

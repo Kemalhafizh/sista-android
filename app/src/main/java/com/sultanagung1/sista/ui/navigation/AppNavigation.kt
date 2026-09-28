@@ -54,7 +54,7 @@ import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.navigation.graphs.*
 import com.sultanagung1.sista.ui.shell.ServicesHubScreen
-import com.sultanagung1.sista.ui.shell.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
 import com.sultanagung1.sista.core.ui.component.SistaNavigationBar
 import com.sultanagung1.sista.core.ui.component.SistaNavigationRail
 import com.sultanagung1.sista.data.model.CapabilityState
