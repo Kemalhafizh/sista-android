@@ -98,32 +98,22 @@ class ProfessionalUiUxOverhaulTest {
     }
 
     @Test
-    fun testAdminDashboardFollowsExecutiveStandards() {
+    fun testAdminHomeSharesTheUniformHomeLayout() {
         val content = read(adminDashboard)
-        assertTrue("Must use SulaoneExecutiveHeader", content.contains("SulaoneExecutiveHeader("))
-        assertTrue("Must have KOKPIT EKSEKUTIF PIMPINAN title", content.contains("KOKPIT EKSEKUTIF PIMPINAN"))
-        assertTrue("Must use SulaoneMetricCard for KPIs", content.contains("SulaoneMetricCard("))
-        assertTrue("Must have Kehadiran Siswa KPI", content.contains("Kehadiran Siswa"))
-        assertTrue("Must have Total Tunggakan SPP KPI", content.contains("Total Tunggakan SPP"))
-        assertTrue("Must have Guru Aktif KPI (real active_teachers)", content.contains("Guru Aktif"))
-        assertTrue("Must list real pending approvals", content.contains("PendingApprovalCard("))
-        assertTrue("Must have Setujui and Tolak buttons", content.contains("Setujui") && content.contains("Tolak"))
-    }
-
-    // ---- FASE 76.2: Bento + glass + honest states --------------------------
-
-    @Test
-    fun testStaffDashboardsUseBentoHeroAndScrollAwareGlassBar() {
-        for (path in listOf(adminDashboard)) {
-            val content = read(path)
-            assertTrue("$path must use an asymmetric BentoHeroSplit", content.contains("BentoHeroSplit("))
-            assertTrue("$path must use exactly one emphasized hero tile", content.split("SulaoneBentoHeroTile(").size - 1 == 1)
-            assertTrue("$path must show the sticky glass bar", content.contains("SulaoneGlassTopBar("))
-            assertTrue("$path must drive the glass bar from header scroll position", content.contains("rememberIsItemScrolledOff("))
-            // A LazyVerticalGrid nested in these LazyColumns crashes at measure time.
-            assertFalse("$path must not nest ResponsiveBentoGrid inside its LazyColumn", content.contains("ResponsiveBentoGrid("))
+        assertTrue("Must use the shared GreetingHeader", content.contains("GreetingHeader("))
+        assertTrue("Must show real stats as StatTiles", content.contains("StatTile("))
+        assertTrue("Shortcuts must be capability-filtered", content.contains("capabilities.canOpen(it.route)"))
+        assertTrue("Must list the requests waiting on this account", content.contains("ApprovalCard("))
+        assertTrue("Must have Setujui and Tolak buttons", content.contains("\"Setujui\"") && content.contains("\"Tolak\""))
+        // A decision is confirmed first, and the server's reason is shown when refused.
+        assertTrue("Decisions must be confirmed", content.contains("DecisionDialog("))
+        assertTrue("The server's outcome must be shown", content.contains("approvalOutcome"))
+        for (bogus in listOf("\"scanner\"", "\"notifications\"", "\"profile\"")) {
+            assertFalse("Must not navigate to non-route $bogus", content.contains("onNavigateRoute($bogus)"))
         }
     }
+
+    // ---- Honest states -----------------------------------------------------
 
     @Test
     fun testAdminDashboardDoesNotClaimLiveDataItDoesNotHave() {
