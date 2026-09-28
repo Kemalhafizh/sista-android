@@ -7,7 +7,7 @@ package com.sultanagung1.sista.ui.navigation
  * its seeders use several spellings for the same person: `parent` and
  * `orang_tua`, `student` and `siswa`, `kepala_sekolah` next to `kepsek`. The app
  * only ever matched the English/short forms, so an `orang_tua` account landed on
- * the student Home and `RoleGuardedScreen` refused it the parent portal, and a
+ * the student Home, and a
  * `kepala_sekolah` account was treated as a student. [normalize] folds those
  * aliases into the vocabulary the rest of the app already checks for; it is
  * applied once, in SessionManager.userRoleFlow.

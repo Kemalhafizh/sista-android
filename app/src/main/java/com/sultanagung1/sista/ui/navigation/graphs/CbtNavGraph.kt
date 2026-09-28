@@ -7,7 +7,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.composable
+import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
 import com.sultanagung1.sista.core.motion.LocalNavAnimatedVisibilityScope
 import com.sultanagung1.sista.core.security.BiometricVault
@@ -26,7 +26,7 @@ fun NavGraphBuilder.cbtNavGraph(
     navController: NavHostController,
     isSensitiveProtectionEnabled: Boolean
 ) {
-    composable(Screen.CbtList.route) {
+    guardedComposable(Screen.CbtList.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val viewModel: CbtViewModel = hiltViewModel()
             val context = LocalContext.current
@@ -79,7 +79,7 @@ fun NavGraphBuilder.cbtNavGraph(
         }
     }
 
-    composable(
+    guardedComposable(
         route = Screen.CbtTokenEntry.route,
         arguments = listOf(
             navArgument("examId") { type = NavType.LongType },
@@ -123,7 +123,7 @@ fun NavGraphBuilder.cbtNavGraph(
         }
     }
 
-    composable(
+    guardedComposable(
         route = Screen.CbtRoom.route,
         arguments = listOf(
             navArgument("examId") { type = NavType.LongType },

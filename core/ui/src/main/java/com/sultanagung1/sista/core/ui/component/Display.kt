@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -266,5 +268,52 @@ fun InlineBanner(
                 }
             }
         }
+    }
+}
+
+/**
+ * One feature in a grid of services ("Jadwal", "Presensi GPS"…). [hints]
+ * are small icons for what the feature needs from the phone (camera,
+ * location), so nobody is surprised by a permission prompt.
+ */
+@Composable
+fun FeatureTile(
+    title: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tone: StatusTone = StatusTone.Brand,
+    hints: List<ImageVector> = emptyList(),
+    hintDescription: String? = null,
+) {
+    SistaCard(
+        modifier = modifier
+            .heightIn(min = 112.dp)
+            .semantics(mergeDescendants = true) {},
+        onClick = onClick,
+        contentPadding = PaddingValues(Spacing.md),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            IconBadge(icon, tone = tone, size = 40.dp)
+            Spacer(Modifier.weight(1f))
+            if (hints.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xxs),
+                    modifier = Modifier.semantics { if (hintDescription != null) contentDescription = hintDescription },
+                ) {
+                    hints.forEach { hint ->
+                        Icon(hint, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(Spacing.md))
+        Text(
+            title,
+            style = SistaTheme.typography.titleSmall,
+            color = SistaTheme.colors.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

@@ -5,7 +5,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.composable
+import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
 import com.sultanagung1.sista.core.motion.LocalNavAnimatedVisibilityScope
 import com.sultanagung1.sista.ui.academic.*
@@ -17,7 +17,6 @@ import com.sultanagung1.sista.ui.analytics.ClassAnalyticsScreen
 import com.sultanagung1.sista.ui.calendar.AcademicCalendarScreen
 import com.sultanagung1.sista.ui.calendar.CalendarViewModel
 import com.sultanagung1.sista.ui.calendar.EventDetailScreen
-import com.sultanagung1.sista.ui.common.RoleGuardedScreen
 import com.sultanagung1.sista.ui.elearning.AdaptiveElearningScreen
 import com.sultanagung1.sista.ui.elearning.AssignmentSubmitScreen
 import com.sultanagung1.sista.ui.elearning.ElearningClassDetailScreen
@@ -35,24 +34,16 @@ fun NavGraphBuilder.academicNavGraph(
 ) {
     // FASE 77.5: per-subject attendance by scanning the teacher's rotating QR.
     // Backend student/* routes are role:student,siswa.
-    composable(Screen.StudentSessionQrScan.route) {
+    guardedComposable(Screen.StudentSessionQrScan.route) {
         val viewModel: StudentSessionQrScanViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("student", "siswa"),
-            featureTitle = "Presensi Kelas",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            StudentSessionQrScanScreen(
-                viewModel = viewModel,
-                onNavigateHome = navigateToRoleHome,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        StudentSessionQrScanScreen(
+            viewModel = viewModel,
+            onNavigateHome = navigateToRoleHome,
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
-    composable(Screen.Schedule.route) {
+    guardedComposable(Screen.Schedule.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val viewModel: AcademicViewModel = hiltViewModel()
             ScheduleScreen(
@@ -62,7 +53,7 @@ fun NavGraphBuilder.academicNavGraph(
         }
     }
 
-    composable(Screen.Grades.route) {
+    guardedComposable(Screen.Grades.route) {
         val viewModel: AcademicViewModel = hiltViewModel()
         GradesScreen(
             viewModel = viewModel,
@@ -70,7 +61,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(Screen.RaporDetail.route) {
+    guardedComposable(Screen.RaporDetail.route) {
         val viewModel: RaporViewModel = hiltViewModel()
         RaporDetailScreen(
             viewModel = viewModel,
@@ -82,7 +73,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(Screen.ElearningClassList.route) {
+    guardedComposable(Screen.ElearningClassList.route) {
         val viewModel: ElearningViewModel = hiltViewModel()
         AdaptiveElearningScreen(
             viewModel = viewModel,
@@ -96,7 +87,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.ElearningClassDetail.route,
         arguments = listOf(navArgument("classId") { type = NavType.LongType })
     ) { backStackEntry ->
@@ -112,7 +103,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.AssignmentSubmit.route,
         arguments = listOf(navArgument("assignmentId") { type = NavType.LongType })
     ) { backStackEntry ->
@@ -125,7 +116,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(Screen.AcademicCalendar.route) {
+    guardedComposable(Screen.AcademicCalendar.route) {
         val viewModel: CalendarViewModel = hiltViewModel()
         AcademicCalendarScreen(
             viewModel = viewModel,
@@ -136,7 +127,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.EventDetail.route,
         arguments = listOf(navArgument("eventId") { type = NavType.StringType })
     ) { backStackEntry ->
@@ -149,7 +140,7 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(Screen.AcademicAnalytics.route) {
+    guardedComposable(Screen.AcademicAnalytics.route) {
         val viewModel: AnalyticsViewModel = hiltViewModel()
         AcademicAnalyticsScreen(
             viewModel = viewModel,
@@ -157,19 +148,11 @@ fun NavGraphBuilder.academicNavGraph(
         )
     }
 
-    composable(Screen.ClassAnalytics.route) {
+    guardedComposable(Screen.ClassAnalytics.route) {
         val viewModel: AnalyticsViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("teacher", "guru", "admin", "superadmin", "principal", "kepsek"),
-            featureTitle = "Analitik Hasil Belajar Kelas",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            ClassAnalyticsScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        ClassAnalyticsScreen(
+            viewModel = viewModel,
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 }

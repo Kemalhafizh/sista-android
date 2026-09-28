@@ -24,6 +24,8 @@ data class StringsDefinition(
     // FASE 77: guru → "Mengajar" (sesi kelas hari ini); admin/Waka/TU → "Sesi Kelas".
     val teachingTab: String = "Mengajar",
     val classSessionsTab: String = "Sesi Kelas",
+    // Every feature of the account, the same tab for every role.
+    val servicesTab: String = "Layanan",
 
     // Settings & Configuration
     val settingsTitle: String,
@@ -116,6 +118,7 @@ val IndonesianStrings = StringsDefinition(
     notificationsTab = "Pengumuman",
     teachingTab = "Mengajar",
     classSessionsTab = "Sesi Kelas",
+    servicesTab = "Layanan",
     settingsTitle = "Pengaturan SuperApp",
     languageTitle = "Pengaturan Bahasa",
     themeTitle = "Tema & Mode Gelap",
@@ -190,6 +193,7 @@ val EnglishStrings = StringsDefinition(
     notificationsTab = "Announcements",
     teachingTab = "Teaching",
     classSessionsTab = "Class Sessions",
+    servicesTab = "Services",
     settingsTitle = "SuperApp Settings",
     languageTitle = "Language Settings",
     themeTitle = "Theme & Dark Mode",
@@ -264,6 +268,7 @@ val ArabicStrings = StringsDefinition(
     notificationsTab = "الإعلانات",
     teachingTab = "التدريس",
     classSessionsTab = "الحصص الدراسية",
+    servicesTab = "الخدمات",
     settingsTitle = "إعدادات التطبيق",
     languageTitle = "إعدادات اللغة",
     themeTitle = "المظهر والوضع الداكن",

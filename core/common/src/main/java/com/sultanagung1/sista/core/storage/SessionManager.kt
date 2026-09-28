@@ -36,6 +36,8 @@ class SessionManager(private val context: Context) {
         val KEY_HIGH_CONTRAST = booleanPreferencesKey("high_contrast")
         val KEY_REFRESH_RATE_MODE = stringPreferencesKey("refresh_rate_mode")
         val KEY_FAVORITE_MODULE_IDS = stringSetPreferencesKey("favorite_module_ids")
+        // Last capability list the server sent (JSON), for offline starts.
+        val KEY_CAPABILITIES = stringPreferencesKey("capabilities_json")
     }
 
     val authTokenFlow: Flow<String?> = context.dataStore.data
@@ -55,8 +57,8 @@ class SessionManager(private val context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         // FASE 76.3: backend aliases (orang_tua, kepala_sekolah, siswa) folded
-        // into the app's role vocabulary, so navigation and RoleGuardedScreen
-        // treat them like parent / kepsek / student.
+        // into the app's role vocabulary for the screens that still read it.
+        // What an account may open comes from the server (CapabilitiesRepository).
         .map { preferences -> com.sultanagung1.sista.ui.navigation.UserRoles.normalize(preferences[KEY_USER_ROLE]) }
 
     val userNameFlow: Flow<String?> = context.dataStore.data
@@ -253,8 +255,26 @@ class SessionManager(private val context: Context) {
         }
     }
 
+    /** The saved capability list, or null (never saved / signed out). */
+    suspend fun readCapabilitiesJson(): String? = context.dataStore.data
+        .catch { exception -> if (exception is IOException) emit(emptyPreferences()) else throw exception }
+        .first()[KEY_CAPABILITIES]
+
+    /**
+     * Save what the server said this account may use, and the role it
+     * reported with it: the server's role replaces whatever was stored at
+     * login, so the app never runs on a stale or guessed role.
+     */
+    suspend fun saveCapabilities(json: String, role: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_CAPABILITIES] = json
+            if (role.isNotBlank()) preferences[KEY_USER_ROLE] = role
+        }
+    }
+
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
+            preferences.remove(KEY_CAPABILITIES)
             preferences.remove(KEY_AUTH_TOKEN)
             preferences.remove(KEY_USER_ID)
             preferences.remove(KEY_USER_ROLE)

@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets
 sealed class Screen(val route: String, val title: String = "") {
     object Login : Screen("login", "Masuk")
     object Home : Screen("home", "Beranda")
+    /** Every feature this account has, grouped: the same screen for every role. */
+    object ServicesHub : Screen("layanan", "Layanan")
     
     // Attendance & Hardware
     object GeofenceAttendance : Screen("geofence_attendance", "Presensi GPS")

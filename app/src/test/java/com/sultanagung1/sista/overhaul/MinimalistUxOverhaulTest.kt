@@ -98,24 +98,14 @@ class MinimalistUxOverhaulTest {
     fun testBottomNavConsolidatedTo4Tabs() {
         val appNavFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/navigation/AppNavigation.kt")
         assertTrue(appNavFile.exists())
-
         val content = appNavFile.readText()
         assertTrue("Must contain FASE 60.3 comment", content.contains("FASE 60.3: Consolidated 4-Tab System"))
+        // One tab list for every account, built from the server's capability
+        // list — no branch per role any more.
+        assertTrue(content.contains("ShellTabs.entries(homeRoute, capabilityState, strings)"))
+        assertFalse(content.contains("UserRoles.groupOf("))
 
-        val navItemsSection = content.substringAfter("val bottomNavItems = when (UserRoles.groupOf(userRole)) {").substringBefore("val tabRoutes")
-        // FASE 76.3: the when is keyed by RoleGroup now (one branch per group,
-        // exhaustive), so the anchor above changed; the 4x4 rule did not.
-        assertTrue("bottomNavItems anchor must exist", navItemsSection.length < content.length)
-        // FASE 77: tabs per role group. The four original groups keep exactly 4;
-        // Waka Kurikulum/TU (ACADEMIC_STAFF) has 3, since it has no fourth screen.
-        // The admin group's second tab depends on the role (adminSecondTab).
-        val tabsPerGroup = navItemsSection.split("RoleGroup.").drop(1).associate { branch ->
-            branch.substringBefore(" ").trim() to
-                (branch.split("BottomNavItem(").size - 1 + branch.split("adminSecondTab(").size - 1)
-        }
-        assertEquals(
-            mapOf("TEACHER" to 4, "PARENT" to 4, "ADMIN" to 4, "STUDENT" to 4, "ACADEMIC_STAFF" to 3),
-            tabsPerGroup
-        )
+        val tabs = findSourceFile("src/main/java/com/sultanagung1/sista/ui/navigation/ShellTabs.kt").readText()
+        assertEquals("At most four tabs", 4, tabs.split("add(NavEntry(").size - 1)
     }
 }
