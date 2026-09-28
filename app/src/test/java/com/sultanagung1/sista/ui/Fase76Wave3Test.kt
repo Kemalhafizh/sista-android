@@ -48,7 +48,8 @@ class Fase76Wave3Test {
 
     @Test
     fun priorityScreensShowContentShapedSkeletonsWhileLoading() {
-        assertTrue(code(grades).contains("SulaoneTieredLoading(isLoading = true) { GradesSkeleton() }"))
+        // Grades: skeleton only on the first load, never an empty state while loading.
+        assertTrue(code(grades).indexOf("grades.isEmpty() && loading -> item { SkeletonList(") < code(grades).indexOf("title = \"Belum ada nilai\""))
         assertTrue(code(announcements).contains("AnnouncementSkeleton(borderColor = borderColor)"))
         assertTrue(code(library).contains("BookListSkeleton()"))
     }
@@ -100,7 +101,12 @@ class Fase76Wave3Test {
 
     @Test
     fun longListsScrollUnderASeeThroughTopBar() {
-        for (screen in listOf(grades, announcements, conversations)) {
+        // Rebuilt screens (design system v2) get the same effect from the
+        // Material scroll behaviour of SistaTopBar.
+        val g = code(grades)
+        assertTrue("grades: bar reacts to scrolling", g.contains("scrollBehavior = scrollBehavior"))
+        assertTrue("grades: list scroll reaches the bar", g.contains("nestedScroll(scrollBehavior.nestedScrollConnection)"))
+        for (screen in listOf(announcements, conversations)) {
             val c = code(screen)
             assertTrue("$screen: translucent bar", c.contains("translucent = true"))
             assertTrue("$screen: hairline once scrolled", c.contains("showDivider = listScrolled"))

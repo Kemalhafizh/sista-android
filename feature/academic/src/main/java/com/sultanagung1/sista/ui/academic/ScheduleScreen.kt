@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -120,12 +122,16 @@ fun ScheduleContent(
     val className = ScheduleRules.classNameOf(schedules)
 
     ShellTheme {
+        // The bar takes a surface tone once the list scrolls beneath it.
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 SistaTopBar(
                     title = "Jadwal Pelajaran",
                     subtitle = className?.let { "Kelas $it" },
                     onBack = onNavigateBack,
+                    scrollBehavior = scrollBehavior,
                 )
             },
             containerColor = SistaTheme.colors.background,
