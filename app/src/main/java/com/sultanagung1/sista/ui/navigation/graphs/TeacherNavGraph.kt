@@ -146,7 +146,7 @@ fun NavGraphBuilder.teacherNavGraph(
         route = Screen.ScoreInput.route,
         arguments = listOf(navArgument("assessmentId") { type = NavType.LongType })
     ) { backStackEntry ->
-        val assessmentId = backStackEntry.arguments?.getLong("assessmentId") ?: 1L
+        val assessmentId = backStackEntry.arguments?.getLong("assessmentId") ?: 0L
         val viewModel: DailyAssessmentViewModel = hiltViewModel()
         ScoreInputScreen(
             assessmentId = assessmentId,

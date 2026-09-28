@@ -33,7 +33,7 @@ class TeacherHomeScreenshotTest {
     )
 
     private val journals = listOf(
-        journal("a", "2026-09-25", "XI MIPA 2", "Hukum Newton II", 30, 2, "approved"),
+        journal("a", "2026-09-25", "XI MIPA 2", "Hukum Newton II", 30, 2, "reviewed"),
         journal("b", "2026-09-24", "X-4", "Besaran dan satuan", 33, 1, "submitted"),
         journal("c", "2026-09-24", "XI MIPA 1", "Gerak parabola", 29, 2, "draft"),
     )
