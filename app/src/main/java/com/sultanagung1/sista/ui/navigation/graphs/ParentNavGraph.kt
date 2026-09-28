@@ -4,11 +4,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.composable
+import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
 import com.sultanagung1.sista.ui.analytics.AnalyticsViewModel
 import com.sultanagung1.sista.ui.analytics.ChildProgressScreen
-import com.sultanagung1.sista.ui.common.RoleGuardedScreen
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.parent.*
 
@@ -20,77 +19,45 @@ fun NavGraphBuilder.parentNavGraph(
     userRole: String,
     navigateToRoleHome: () -> Unit
 ) {
-    composable(Screen.ParentDashboard.route) {
+    guardedComposable(Screen.ParentDashboard.route) {
         val viewModel: ParentViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("parent", "ortu", "admin", "superadmin"),
-            featureTitle = "Portal Wali Murid",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            ParentDashboardScreen(
-                viewModel = viewModel,
-                onNavigateToChildDetail = { studentId ->
-                    navController.navigate(Screen.ChildDetail.createRoute(studentId))
-                },
-                onNavigateToBilling = { navController.navigate(Screen.Billing.route) },
-                onNavigateRoute = { route -> navController.navigate(route) },
-                onNavigateToActivityFeed = { navController.navigate(Screen.ChildActivityFeed.route) }
-            )
-        }
+        ParentDashboardScreen(
+            viewModel = viewModel,
+            onNavigateToChildDetail = { studentId ->
+                navController.navigate(Screen.ChildDetail.createRoute(studentId))
+            },
+            onNavigateToBilling = { navController.navigate(Screen.Billing.route) },
+            onNavigateRoute = { route -> navController.navigate(route) },
+            onNavigateToActivityFeed = { navController.navigate(Screen.ChildActivityFeed.route) }
+        )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.ChildDetail.route,
         arguments = listOf(navArgument("studentId") { type = NavType.StringType })
     ) { backStackEntry ->
         val studentId = backStackEntry.arguments?.getString("studentId") ?: "c1"
         val viewModel: ParentViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("parent", "ortu", "admin", "superadmin", "teacher", "guru"),
-            featureTitle = "Detail Perkembangan Anak",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            ChildDetailScreen(
-                studentId = studentId,
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        ChildDetailScreen(
+            studentId = studentId,
+            viewModel = viewModel,
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
-    composable(Screen.ChildProgress.route) {
+    guardedComposable(Screen.ChildProgress.route) {
         val viewModel: AnalyticsViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("parent", "ortu", "admin", "superadmin", "teacher", "guru"),
-            featureTitle = "Pantau Progres Anak",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            ChildProgressScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        ChildProgressScreen(
+            viewModel = viewModel,
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
-    composable(Screen.ChildActivityFeed.route) {
+    guardedComposable(Screen.ChildActivityFeed.route) {
         val viewModel: ParentViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("parent", "ortu", "admin", "superadmin", "teacher", "guru"),
-            featureTitle = "Aktivitas Harian Siswa",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            ChildActivityFeedScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        ChildActivityFeedScreen(
+            viewModel = viewModel,
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 }

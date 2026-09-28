@@ -18,6 +18,7 @@ class HiltDependencyInjectionTest {
 
     private val allViewModelClasses: List<Class<*>> = listOf(
         com.sultanagung1.sista.ui.auth.LoginViewModel::class.java,
+        com.sultanagung1.sista.ui.navigation.CapabilitiesViewModel::class.java,
         com.sultanagung1.sista.ui.home.HomeViewModel::class.java,
         com.sultanagung1.sista.ui.attendance.AttendanceViewModel::class.java,
         com.sultanagung1.sista.ui.academic.AcademicViewModel::class.java,

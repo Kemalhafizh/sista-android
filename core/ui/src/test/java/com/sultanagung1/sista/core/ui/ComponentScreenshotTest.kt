@@ -1,6 +1,19 @@
 package com.sultanagung1.sista.core.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.sultanagung1.sista.core.ui.component.FeatureTile
+import com.sultanagung1.sista.core.ui.component.NavEntry
+import com.sultanagung1.sista.core.ui.component.SistaNavigationBar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -97,6 +110,10 @@ class ComponentScreenshotTest {
     @Test fun inputs_dark() = capture("inputs", true) { Inputs() }
     @Test fun sampleHome_light() = capture("sample_student_home", false) { SampleStudentHome() }
     @Test fun sampleHome_dark() = capture("sample_student_home", true) { SampleStudentHome() }
+    // The shell is identical for every role; only the tiles differ.
+    @Test fun sampleServicesStudent_light() = capture("sample_services_student", false) { SampleServices(studentServices) }
+    @Test fun sampleServicesTeacher_light() = capture("sample_services_teacher", false) { SampleServices(teacherServices) }
+    @Test fun sampleServicesTeacher_dark() = capture("sample_services_teacher", true) { SampleServices(teacherServices) }
 }
 
 @Composable
@@ -193,4 +210,56 @@ private fun ColumnScope.SampleStudentHome() {
         HorizontalDivider(color = SistaTheme.colors.outlineVariant)
         SistaListItem("Pendidikan Agama Islam", supporting = "Ust. Rizqi • Masjid Lt. 2", overline = "10.15 – 11.45", leading = { IconBadge(Icons.Outlined.CalendarMonth, tone = StatusTone.Neutral) })
     }
+}
+
+private data class SampleTile(val title: String, val icon: ImageVector, val hints: List<ImageVector> = emptyList())
+
+private val studentServices = listOf(
+    "Akademik" to listOf(
+        SampleTile("Jadwal Pelajaran", Icons.Outlined.CalendarMonth),
+        SampleTile("Ujian CBT", Icons.Outlined.School),
+        SampleTile("Tagihan", Icons.Outlined.Receipt),
+    ),
+    "Presensi" to listOf(
+        SampleTile("Presensi GPS", Icons.Outlined.LocationOn, listOf(Icons.Outlined.LocationOn)),
+        SampleTile("Scan QR Kelas", Icons.Outlined.QrCodeScanner, listOf(Icons.Outlined.CameraAlt)),
+    ),
+)
+
+private val teacherServices = listOf(
+    "Mengajar" to listOf(
+        SampleTile("Sesi Kelas Hari Ini", Icons.Outlined.QrCodeScanner, listOf(Icons.Outlined.CameraAlt)),
+        SampleTile("Jurnal Mengajar", Icons.Outlined.Email),
+        SampleTile("Penilaian Harian", Icons.Outlined.CheckCircle),
+    ),
+    "Layanan" to listOf(
+        SampleTile("Pengumuman", Icons.Outlined.Email),
+    ),
+)
+
+@Composable
+private fun ColumnScope.SampleServices(sections: List<Pair<String, List<SampleTile>>>) {
+    Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        sections.forEach { (group, tiles) ->
+            SectionHeader(group)
+            tiles.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    row.forEach { tile ->
+                        FeatureTile(tile.title, tile.icon, onClick = {}, hints = tile.hints, modifier = Modifier.weight(1f))
+                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+    SistaNavigationBar(
+        entries = listOf(
+            NavEntry("home", "Beranda", Icons.Outlined.Home, Icons.Filled.Home),
+            NavEntry("layanan", "Layanan", Icons.Outlined.Apps, Icons.Filled.Apps),
+            NavEntry("notif", "Notifikasi", Icons.Outlined.Notifications, badge = 3),
+            NavEntry("profil", "Profil", Icons.Outlined.Person),
+        ),
+        selectedKey = "layanan",
+        onSelect = {},
+    )
 }

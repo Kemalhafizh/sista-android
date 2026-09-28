@@ -4,7 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.composable
+import com.sultanagung1.sista.ui.navigation.guardedComposable
 import com.sultanagung1.sista.core.motion.LocalNavAnimatedVisibilityScope
 import com.sultanagung1.sista.core.sync.SyncManager
 import com.sultanagung1.sista.ui.auth.LoginScreen
@@ -12,30 +12,26 @@ import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.home.HomeScreen
 import com.sultanagung1.sista.ui.home.HomeViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
-import com.sultanagung1.sista.ui.navigation.UserRoles
 
 /**
  * Sub-Navigation Graph untuk modul Autentikasi dan Beranda (FASE 53.2).
  */
 fun NavGraphBuilder.authNavGraph(
     navController: NavHostController,
-    userRole: String,
+    onSignedIn: () -> Unit,
     syncManager: SyncManager
 ) {
-    composable(Screen.Login.route) {
+    guardedComposable(Screen.Login.route) {
         val viewModel: LoginViewModel = hiltViewModel()
         LoginScreen(
             viewModel = viewModel,
-            onLoginSuccess = {
-                val targetRoute = UserRoles.homeRouteFor(userRole)
-                navController.navigate(targetRoute) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
-                }
-            }
+            // The home is chosen from the account's server-given features,
+            // loaded right after sign-in (AppNavigation.onSignedIn).
+            onLoginSuccess = onSignedIn
         )
     }
 
-    composable(Screen.Home.route) {
+    guardedComposable(Screen.Home.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val viewModel: HomeViewModel = hiltViewModel()
             HomeScreen(

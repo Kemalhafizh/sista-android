@@ -54,9 +54,12 @@ class Fase76CompletionGuardTest {
 
     @Test
     fun roleHomeHasOneSourceOfTruth() {
-        assertTrue(code(appNav).contains("UserRoles.homeRouteFor(userRole)"))
-        assertTrue(code(appNav).contains("when (UserRoles.groupOf(userRole))"))
-        assertTrue(code(authGraph).contains("UserRoles.homeRouteFor(userRole)"))
+        // The home comes from the account's server-given features, not from a
+        // role the app interprets (FeatureCatalog.homeRouteFor).
+        assertTrue(code(appNav).contains("FeatureCatalog.homeRouteFor(it.capabilities)"))
+        assertFalse(code(appNav).contains("UserRoles.homeRouteFor("))
+        assertFalse(code(appNav).contains("UserRoles.groupOf("))
+        assertTrue(code(authGraph).contains("onLoginSuccess = onSignedIn"))
         assertTrue("Backend aliases are folded once, at the session", code(session).contains("UserRoles.normalize("))
     }
 

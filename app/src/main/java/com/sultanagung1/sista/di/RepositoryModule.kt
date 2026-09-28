@@ -27,6 +27,13 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideCapabilitiesRepository(
+        api: CapabilitiesApiService,
+        sessionManager: SessionManager
+    ): CapabilitiesRepository = CapabilitiesRepository(api, sessionManager)
+
+    @Provides
+    @Singleton
     fun provideFeatureUsageRepository(
         database: SistaDatabase,
         sessionManager: SessionManager

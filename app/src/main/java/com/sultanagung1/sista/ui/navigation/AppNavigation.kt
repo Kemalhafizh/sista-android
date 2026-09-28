@@ -53,24 +53,14 @@ import com.sultanagung1.sista.core.websocket.WebSocketSessionViewModel
 import com.sultanagung1.sista.data.local.SulaoneLocalStore
 import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.navigation.graphs.*
-
-/**
- * FASE 77: the admin group's second tab. Class-session management for the
- * roles backend FASE 117 lets in; the principal (not on `admin/class-sessions`)
- * gets the executive KPIs, whose endpoint does accept kepala_sekolah.
- */
-private fun adminSecondTab(userRole: String?, strings: com.sultanagung1.sista.core.accessibility.StringsDefinition): BottomNavItem =
-    if (UserRoles.canManageClassSessions(userRole)) {
-        BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent)
-    } else {
-        BottomNavItem(Screen.ExecutiveAnalytics.route, Screen.ExecutiveAnalytics.title, Icons.Default.Insights)
-    }
-
-data class BottomNavItem(
-    val route: String,
-    val title: String,
-    val icon: ImageVector
-)
+import com.sultanagung1.sista.ui.shell.ServicesHubScreen
+import com.sultanagung1.sista.ui.shell.ShellTheme
+import com.sultanagung1.sista.core.ui.component.SistaNavigationBar
+import com.sultanagung1.sista.core.ui.component.SistaNavigationRail
+import com.sultanagung1.sista.data.model.CapabilityState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.launch
 
 /**
  * Master NavHost & Adaptive Navigation Bar (FASE 53.2).
@@ -101,15 +91,35 @@ fun AppNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val isLoggedIn by sessionManager.isLoggedInFlow.collectAsState(initial = false)
-    val userRoleRaw by sessionManager.userRoleFlow.collectAsState(initial = "student")
-    val userRole = userRoleRaw ?: "student"
+    // Only for screens that still read a role for wording; what an account may
+    // open comes from the server's capability list below, never from this.
+    val userRole = sessionManager.userRoleFlow.collectAsState(initial = null).value.orEmpty()
     val isSensitiveProtectionEnabled by sessionManager.isSensitiveProtectionEnabledFlow.collectAsState(initial = true)
 
-    val navigateToRoleHome = remember(userRole) {
-        {
-            val targetRoute = UserRoles.homeRouteFor(userRole)
-            navController.navigate(targetRoute) {
-                popUpTo(0) { inclusive = false }
+    // What this account may use, from GET me/capabilities (server = truth).
+    val capabilitiesViewModel: CapabilitiesViewModel = hiltViewModel()
+    val capabilityState by capabilitiesViewModel.state.collectAsState()
+    val homeRoute = (capabilityState as? CapabilityState.Ready)
+        ?.let { FeatureCatalog.homeRouteFor(it.capabilities) }
+        ?: Screen.ServicesHub.route
+    val coroutineScope = rememberCoroutineScope()
+
+    val navigateToRoleHome: () -> Unit = {
+        navController.navigate(homeRoute) {
+            popUpTo(0) { inclusive = false }
+            launchSingleTop = true
+        }
+    }
+
+    // Signed in: fetch the account's features first, then open its home.
+    val onSignedIn: () -> Unit = {
+        coroutineScope.launch {
+            val state = capabilitiesViewModel.refreshNow()
+            val target = (state as? CapabilityState.Ready)
+                ?.let { FeatureCatalog.homeRouteFor(it.capabilities) }
+                ?: Screen.ServicesHub.route
+            navController.navigate(target) {
+                popUpTo(Screen.Login.route) { inclusive = true }
             }
         }
     }
@@ -146,9 +156,14 @@ fun AppNavigation(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
+        val capabilityObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) capabilitiesViewModel.onForeground()
+        }
         lifecycleOwner.lifecycle.addObserver(lifecycleSyncObserver)
+        lifecycleOwner.lifecycle.addObserver(capabilityObserver)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(lifecycleSyncObserver)
+            lifecycleOwner.lifecycle.removeObserver(capabilityObserver)
         }
     }
 
@@ -189,44 +204,14 @@ fun AppNavigation(
     val inAppUpdateManager = remember { InAppUpdateManager(context, com.sultanagung1.sista.core.network.ApiClient(context)) }
     val liteModeManager = remember { LiteModeManager(context) }
 
-    // Role-Based Multilingual Bottom Navigation Bar Items (FASE 60.3: Consolidated 4-Tab System)
-    val bottomNavItems = when (UserRoles.groupOf(userRole)) {
-        // FASE 77: "Jadwal" opened the student schedule (student/schedule, role:student)
-        // and always 403'd for teachers and admins; their second tab is now the
-        // class-session screen of their role.
-        RoleGroup.TEACHER -> listOf(
-            BottomNavItem(Screen.TeacherDashboard.route, strings.teacherTab, Icons.Default.Dashboard),
-            BottomNavItem(Screen.TeacherTodaySessions.route, strings.teachingTab, Icons.Default.CoPresent),
-            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
-            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
-        )
-        RoleGroup.PARENT -> listOf(
-            BottomNavItem(Screen.ParentDashboard.route, strings.parentTab, Icons.Default.FamilyRestroom),
-            BottomNavItem(Screen.Grades.route, strings.gradesTab, Icons.Default.AutoGraph),
-            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
-            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
-        )
-        RoleGroup.ADMIN -> listOf(
-            BottomNavItem(Screen.AdminDashboard.route, strings.executiveTab, Icons.Default.AdminPanelSettings),
-            adminSecondTab(userRole, strings),
-            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
-            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
-        )
-        RoleGroup.STUDENT -> listOf(
-            BottomNavItem(Screen.Home.route, strings.homeTab, Icons.Default.Home),
-            BottomNavItem(Screen.Schedule.route, strings.scheduleTab, Icons.Default.School),
-            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
-            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
-        )
-        // Waka Kurikulum / TU: three tabs; there is no fourth screen of theirs yet.
-        RoleGroup.ACADEMIC_STAFF -> listOf(
-            BottomNavItem(Screen.AdminSessionManagement.route, strings.classSessionsTab, Icons.Default.CoPresent),
-            BottomNavItem(Screen.NotificationCenter.route, strings.notificationsTab, Icons.Default.Campaign),
-            BottomNavItem(Screen.Profile.route, strings.profileTab, Icons.Default.Person)
-        )
+    // The same places for every account (FASE 60.3: Consolidated 4-Tab System):
+    // Beranda opens the home of whatever the account may use, Layanan lists
+    // every feature it has. Roles differ in content, never in the shell.
+    val bottomNavItems = remember(homeRoute, capabilityState, strings) {
+        ShellTabs.entries(homeRoute, capabilityState, strings)
     }
 
-    val tabRoutes = remember(bottomNavItems) { bottomNavItems.map { it.route }.toSet() }
+    val tabRoutes = remember(bottomNavItems) { bottomNavItems.map { it.key }.toSet() }
     val windowWidthClass = rememberCurrentWindowWidthSizeClass()
     val navType = windowWidthClass.toAdaptiveNavigationType()
     val isTabRoute = currentRoute in tabRoutes
@@ -251,92 +236,15 @@ fun AppNavigation(
         bottomBar = {
             if (showBottomBar) {
                 val haptics = rememberHapticFeedbackHelper()
-                val isDark = MaterialTheme.colorScheme.surface.let { (0.299f * it.red + 0.587f * it.green + 0.114f * it.blue) < 0.5f }
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RectangleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 3.dp,
-                    border = BorderStroke(0.5.dp, MaterialTheme.extendedColors.borderSubtle.copy(alpha = 0.5f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 8.dp, vertical = 6.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(
-                                    elevation = if (isDark) 8.dp else 4.dp,
-                                    shape = RoundedCornerShape(22.dp),
-                                    spotColor = if (isDark) Color.Black.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                ),
-                            shape = RoundedCornerShape(22.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            border = BorderStroke(
-                                1.dp,
-                                if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-                                else MaterialTheme.extendedColors.borderSubtle.copy(alpha = 0.7f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 6.dp, vertical = 5.dp),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                            ) {
-                                bottomNavItems.forEach { item ->
-                                    val isSelected = currentRoute == item.route
-                                    val activeColor = MaterialTheme.colorScheme.primary
-                                    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-
-                                    Column(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .clickable {
-                                                if (currentRoute != item.route) {
-                                                    haptics.tapLight()
-                                                    onNavigateTab(item.route)
-                                                }
-                                            }
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .background(
-                                                    if (isSelected) activeColor.copy(alpha = 0.14f) else Color.Transparent
-                                                )
-                                                .padding(horizontal = 14.dp, vertical = 4.dp),
-                                            contentAlignment = androidx.compose.ui.Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = item.icon,
-                                                contentDescription = item.title,
-                                                tint = if (isSelected) activeColor else inactiveColor,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = item.title,
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 10.sp,
-                                                fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium
-                                            ),
-                                            color = if (isSelected) activeColor else inactiveColor,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                ShellTheme {
+                    SistaNavigationBar(
+                        entries = bottomNavItems,
+                        selectedKey = currentRoute,
+                        onSelect = { entry ->
+                            haptics.tapLight()
+                            onNavigateTab(entry.key)
+                        },
+                    )
                 }
             }
         },
@@ -345,6 +253,7 @@ fun AppNavigation(
         // "only on a home tab", so an exam screen can never show it.
         floatingActionButton = {
             val fabAction = ContextualFab.actionFor(currentRoute, userRole)
+                ?.takeIf { capabilityState.canOpen(it.targetRoute) }
             if (fabAction != null && isTabRoute) {
                 val fabHaptics = rememberHapticFeedbackHelper()
                 ExtendedFloatingActionButton(
@@ -371,22 +280,14 @@ fun AppNavigation(
                 .fillMaxSize()
                 .padding(bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp)
         ) {
-            if (showNavRail) {
-                SulaoneNavigationRail(
-                    items = bottomNavItems,
-                    currentRoute = currentRoute,
-                    onNavigate = onNavigateTab
-                )
-                VerticalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    thickness = 0.5.dp
-                )
-            } else if (showNavDrawer) {
-                SulaonePermanentNavDrawer(
-                    items = bottomNavItems,
-                    currentRoute = currentRoute,
-                    onNavigate = onNavigateTab
-                )
+            if (showNavRail || showNavDrawer) {
+                ShellTheme {
+                    SistaNavigationRail(
+                        entries = bottomNavItems,
+                        selectedKey = currentRoute,
+                        onSelect = { entry -> onNavigateTab(entry.key) },
+                    )
+                }
                 VerticalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                     thickness = 0.5.dp
@@ -401,7 +302,13 @@ fun AppNavigation(
                 SharedTransitionLayout {
                     CompositionLocalProvider(
                         LocalSharedTransitionScope provides this@SharedTransitionLayout,
-                        LocalWindowWidthSizeClass provides windowWidthClass
+                        LocalWindowWidthSizeClass provides windowWidthClass,
+                        LocalCapabilityState provides capabilityState,
+                        LocalGateActions provides GateActions(
+                            onBack = { if (!navController.popBackStack()) navigateToRoleHome() },
+                            onHome = navigateToRoleHome,
+                            onRetry = capabilitiesViewModel::refresh,
+                        )
                     ) {
                         NavHost(
                             navController = navController,
@@ -431,9 +338,18 @@ fun AppNavigation(
                     // 1. Autentikasi & Home (FASE 53.2)
                     authNavGraph(
                         navController = navController,
-                        userRole = userRole,
+                        onSignedIn = onSignedIn,
                         syncManager = syncManager
                     )
+
+                    // Layanan: every feature of this account, same layout for all roles.
+                    guardedComposable(Screen.ServicesHub.route) {
+                        ServicesHubScreen(
+                            state = capabilityState,
+                            onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
+                            onRetry = capabilitiesViewModel::refresh
+                        )
+                    }
 
                     // 2. Modul Akademik, LMS, Kalender & Analitik (FASE 53.2)
                     academicNavGraph(

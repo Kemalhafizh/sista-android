@@ -16,6 +16,7 @@ class RetrofitUrlNormalizationTest {
         // test source set from compiling. listMatchesTheServicesInSource() now
         // keeps this list honest.
         AchievementApiService::class.java,
+        CapabilitiesApiService::class.java,
         CalendarMobileApiService::class.java,
         CounselingMobileApiService::class.java,
         DailyAssessmentMobileApiService::class.java,

@@ -10,7 +10,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.composable
+import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
 import com.sultanagung1.sista.core.motion.LocalNavAnimatedVisibilityScope
 import com.sultanagung1.sista.core.audio.AudioRecorderManager
@@ -25,7 +25,6 @@ import com.sultanagung1.sista.ui.achievement.AchievementViewModel
 import com.sultanagung1.sista.ui.ai.AiTutorScreen
 import com.sultanagung1.sista.ui.ai.AiViewModel
 import com.sultanagung1.sista.ui.attendance.*
-import com.sultanagung1.sista.ui.common.RoleGuardedScreen
 import com.sultanagung1.sista.ui.counseling.*
 import com.sultanagung1.sista.ui.discipline.DisciplineScreen
 import com.sultanagung1.sista.ui.discipline.DisciplineViewModel
@@ -84,7 +83,7 @@ fun NavGraphBuilder.settingsNavGraph(
     liteModeManager: LiteModeManager
 ) {
     // --- Profile & Settings ---
-    composable(Screen.Profile.route) {
+    guardedComposable(Screen.Profile.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val loginViewModel: LoginViewModel = hiltViewModel()
             ProfileScreen(
@@ -106,7 +105,7 @@ fun NavGraphBuilder.settingsNavGraph(
         }
     }
 
-    composable(Screen.DiagnosticReport.route) {
+    guardedComposable(Screen.DiagnosticReport.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             com.sultanagung1.sista.ui.profile.DiagnosticReportScreen(
                 onNavigateBack = { navController.popBackStack() }
@@ -114,7 +113,7 @@ fun NavGraphBuilder.settingsNavGraph(
         }
     }
 
-    composable(Screen.Settings.route) {
+    guardedComposable(Screen.Settings.route) {
         val viewModel: SettingsViewModel = hiltViewModel()
         SettingsScreen(
             viewModel = viewModel,
@@ -126,7 +125,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.LanguageSettings.route) {
+    guardedComposable(Screen.LanguageSettings.route) {
         val viewModel: SettingsViewModel = hiltViewModel()
         LanguageSettingsScreen(
             viewModel = viewModel,
@@ -134,7 +133,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.AccessibilitySettings.route) {
+    guardedComposable(Screen.AccessibilitySettings.route) {
         val viewModel: SettingsViewModel = hiltViewModel()
         AccessibilitySettingsScreen(
             viewModel = viewModel,
@@ -142,20 +141,20 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.SecuritySettings.route) {
+    guardedComposable(Screen.SecuritySettings.route) {
         SecuritySettingsScreen(
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(Screen.LiteModeSettings.route) {
+    guardedComposable(Screen.LiteModeSettings.route) {
         LiteModeSettingsScreen(
             liteModeManager = liteModeManager,
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.StudentProfileComprehensive.route,
         arguments = listOf(navArgument("studentId") {
             type = NavType.LongType
@@ -174,15 +173,7 @@ fun NavGraphBuilder.settingsNavGraph(
                     userRole.contains("bk", ignoreCase = true)
 
             if (isViewingOther && !isPrivileged) {
-                RoleGuardedScreen(
-                    currentRole = userRole,
-                    allowedRoles = listOf("teacher", "guru", "bk", "admin", "superadmin", "principal"),
-                    featureTitle = "Profil 360 Siswa Lain",
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateHome = navigateToRoleHome
-                ) {
-                    Box(Modifier.fillMaxSize())
-                }
+                Box(Modifier.fillMaxSize())
             } else {
                 val viewModel: StudentProfileViewModel = hiltViewModel()
                 StudentProfileComprehensiveScreen(
@@ -195,7 +186,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Hardware, Sensors & Attendance ---
-    composable(Screen.GeofenceAttendance.route) {
+    guardedComposable(Screen.GeofenceAttendance.route) {
         val viewModel: AttendanceViewModel = hiltViewModel()
         GeofenceAttendanceScreen(
             viewModel = viewModel,
@@ -203,7 +194,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.DynamicQr.route) {
+    guardedComposable(Screen.DynamicQr.route) {
         val viewModel: AttendanceViewModel = hiltViewModel()
         DynamicQrScreen(
             viewModel = viewModel,
@@ -211,7 +202,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.QrScanner.route) {
+    guardedComposable(Screen.QrScanner.route) {
         val viewModel: ScannerViewModel = hiltViewModel()
         QrScannerScreen(
             viewModel = viewModel,
@@ -219,7 +210,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.FaceEnrollment.route) {
+    guardedComposable(Screen.FaceEnrollment.route) {
         val viewModel: FaceEnrollmentViewModel = hiltViewModel()
         FaceEnrollmentScreen(
             viewModel = viewModel,
@@ -227,7 +218,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.FaceBiometric.route) {
+    guardedComposable(Screen.FaceBiometric.route) {
         val viewModel: FaceEnrollmentViewModel = hiltViewModel()
         FaceEnrollmentScreen(
             viewModel = viewModel,
@@ -236,7 +227,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Ibadah & Islamic ---
-    composable(Screen.Mutabaah.route) {
+    guardedComposable(Screen.Mutabaah.route) {
         val viewModel: IbadahViewModel = hiltViewModel()
         MutabaahScreen(
             viewModel = viewModel,
@@ -244,7 +235,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.TahsinRecorder.route) {
+    guardedComposable(Screen.TahsinRecorder.route) {
         val viewModel: com.sultanagung1.sista.ui.ibadah.TahsinRecorderViewModel = hiltViewModel()
         TahsinRecorderScreen(
             recorderManager = audioRecorderManager,
@@ -254,7 +245,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.TahsinHistory.route) {
+    guardedComposable(Screen.TahsinHistory.route) {
         val viewModel: com.sultanagung1.sista.ui.ibadah.TahsinViewModel = hiltViewModel()
         com.sultanagung1.sista.ui.ibadah.TahsinHistoryScreen(
             viewModel = viewModel,
@@ -265,7 +256,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.TahsinSubmissionDetail.route,
         arguments = listOf(
             navArgument("submissionId") { type = NavType.LongType },
@@ -285,7 +276,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- AI Tutor ---
-    composable(Screen.AiTutor.route) {
+    guardedComposable(Screen.AiTutor.route) {
         val viewModel: AiViewModel = hiltViewModel()
         AiTutorScreen(
             viewModel = viewModel,
@@ -294,19 +285,19 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Finance, SOS, Blockchain, Catalog ---
-    composable(Screen.Billing.route) {
+    guardedComposable(Screen.Billing.route) {
         BillingScreen(
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(Screen.AntiBullyingSos.route) {
+    guardedComposable(Screen.AntiBullyingSos.route) {
         AntiBullyingSosScreen(
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(Screen.EnterpriseCatalog.route) {
+    guardedComposable(Screen.EnterpriseCatalog.route) {
         EnterpriseCatalogScreen(
             userRole = userRole,
             onNavigateBack = { navController.popBackStack() },
@@ -315,26 +306,18 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Counseling BK ---
-    composable(Screen.CounselingDashboard.route) {
+    guardedComposable(Screen.CounselingDashboard.route) {
         val viewModel: CounselingViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("teacher", "guru", "bk", "admin", "superadmin"),
-            featureTitle = "Dashboard Bimbingan Konseling (BK)",
+        CounselingDashboardScreen(
+            viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            CounselingDashboardScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToNewSession = { studentId ->
-                    navController.navigate(Screen.CounselingSessionForm.createRoute(studentId))
-                }
-            )
-        }
+            onNavigateToNewSession = { studentId ->
+                navController.navigate(Screen.CounselingSessionForm.createRoute(studentId))
+            }
+        )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.CounselingSessionForm.route,
         arguments = listOf(navArgument("studentId") {
             type = NavType.LongType
@@ -343,22 +326,14 @@ fun NavGraphBuilder.settingsNavGraph(
     ) { backStackEntry ->
         val studentId = backStackEntry.arguments?.getLong("studentId")
         val viewModel: CounselingViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("teacher", "guru", "bk", "admin", "superadmin"),
-            featureTitle = "Pencatatan Sesi Konseling",
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            CounselingSessionFormScreen(
-                prefilledStudentId = if (studentId != null && studentId > 0) studentId else null,
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        CounselingSessionFormScreen(
+            prefilledStudentId = if (studentId != null && studentId > 0) studentId else null,
+            viewModel = viewModel,
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
-    composable(Screen.StudentCounseling.route) {
+    guardedComposable(Screen.StudentCounseling.route) {
         val viewModel: CounselingViewModel = hiltViewModel()
         StudentCounselingScreen(
             viewModel = viewModel,
@@ -367,7 +342,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Documents & PDF Management ---
-    composable(
+    guardedComposable(
         route = Screen.PdfViewer.route,
         arguments = listOf(
             navArgument("fileUrl") { type = NavType.StringType; defaultValue = "" },
@@ -396,7 +371,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.DownloadHistory.route) {
+    guardedComposable(Screen.DownloadHistory.route) {
         DownloadHistoryScreen(
             downloadManager = downloadManager,
             onNavigateBack = { navController.popBackStack() },
@@ -408,34 +383,34 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.DocumentScanner.route) {
+    guardedComposable(Screen.DocumentScanner.route) {
         DocumentScannerScreen(
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(Screen.DigitalSignature.route) {
+    guardedComposable(Screen.DigitalSignature.route) {
         SignatureScreen(
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
     // --- SuperApp Marketplace, SSO & Updates ---
-    composable(Screen.SsoWebView.route) {
+    guardedComposable(Screen.SsoWebView.route) {
         SsoWebViewScreen(
             sessionManager = sessionManager,
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(Screen.ModuleFavorites.route) {
+    guardedComposable(Screen.ModuleFavorites.route) {
         ModuleFavoritesScreen(
             onNavigateToRoute = { route -> navController.navigate(route) },
             onNavigateBack = { navController.popBackStack() }
         )
     }
 
-    composable(Screen.InAppUpdate.route) {
+    guardedComposable(Screen.InAppUpdate.route) {
         UpdatePromptScreen(
             updateManager = inAppUpdateManager,
             onNavigateBack = { navController.popBackStack() }
@@ -443,7 +418,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Kesiswaan & Operasional Sekolah ---
-    composable(
+    guardedComposable(
         route = Screen.Discipline.route,
         // Read by DisciplineViewModel through its SavedStateHandle.
         arguments = listOf(navArgument("studentUuid") {
@@ -459,7 +434,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.UtbkTryout.route) {
+    guardedComposable(Screen.UtbkTryout.route) {
         val viewModel: UtbkViewModel = hiltViewModel()
         UtbkTryOutScreen(
             viewModel = viewModel,
@@ -468,7 +443,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.LibraryCatalog.route) {
+    guardedComposable(Screen.LibraryCatalog.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val viewModel: LibraryViewModel = hiltViewModel()
             LibraryCatalogScreen(
@@ -479,7 +454,7 @@ fun NavGraphBuilder.settingsNavGraph(
         }
     }
 
-    composable(Screen.Extracurricular.route) {
+    guardedComposable(Screen.Extracurricular.route) {
         val viewModel: ExtracurricularViewModel = hiltViewModel()
         ExtracurricularScreen(
             viewModel = viewModel,
@@ -488,7 +463,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.AchievementUpload.route) {
+    guardedComposable(Screen.AchievementUpload.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val viewModel: AchievementViewModel = hiltViewModel()
             AchievementUploadScreen(
@@ -498,7 +473,7 @@ fun NavGraphBuilder.settingsNavGraph(
         }
     }
 
-    composable(Screen.TeacherEvaluation.route) {
+    guardedComposable(Screen.TeacherEvaluation.route) {
         val viewModel: EvaluationViewModel = hiltViewModel()
         TeacherEvaluationScreen(
             viewModel = viewModel,
@@ -507,7 +482,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- SPMB / PPDB ---
-    composable(Screen.SpmbMobile.route) {
+    guardedComposable(Screen.SpmbMobile.route) {
         val viewModel: SpmbViewModel = hiltViewModel()
         SpmbInfoScreen(
             viewModel = viewModel,
@@ -517,7 +492,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.SpmbInfo.route) {
+    guardedComposable(Screen.SpmbInfo.route) {
         val viewModel: SpmbViewModel = hiltViewModel()
         SpmbInfoScreen(
             viewModel = viewModel,
@@ -527,7 +502,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.SpmbRegistration.route) {
+    guardedComposable(Screen.SpmbRegistration.route) {
         val viewModel: SpmbViewModel = hiltViewModel()
         SpmbRegistrationScreen(
             viewModel = viewModel,
@@ -540,7 +515,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.SpmbTracking.route,
         arguments = listOf(navArgument("regNumber") {
             type = NavType.StringType
@@ -558,32 +533,20 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- UKS Digital ---
-    // NOTE: Screen.UksDigital used to duplicate this exact destination WITHOUT
-    // a RoleGuardedScreen wrap, leaving UKS staff-only medical visit records
-    // reachable by any authenticated role via that route string. Nothing in
-    // the app navigated to it (HomeServicesBottomSheet already points at
-    // Screen.UksVisit below), so it was removed rather than guarded.
-    composable(Screen.UksVisit.route) {
+    // Guarded like every destination by the server's feature list (uks.record).
+    guardedComposable(Screen.UksVisit.route) {
         val viewModel: UksViewModel = hiltViewModel()
-        RoleGuardedScreen(
-            currentRole = userRole,
-            allowedRoles = listOf("petugas_uks", "uks", "teacher", "guru", "admin", "superadmin"),
-            featureTitle = "Kunjungan & Layanan UKS",
+        val uksUiState by viewModel.uiState.collectAsState()
+        UksVisitScreen(
+            viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() },
-            onNavigateHome = navigateToRoleHome
-        ) {
-            val uksUiState by viewModel.uiState.collectAsState()
-            UksVisitScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToHealthHistory = {
-                    navController.navigate(Screen.HealthHistory.createRoute(uksUiState.selectedStudent?.id?.toString()))
-                }
-            )
-        }
+            onNavigateToHealthHistory = {
+                navController.navigate(Screen.HealthHistory.createRoute(uksUiState.selectedStudent?.id?.toString()))
+            }
+        )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.HealthHistory.route,
         arguments = listOf(navArgument("studentId") {
             type = NavType.StringType
@@ -601,7 +564,7 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- Gamifikasi ---
-    composable(Screen.GamificationDashboard.route) {
+    guardedComposable(Screen.GamificationDashboard.route) {
         val viewModel: GamificationViewModel = hiltViewModel()
         GamificationDashboardScreen(
             viewModel = viewModel,
@@ -611,7 +574,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.Leaderboard.route) {
+    guardedComposable(Screen.Leaderboard.route) {
         val viewModel: GamificationViewModel = hiltViewModel()
         LeaderboardScreen(
             viewModel = viewModel,
@@ -619,7 +582,7 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    composable(Screen.BadgeCollection.route) {
+    guardedComposable(Screen.BadgeCollection.route) {
         val viewModel: GamificationViewModel = hiltViewModel()
         BadgeCollectionScreen(
             viewModel = viewModel,

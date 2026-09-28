@@ -4,7 +4,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.composable
+import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
 import com.sultanagung1.sista.BuildConfig
 import com.sultanagung1.sista.ui.announcements.AnnouncementDetailScreen
@@ -25,7 +25,7 @@ import com.sultanagung1.sista.ui.notifications.NotificationViewModel
 fun NavGraphBuilder.communicationNavGraph(
     navController: NavHostController
 ) {
-    composable(Screen.ConversationList.route) {
+    guardedComposable(Screen.ConversationList.route) {
         val viewModel: ChatViewModel = hiltViewModel()
         AdaptiveChatScreen(
             viewModel = viewModel,
@@ -36,7 +36,7 @@ fun NavGraphBuilder.communicationNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.Chat.route,
         arguments = listOf(navArgument("conversationId") { type = NavType.StringType })
     ) { backStackEntry ->
@@ -49,7 +49,7 @@ fun NavGraphBuilder.communicationNavGraph(
         )
     }
 
-    composable(Screen.AnnouncementFeed.route) {
+    guardedComposable(Screen.AnnouncementFeed.route) {
         val viewModel: AnnouncementViewModel = hiltViewModel()
         AnnouncementFeedScreen(
             viewModel = viewModel,
@@ -60,7 +60,7 @@ fun NavGraphBuilder.communicationNavGraph(
         )
     }
 
-    composable(
+    guardedComposable(
         route = Screen.AnnouncementDetail.route,
         arguments = listOf(navArgument("id") { type = NavType.StringType })
     ) { backStackEntry ->
@@ -73,7 +73,7 @@ fun NavGraphBuilder.communicationNavGraph(
         )
     }
 
-    composable(Screen.NotificationCenter.route) {
+    guardedComposable(Screen.NotificationCenter.route) {
         val viewModel: NotificationViewModel = hiltViewModel()
         NotificationCenterScreen(
             viewModel = viewModel,
@@ -86,7 +86,7 @@ fun NavGraphBuilder.communicationNavGraph(
         )
     }
 
-    composable(Screen.NotificationSettings.route) {
+    guardedComposable(Screen.NotificationSettings.route) {
         val viewModel: NotificationViewModel = hiltViewModel()
         NotificationSettingsScreen(
             viewModel = viewModel,

@@ -1,5 +1,7 @@
 package com.sultanagung1.sista.ui.home.sections
 
+import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
+import com.sultanagung1.sista.ui.navigation.canOpen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,7 +57,7 @@ fun HomeServicesBottomSheet(
     val haptics = rememberHapticFeedbackHelper()
     val isDark = MaterialTheme.colorScheme.surface.isDark()
 
-    val categories = remember {
+    val allCategories = remember {
         listOf(
             ServiceCategory(
                 categoryName = "Akademik & Ujian",
@@ -100,6 +102,15 @@ fun HomeServicesBottomSheet(
 
     // FASE 76.4: services this account opened at least UsageRanking.MIN_TAPS_FOR_FREQUENT
     // times on this device, most-used first. A plain counter, labelled as such.
+    // Only what this account may open (server capability list): a student
+    // never sees staff tools, a parent never sees exam tiles.
+    val capabilityState = LocalCapabilityState.current
+    val categories = remember(allCategories, capabilityState) {
+        allCategories
+            .map { category -> category.copy(services = category.services.filter { capabilityState.canOpen(it.route) }) }
+            .filter { it.services.isNotEmpty() }
+    }
+
     val allServices = remember(categories) { categories.flatMap { it.services }.distinctBy { it.route } }
     val frequentServices = UsageRanking.frequent(allServices.map { it.route }, usage)
         .mapNotNull { route -> allServices.firstOrNull { it.route == route } }
