@@ -14,6 +14,9 @@ interface DailyAssessmentMobileApiService {
         @Body request: CreateAssessmentRequest
     ): Response<AssessmentResponse<DailyAssessmentItem>>
 
+    @GET("assessments/{id}/scores")
+    suspend fun getScoreSheet(@Path("id") assessmentId: Long): Response<AssessmentResponse<AssessmentScoreSheet>>
+
     @POST("assessments/{id}/batch-scores")
     suspend fun batchScores(
         @Path("id") assessmentId: Long,

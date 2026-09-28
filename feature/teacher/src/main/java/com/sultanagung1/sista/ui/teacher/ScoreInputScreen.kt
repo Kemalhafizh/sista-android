@@ -1,228 +1,386 @@
 package com.sultanagung1.sista.ui.teacher
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.*
-import androidx.compose.material.icons.Icons
-import com.sultanagung1.sista.data.model.StudentScoreInput
+import com.sultanagung1.sista.core.ui.component.ButtonVariant
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SistaButton
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatTile
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.data.model.AssessmentScoreRow
+import com.sultanagung1.sista.data.model.AssessmentScoreSheet
+import com.sultanagung1.sista.data.model.ScoreSheetRules
 
-data class LocalStudentRow(
-    val studentId: Long,
-    val studentName: String,
-    val nisn: String,
-    var scoreInput: String
-)
-
+/**
+ * Scores for one daily assessment. The class and its stored scores come from
+ * `assessments/{id}/scores`; only changed scores are sent to `batch-scores`,
+ * so a student left blank is never saved as 0.
+ */
 @Composable
 fun ScoreInputScreen(
     assessmentId: Long,
     viewModel: DailyAssessmentViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(assessmentId) { viewModel.loadScoreSheet(assessmentId) }
 
-    LaunchedEffect(assessmentId) {
-        viewModel.loadClassStudentsForAssessment(assessmentId)
-    }
+    ScoreInputContent(
+        sheet = uiState.sheet,
+        loading = uiState.isLoadingSheet,
+        loadError = uiState.sheetError,
+        edits = uiState.edits,
+        submitting = uiState.isSubmitting,
+        errorMessage = uiState.errorMessage,
+        successMessage = uiState.successMessage,
+        onEdit = viewModel::editScore,
+        onSave = viewModel::saveScores,
+        onAutoRemedial = { viewModel.triggerAutoRemedial(assessmentId) },
+        onRetry = { viewModel.loadScoreSheet(assessmentId) },
+        onDismissMessage = viewModel::clearMessages,
+        onNavigateBack = onNavigateBack,
+    )
+}
 
-    // Real class roster (teacher/classes/{id}/students) — score starts blank
-    // since it hasn't been entered yet, not pre-filled with a fake value.
-    val students = remember(uiState.classStudents) {
-        mutableStateListOf(
-            *uiState.classStudents.map {
-                LocalStudentRow(it.id, it.name, it.nisn ?: it.nis ?: "-", "")
-            }.toTypedArray()
-        )
-    }
+/** The score sheet without a ViewModel, for previews and screenshots. */
+@Composable
+fun ScoreInputContent(
+    sheet: AssessmentScoreSheet?,
+    loading: Boolean,
+    loadError: String?,
+    edits: Map<Long, String>,
+    submitting: Boolean,
+    errorMessage: String?,
+    successMessage: String?,
+    onEdit: (studentId: Long, text: String) -> Unit,
+    onSave: () -> Unit,
+    onAutoRemedial: () -> Unit,
+    onRetry: () -> Unit,
+    onDismissMessage: () -> Unit,
+    onNavigateBack: (() -> Unit)?,
+) {
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    var confirmRemedial by rememberSaveable { mutableStateOf(false) }
+    val header = sheet?.assessment
+    val summary = sheet?.let { ScoreSheetRules.summary(it.students, edits, it.assessment.kkm, it.assessment.maxScore) }
+    // Remedial is assigned from what is stored on the server, not from unsaved edits.
+    val storedBelowKkm = sheet?.students?.count { row -> row.score?.let { it < sheet.assessment.kkm } == true } ?: 0
 
-    val kkm = uiState.assessments.firstOrNull { it.id == assessmentId }?.kkm ?: 75.0
-
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Input Nilai Massal",
-                onNavigateBack = onNavigateBack,
-                actions = {
-                    TextButton(
-                        onClick = {
-                            viewModel.triggerAutoRemedial(assessmentId)
+    ShellTheme {
+        Scaffold(
+            topBar = {
+                SistaTopBar(
+                    title = "Input nilai",
+                    subtitle = header?.title,
+                    onBack = onNavigateBack,
+                    actions = {
+                        if (sheet != null) {
+                            Box {
+                                IconButton(onClick = { menuOpen = true }) {
+                                    Icon(Icons.Outlined.MoreVert, contentDescription = "Menu lainnya")
+                                }
+                                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text("Tugaskan remedial") },
+                                        enabled = !submitting,
+                                        onClick = {
+                                            menuOpen = false
+                                            confirmRemedial = true
+                                        },
+                                    )
+                                }
+                            }
                         }
-                    ) {
-                        Icon(Icons.Default.Bolt, contentDescription = null, tint = Gold700)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Auto Remedial", color = Gold800, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    }
+                    },
+                )
+            },
+            bottomBar = {
+                if (sheet != null && summary != null) {
+                    SaveBar(changed = summary.changed, invalid = summary.invalid, submitting = submitting, onSave = onSave)
                 }
-            )
-        },
-        bottomBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
+            },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            when {
+                sheet == null && loading -> SkeletonList(Modifier.padding(padding), rows = 6)
+                sheet == null -> ErrorState(
+                    title = "Daftar nilai belum bisa dimuat",
+                    body = loadError ?: "Coba muat ulang.",
+                    onRetry = onRetry,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(padding)
+                        .padding(Spacing.screen),
+                )
+                else -> LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding(),
+                    contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.sm, bottom = Spacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
-                    val underKkmCount = students.count { (it.scoreInput.toDoubleOrNull() ?: 0.0) < kkm }
-                    Column {
-                        Text("KKM: ${kkm.toInt()}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    item(key = "header") {
                         Text(
-                            text = "$underKkmCount siswa butuh remedial",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (underKkmCount > 0) AccentRose else Emerald700
+                            listOfNotNull(
+                                header?.subjectName,
+                                header?.classroomName?.let { "Kelas $it" },
+                                header?.assessmentDate?.let(::journalDate),
+                                "KKM ${ScoreSheetRules.format(sheet.assessment.kkm)}",
+                                "Maks ${ScoreSheetRules.format(ScoreSheetRules.ceiling(sheet.assessment.maxScore))}",
+                            ).joinToString(" · "),
+                            style = SistaTheme.typography.bodyMedium,
+                            color = SistaTheme.colors.onSurfaceVariant,
                         )
                     }
-
-                    Button(
-                        onClick = {
-                            val payload = students.map {
-                                StudentScoreInput(
-                                    studentId = it.studentId,
-                                    score = it.scoreInput.toDoubleOrNull() ?: 0.0
+                    if (summary != null) {
+                        item(key = "stats") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                                StatTile(label = "Sudah dinilai", value = "${summary.filled}/${summary.total}", modifier = Modifier.weight(1f))
+                                StatTile(
+                                    label = "Di bawah KKM",
+                                    value = summary.belowKkm.toString(),
+                                    tone = if (summary.belowKkm > 0) StatusTone.Warning else StatusTone.Neutral,
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
-                            viewModel.submitScores(assessmentId, payload)
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
-                        enabled = !uiState.isSubmitting
-                    ) {
-                        if (uiState.isSubmitting) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(6.dp))
                         }
-                        Text("Simpan Semua Nilai")
+                    }
+                    if (successMessage != null) {
+                        item(key = "success") {
+                            InlineBanner(message = successMessage, tone = StatusTone.Success, onDismiss = onDismissMessage)
+                        }
+                    }
+                    if (errorMessage != null) {
+                        item(key = "error") {
+                            InlineBanner(message = errorMessage, tone = StatusTone.Danger, onDismiss = onDismissMessage)
+                        }
+                    }
+                    if (loadError != null) {
+                        item(key = "stale") {
+                            InlineBanner(
+                                message = "Gagal memperbarui. $loadError",
+                                tone = StatusTone.Warning,
+                                actionLabel = "Coba lagi",
+                                onAction = onRetry,
+                            )
+                        }
+                    }
+                    if (sheet.students.isEmpty()) {
+                        item(key = "empty") {
+                            InlineBanner(message = "Belum ada siswa di kelas ini.", tone = StatusTone.Info)
+                        }
+                    } else {
+                        item(key = "roster") {
+                            SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.xs)) {
+                                Column {
+                                    sheet.students.forEachIndexed { index, row ->
+                                        if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                                        ScoreRow(
+                                            number = index + 1,
+                                            row = row,
+                                            text = edits[row.studentId] ?: ScoreSheetRules.textOf(row.score),
+                                            edited = row.studentId in edits,
+                                            kkm = sheet.assessment.kkm,
+                                            maxScore = sheet.assessment.maxScore,
+                                            enabled = !submitting,
+                                            onEdit = { onEdit(row.studentId, it) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                if (uiState.successMessage != null) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = Emerald50,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Emerald700)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(uiState.successMessage!!, style = MaterialTheme.typography.bodySmall, color = Emerald900)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-            }
+    }
 
-            if (uiState.isLoadingStudents) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Emerald700)
-                    }
+    if (confirmRemedial && sheet != null) {
+        val unsaved = (summary?.changed ?: 0) > 0
+        AlertDialog(
+            onDismissRequest = { confirmRemedial = false },
+            title = { Text("Tugaskan remedial?") },
+            text = {
+                Text(
+                    when {
+                        unsaved -> "Ada nilai yang belum disimpan. Simpan dulu, karena remedial ditugaskan dari nilai yang tersimpan."
+                        storedBelowKkm == 0 -> "Tidak ada nilai tersimpan di bawah KKM ${ScoreSheetRules.format(sheet.assessment.kkm)}."
+                        else -> "$storedBelowKkm siswa dengan nilai di bawah KKM ${ScoreSheetRules.format(sheet.assessment.kkm)} akan ditugaskan remedial."
+                    },
+                )
+            },
+            confirmButton = {
+                if (!unsaved && storedBelowKkm > 0) {
+                    TextButton(onClick = {
+                        confirmRemedial = false
+                        onAutoRemedial()
+                    }) { Text("Tugaskan") }
                 }
-            } else if (students.isEmpty()) {
-                item {
-                    Text(
-                        text = "Belum ada siswa terdaftar di kelas untuk penilaian ini.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp)
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemedial = false }) { Text(if (unsaved || storedBelowKkm == 0) "Tutup" else "Batal") }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ScoreRow(
+    number: Int,
+    row: AssessmentScoreRow,
+    text: String,
+    edited: Boolean,
+    kkm: Double,
+    maxScore: Double,
+    enabled: Boolean,
+    onEdit: (String) -> Unit,
+) {
+    val error = if (edited) ScoreSheetRules.errorOf(text, maxScore, row.score) else null
+    val value = if (error == null) ScoreSheetRules.parse(text) else null
+    Row(
+        modifier = Modifier.padding(vertical = Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "$number",
+            style = SistaTheme.typography.labelMedium,
+            color = SistaTheme.colors.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(24.dp),
+        )
+        Spacer(Modifier.width(Spacing.md))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    row.name,
+                    style = SistaTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (edited && error == null) {
+                    Spacer(Modifier.width(Spacing.xs))
+                    Box(
+                        Modifier
+                            .size(8.dp)
+                            .background(SistaTheme.colors.primary, CircleShape)
+                            .semantics { contentDescription = "Belum disimpan" },
                     )
                 }
             }
-
-            itemsIndexed(students) { index, student ->
-                val currentScore = student.scoreInput.toDoubleOrNull() ?: 0.0
-                val isBelowKkm = currentScore < kkm
-
-                SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "${index + 1}",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = student.studentName,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "NISN: ${student.nisn}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        OutlinedTextField(
-                            value = student.scoreInput,
-                            onValueChange = { newVal ->
-                                students[index] = student.copy(scoreInput = newVal)
-                            },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (isBelowKkm) AccentRose else Emerald700,
-                                unfocusedBorderColor = if (isBelowKkm) AccentRose.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline
-                            )
-                        )
-                    }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    (row.nis ?: row.nisn)?.let { "NIS $it" } ?: "Tanpa NIS",
+                    style = SistaTheme.typography.bodySmall,
+                    color = SistaTheme.colors.onSurfaceVariant,
+                )
+                if (value != null && value < kkm) {
+                    Spacer(Modifier.width(Spacing.sm))
+                    StatusPill("Di bawah KKM", StatusTone.Warning)
                 }
             }
+        }
+        Spacer(Modifier.width(Spacing.md))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { input -> onEdit(input.filter { it.isDigit() || it == ',' || it == '.' }.take(6)) },
+            modifier = Modifier
+                .width(84.dp)
+                .semantics { contentDescription = "Nilai ${row.name}" },
+            enabled = enabled,
+            singleLine = true,
+            isError = error != null,
+            supportingText = error?.let { { Text(it, maxLines = 1) } },
+            placeholder = { Text("–") },
+            textStyle = SistaTheme.typography.titleMedium.copy(textAlign = TextAlign.Center),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+            shape = SistaTheme.shapes.medium,
+        )
+    }
+}
 
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-            }
+@Composable
+private fun SaveBar(changed: Int, invalid: Int, submitting: Boolean, onSave: () -> Unit) {
+    Surface(color = SistaTheme.colors.surface, shadowElevation = 8.dp) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = Spacing.screen, vertical = Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                when {
+                    invalid > 0 -> "$invalid nilai belum valid"
+                    changed > 0 -> "$changed nilai belum disimpan"
+                    else -> "Semua nilai tersimpan"
+                },
+                style = SistaTheme.typography.bodyMedium,
+                color = if (invalid > 0) SistaTheme.colors.error else SistaTheme.colors.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            SistaButton(
+                text = if (changed > 0) "Simpan ($changed)" else "Simpan",
+                onClick = onSave,
+                variant = ButtonVariant.Primary,
+                leadingIcon = Icons.Outlined.Save,
+                loading = submitting,
+                enabled = changed > 0 && invalid == 0 && !submitting,
+            )
         }
     }
 }

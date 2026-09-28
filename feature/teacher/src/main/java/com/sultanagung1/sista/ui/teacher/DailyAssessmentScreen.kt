@@ -1,9 +1,6 @@
 package com.sultanagung1.sista.ui.teacher
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,185 +9,205 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AssignmentTurnedIn
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.Emerald50
-import com.sultanagung1.sista.core.designsystem.Emerald700
-import com.sultanagung1.sista.core.designsystem.Emerald900
-import com.sultanagung1.sista.core.designsystem.Slate600
-import com.sultanagung1.sista.core.designsystem.SulaoneCard
-import com.sultanagung1.sista.core.designsystem.SulaoneTopBar
+import com.sultanagung1.sista.core.designsystem.LifecycleStartStopEffect
+import com.sultanagung1.sista.core.designsystem.SulaonePullToRefreshBox
+import com.sultanagung1.sista.core.ui.component.EmptyState
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.DailyAssessmentItem
+import com.sultanagung1.sista.data.model.RemedialDashboard
+import com.sultanagung1.sista.data.model.ScoreSheetRules
 
+/**
+ * The teacher's daily assessments from `assessments/teacher`: what each one
+ * is, and how many students have a score. Opening one goes to its score sheet.
+ */
 @Composable
 fun DailyAssessmentScreen(
     viewModel: DailyAssessmentViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToScoreInput: (Long) -> Unit
+    onNavigateToScoreInput: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // Loads on open and again on return from a score sheet, so progress is current.
+    LifecycleStartStopEffect(onStart = viewModel::fetchTeacherAssessments, onStop = {})
 
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Penilaian Harian & Remedial",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                // Banner Kepatuhan Remedial
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Emerald50)
+    var refreshRequested by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading) { if (!uiState.isLoading) refreshRequested = false }
+
+    DailyAssessmentContent(
+        assessments = uiState.assessments,
+        remedial = uiState.remedialDashboard,
+        isLoading = uiState.isLoading,
+        errorMessage = uiState.errorMessage,
+        refreshing = refreshRequested && uiState.isLoading,
+        onRefresh = {
+            refreshRequested = true
+            viewModel.fetchTeacherAssessments()
+        },
+        onOpen = { onNavigateToScoreInput(it.id) },
+        onNavigateBack = onNavigateBack,
+    )
+}
+
+/** The assessment list without a ViewModel, for previews and screenshots. */
+@Composable
+fun DailyAssessmentContent(
+    assessments: List<DailyAssessmentItem>,
+    remedial: RemedialDashboard?,
+    isLoading: Boolean,
+    errorMessage: String?,
+    refreshing: Boolean,
+    onRefresh: () -> Unit,
+    onOpen: (DailyAssessmentItem) -> Unit,
+    onNavigateBack: (() -> Unit)?,
+) {
+    ShellTheme {
+        Scaffold(
+            topBar = { SistaTopBar(title = "Penilaian harian", onBack = onNavigateBack) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            SulaonePullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.sm, bottom = Spacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Brush.linearGradient(listOf(Emerald700, Emerald900))),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.AssignmentTurnedIn, contentDescription = null, tint = Color.White)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Siklus Penilaian Terpadu",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Emerald900
-                            )
-                            Text(
-                                text = "Input skor harian kelas, auto-assign tugas remedial bagi nilai < KKM, dan kalkulasi nilai akhir otomatis.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Emerald700
+                    if (remedial != null && remedial.total > 0) {
+                        item(key = "remedial") { RemedialSummary(remedial) }
+                    }
+                    if (errorMessage != null && assessments.isNotEmpty()) {
+                        item(key = "stale") {
+                            InlineBanner(
+                                message = "Gagal memperbarui. $errorMessage",
+                                tone = StatusTone.Warning,
+                                actionLabel = "Coba lagi",
+                                onAction = onRefresh,
                             )
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Daftar Ulangan Harian (${uiState.assessments.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (uiState.isLoading) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Emerald700)
+                    when {
+                        isLoading && assessments.isEmpty() -> item(key = "loading") { SkeletonList(rows = 4) }
+                        errorMessage != null && assessments.isEmpty() -> item(key = "error") {
+                            ErrorState(title = "Penilaian belum bisa dimuat", body = errorMessage, onRetry = onRefresh)
+                        }
+                        assessments.isEmpty() -> item(key = "empty") {
+                            EmptyState(
+                                title = "Belum ada penilaian harian",
+                                body = "Penilaian yang Anda buat di menu Penilaian Harian pada web akan muncul di sini untuk diisi nilainya.",
+                                icon = Icons.AutoMirrored.Outlined.Assignment,
+                            )
+                        }
+                        else -> items(assessments, key = { it.id }, contentType = { "assessment" }) { item ->
+                            AssessmentCard(item, onClick = { onOpen(item) })
+                        }
                     }
                 }
-            } else {
-                items(uiState.assessments) { assessment ->
-                    AssessmentCardItem(
-                        item = assessment,
-                        onClickInput = { onNavigateToScoreInput(assessment.id) }
-                    )
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(40.dp))
             }
         }
     }
 }
 
 @Composable
-private fun AssessmentCardItem(
-    item: DailyAssessmentItem,
-    onClickInput: () -> Unit
-) {
-    SulaoneCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClickInput() }
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+private fun RemedialSummary(remedial: RemedialDashboard) {
+    SistaCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Outlined.Replay, tone = if (remedial.pending > 0) StatusTone.Warning else StatusTone.Success)
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text("Remedial", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
                 Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    if (remedial.pending > 0) "${remedial.pending} menunggu nilai" else "Semua sudah dinilai",
+                    style = SistaTheme.typography.titleMedium,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Tanggal: ${item.assessmentDate} | KKM: ${item.kkm.toInt()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "${remedial.completed} dari ${remedial.total} selesai",
+                    style = SistaTheme.typography.bodySmall,
+                    color = SistaTheme.colors.onSurfaceVariant,
                 )
-                val description = item.description
-                if (!description.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AssessmentCard(item: DailyAssessmentItem, onClick: () -> Unit) {
+    val total = item.classroom?.studentsCount
+    val scored = item.scoredCount
+    SistaCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Text(item.title, style = SistaTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Slate600,
-                        maxLines = 1
+                        listOfNotNull(
+                            item.subject?.name,
+                            item.classroom?.name?.let { "Kelas $it" },
+                            journalDate(item.assessmentDate),
+                        ).joinToString(" · "),
+                        style = SistaTheme.typography.bodySmall,
+                        color = SistaTheme.colors.onSurfaceVariant,
                     )
                 }
+                Spacer(Modifier.width(Spacing.sm))
+                StatusPill("KKM ${ScoreSheetRules.format(item.kkm)}", StatusTone.Neutral)
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-            Button(
-                onClick = onClickInput,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-            ) {
-                Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Input Nilai", fontSize = 12.sp)
+            if (total != null && scored != null && total > 0) {
+                val done = scored >= total
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LinearProgressIndicator(
+                        progress = { (scored.toFloat() / total).coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(SistaTheme.shapes.small),
+                        color = SistaTheme.colors.primary,
+                        trackColor = SistaTheme.colors.surfaceVariant,
+                        drawStopIndicator = {},
+                    )
+                    Spacer(Modifier.width(Spacing.md))
+                    Text(
+                        if (done) "Semua dinilai" else "$scored/$total dinilai",
+                        style = SistaTheme.typography.labelMedium,
+                        color = SistaTheme.colors.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

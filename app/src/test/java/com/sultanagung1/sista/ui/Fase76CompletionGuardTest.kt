@@ -117,11 +117,14 @@ class Fase76CompletionGuardTest {
 
     @Test
     fun dashboardsUseContentShapedSkeletons() {
-        for (screen in listOf(teacherDash, parentDash, adminDash)) {
+        for (screen in listOf(parentDash, adminDash)) {
             val c = code(screen)
             assertTrue("$screen: tiered loading", c.contains("SulaoneTieredLoading(isLoading = true"))
             assertTrue("$screen: bento skeleton", c.contains("BentoHeroSplitSkeleton()"))
         }
+        // The rebuilt teacher home shows a list skeleton for its first load, not a spinner.
+        val teacher = code(teacherDash)
+        assertTrue("teacher home: first-load skeleton", teacher.contains("firstLoad -> SkeletonList("))
         assertTrue("Parent portal has a real empty state", code(parentDash).contains("Belum Ada Data Anak"))
     }
 

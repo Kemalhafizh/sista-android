@@ -129,8 +129,8 @@ class AdaptiveRefreshRateTest {
 
         val teacherFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/teacher/TeacherDashboardScreen.kt")
         val teacherContent = teacherFile.readText()
-        assertTrue(teacherContent.contains("contentType = { \"schedule\" }"))
-        assertTrue(teacherContent.contains("contentType = { \"journal\" }"))
+        assertTrue(teacherContent.contains("key = \"today\", contentType = \"schedule\""))
+        assertTrue(teacherContent.contains("key = \"journals\", contentType = \"journal\""))
 
         val homeFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
         val homeContent = homeFile.readText()

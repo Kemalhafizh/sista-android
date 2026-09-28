@@ -332,7 +332,7 @@ class JournalMobileViewModel @Inject constructor(
     private fun TeacherScheduleSlot.toJournalScheduleItem(jamKe: Int, entry: TeachingJournalEntry?, dateOverride: String): JournalScheduleItem {
         return JournalScheduleItem(
             id = "sched-$id",
-            timeSlot = "${sessionStart ?: ""} - ${sessionEnd ?: ""} WIB (Jam ke-$jamKe)",
+            timeSlot = listOfNotNull(timeRange(sessionStart, sessionEnd), "Jam ke-$jamKe").joinToString(" · "),
             subject = subjectName ?: "-",
             className = classroomName ?: "-",
             isFilled = entry != null,
@@ -347,7 +347,8 @@ class JournalMobileViewModel @Inject constructor(
             attendanceAbsent = entry?.studentsAbsent,
             notes = entry?.obstacles,
             followUp = entry?.notes,
-            isEditable = entry == null
+            isEditable = entry == null,
+            status = entry?.status
         )
     }
 
@@ -370,8 +371,16 @@ class JournalMobileViewModel @Inject constructor(
             notes = obstacles,
             followUp = notes,
             // The backend exposes no update endpoint for a filed journal — editing a past entry is not possible.
-            isEditable = false
+            isEditable = false,
+            status = status
         )
+    }
+
+    /** "07:00:00", "08:30:00" → "07:00–08:30"; null when the schedule has no times. */
+    private fun timeRange(start: String?, end: String?): String? {
+        fun clock(t: String?) = DateUtils.parseMinutesOfDay(t)?.let { "%02d:%02d".format(it / 60, it % 60) }
+        val from = clock(start) ?: return null
+        return clock(end)?.let { "$from–$it" } ?: from
     }
 
     fun setSelectedTab(tabIndex: Int) {

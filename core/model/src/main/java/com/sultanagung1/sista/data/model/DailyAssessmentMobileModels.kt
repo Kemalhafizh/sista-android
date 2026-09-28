@@ -13,8 +13,10 @@ data class DailyAssessmentItem(
     val type: String = "ulangan_harian",
     val description: String? = null,
     @SerializedName("scores_count") val scoresCount: Int = 0,
-    val subject: Any? = null,
-    val classroom: Any? = null
+    /** Students with an entered score; blank rows the web creates are not counted. */
+    @SerializedName("scored_count") val scoredCount: Int? = null,
+    val subject: NamedRef? = null,
+    val classroom: NamedRef? = null
 )
 
 data class CreateAssessmentRequest(
@@ -75,9 +77,8 @@ data class AssessmentResponse<T>(
     val data: T
 )
 
-// GET assessments/teacher's real shape is {assessments: [...], remedial_dashboard: {...}}
-// — remedial_dashboard has no consumer anywhere in the app yet, so only the
-// assessments list is modeled here.
+/** GET assessments/teacher: `{assessments: [...], remedial_dashboard: {...}}`. */
 data class TeacherAssessmentsData(
-    val assessments: List<DailyAssessmentItem> = emptyList()
+    val assessments: List<DailyAssessmentItem> = emptyList(),
+    @SerializedName("remedial_dashboard") val remedialDashboard: RemedialDashboard? = null
 )
