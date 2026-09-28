@@ -69,4 +69,62 @@ class TeacherSessionsScreenshotTest {
     @Test fun empty() = capture("empty", TeacherTodaySessionsState(isLoading = false, todayLabel = "Sabtu, 3 Oktober"))
 
     @Test fun notDeployed() = capture("unavailable", TeacherTodaySessionsState(isLoading = false, notDeployed = true))
+
+    private val live = ClassSessionDto(
+        sessionId = 11, scheduleId = 1, subjectName = "Fisika", classroomName = "XI MIPA 2", jamKe = 3,
+        scheduledStart = "08:30:00", scheduledEnd = "10:00:00", actualStart = "08:31:00",
+        status = ClassSessionStatus.ACTIVE, totalStudents = 32, presentCount = 27, absentCount = 5,
+    )
+
+    private fun captureSession(name: String, state: TeacherActiveSessionState) {
+        compose.setContent {
+            MaterialTheme(colorScheme = lightColorScheme()) {
+                TeacherActiveSessionContent(
+                    state = state,
+                    onRetry = {},
+                    onOpenAttendanceList = {},
+                    onEndConfirmed = { _, _ -> },
+                    onDismissTimeUp = {},
+                    onContinueAfterTimeUp = {},
+                    onOpenTeachingJournal = {},
+                    onNavigateBack = {},
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/session_$name.png")
+    }
+
+    private val counts = com.sultanagung1.sista.data.model.ClassSessionRules.Counts(
+        present = 27, alpha = 5, total = 32,
+        breakdown = com.sultanagung1.sista.data.model.ClassSessionRules.Counts.Breakdown(hadir = 24, telat = 3, sakit = 0, izin = 0),
+    )
+
+    // QR fresh with 18 s left, 42 minutes of class to go.
+    @Test fun live() = captureSession(
+        "live",
+        TeacherActiveSessionState(
+            sessionId = 11, session = live, qrToken = "3f2a9c1e-7b1d-4a55-9d0e-2c1b7e6f9a10.b64signature",
+            qrExpiresAtMs = 18_000, nowMs = 0, remainingSeconds = 42 * 60, counts = counts, isLoading = false,
+        ),
+    )
+
+    @Test fun overtime() = captureSession(
+        "overtime",
+        TeacherActiveSessionState(
+            sessionId = 11, session = live, qrToken = null, qrExpiresAtMs = 0, nowMs = 120_000,
+            remainingSeconds = -3 * 60, counts = counts, isLoading = false,
+        ),
+    )
+
+    @Test fun finished() = captureSession(
+        "finished",
+        TeacherActiveSessionState(
+            sessionId = 11,
+            session = live.copy(
+                status = ClassSessionStatus.COMPLETED, actualEnd = "09:58:00",
+                topic = "Gerak parabola", teachingJournalId = 77,
+            ),
+            counts = counts, isLoading = false,
+        ),
+    )
 }
