@@ -33,7 +33,7 @@ fun Modifier.sulaoneSharedElement(
     return if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             this@sulaoneSharedElement.sharedElement(
-                state = rememberSharedContentState(key = key),
+                sharedContentState = rememberSharedContentState(key = key),
                 animatedVisibilityScope = animatedVisibilityScope,
                 zIndexInOverlay = zIndexInOverlay
             )

@@ -8,7 +8,7 @@ plugins {
 // :core:network or :core:database directly.
 android {
     namespace 'com.sultanagung1.sista.data.repository'
-    compileSdk 35
+    compileSdk 37
 
     defaultConfig {
         minSdk 26

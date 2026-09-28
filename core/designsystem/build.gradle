@@ -14,7 +14,7 @@ plugins {
 // WebSocket/sync state directly rather than through a repository.
 android {
     namespace 'com.sultanagung1.sista.core.designsystem'
-    compileSdk 35
+    compileSdk 37
 
     defaultConfig {
         minSdk 26

@@ -8,7 +8,7 @@ plugins {
 // :app itself) can see these types without pulling in Compose/Retrofit/Room.
 android {
     namespace 'com.sultanagung1.sista.data.model'
-    compileSdk 35
+    compileSdk 37
 
     defaultConfig {
         minSdk 26

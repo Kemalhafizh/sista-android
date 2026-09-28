@@ -13,7 +13,7 @@ plugins {
 // avoid a cycle with ApiClient, which references all of them.
 android {
     namespace 'com.sultanagung1.sista.core.network'
-    compileSdk 35
+    compileSdk 37
 
     defaultConfig {
         minSdk 26
