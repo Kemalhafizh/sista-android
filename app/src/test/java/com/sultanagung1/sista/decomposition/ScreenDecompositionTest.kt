@@ -41,17 +41,15 @@ class ScreenDecompositionTest {
             lines.size <= 250
         )
 
-        // Verify all 6 section files exist and are populated
+        // Verify the section files exist and are populated
         val sectionsDir = source("$homeDir/sections")
         assertTrue("sections directory must exist", sectionsDir.exists() && sectionsDir.isDirectory)
 
+        // Design system v2 Home: header, today's lessons, shortcuts.
         val expectedSections = listOf(
-            "HomeHeroSection.kt",
-            "HomePrayerWidget.kt",
-            "HomeSmartSuggestions.kt",
-            "HomeQuickActions.kt",
-            "HomeSchedulePreview.kt",
-            "HomeModuleCarousel.kt"
+            "HomeHeader.kt",
+            "HomeTodayCard.kt",
+            "HomeQuickAccess.kt"
         )
 
         for (sectionName in expectedSections) {
@@ -161,29 +159,14 @@ class ScreenDecompositionTest {
     @Test
     fun testHomeScreenSectionExports() {
         val sectionsDir = source("$homeDir/sections")
-        val heroFile = File(sectionsDir, "HomeHeroSection.kt")
-        assertTrue(heroFile.readText().contains("HomeHeroSection"))
-
-        val prayerFile = File(sectionsDir, "HomePrayerWidget.kt")
-        assertTrue(prayerFile.readText().contains("HomePrayerWidget"))
-        assertTrue(prayerFile.readText().contains("ModernPrayerBadge"))
-
-        val suggestionsFile = File(sectionsDir, "HomeSmartSuggestions.kt")
-        assertTrue(suggestionsFile.readText().contains("HomeStreakBanner"))
-        assertTrue(suggestionsFile.readText().contains("HomeContextualSection"))
-
-        val quickActionsFile = File(sectionsDir, "HomeQuickActions.kt")
-        assertTrue(quickActionsFile.readText().contains("HomeMinimalQuickActions"))
-        assertTrue(quickActionsFile.readText().contains("ModernQuickActionPill"))
-        // FASE 76.2: dead code with a fake "Radius 250m" label (real geofence is 100m) was removed
-        assertFalse(quickActionsFile.readText().contains("HomeBentoGrid"))
-        assertFalse(quickActionsFile.readText().contains("HomeQuickServicesGrid"))
-
-        val scheduleFile = File(sectionsDir, "HomeSchedulePreview.kt")
-        assertTrue(scheduleFile.readText().contains("HomeSchedulePreview"))
-        assertTrue(scheduleFile.readText().contains("ModernScheduleCard"))
-
-        val moduleFile = File(sectionsDir, "HomeModuleCarousel.kt")
-        assertTrue(moduleFile.readText().contains("HomeModuleCarousel"))
+        assertTrue(File(sectionsDir, "HomeHeader.kt").readText().contains("fun HomeHeader("))
+        assertTrue(File(sectionsDir, "HomeTodayCard.kt").readText().contains("fun HomeTodayCard("))
+        val quick = File(sectionsDir, "HomeQuickAccess.kt").readText()
+        assertTrue(quick.contains("fun HomeQuickAccess("))
+        assertTrue(quick.contains("val STUDENT_QUICK_ITEMS"))
+        // No section keeps sample data or fake labels (the old "Radius 250m" grid, prayer badge without a source).
+        val all = sectionsDir.listFiles()!!.joinToString("\n") { it.readText() }
+        assertFalse(all.contains("Radius 250m"))
+        assertFalse(all.contains("ModernPrayerBadge"))
     }
 }

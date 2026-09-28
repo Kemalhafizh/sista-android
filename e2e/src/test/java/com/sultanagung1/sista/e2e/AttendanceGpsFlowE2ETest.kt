@@ -52,7 +52,7 @@ class AttendanceGpsFlowE2ETest : AppiumTestBase() {
 
         // Step 2: open the GPS attendance screen. The "Presensi GPS" entry
         // may live directly on Home or behind the "see all services" sheet
-        // (HomeServicesBottomSheet.kt) depending on how many quick actions
+        // (Layanan tab) depending on how many quick actions
         // are pinned for this role — scrollIntoView handles both: it is a
         // no-op if the element is already on screen.
         driver.findElement(

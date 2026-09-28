@@ -134,7 +134,7 @@ class AdaptiveRefreshRateTest {
 
         val homeFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt")
         val homeContent = homeFile.readText()
-        assertTrue(homeContent.contains("key = \"prayer_widget\""))
+        assertTrue(homeContent.contains("key = \"today\""))
         assertTrue(homeContent.contains("key = \"quick_actions\""))
     }
 
