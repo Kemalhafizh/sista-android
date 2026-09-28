@@ -64,15 +64,21 @@ class ProfessionalUiUxOverhaulTest {
     }
 
     @Test
-    fun testTeacherDashboardFollowsExecutiveStandards() {
+    fun testTeacherHomeSharesTheUniformHomeLayout() {
         val content = read(teacherDashboard)
-        assertTrue("Must use SulaoneExecutiveHeader", content.contains("SulaoneExecutiveHeader("))
-        assertTrue("Must use SulaoneMetricCard", content.contains("SulaoneMetricCard("))
-        assertTrue("Must show Beban Mengajar metric", content.contains("Beban Mengajar"))
-        assertTrue("Must show Kelas Diampu metric", content.contains("Kelas Diampu"))
-        assertTrue("Must show Presensi Siswa button", content.contains("Presensi Siswa"))
-        assertTrue("Must show Isi Jurnal button", content.contains("Isi Jurnal"))
-        assertTrue("Must have 48dp touch targets", content.contains("sulaoneInteractiveTouchTarget(48.dp)"))
+        // Same header, cards and tiles as every other role's Beranda.
+        assertTrue("Must use the shared GreetingHeader", content.contains("GreetingHeader("))
+        assertTrue("Must show real stats as StatTiles", content.contains("StatTile("))
+        assertTrue("Must show Kelas diampu", content.contains("Kelas diampu"))
+        assertTrue("Must offer Presensi per slot", content.contains("\"Presensi\""))
+        assertTrue("Must offer Jurnal per slot", content.contains("\"Jurnal\""))
+        // Shortcuts are only those the server grants this account.
+        assertTrue("Shortcuts must be capability-filtered", content.contains("capabilities.canOpen(it.route)"))
+        // The old header navigated to "scanner"/"notifications"/"profile" — none are routes.
+        for (bogus in listOf("\"scanner\"", "\"notifications\"", "\"profile\"")) {
+            assertFalse("Must not navigate to non-route $bogus", content.contains("onNavigateRoute($bogus)"))
+        }
+        assertTrue("Bell must open the real notification center", content.contains("Screen.NotificationCenter.route"))
     }
 
     @Test
@@ -108,7 +114,7 @@ class ProfessionalUiUxOverhaulTest {
 
     @Test
     fun testStaffDashboardsUseBentoHeroAndScrollAwareGlassBar() {
-        for (path in listOf(teacherDashboard, parentDashboard, adminDashboard)) {
+        for (path in listOf(parentDashboard, adminDashboard)) {
             val content = read(path)
             assertTrue("$path must use an asymmetric BentoHeroSplit", content.contains("BentoHeroSplit("))
             assertTrue("$path must use exactly one emphasized hero tile", content.split("SulaoneBentoHeroTile(").size - 1 == 1)

@@ -3,33 +3,34 @@ package com.sultanagung1.sista.ui.teacher.sessions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.sultanagung1.sista.core.designsystem.AccentGreen
-import com.sultanagung1.sista.core.designsystem.LiveStatusChip
-import com.sultanagung1.sista.core.designsystem.SessionAttendanceSummary
-import com.sultanagung1.sista.core.designsystem.SulaoneButton
-import com.sultanagung1.sista.core.designsystem.SulaoneButtonVariant
-import com.sultanagung1.sista.core.designsystem.SulaoneCard
+import com.sultanagung1.sista.core.ui.component.ButtonVariant
+import com.sultanagung1.sista.core.ui.component.CardVariant
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.SistaButton
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionRules.DashboardAction
+import com.sultanagung1.sista.data.model.ClassSessionStatus
 
 /**
- * FASE 77.7.2: the teacher dashboard's class-session call to action —
- * "Kembali ke Kelas" while one is running, "Mulai Kelas" when one can start,
+ * FASE 77.7.2: the teacher home's class-session call to action —
+ * "Kembali ke kelas" while one is running, "Mulai kelas" when one can start,
  * otherwise when the next one opens. Hidden when there is nothing to do.
  */
 @Composable
@@ -38,70 +39,65 @@ fun TeacherClassSessionCard(
     nowMinutes: Int,
     onOpenActive: (sessionId: Long) -> Unit,
     onOpenSessions: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val action = ClassSessionRules.dashboardAction(sessions, nowMinutes)
     if (action == DashboardAction.NoClassesToday) return
 
-    SulaoneCard(modifier = modifier.fillMaxWidth(), onClick = onOpenSessions) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    SistaCard(
+        modifier = modifier.fillMaxWidth(),
+        variant = if (action is DashboardAction.ReturnToClass) CardVariant.Highlighted else CardVariant.Filled,
+        onClick = onOpenSessions,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             when (action) {
                 is DashboardAction.ReturnToClass -> {
                     val s = action.session
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        LiveStatusChip(text = "LIVE")
-                        Text(
-                            listOfNotNull(s.subjectName, s.classroomName).joinToString(" • "),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SessionStatusPill(ClassSessionStatus.ACTIVE)
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text(title(s), style = SistaTheme.typography.titleMedium)
                     }
-                    SessionAttendanceSummary(ClassSessionRules.countsOf(s), showBreakdown = false)
-                    SulaoneButton(
-                        text = "Kembali ke Kelas ${s.subjectName.orEmpty()}".trim(),
-                        onClick = { s.sessionId?.let(onOpenActive) },
-                        icon = Icons.AutoMirrored.Filled.ArrowForward,
-                        containerColor = AccentGreen,
-                        modifier = Modifier.fillMaxWidth()
+                    AttendanceSummary(ClassSessionRules.countsOf(s), showBreakdown = false)
+                    SistaButton(
+                        "Kembali ke kelas",
+                        { s.sessionId?.let(onOpenActive) },
+                        leadingIcon = Icons.AutoMirrored.Outlined.ArrowForward,
+                        fullWidth = true,
                     )
                 }
                 is DashboardAction.StartClass -> {
                     val s = action.session
-                    Text(
-                        "${s.subjectName.orEmpty()} • ${s.classroomName.orEmpty()} • ${ClassSessionRules.timeRange(s.scheduledStart, s.scheduledEnd)}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    SulaoneButton(
-                        text = "Mulai Kelas ${s.subjectName.orEmpty()}".trim(),
-                        onClick = onOpenSessions,
-                        icon = Icons.Default.PlayArrow,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconBadge(Icons.Outlined.PlayArrow, tone = StatusTone.Brand)
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(Modifier.weight(1f)) {
+                            Text("Waktunya mengajar", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
+                            Text(title(s), style = SistaTheme.typography.titleMedium)
+                            Text(ClassSessionRules.timeRange(s.scheduledStart, s.scheduledEnd), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                        }
+                    }
+                    SistaButton("Mulai kelas", onOpenSessions, leadingIcon = Icons.Outlined.PlayArrow, fullWidth = true)
                 }
-                is DashboardAction.NextClass -> Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Berikutnya: ${action.session.subjectName.orEmpty()} ${action.session.classroomName.orEmpty()}".trim(),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text("Bisa dimulai pukul ${action.opensAt}", style = MaterialTheme.typography.bodySmall)
+                is DashboardAction.NextClass -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconBadge(Icons.Outlined.Schedule, tone = StatusTone.Info)
+                    Spacer(Modifier.width(Spacing.md))
+                    Column(Modifier.weight(1f)) {
+                        Text("Berikutnya: ${title(action.session)}", style = SistaTheme.typography.titleSmall)
+                        Text("Bisa dimulai pukul ${action.opensAt}", style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                     }
                 }
                 DashboardAction.AllDone -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Semua sesi kelas hari ini sudah selesai.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SulaoneButton(text = "Lihat", onClick = onOpenSessions, variant = SulaoneButtonVariant.GhostText)
+                    IconBadge(Icons.Outlined.CheckCircle, tone = StatusTone.Success)
+                    Spacer(Modifier.width(Spacing.md))
+                    Text("Semua sesi kelas hari ini sudah selesai.", style = SistaTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    SistaButton("Lihat", onOpenSessions, variant = ButtonVariant.Text)
                 }
                 DashboardAction.NoClassesToday -> Unit
             }
         }
     }
 }
+
+private fun title(session: ClassSessionDto): String =
+    listOfNotNull(session.subjectName, session.classroomName).joinToString(" · ").ifBlank { "Sesi kelas" }

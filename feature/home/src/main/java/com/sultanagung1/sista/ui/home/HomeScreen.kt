@@ -33,7 +33,7 @@ import com.sultanagung1.sista.ui.home.sections.HomeQuickAccess
 import com.sultanagung1.sista.ui.home.sections.HomeTodayCard
 import com.sultanagung1.sista.ui.home.sections.QuickItem
 import com.sultanagung1.sista.ui.home.sections.STUDENT_QUICK_ITEMS
-import com.sultanagung1.sista.ui.home.sections.greetingFor
+import com.sultanagung1.sista.core.ui.component.greetingFor
 import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.navigation.canOpen
