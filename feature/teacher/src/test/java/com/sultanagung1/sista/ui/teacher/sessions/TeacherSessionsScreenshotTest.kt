@@ -127,4 +127,37 @@ class TeacherSessionsScreenshotTest {
             counts = counts, isLoading = false,
         ),
     )
+
+    private val rows = listOf(
+        "Aisyah Putri Rahmadani" to com.sultanagung1.sista.data.model.SessionAttendanceStatus.HADIR,
+        "Bagas Aditya Nugroho" to com.sultanagung1.sista.data.model.SessionAttendanceStatus.TELAT,
+        "Citra Maharani" to com.sultanagung1.sista.data.model.SessionAttendanceStatus.ALPHA,
+        "Dimas Prasetyo" to com.sultanagung1.sista.data.model.SessionAttendanceStatus.HADIR,
+        "Evi Nurhaliza" to com.sultanagung1.sista.data.model.SessionAttendanceStatus.ALPHA,
+    ).mapIndexed { i, (name, status) ->
+        com.sultanagung1.sista.data.model.SessionAttendanceDto(
+            id = i + 1L, studentId = i + 100L, studentName = name, studentNis = "2024${100 + i}",
+            status = status,
+            checkedInAt = if (status == com.sultanagung1.sista.data.model.SessionAttendanceStatus.ALPHA) null else "2026-09-28T08:3${i}:00+07:00",
+            checkInMethod = if (status == com.sultanagung1.sista.data.model.SessionAttendanceStatus.ALPHA) com.sultanagung1.sista.data.model.SessionCheckInMethod.AUTO_ALPHA
+            else com.sultanagung1.sista.data.model.SessionCheckInMethod.QR_SCAN,
+        )
+    }
+
+    // Citra was marked Sakit by the teacher and not saved yet.
+    @Test fun attendanceList() {
+        compose.setContent {
+            MaterialTheme(colorScheme = lightColorScheme()) {
+                TeacherAttendanceListContent(
+                    state = TeacherAttendanceListState(
+                        sessionId = 11, session = live, rows = rows, isLoading = false,
+                        edits = mapOf(102L to com.sultanagung1.sista.data.model.SessionAttendanceStatus.SAKIT),
+                    ),
+                    onEvent = {},
+                    onNavigateBack = {},
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/attendance_list.png")
+    }
 }
