@@ -57,6 +57,7 @@ import com.sultanagung1.sista.core.ui.component.FeatureTile
 import com.sultanagung1.sista.core.ui.component.GreetingHeader
 import com.sultanagung1.sista.core.ui.component.IconBadge
 import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.OnResume
 import com.sultanagung1.sista.core.ui.component.SectionHeader
 import com.sultanagung1.sista.core.ui.component.SistaButton
 import com.sultanagung1.sista.core.ui.component.SistaCard
@@ -104,6 +105,7 @@ fun AdminDashboardScreen(
     onNavigateRoute: (String) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    OnResume(viewModel::loadUnreadNotifications)
     val capabilities = LocalCapabilityState.current
 
     var refreshRequested by remember { mutableStateOf(false) }
@@ -167,7 +169,7 @@ fun AdminHomeContent(
                             greeting = greeting,
                             name = state.principalName?.takeIf { it.isNotBlank() } ?: "Pimpinan",
                             details = listOf("Dasbor sekolah"),
-                            unreadCount = 0,
+                            unreadCount = state.unreadNotifications,
                             onOpenNotifications = { onOpenRoute(Screen.NotificationCenter.route) },
                         )
                     }

@@ -49,6 +49,7 @@ import com.sultanagung1.sista.core.ui.component.FeatureTile
 import com.sultanagung1.sista.core.ui.component.FilterChipRow
 import com.sultanagung1.sista.core.ui.component.GreetingHeader
 import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.OnResume
 import com.sultanagung1.sista.core.ui.component.SectionHeader
 import com.sultanagung1.sista.core.ui.component.SistaCard
 import com.sultanagung1.sista.core.ui.component.SkeletonList
@@ -96,6 +97,7 @@ fun ParentDashboardScreen(
     onNavigateToActivityFeed: ((String?) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    OnResume(viewModel::loadUnreadNotifications)
     val capabilities = LocalCapabilityState.current
 
     var refreshRequested by remember { mutableStateOf(false) }
@@ -164,7 +166,7 @@ fun ParentHomeContent(
                                     else -> "Wali dari ${state.children.size} anak"
                                 },
                             ),
-                            unreadCount = 0,
+                            unreadCount = state.unreadNotifications,
                             onOpenNotifications = { onOpenRoute(Screen.NotificationCenter.route) },
                         )
                     }

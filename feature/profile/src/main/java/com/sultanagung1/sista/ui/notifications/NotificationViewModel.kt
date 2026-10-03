@@ -1,143 +1,106 @@
 package com.sultanagung1.sista.ui.notifications
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
-import com.sultanagung1.sista.core.notification.NotificationChannelManager
-import com.sultanagung1.sista.data.model.NotificationChannelType
 import com.sultanagung1.sista.data.model.NotificationItem
 import com.sultanagung1.sista.data.repository.NotificationRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+enum class NotificationFilter(val label: String) { All("Semua"), Unread("Belum dibaca") }
 
 data class NotificationUiState(
-    val notifications: List<NotificationItem> = emptyList(),
-    val selectedFilter: String = "Semua",
     val isLoading: Boolean = false,
+    /** Null until the first load; empty when there are none. */
+    val notifications: List<NotificationItem>? = null,
     val errorMessage: String? = null,
-    val testDispatchMessage: String? = null,
-    val preferences: com.sultanagung1.sista.data.model.NotificationPreferences = com.sultanagung1.sista.data.model.NotificationPreferences()
-)
+    val filter: NotificationFilter = NotificationFilter.All,
+    /** A read/delete the server refused; shown once, then cleared. */
+    val actionMessage: String? = null,
+) {
+    val unreadCount: Int get() = notifications?.count { !it.isRead } ?: 0
+    val visible: List<NotificationItem> get() = notifications.orEmpty().filter { filter == NotificationFilter.All || !it.isRead }
+}
 
-
+/**
+ * This account's notifications. Reading, reading all and deleting are saved
+ * on the server; the list changes at once and goes back if the server says no.
+ */
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
-    private val channelManager: NotificationChannelManager? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationUiState())
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
 
     init {
-        loadNotifications()
-        loadPreferences()
+        load()
     }
 
-    fun loadPreferences() {
-        viewModelScope.launch {
-            try {
-                notificationRepository.getNotificationPreferences().collect { result ->
-                    if (result is NetworkResult.Success) {
-                        _uiState.update { it.copy(preferences = result.data) }
-                    }
-                }
-            } catch (_: Exception) {}
-        }
-    }
-
-    fun updatePreferences(newPref: com.sultanagung1.sista.data.model.NotificationPreferences) {
-        _uiState.update { it.copy(preferences = newPref) }
-        viewModelScope.launch {
-            try {
-                notificationRepository.updateNotificationPreferences(newPref).collect {}
-            } catch (_: Exception) {}
-        }
-    }
-
-    fun loadNotifications() {
+    fun load() {
         viewModelScope.launch {
             notificationRepository.getNotifications().collect { result ->
                 when (result) {
                     is NetworkResult.Loading -> _uiState.update { it.copy(isLoading = true) }
-                    is NetworkResult.Success -> _uiState.update {
-                        it.copy(notifications = result.data, isLoading = false, errorMessage = null)
-                    }
-                    is NetworkResult.Error -> _uiState.update {
-                        it.copy(isLoading = false, errorMessage = result.message)
-                    }
+                    is NetworkResult.Success -> _uiState.update { it.copy(isLoading = false, notifications = result.data, errorMessage = null) }
+                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
             }
         }
     }
 
-    fun selectFilter(filter: String) {
-        _uiState.update { it.copy(selectedFilter = filter) }
-    }
+    fun setFilter(filter: NotificationFilter) = _uiState.update { it.copy(filter = filter) }
 
-    fun markAsRead(notificationId: String) {
-        _uiState.update { state ->
-            val updated = state.notifications.map {
-                if (it.id == notificationId) it.copy(isRead = true) else it
+    fun markRead(id: String) {
+        val item = _uiState.value.notifications?.firstOrNull { it.id == id } ?: return
+        if (item.isRead) return
+        setRead(id, true)
+        viewModelScope.launch {
+            notificationRepository.markNotificationRead(id).collect { result ->
+                if (result is NetworkResult.Error) {
+                    setRead(id, false)
+                    _uiState.update { it.copy(actionMessage = result.message) }
+                }
             }
-            state.copy(notifications = updated)
         }
     }
 
-    fun markAllAsRead() {
-        _uiState.update { state ->
-            val updated = state.notifications.map { it.copy(isRead = true) }
-            state.copy(notifications = updated)
+    fun markAllRead() {
+        val before = _uiState.value.notifications ?: return
+        if (before.none { !it.isRead }) return
+        _uiState.update { it.copy(notifications = before.map { n -> n.copy(isRead = true) }) }
+        viewModelScope.launch {
+            notificationRepository.markAllNotificationsRead().collect { result ->
+                if (result is NetworkResult.Error) {
+                    _uiState.update { it.copy(notifications = before, actionMessage = result.message) }
+                }
+            }
         }
     }
 
-    fun deleteNotification(notificationId: String) {
-        _uiState.update { state ->
-            val updated = state.notifications.filter { it.id != notificationId }
-            state.copy(notifications = updated)
+    fun delete(id: String) {
+        val before = _uiState.value.notifications ?: return
+        if (before.none { it.id == id }) return
+        _uiState.update { it.copy(notifications = before.filterNot { n -> n.id == id }) }
+        viewModelScope.launch {
+            notificationRepository.deleteNotification(id).collect { result ->
+                if (result is NetworkResult.Error) {
+                    _uiState.update { it.copy(notifications = before, actionMessage = result.message) }
+                }
+            }
         }
     }
 
-    fun dispatchTestPushNotification(
-        channelType: NotificationChannelType,
-        title: String,
-        body: String,
-        deepLinkRoute: String? = null
-    ) {
-        channelManager?.dispatchLocalNotification(
-            notificationId = (System.currentTimeMillis() % 100000).toInt(),
-            channelType = channelType,
-            title = title,
-            message = body,
-            deepLinkRoute = deepLinkRoute
-        )
+    fun dismissActionMessage() = _uiState.update { it.copy(actionMessage = null) }
 
-        // Also append to in-app list
-        val newNotif = NotificationItem(
-            id = "test_${System.currentTimeMillis()}",
-            title = title,
-            body = body,
-            channel = channelType.channelId,
-            deepLinkRoute = deepLinkRoute,
-            timestamp = "Baru saja",
-            isRead = false
-        )
-
-        _uiState.update { state ->
-            state.copy(
-                notifications = listOf(newNotif) + state.notifications,
-                testDispatchMessage = "Notifikasi '$title' berhasil dikirim ke Notification Shade Android!"
-            )
-        }
-    }
-
-    fun clearTestDispatchMessage() {
-        _uiState.update { it.copy(testDispatchMessage = null) }
+    private fun setRead(id: String, read: Boolean) = _uiState.update { state ->
+        state.copy(notifications = state.notifications?.map { if (it.id == id) it.copy(isRead = read) else it })
     }
 }

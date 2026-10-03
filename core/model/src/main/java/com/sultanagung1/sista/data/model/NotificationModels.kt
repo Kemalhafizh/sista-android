@@ -26,12 +26,18 @@ data class DeviceTokenRegisterRequest(
     @SerializedName("app_version") val appVersion: String = "2.0"
 )
 
+/** One notification from `notifications`, this account's own. */
 data class NotificationItem(
     @SerializedName("id") val id: String,
     @SerializedName("title") val title: String,
-    @SerializedName("body") val body: String,
-    @SerializedName("channel") val channel: String,
+    @SerializedName("body") val body: String = "",
+    /** One of [NotificationChannelType] channel ids. */
+    @SerializedName("channel") val channel: String = "general_info",
+    /** An app route ("billing", "discipline", "uks_visit") or null. */
     @SerializedName("deep_link_route") val deepLinkRoute: String? = null,
-    @SerializedName("timestamp") val timestamp: String,
-    @SerializedName("is_read") var isRead: Boolean = false
+    /** ISO-8601. */
+    @SerializedName("timestamp") val timestamp: String? = null,
+    @SerializedName("is_read") val isRead: Boolean = false,
 )
+
+data class UnreadCount(@SerializedName("count") val count: Int = 0)

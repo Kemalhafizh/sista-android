@@ -2,6 +2,7 @@
 package com.sultanagung1.sista.data.repository
 
 import com.sultanagung1.sista.core.network.ApiClient
+import com.sultanagung1.sista.core.network.ApiEnvelope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
@@ -59,7 +60,6 @@ import com.sultanagung1.sista.data.model.LoginRequest
 import com.sultanagung1.sista.data.model.LoginResponse
 import com.sultanagung1.sista.data.model.MutabaahLogItem
 import com.sultanagung1.sista.data.model.NotificationItem
-import com.sultanagung1.sista.data.model.NotificationPreferences
 import com.sultanagung1.sista.data.model.ParentChildItem
 import com.sultanagung1.sista.data.model.ParentMessageDto
 import com.sultanagung1.sista.data.model.PaymentVaResponse
@@ -1273,83 +1273,64 @@ class NotificationRepository(private val apiClient: ApiClient) {
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getAnnouncements(category: String? = null): Flow<NetworkResult<List<AnnouncementItem>>> = flow {
+    /** Announcements meant for this account, pinned first. */
+    fun getAnnouncements(category: String? = null): Flow<NetworkResult<List<AnnouncementItem>>> =
+        enveloped("pengumuman") { apiClient.notificationApi.getAnnouncements(category) }
+
+    /** Opening one records it as read on the server. */
+    fun getAnnouncementDetail(id: String): Flow<NetworkResult<AnnouncementItem>> =
+        enveloped("pengumuman") { apiClient.notificationApi.getAnnouncementDetail(id) }
+
+    /** Confirms reading an announcement that asks for it. */
+    fun acknowledgeAnnouncement(id: String): Flow<NetworkResult<AnnouncementItem>> =
+        enveloped("konfirmasi pengumuman") { apiClient.notificationApi.acknowledgeAnnouncement(id) }
+
+    fun getNotifications(): Flow<NetworkResult<List<NotificationItem>>> =
+        enveloped("notifikasi") { apiClient.notificationApi.getNotifications() }
+
+    /** For the bell on every home. */
+    fun getUnreadCount(): Flow<NetworkResult<Int>> =
+        enveloped("jumlah notifikasi") { apiClient.notificationApi.getUnreadCount() }.mapSuccess { it.count }
+
+    fun markNotificationRead(id: String): Flow<NetworkResult<NotificationItem>> =
+        enveloped("notifikasi") { apiClient.notificationApi.markNotificationRead(id) }
+
+    fun markAllNotificationsRead(): Flow<NetworkResult<Int>> =
+        enveloped("notifikasi") { apiClient.notificationApi.markAllNotificationsRead() }.mapSuccess { it["updated"] ?: 0 }
+
+    /** Succeeds with Unit: the server sends no body worth keeping. */
+    fun deleteNotification(id: String): Flow<NetworkResult<Unit>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.notificationApi.getAnnouncements(category)
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat pengumuman sekolah (Kode: ${response.code()}).", response.code()))
-            }
+            val response = apiClient.notificationApi.deleteNotification(id)
+            if (response.isSuccessful) emit(NetworkResult.Success(Unit)) else emit(errorOf(response, "notifikasi"))
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getAnnouncementDetail(id: String): Flow<NetworkResult<AnnouncementItem>> = flow {
+    private fun <T : Any> enveloped(what: String, call: suspend () -> Response<ApiEnvelope<T>>): Flow<NetworkResult<T>> = flow {
         emit(NetworkResult.Loading)
         try {
-            val response = apiClient.notificationApi.getAnnouncementDetail(id)
+            val response = call()
             val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat detail pengumuman (Kode: ${response.code()}).", response.code()))
-            }
+            if (response.isSuccessful && data != null) emit(NetworkResult.Success(data)) else emit(errorOf(response, what))
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getNotifications(): Flow<NetworkResult<List<NotificationItem>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.notificationApi.getNotifications()
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat notifikasi (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
+    private fun errorOf(response: Response<*>, what: String): NetworkResult.Error {
+        val message = serverMessageOf(response.errorBody()?.string())
+            ?: if (response.code() == 404) "Data $what tidak ditemukan." else "Data $what belum bisa dimuat (kode ${response.code()})."
+        return NetworkResult.Error(message, response.code())
+    }
 
-    fun getNotificationPreferences(): Flow<NetworkResult<NotificationPreferences>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.notificationPreferencesApi.getPreferences()
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat preferensi notifikasi (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+    private fun <T, R> Flow<NetworkResult<T>>.mapSuccess(transform: (T) -> R): Flow<NetworkResult<R>> = map { result ->
+        when (result) {
+            is NetworkResult.Success -> NetworkResult.Success(transform(result.data))
+            is NetworkResult.Error -> result
+            is NetworkResult.Loading -> result
         }
-    }.flowOn(Dispatchers.IO)
-
-    /**
-     * A failed save must not echo back the attempted [preferences] as if
-     * they were persisted — the user would believe a toggle was saved when
-     * the server never actually received it.
-     */
-    fun updateNotificationPreferences(preferences: NotificationPreferences): Flow<NetworkResult<NotificationPreferences>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.notificationPreferencesApi.updatePreferences(preferences)
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal menyimpan preferensi notifikasi (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
+    }
 }

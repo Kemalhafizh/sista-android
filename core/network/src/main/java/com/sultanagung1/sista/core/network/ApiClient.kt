@@ -77,7 +77,6 @@ class ApiClient(private val context: Context) {
     val teachingJournalApi: TeachingJournalMobileApiService by lazy { retrofit.create(TeachingJournalMobileApiService::class.java) }
     val contextualHomeApi: ContextualHomeApiService by lazy { retrofit.create(ContextualHomeApiService::class.java) }
     val gamificationApi: GamificationApiService by lazy { retrofit.create(GamificationApiService::class.java) }
-    val notificationPreferencesApi: NotificationPreferencesApiService by lazy { retrofit.create(NotificationPreferencesApiService::class.java) }
     val parentExperienceApi: ParentExperienceApiService by lazy { retrofit.create(ParentExperienceApiService::class.java) }
     val syncApi: SyncApiService by lazy { retrofit.create(SyncApiService::class.java) }
     val mobileConfigApi: MobileConfigApiService by lazy { retrofit.create(MobileConfigApiService::class.java) }

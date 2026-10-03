@@ -63,6 +63,18 @@ interface NotificationApiService {
     @GET("notifications")
     suspend fun getNotifications(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<NotificationItem>>>
 
+    @GET("notifications/unread-count")
+    suspend fun getUnreadCount(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<UnreadCount>>
+
+    @POST("notifications/{id}/read")
+    suspend fun markNotificationRead(@Path("id") id: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<NotificationItem>>
+
+    @POST("notifications/read-all")
+    suspend fun markAllNotificationsRead(): Response<com.sultanagung1.sista.core.network.ApiEnvelope<Map<String, Int>>>
+
+    @DELETE("notifications/{id}")
+    suspend fun deleteNotification(@Path("id") id: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<Any>>
+
     @GET("announcements")
     suspend fun getAnnouncements(
         @Query("category") category: String? = null
@@ -70,6 +82,11 @@ interface NotificationApiService {
 
     @GET("announcements/{id}")
     suspend fun getAnnouncementDetail(
+        @Path("id") id: String
+    ): Response<com.sultanagung1.sista.core.network.ApiEnvelope<AnnouncementItem>>
+
+    @POST("announcements/{id}/acknowledge")
+    suspend fun acknowledgeAnnouncement(
         @Path("id") id: String
     ): Response<com.sultanagung1.sista.core.network.ApiEnvelope<AnnouncementItem>>
 }

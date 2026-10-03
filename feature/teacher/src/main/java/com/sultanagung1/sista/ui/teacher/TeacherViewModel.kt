@@ -13,6 +13,7 @@ import com.sultanagung1.sista.data.model.StudentAttendanceInputItem
 import com.sultanagung1.sista.data.model.SubmitClassAttendanceRequest
 import com.sultanagung1.sista.data.model.TeacherScheduleSlot
 import com.sultanagung1.sista.data.model.TeachingJournalEntry
+import com.sultanagung1.sista.data.repository.NotificationRepository
 import com.sultanagung1.sista.data.repository.ClassSessionRepository
 import com.sultanagung1.sista.data.repository.TeacherRepository
 import com.sultanagung1.sista.data.repository.TeachingJournalRepository
@@ -45,7 +46,8 @@ data class TeacherUiState(
     val classSessions: List<ClassSessionDto> = emptyList(),
     /** False until loaded, and while the server has no class-session routes (the card hides). */
     val classSessionsAvailable: Boolean = false,
-    val nowMinutes: Int = DateUtils.nowMinutesOfDay()
+    val nowMinutes: Int = DateUtils.nowMinutesOfDay(),
+    val unreadNotifications: Int = 0,
 )
 
 /**
@@ -65,7 +67,8 @@ class TeacherViewModel @Inject constructor(
     private val teacherRepository: TeacherRepository,
     private val journalRepository: TeachingJournalRepository,
     private val sessionManager: SessionManager,
-    private val classSessionRepository: ClassSessionRepository
+    private val classSessionRepository: ClassSessionRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TeacherUiState())
@@ -75,6 +78,15 @@ class TeacherViewModel @Inject constructor(
 
     init {
         loadDashboard()
+    }
+
+    /** The bell on the home; reloaded whenever the home comes back into view. */
+    fun loadUnreadNotifications() {
+        viewModelScope.launch {
+            notificationRepository.getUnreadCount().collect { result ->
+                if (result is NetworkResult.Success) _uiState.update { it.copy(unreadNotifications = result.data) }
+            }
+        }
     }
 
     fun loadDashboard() {

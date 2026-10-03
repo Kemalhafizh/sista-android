@@ -13,6 +13,7 @@ import com.sultanagung1.sista.data.model.ChildSummaryResponse
 import com.sultanagung1.sista.data.model.ChildVsClassComparison
 import com.sultanagung1.sista.data.model.ParentChildItem
 import com.sultanagung1.sista.data.model.WeeklyDigest
+import com.sultanagung1.sista.data.repository.NotificationRepository
 import com.sultanagung1.sista.data.repository.ParentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -46,6 +47,7 @@ data class ParentUiState(
     // FASE 71.3: a live gate check-in for the selected child, pushed over the
     // backend's AttendanceLoggedEvent broadcast — null until one arrives.
     val liveGateStatus: WebSocketEvent.LiveAttendanceRecorded? = null,
+    val unreadNotifications: Int = 0,
 )
 
 /**
@@ -60,6 +62,7 @@ class ParentViewModel @Inject constructor(
     private val parentRepository: ParentRepository,
     private val sessionManager: SessionManager,
     private val webSocketManager: ReverbWebSocketManager,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ParentUiState())
@@ -184,6 +187,15 @@ class ParentViewModel @Inject constructor(
             }
         },
     )
+
+    /** The bell on the home; reloaded whenever the home comes back into view. */
+    fun loadUnreadNotifications() {
+        viewModelScope.launch {
+            notificationRepository.getUnreadCount().collect { result ->
+                if (result is NetworkResult.Success) _uiState.update { it.copy(unreadNotifications = result.data) }
+            }
+        }
+    }
 
     /** Reloads the chosen child's data (pull to refresh). */
     fun refresh() {

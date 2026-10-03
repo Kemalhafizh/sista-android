@@ -1,465 +1,238 @@
-/**
- * FASE 67: Overhauled Pusat Informasi & Pengumuman Screen.
- * Modern institutional feed: Slate50 off-white canvas, flat 0dp cards, 0.5dp hairline borders,
- * WCAG 2.2 AA typography, Emerald600 accents, and tactile haptic interactions.
- */
 package com.sultanagung1.sista.ui.announcements
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
-import com.sultanagung1.sista.core.designsystem.*
-import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
-import com.sultanagung1.sista.core.motion.springPressable
+import com.sultanagung1.sista.core.designsystem.SulaonePullToRefreshBox
+import com.sultanagung1.sista.core.ui.component.EmptyState
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.FilterChipRow
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTextField
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.AnnouncementItem
+import java.time.LocalDate
+import java.time.ZoneId
 
+/** Announcements meant for this account, pinned first, with what is unread or awaits confirmation. */
 @Composable
 fun AnnouncementFeedScreen(
-    viewModel: AnnouncementViewModel,
+    viewModel: AnnouncementFeedViewModel,
     onNavigateToDetail: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: (() -> Unit)?,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isDark = isSystemInDarkTheme()
-    val haptics = rememberHapticFeedbackHelper()
+    val state by viewModel.uiState.collectAsState()
+    var refreshRequested by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isLoading) { if (!state.isLoading) refreshRequested = false }
 
-    val categories = listOf("Semua", "Darurat", "Akademik", "Ibadah", "Kesiswaan")
-    val borderColor = if (isDark) Slate800 else Slate200
-    val cardBg = if (isDark) MaterialTheme.colorScheme.surface else Color.White
-
-    val filteredList = remember(uiState.announcements, uiState.searchQuery, uiState.selectedCategory) {
-        var list = uiState.announcements
-        if (uiState.selectedCategory != "Semua") {
-            list = list.filter { it.category.equals(uiState.selectedCategory, ignoreCase = true) }
-        }
-        if (uiState.searchQuery.isNotBlank()) {
-            list = list.filter {
-                it.title.contains(uiState.searchQuery, ignoreCase = true) ||
-                it.summary.contains(uiState.searchQuery, ignoreCase = true) ||
-                it.author.contains(uiState.searchQuery, ignoreCase = true)
-            }
-        }
-        list
-    }
-
-    // FASE 76.2: the list scrolls under a see-through top bar; the hairline
-    // appears once content is actually passing beneath it.
-    val listState = rememberLazyListState()
-    val listScrolled by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
-    }
-
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Pusat Informasi & Pengumuman",
-                subtitle = "SMA Islam Sultan Agung 1 Semarang",
-                onNavigateBack = onNavigateBack,
-                translucent = true,
-                showDivider = listScrolled
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
-                .padding(bottom = paddingValues.calculateBottomPadding())
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = paddingValues.calculateTopPadding(), bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 1. Live WebSocket Alert Banner
-                if (uiState.liveAlertBanner != null) {
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isDark) Emerald950 else Gold50),
-                            elevation = CardDefaults.cardElevation(0.dp),
-                            border = androidx.compose.foundation.BorderStroke(0.5.dp, Gold400)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.NotificationsActive,
-                                        contentDescription = null,
-                                        tint = Gold600,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = uiState.liveAlertBanner ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = if (isDark) Gold300 else Gold900,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        haptics.tapLight()
-                                        viewModel.clearLiveBanner()
-                                    },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Tutup",
-                                        tint = if (isDark) Gold300 else Gold800,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2. Search Field & Category Chips
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.searchQuery,
-                            onValueChange = { viewModel.updateSearchQuery(it) },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text(
-                                    "Cari surat edaran, agenda, berita...",
-                                    fontSize = 13.sp,
-                                    color = if (isDark) Slate500 else Slate400
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = if (isDark) Slate400 else Slate500
-                                )
-                            },
-                            trailingIcon = {
-                                if (uiState.searchQuery.isNotBlank()) {
-                                    IconButton(
-                                        onClick = { viewModel.updateSearchQuery("") },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Clear,
-                                            contentDescription = "Hapus",
-                                            tint = if (isDark) Slate400 else Slate500
-                                        )
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Emerald600,
-                                unfocusedBorderColor = borderColor,
-                                focusedContainerColor = cardBg,
-                                unfocusedContainerColor = cardBg
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Category Pills
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(categories) { category ->
-                                val isSelected = uiState.selectedCategory == category
-                                Box(
-                                    modifier = Modifier
-                                        .heightIn(min = 40.dp)
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(if (isSelected) Emerald600 else cardBg)
-                                        .border(
-                                            width = 0.5.dp,
-                                            color = if (isSelected) Emerald600 else borderColor,
-                                            shape = RoundedCornerShape(20.dp)
-                                        )
-                                        .springPressable {
-                                            haptics.tapLight()
-                                            viewModel.selectCategory(category)
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = category,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else if (isDark) Slate300 else Slate700
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 3. Count Header
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Surat & Informasi Resmi",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) Slate100 else Slate900
-                        )
-                        Text(
-                            text = if (filteredList.isEmpty() && uiState.isLoading) "Memuat…" else "${filteredList.size} Pengumuman",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isDark) Slate400 else Slate500
-                        )
-                    }
-                }
-
-                // 4. Feed Items, Loading, Error or Empty State.
-                // "Tidak Ada Pengumuman" used to show while still loading and
-                // after a failed request — the error was never displayed.
-                uiState.errorMessage?.let { message ->
-                    item {
-                        SulaoneErrorBanner(
-                            message = message,
-                            onRetry = { viewModel.loadAnnouncements(uiState.selectedCategory) },
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    }
-                }
-                if (filteredList.isEmpty() && uiState.isLoading) {
-                    item {
-                        SulaoneTieredLoading(isLoading = true, modifier = Modifier.padding(horizontal = 16.dp)) {
-                            AnnouncementSkeleton(borderColor = borderColor)
-                        }
-                    }
-                } else if (filteredList.isEmpty() && uiState.errorMessage != null) {
-                    // The banner above already explains; no false "no announcements".
-                } else if (filteredList.isEmpty()) {
-                    item {
-                        SulaoneEmptyState(
-                            icon = Icons.Default.Campaign,
-                            title = "Tidak Ada Pengumuman",
-                            description = "Belum ada edaran atau berita resmi untuk pencarian atau kategori ini."
-                        )
-                    }
-                } else {
-                    items(filteredList, key = { it.id }) { item ->
-                        AnnouncementItemCard(
-                            item = item,
-                            isDark = isDark,
-                            borderColor = borderColor,
-                            cardBg = cardBg,
-                            onClick = {
-                                haptics.tapLight()
-                                viewModel.loadAnnouncementDetail(item.id)
-                                onNavigateToDetail(item.id)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
+    AnnouncementFeedContent(
+        state = state,
+        today = remember(state.announcements) { LocalDate.now(ZoneId.of("Asia/Jakarta")) },
+        refreshing = refreshRequested && state.isLoading,
+        onRefresh = {
+            refreshRequested = true
+            viewModel.load()
+        },
+        onRetry = viewModel::load,
+        onCategory = viewModel::selectCategory,
+        onSearch = viewModel::search,
+        onOpen = { id ->
+            viewModel.markOpened(id)
+            onNavigateToDetail(id)
+        },
+        onDismissBanner = viewModel::dismissBanner,
+        onNavigateBack = onNavigateBack,
+    )
 }
 
+/** The announcement list without a ViewModel, for previews and screenshots. */
 @Composable
-private fun AnnouncementItemCard(
-    item: AnnouncementItem,
-    isDark: Boolean,
-    borderColor: Color,
-    cardBg: Color,
-    onClick: () -> Unit
+fun AnnouncementFeedContent(
+    state: AnnouncementFeedUiState,
+    today: LocalDate,
+    refreshing: Boolean,
+    onRefresh: () -> Unit,
+    onRetry: () -> Unit,
+    onCategory: (AnnouncementCategory) -> Unit,
+    onSearch: (String) -> Unit,
+    onOpen: (String) -> Unit,
+    onDismissBanner: () -> Unit,
+    onNavigateBack: (() -> Unit)?,
 ) {
-    val isEmergency = item.priority == "emergency"
-    val isImportant = item.priority == "important"
-
-    val badgeContainer = when {
-        isEmergency -> if (isDark) AccentRose.copy(alpha = 0.25f) else AccentRose.copy(alpha = 0.12f)
-        isImportant -> if (isDark) Gold900.copy(alpha = 0.4f) else Gold100
-        else -> if (isDark) Emerald900.copy(alpha = 0.3f) else Emerald100
-    }
-
-    val badgeContent = when {
-        isEmergency -> AccentRose
-        isImportant -> if (isDark) Gold300 else Gold800
-        else -> if (isDark) Emerald300 else Emerald800
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .springPressable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(0.dp),
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, borderColor)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Priority/Category Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SulaoneBadge(
-                        text = item.category.uppercase(),
-                        containerColor = badgeContainer,
-                        contentColor = badgeContent
-                    )
-                    if (isEmergency) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        LiveStatusChip("PENTING & MENDESAK", color = AccentRose)
-                    }
-                }
-
-                Text(
-                    text = item.date,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isDark) Slate400 else Slate500,
-                    fontSize = 11.sp
+    val all = state.announcements
+    val unread = all.orEmpty().count(::isUnread)
+    ShellTheme {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                SistaTopBar(
+                    title = "Pengumuman",
+                    scrollBehavior = scrollBehavior,
+                    subtitle = if (unread > 0) "$unread belum dibaca" else null,
+                    onBack = onNavigateBack,
                 )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Title
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (isDark) Slate100 else Slate900,
-                lineHeight = 22.sp
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Summary
-            Text(
-                text = item.summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isDark) Slate400 else Slate600,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = borderColor, thickness = 0.5.dp)
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Author & Read Link
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            SulaonePullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("announcement_feed_root"),
             ) {
-                Row(
-                    modifier = Modifier.weight(1f, fill = false),
-                    verticalAlignment = Alignment.CenterVertically
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = if (isDark) Slate500 else Slate400,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = item.author,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isDark) Slate400 else Slate500,
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.sulaoneInteractiveTouchTarget(48.dp)
-                ) {
-                    Text(
-                        text = "Baca Surat Edaran",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Emerald600,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = Emerald600,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    state.liveBanner?.let { message ->
+                        item(key = "live") {
+                            InlineBanner(
+                                message = message,
+                                tone = if (state.liveIsEmergency) StatusTone.Danger else StatusTone.Info,
+                                title = if (state.liveIsEmergency) "Siaran darurat" else null,
+                                onDismiss = onDismissBanner,
+                            )
+                        }
+                    }
+                    item(key = "search") {
+                        SistaTextField(
+                            value = state.query,
+                            onValueChange = onSearch,
+                            label = "Cari pengumuman",
+                            leadingIcon = Icons.Outlined.Search,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    item(key = "categories") {
+                        FilterChipRow(
+                            options = AnnouncementCategory.values().toList(),
+                            selected = state.category,
+                            onSelect = onCategory,
+                            label = { it.label },
+                            contentPadding = PaddingValues(0.dp),
+                        )
+                    }
+                    val visible = state.visible
+                    when {
+                        all == null && state.errorMessage != null -> item(key = "error") {
+                            ErrorState(title = "Pengumuman belum bisa dimuat", body = state.errorMessage, onRetry = onRetry)
+                        }
+                        all == null -> item(key = "loading") { SkeletonList(rows = 4) }
+                        all.isEmpty() -> item(key = "empty") {
+                            EmptyState(
+                                title = if (state.category == AnnouncementCategory.All) "Belum ada pengumuman" else "Belum ada pengumuman ${state.category.label.lowercase()}",
+                                body = "Pengumuman sekolah untuk Anda muncul di sini.",
+                                icon = Icons.Outlined.Campaign,
+                            )
+                        }
+                        visible.isEmpty() -> item(key = "no_match") {
+                            EmptyState(title = "Tidak ada yang cocok dengan \"${state.query.trim()}\"", icon = Icons.Outlined.SearchOff)
+                        }
+                        else -> items(visible, key = { it.id }) { item ->
+                            AnnouncementCard(item, today, onClick = { onOpen(item.id) })
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-/** Mirrors an announcement card: category chip, title, two body lines, meta. */
 @Composable
-private fun AnnouncementSkeleton(borderColor: Color) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        repeat(3) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(0.5.dp, borderColor, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SkeletonBox(modifier = Modifier.width(72.dp).height(18.dp), shape = RoundedCornerShape(9.dp))
-                SkeletonBox(modifier = Modifier.fillMaxWidth(0.85f).height(16.dp))
-                SkeletonBox(modifier = Modifier.fillMaxWidth().height(12.dp))
-                SkeletonBox(modifier = Modifier.fillMaxWidth(0.6f).height(12.dp))
-                SkeletonBox(modifier = Modifier.width(120.dp).height(10.dp))
+private fun AnnouncementCard(item: AnnouncementItem, today: LocalDate, onClick: () -> Unit) {
+    val category = AnnouncementCategory.of(item.category)
+    val unread = isUnread(item)
+    SistaCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                IconBadge(icon = category.icon(), tone = if (isUrgent(item)) StatusTone.Danger else category.tone())
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        if (unread) {
+                            Box(
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(SistaTheme.colors.primary),
+                            )
+                        }
+                        Text(
+                            item.title,
+                            style = SistaTheme.typography.titleSmall,
+                            fontWeight = if (unread) FontWeight.SemiBold else FontWeight.Normal,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (item.isPinned) {
+                            Icon(Icons.Outlined.PushPin, contentDescription = "Disematkan", tint = SistaTheme.colors.primary, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    Text(
+                        listOfNotNull(item.author.takeIf { it.isNotBlank() }, publishedLabel(item, today).takeIf { it.isNotBlank() }).joinToString(" · "),
+                        style = SistaTheme.typography.bodySmall,
+                        color = SistaTheme.colors.onSurfaceVariant,
+                    )
+                }
+            }
+            if (item.summary.isNotBlank()) {
+                Text(item.summary, style = SistaTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            val pills = buildList {
+                if (isUrgent(item)) add("Penting" to StatusTone.Danger)
+                if (needsAcknowledgement(item)) add("Perlu konfirmasi" to StatusTone.Warning)
+                add(category.label to StatusTone.Neutral)
+                item.audience?.takeIf { it.isNotBlank() && it != "Semua" }?.let { add(it to StatusTone.Neutral) }
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                pills.forEach { (text, tone) -> StatusPill(text = text, tone = tone) }
             }
         }
     }
