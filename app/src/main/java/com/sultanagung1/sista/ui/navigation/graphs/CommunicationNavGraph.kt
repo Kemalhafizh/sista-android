@@ -6,10 +6,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import com.sultanagung1.sista.ui.navigation.guardedComposable
 import androidx.navigation.navArgument
-import com.sultanagung1.sista.BuildConfig
 import com.sultanagung1.sista.ui.announcements.AnnouncementDetailScreen
 import com.sultanagung1.sista.ui.announcements.AnnouncementFeedScreen
-import com.sultanagung1.sista.ui.announcements.AnnouncementViewModel
+import com.sultanagung1.sista.ui.announcements.AnnouncementDetailViewModel
+import com.sultanagung1.sista.ui.announcements.AnnouncementFeedViewModel
 import com.sultanagung1.sista.ui.chat.AdaptiveChatScreen
 import com.sultanagung1.sista.ui.chat.ChatScreen
 import com.sultanagung1.sista.ui.chat.ChatViewModel
@@ -50,24 +50,20 @@ fun NavGraphBuilder.communicationNavGraph(
     }
 
     guardedComposable(Screen.AnnouncementFeed.route) {
-        val viewModel: AnnouncementViewModel = hiltViewModel()
+        val viewModel: AnnouncementFeedViewModel = hiltViewModel()
         AnnouncementFeedScreen(
             viewModel = viewModel,
-            onNavigateToDetail = { annId ->
-                navController.navigate(Screen.AnnouncementDetail.createRoute(annId))
-            },
-            onNavigateBack = { navController.popBackStack() }
+            onNavigateToDetail = { id -> navController.navigate(Screen.AnnouncementDetail.createRoute(id)) },
+            onNavigateBack = if (navController.previousBackStackEntry != null) { { navController.popBackStack() } } else null,
         )
     }
 
     guardedComposable(
         route = Screen.AnnouncementDetail.route,
         arguments = listOf(navArgument("id") { type = NavType.StringType })
-    ) { backStackEntry ->
-        val annId = backStackEntry.arguments?.getString("id") ?: "ann1"
-        val viewModel: AnnouncementViewModel = hiltViewModel()
+    ) {
+        val viewModel: AnnouncementDetailViewModel = hiltViewModel()
         AnnouncementDetailScreen(
-            announcementId = annId,
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
@@ -77,20 +73,13 @@ fun NavGraphBuilder.communicationNavGraph(
         val viewModel: NotificationViewModel = hiltViewModel()
         NotificationCenterScreen(
             viewModel = viewModel,
-            onNavigateDeepLink = { route ->
-                navController.navigate(route)
-            },
+            onNavigateDeepLink = { route -> navController.navigate(route) },
             onNavigateBack = if (navController.previousBackStackEntry != null) { { navController.popBackStack() } } else null,
             onNavigateToSettings = { navController.navigate(Screen.NotificationSettings.route) },
-            showDebugTools = BuildConfig.DEBUG
         )
     }
 
     guardedComposable(Screen.NotificationSettings.route) {
-        val viewModel: NotificationViewModel = hiltViewModel()
-        NotificationSettingsScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
+        NotificationSettingsScreen(onNavigateBack = { navController.popBackStack() })
     }
 }

@@ -50,7 +50,7 @@ class Fase76Wave3Test {
     fun priorityScreensShowContentShapedSkeletonsWhileLoading() {
         // Grades: skeleton only on the first load, never an empty state while loading.
         assertTrue(code(grades).indexOf("grades.isEmpty() && loading -> item { SkeletonList(") < code(grades).indexOf("title = \"Belum ada nilai\""))
-        assertTrue(code(announcements).contains("AnnouncementSkeleton(borderColor = borderColor)"))
+        assertTrue(code(announcements).contains("all == null -> item(key = \"loading\") { SkeletonList("))
         assertTrue(code(library).contains("BookListSkeleton()"))
     }
 
@@ -58,8 +58,8 @@ class Fase76Wave3Test {
     fun emptyStatesAreNotClaimedWhileLoadingOrAfterAnError() {
         val feed = code(announcements)
         // Loading is handled before the "no announcements" branch, and errors are shown.
-        assertTrue(feed.indexOf("filteredList.isEmpty() && uiState.isLoading") < feed.indexOf("title = \"Tidak Ada Pengumuman\""))
-        assertTrue(feed.contains("SulaoneErrorBanner("))
+        assertTrue(feed.indexOf("all == null -> item(key = \"loading\")") < feed.indexOf("\"Belum ada pengumuman\""))
+        assertTrue(feed.contains("ErrorState(title = \"Pengumuman belum bisa dimuat\""))
 
         val lib = code(library)
         assertTrue(lib.indexOf("uiState.myLoans.isEmpty() && uiState.isLoading") < lib.indexOf("Belum Ada Buku yang Dipinjam"))
@@ -103,10 +103,12 @@ class Fase76Wave3Test {
     fun longListsScrollUnderASeeThroughTopBar() {
         // Rebuilt screens (design system v2) get the same effect from the
         // Material scroll behaviour of SistaTopBar.
-        val g = code(grades)
-        assertTrue("grades: bar reacts to scrolling", g.contains("scrollBehavior = scrollBehavior"))
-        assertTrue("grades: list scroll reaches the bar", g.contains("nestedScroll(scrollBehavior.nestedScrollConnection)"))
-        for (screen in listOf(announcements, conversations)) {
+        for (screen in listOf(grades, announcements)) {
+            val c = code(screen)
+            assertTrue("$screen: bar reacts to scrolling", c.contains("scrollBehavior = scrollBehavior"))
+            assertTrue("$screen: list scroll reaches the bar", c.contains("nestedScroll(scrollBehavior.nestedScrollConnection)"))
+        }
+        for (screen in listOf(conversations)) {
             val c = code(screen)
             assertTrue("$screen: translucent bar", c.contains("translucent = true"))
             assertTrue("$screen: hairline once scrolled", c.contains("showDivider = listScrolled"))

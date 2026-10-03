@@ -41,7 +41,6 @@ class RetrofitUrlNormalizationTest {
         ContextualHomeApiService::class.java,
         DocumentApiService::class.java,
         GamificationApiService::class.java,
-        NotificationPreferencesApiService::class.java,
         ParentExperienceApiService::class.java,
         StudentApiService::class.java,
         AttendanceApiService::class.java,

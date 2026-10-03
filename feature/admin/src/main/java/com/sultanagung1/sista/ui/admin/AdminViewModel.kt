@@ -9,6 +9,7 @@ import com.sultanagung1.sista.data.model.EmergencyBroadcastData
 import com.sultanagung1.sista.data.model.PendingApprovalItem
 import com.sultanagung1.sista.data.model.SchoolKpiSummary
 import com.sultanagung1.sista.data.repository.AdminRepository
+import com.sultanagung1.sista.data.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +37,7 @@ data class AdminUiState(
     val isSendingEmergencyBroadcast: Boolean = false,
     val emergencyBroadcastSent: EmergencyBroadcastData? = null,
     val broadcastError: String? = null,
+    val unreadNotifications: Int = 0,
 )
 
 /**
@@ -48,6 +50,7 @@ data class AdminUiState(
 class AdminViewModel @Inject constructor(
     private val adminRepository: AdminRepository,
     private val sessionManager: SessionManager,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminUiState())
@@ -132,6 +135,15 @@ class AdminViewModel @Inject constructor(
                     }
                     is NetworkResult.Loading -> Unit
                 }
+            }
+        }
+    }
+
+    /** The bell on the home; reloaded whenever the home comes back into view. */
+    fun loadUnreadNotifications() {
+        viewModelScope.launch {
+            notificationRepository.getUnreadCount().collect { result ->
+                if (result is NetworkResult.Success) _uiState.update { it.copy(unreadNotifications = result.data) }
             }
         }
     }

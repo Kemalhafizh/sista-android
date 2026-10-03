@@ -90,15 +90,30 @@ data class TeacherDirectoryItem(
     @SerializedName("subject") val subject: String
 )
 
+/**
+ * A school announcement from `announcements`. The newer fields are null on
+ * an older server; [isRead] and [acknowledgedAt] are this account's own.
+ */
 data class AnnouncementItem(
     @SerializedName("id") val id: String,
     @SerializedName("title") val title: String,
-    @SerializedName("summary") val summary: String,
-    @SerializedName("content") val content: String,
-    @SerializedName("category") val category: String, // "Darurat", "Akademik", "Kesiswaan", "Ibadah", "Keuangan"
-    @SerializedName("author") val author: String, // "Kepala Sekolah", "Humas YBWSA", "Waka Kurikulum"
-    @SerializedName("date") val date: String,
-    @SerializedName("priority") val priority: String = "normal", // "emergency", "important", "normal"
+    @SerializedName("summary") val summary: String = "",
+    @SerializedName("content") val content: String = "",
+    /** akademik, keuangan, kegiatan, keislaman, umum — as the web form stores it. */
+    @SerializedName("category") val category: String = "umum",
+    @SerializedName("author") val author: String = "",
+    /** Server-formatted "2 jam yang lalu"; prefer [publishedAt]. */
+    @SerializedName("date") val date: String = "",
+    /** low, normal, urgent. */
+    @SerializedName("priority") val priority: String = "normal",
     @SerializedName("cover_image_url") val coverImageUrl: String? = null,
-    @SerializedName("attachment_url") val attachmentUrl: String? = null
+    @SerializedName("attachment_url") val attachmentUrl: String? = null,
+    @SerializedName("published_at") val publishedAt: String? = null,
+    @SerializedName("expires_at") val expiresAt: String? = null,
+    @SerializedName("is_pinned") val isPinned: Boolean = false,
+    /** "Semua", "Siswa", "Wali murid · X-2", … */
+    @SerializedName("audience") val audience: String? = null,
+    @SerializedName("require_acknowledgement") val requireAcknowledgement: Boolean = false,
+    @SerializedName("is_read") val isRead: Boolean? = null,
+    @SerializedName("acknowledged_at") val acknowledgedAt: String? = null,
 )

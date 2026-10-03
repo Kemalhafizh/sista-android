@@ -248,11 +248,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideNotificationPreferencesApiService(retrofit: Retrofit): NotificationPreferencesApiService =
-        retrofit.create(NotificationPreferencesApiService::class.java)
-
-    @Provides
-    @Singleton
     fun provideParentExperienceApiService(retrofit: Retrofit): ParentExperienceApiService =
         retrofit.create(ParentExperienceApiService::class.java)
 
