@@ -224,9 +224,6 @@ object ClassSessionRules {
         }
     }
 
-    const val NOT_A_CLASS_QR_MESSAGE =
-        "Ini bukan QR sesi kelas. Pindai QR yang tampil di layar guru saat kelas berlangsung."
-
     // ── Attendance counts ───────────────────────────────────────────────
 
     /**
@@ -314,154 +311,55 @@ object ClassSessionRules {
 
     fun isOverrideReasonValid(reason: String): Boolean = reason.trim().length >= OVERRIDE_REASON_MIN_CHARS
 
-    private val MONTHS_SHORT = arrayOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
-    private val ISO_DATE = Regex("""(\d{4})-(\d{2})-(\d{2})""")
-
-    /** "2026-10-08T07:10:00+07:00" → "8 Okt 2026, 07:10"; "2026-10-08" → "8 Okt 2026". */
-    fun formatDateId(iso: String?): String? {
-        if (iso.isNullOrBlank()) return null
-        val m = ISO_DATE.find(iso) ?: return null
-        val (y, mo, d) = m.destructured
-        val month = mo.toInt()
-        if (month !in 1..12) return null
-        val date = "${d.toInt()} ${MONTHS_SHORT[month - 1]} $y"
-        val time = if (iso.contains('T')) clockOf(iso) else null
-        return if (time != null) "$date, $time" else date
-    }
-
-    /** "Dikoreksi oleh Bu Ani pada 8 Okt 2026, 07:10". */
-    fun overrideAuditLabel(row: SessionAttendanceDto): String? {
-        if (!row.isOverride) return null
-        val by = row.overrideBy?.takeIf { it.isNotBlank() } ?: "admin"
-        val at = formatDateId(row.overrideAt)
-        return if (at != null) "Dikoreksi oleh $by pada $at" else "Dikoreksi oleh $by"
-    }
-
-    // ── Labels ──────────────────────────────────────────────────────────
-
-    fun label(status: SessionAttendanceStatus): String = when (status) {
-        SessionAttendanceStatus.HADIR -> "Hadir"
-        SessionAttendanceStatus.TELAT -> "Telat"
-        SessionAttendanceStatus.SAKIT -> "Sakit"
-        SessionAttendanceStatus.IZIN -> "Izin"
-        SessionAttendanceStatus.ALPHA -> "Alpha"
-    }
-
-    fun label(status: ClassSessionStatus): String = when (status) {
-        ClassSessionStatus.SCHEDULED -> "Terjadwal"
-        ClassSessionStatus.ACTIVE -> "Sedang Berlangsung"
-        ClassSessionStatus.COMPLETED -> "Selesai"
-        ClassSessionStatus.CANCELLED -> "Dibatalkan"
-        ClassSessionStatus.AUTO_CLOSED -> "Ditutup Otomatis"
-    }
-
-    /** "Scan QR 08:32", "Manual 08:35", "Belum absen". */
-    fun checkInLabel(row: SessionAttendanceDto): String {
-        val at = clockOf(row.checkedInAt)
-        return when (row.checkInMethod) {
-            SessionCheckInMethod.QR_SCAN -> if (at != null) "Scan QR $at" else "Scan QR"
-            SessionCheckInMethod.MANUAL_TEACHER -> if (at != null) "Manual $at" else "Manual guru"
-            SessionCheckInMethod.AUTO_ALPHA, null -> "Belum absen"
-        }
-    }
-
-    // ── Error messages ──────────────────────────────────────────────────
-
-    const val NOT_DEPLOYED_MESSAGE =
-        "Fitur Sesi Kelas belum aktif di server sekolah. Hubungi admin/TU untuk mengaktifkannya."
+    // ── Errors ──────────────────────────────────────────────────────────
+    // Words for the screen (labels, messages) live in core/designsystem
+    // ClassSessionText, in the app's language. This file only decides.
 
     /**
-     * Backend FASE 117 sends no error code, only an HTTP status and a
-     * documented message (sistem-terpadu docs/modules/class_sessions.md §4,
-     * ClassSessionService). This recognises the refusals the app reacts to;
-     * the message itself is still what the user reads.
+     * Which refusal the server reported, from its `error_code`
+     * (sistem-terpadu docs/modules/class_sessions.md §4). The `message` is in
+     * the user's language and is never parsed.
      */
-    fun rejectionOf(httpCode: Int, message: String): ClassSessionRejection? {
-        val m = message.trim()
-        fun has(fragment: String) = m.contains(fragment, ignoreCase = true)
-        return when {
-            has("QR token sudah kedaluwarsa") -> ClassSessionRejection.QR_EXPIRED
-            has("QR tidak valid") -> ClassSessionRejection.QR_INVALID
-            has("tidak terdaftar di kelas ini") -> ClassSessionRejection.NOT_ENROLLED
-            has("sudah tercatat hadir") -> ClassSessionRejection.ALREADY_CHECKED_IN
-            has("Sesi kelas ini sudah dimulai") -> ClassSessionRejection.SESSION_ALREADY_STARTED
-            has("Sesi kelas ini sudah berakhir") -> ClassSessionRejection.SESSION_ALREADY_ENDED
-            has("Sesi kelas belum dimulai") -> ClassSessionRejection.SESSION_NOT_STARTED
-            has("Sesi kelas sudah berakhir") -> ClassSessionRejection.SESSION_ENDED
-            has("QR hanya tersedia saat sesi kelas aktif") -> ClassSessionRejection.QR_NOT_ACTIVE
-            has("Absensi manual hanya bisa dilakukan saat sesi kelas aktif") -> ClassSessionRejection.MANUAL_NOT_ACTIVE
-            has("baru bisa dimulai pukul") || has("sudah lewat") || has("bukan hari ini") ->
-                ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW
-            has("tidak dijadwalkan mengajar") || has("bukan guru pengampu") -> ClassSessionRejection.NOT_YOUR_SCHEDULE
-            httpCode == 422 && (has("tidak dapat dikoreksi") || has("hanya boleh ke")) ->
-                ClassSessionRejection.TRANSITION_NOT_ALLOWED
-            else -> null
-        }
+    fun rejectionOf(errorCode: String?): ClassSessionRejection? = when (errorCode) {
+        "outside_schedule_window" -> ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW
+        "not_your_schedule" -> ClassSessionRejection.NOT_YOUR_SCHEDULE
+        "session_already_started" -> ClassSessionRejection.SESSION_ALREADY_STARTED
+        "session_already_ended" -> ClassSessionRejection.SESSION_ALREADY_ENDED
+        "session_not_started" -> ClassSessionRejection.SESSION_NOT_STARTED
+        "session_ended" -> ClassSessionRejection.SESSION_ENDED
+        "qr_not_active" -> ClassSessionRejection.QR_NOT_ACTIVE
+        "manual_not_active" -> ClassSessionRejection.MANUAL_NOT_ACTIVE
+        "qr_invalid" -> ClassSessionRejection.QR_INVALID
+        "qr_expired" -> ClassSessionRejection.QR_EXPIRED
+        "not_enrolled" -> ClassSessionRejection.NOT_ENROLLED
+        "already_checked_in" -> ClassSessionRejection.ALREADY_CHECKED_IN
+        "transition_not_allowed" -> ClassSessionRejection.TRANSITION_NOT_ALLOWED
+        else -> null
     }
 
-    /** Messages shared by every screen: the server's words when it gave some. */
-    fun genericMessage(error: ClassSessionError): String = when (error.kind) {
-        ClassSessionErrorKind.NOT_DEPLOYED -> NOT_DEPLOYED_MESSAGE
-        ClassSessionErrorKind.NETWORK -> "Tidak ada koneksi ke server. Periksa internet lalu coba lagi."
-        ClassSessionErrorKind.UNAUTHORIZED -> "Sesi login berakhir. Silakan masuk ulang."
-        ClassSessionErrorKind.RATE_LIMITED -> "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
-        ClassSessionErrorKind.FORBIDDEN -> error.message.ifBlank { "Akun Anda tidak punya akses ke fitur ini." }
-        else -> error.message.ifBlank { "Terjadi kesalahan. Coba lagi." }
-    }
-
-    /** 77.8 cases 2–3: why "Mulai Kelas" was refused (the server says it best, e.g. "Kelas baru bisa dimulai pukul 06:50."). */
-    fun startFailureMessage(error: ClassSessionError): String = when {
-        error.message.isNotBlank() && error.rejection != null -> error.message
-        error.rejection == ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW ->
-            "Kelas hanya bisa dimulai mulai $START_EARLY_MINUTES menit sebelum jadwal hingga jam pelajaran berakhir."
-        error.rejection == ClassSessionRejection.NOT_YOUR_SCHEDULE -> "Jadwal ini bukan milik Anda."
-        else -> genericMessage(error)
-    }
-
+    /** What the scanner does after a refused scan; the words come from ClassSessionText. */
     sealed interface ScanOutcome {
-        val message: String
         /** Keep the camera running so the student can try again straight away. */
         val keepScanning: Boolean
 
-        data class Retry(override val message: String) : ScanOutcome { override val keepScanning = true }
-        data class AlreadyRecorded(override val message: String, val checkedInAt: String?) : ScanOutcome {
-            override val keepScanning = false
-        }
-        data class Blocked(override val message: String) : ScanOutcome { override val keepScanning = false }
+        data class Retry(val error: ClassSessionError) : ScanOutcome { override val keepScanning = true }
+        data class AlreadyRecorded(val checkedInAt: String?) : ScanOutcome { override val keepScanning = false }
+        data class Blocked(val error: ClassSessionError) : ScanOutcome { override val keepScanning = false }
     }
 
     /** 77.5.2 error handling. */
     fun scanOutcome(error: ClassSessionError): ScanOutcome = when (error.rejection) {
-        ClassSessionRejection.QR_EXPIRED ->
-            ScanOutcome.Retry("QR sudah berganti. Scan ulang QR yang sedang tampil di layar guru.")
-        ClassSessionRejection.QR_INVALID ->
-            ScanOutcome.Retry("QR tidak dikenali. Pastikan Anda memindai QR sesi kelas dari layar guru.")
-        ClassSessionRejection.NOT_ENROLLED ->
-            ScanOutcome.Blocked("Anda bukan siswa kelas ini. Hubungi guru pengampu.")
-        ClassSessionRejection.ALREADY_CHECKED_IN -> {
-            val at = clockOf(error.checkedInAt)
-            ScanOutcome.AlreadyRecorded(
-                if (at != null) "Anda sudah tercatat hadir pukul $at WIB." else "Anda sudah tercatat hadir di sesi ini.",
-                error.checkedInAt
-            )
-        }
-        ClassSessionRejection.SESSION_ENDED ->
-            ScanOutcome.Blocked("Sesi kelas sudah selesai. Minta koreksi ke Waka Kurikulum/TU.")
-        ClassSessionRejection.SESSION_NOT_STARTED ->
-            ScanOutcome.Retry("Sesi kelas ini belum dimulai guru. Coba lagi setelah guru memulai kelas.")
+        ClassSessionRejection.QR_EXPIRED,
+        ClassSessionRejection.QR_INVALID,
+        ClassSessionRejection.SESSION_NOT_STARTED -> ScanOutcome.Retry(error)
+        ClassSessionRejection.ALREADY_CHECKED_IN -> ScanOutcome.AlreadyRecorded(error.checkedInAt)
+        ClassSessionRejection.NOT_ENROLLED,
+        ClassSessionRejection.SESSION_ENDED -> ScanOutcome.Blocked(error)
         else -> when (error.kind) {
-            ClassSessionErrorKind.NETWORK, ClassSessionErrorKind.RATE_LIMITED -> ScanOutcome.Retry(genericMessage(error))
-            else -> ScanOutcome.Blocked(genericMessage(error))
+            ClassSessionErrorKind.NETWORK, ClassSessionErrorKind.RATE_LIMITED -> ScanOutcome.Retry(error)
+            else -> ScanOutcome.Blocked(error)
         }
     }
-
-    /** 77.6.3: server-side refusals of an override, in words for the admin. */
-    fun overrideFailureMessage(error: ClassSessionError): String =
-        if (error.rejection == ClassSessionRejection.TRANSITION_NOT_ALLOWED && error.message.isBlank()) {
-            "Perubahan status ini tidak diizinkan. Kehadiran yang sudah tercatat tidak bisa diubah menjadi alpha."
-        } else {
-            genericMessage(error)
-        }
 
     /** Report row name for the chosen `group_by`. */
     fun reportLabel(row: AttendanceReportRowDto): String =

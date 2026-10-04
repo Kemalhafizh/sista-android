@@ -31,6 +31,11 @@ import com.sultanagung1.sista.core.ui.theme.colors
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionStatus
 import com.sultanagung1.sista.data.model.SessionAttendanceStatus
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.feature.teacher.R
+import com.sultanagung1.sista.core.ui.R as CoreUiR
+import com.sultanagung1.sista.core.designsystem.R as DsR
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
 
 /** Class-session pieces shared by the teacher's session screens (design system v2). */
 
@@ -51,22 +56,23 @@ fun SessionAttendanceStatus.tone(): StatusTone = when (this) {
 
 @Composable
 fun SessionStatusPill(status: ClassSessionStatus, modifier: Modifier = Modifier) {
-    StatusPill(ClassSessionRules.label(status), status.tone(), modifier)
+    StatusPill(stringResource(ClassSessionText.label(status)), status.tone(), modifier)
 }
 
 @Composable
 fun AttendanceStatusPill(status: SessionAttendanceStatus, modifier: Modifier = Modifier) {
-    StatusPill(ClassSessionRules.label(status), status.tone(), modifier)
+    StatusPill(stringResource(ClassSessionText.label(status)), status.tone(), modifier)
 }
 
 /** "32 / 40 hadir" with a bar and, when known, the breakdown. Late counts as present. */
 @Composable
 fun AttendanceSummary(counts: ClassSessionRules.Counts, modifier: Modifier = Modifier, showBreakdown: Boolean = true) {
+    val spoken = stringResource(DsR.string.cs_present_of_cd, counts.present, counts.total)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.semantics(mergeDescendants = true) {
-                contentDescription = "${counts.present} dari ${counts.total} siswa hadir"
+                contentDescription = spoken
             },
         ) {
             LinearProgressIndicator(
@@ -80,22 +86,22 @@ fun AttendanceSummary(counts: ClassSessionRules.Counts, modifier: Modifier = Mod
                 drawStopIndicator = {},
             )
             Spacer(Modifier.width(Spacing.md))
-            Text("${counts.present} / ${counts.total} hadir", style = SistaTheme.typography.labelLarge, color = SistaTheme.colors.onSurface)
+            Text(stringResource(DsR.string.cs_present_of, counts.present, counts.total), style = SistaTheme.typography.labelLarge, color = SistaTheme.colors.onSurface)
         }
         if (showBreakdown) {
             val b = counts.breakdown
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 if (b != null) {
-                    Legend(SessionAttendanceStatus.HADIR, "Hadir", b.hadir)
-                    Legend(SessionAttendanceStatus.TELAT, "Telat", b.telat)
-                    Legend(SessionAttendanceStatus.SAKIT, "Sakit", b.sakit)
-                    Legend(SessionAttendanceStatus.IZIN, "Izin", b.izin)
+                    Legend(SessionAttendanceStatus.HADIR, stringResource(DsR.string.cs_status_hadir), b.hadir)
+                    Legend(SessionAttendanceStatus.TELAT, stringResource(DsR.string.cs_status_telat), b.telat)
+                    Legend(SessionAttendanceStatus.SAKIT, stringResource(DsR.string.cs_status_sakit), b.sakit)
+                    Legend(SessionAttendanceStatus.IZIN, stringResource(DsR.string.cs_status_izin), b.izin)
                 } else {
                     // A session summary only knows present (incl. late), alpha and the rest.
-                    Legend(SessionAttendanceStatus.HADIR, "Hadir/Telat", counts.present)
-                    Legend(SessionAttendanceStatus.SAKIT, "Sakit/Izin", counts.excused)
+                    Legend(SessionAttendanceStatus.HADIR, stringResource(DsR.string.cs_present_or_late), counts.present)
+                    Legend(SessionAttendanceStatus.SAKIT, stringResource(DsR.string.cs_sick_or_excused), counts.excused)
                 }
-                Legend(SessionAttendanceStatus.ALPHA, "Alpha", counts.alpha)
+                Legend(SessionAttendanceStatus.ALPHA, stringResource(DsR.string.cs_status_alpha), counts.alpha)
             }
         }
     }
@@ -111,7 +117,7 @@ private fun Legend(status: SessionAttendanceStatus, label: String, count: Int) {
                 .background(status.tone().colors().content),
         )
         Spacer(Modifier.width(Spacing.xs))
-        Text("$label $count", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
+        Text(stringResource(DsR.string.cs_breakdown, label, count), style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
     }
 }
 
@@ -122,10 +128,10 @@ private fun Legend(status: SessionAttendanceStatus, label: String, count: Int) {
 @Composable
 fun SessionsUnavailable(message: String, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
     EmptyState(
-        title = "Sesi kelas belum tersedia",
+        title = stringResource(R.string.ts_unavailable),
         body = message,
         icon = Icons.Outlined.CloudOff,
-        actionLabel = if (onRetry != null) "Coba lagi" else null,
+        actionLabel = if (onRetry != null) stringResource(CoreUiR.string.core_retry) else null,
         onAction = onRetry,
         modifier = modifier,
     )

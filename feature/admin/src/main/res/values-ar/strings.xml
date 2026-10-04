@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Sesi kelas (admin) -->
+    <string name="as_title">إدارة الحصص</string>
+    <string name="as_subtitle_correct">متابعة الحضور لكل مادة وتصحيحه</string>
+    <string name="as_subtitle_view">متابعة الحضور لكل مادة (عرض فقط)</string>
+    <string name="as_empty_title">لا توجد حصص</string>
+    <string name="as_empty_on">لا توجد حصص مسجّلة في %1$s.</string>
+    <string name="as_empty_on_status">لا توجد حصص مسجّلة في %1$s بالحالة %2$s.</string>
+    <string name="as_count">%1$d حصص في %2$s</string>
+    <string name="as_pick_date">اختر تاريخ الحصة</string>
+    <string name="as_date">التاريخ: %1$s</string>
+    <string name="as_all">الكل</string>
+    <string name="as_period">الحصة %1$s</string>
+    <string name="as_presence">%1$d%% حضور • %2$d غياب</string>
+    <string name="as_detail_correct">التفاصيل والتصحيح</string>
+    <string name="as_detail">التفاصيل</string>
+    <string name="as_reports">التقارير</string>
+    <string name="as_report_week">ملخص آخر 7 أيام</string>
+    <string name="as_report_month">ملخص آخر 30 يومًا</string>
+    <string name="as_report_empty">لا توجد حصص في هذه الفترة.</string>
+    <string name="as_report_total">%1$d حصص • متوسط الحضور %2$d%%</string>
+    <string name="as_report_breakdown">حاضر %1$d • متأخر %2$d • مريض %3$d • إذن %4$d • غائب %5$d</string>
+    <string name="as_per_class">حسب الصف</string>
+    <string name="as_row_presence">%1$d%% • %2$d غياب</string>
+    <string name="ao_title_correct">تصحيح الحضور</string>
+    <string name="ao_title_view">حضور الحصة</string>
+    <string name="ao_teacher">المعلم: %1$s</string>
+    <string name="ao_empty_title">لا توجد بيانات حضور</string>
+    <string name="ao_empty_body">لا توجد قائمة طلاب لهذه الحصة بعد.</string>
+    <string name="ao_mode_correct">أنت في وضع التصحيح. يُسجَّل كل تغيير في سجل التدقيق ويجب أن يرافقه سبب.</string>
+    <string name="ao_mode_view">يمكنك الاطلاع على حضور هذه الحصة. يتولى التصحيح المسؤول أو وكيل الشؤون التعليمية أو الإدارة.</string>
+    <string name="ao_student">طالب</string>
+    <string name="ao_nis">NIS: %1$s</string>
+    <string name="ao_reason">السبب: %1$s</string>
+    <string name="ao_no_correction">— لا حاجة للتصحيح —</string>
+    <string name="ao_change_to">تغيير إلى:</string>
+    <string name="ao_reason_label">سبب التصحيح (مطلوب)</string>
+    <string name="ao_reason_short">%1$d أحرف على الأقل.</string>
+    <string name="ao_reason_hint">مثال: تأخر بسبب مراسم الكشافة، وأكّد ذلك المشرف.</string>
+    <string name="ao_cancel">إلغاء</string>
+    <string name="ao_save">حفظ التصحيح</string>
+    <string name="ao_corrected">تم تصحيح حضور %1$s إلى %2$s.</string>
+</resources>

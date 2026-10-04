@@ -27,6 +27,8 @@ import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionRules.DashboardAction
 import com.sultanagung1.sista.data.model.ClassSessionStatus
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.feature.teacher.R
 
 /**
  * FASE 77.7.2: the teacher home's class-session call to action —
@@ -60,7 +62,7 @@ fun TeacherClassSessionCard(
                     }
                     AttendanceSummary(ClassSessionRules.countsOf(s), showBreakdown = false)
                     SistaButton(
-                        "Kembali ke kelas",
+                        stringResource(R.string.tc_back),
                         { s.sessionId?.let(onOpenActive) },
                         leadingIcon = Icons.AutoMirrored.Outlined.ArrowForward,
                         fullWidth = true,
@@ -72,26 +74,26 @@ fun TeacherClassSessionCard(
                         IconBadge(Icons.Outlined.PlayArrow, tone = StatusTone.Brand)
                         Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
-                            Text("Waktunya mengajar", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
+                            Text(stringResource(R.string.tc_time_to_teach), style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
                             Text(title(s), style = SistaTheme.typography.titleMedium)
                             Text(ClassSessionRules.timeRange(s.scheduledStart, s.scheduledEnd), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                         }
                     }
-                    SistaButton("Mulai kelas", onOpenSessions, leadingIcon = Icons.Outlined.PlayArrow, fullWidth = true)
+                    SistaButton(stringResource(R.string.ts_start), onOpenSessions, leadingIcon = Icons.Outlined.PlayArrow, fullWidth = true)
                 }
                 is DashboardAction.NextClass -> Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(Icons.Outlined.Schedule, tone = StatusTone.Info)
                     Spacer(Modifier.width(Spacing.md))
                     Column(Modifier.weight(1f)) {
-                        Text("Berikutnya: ${title(action.session)}", style = SistaTheme.typography.titleSmall)
-                        Text("Bisa dimulai pukul ${action.opensAt}", style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                        Text(stringResource(R.string.tc_next, title(action.session)), style = SistaTheme.typography.titleSmall)
+                        Text(stringResource(R.string.ts_opens_at, action.opensAt), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                     }
                 }
                 DashboardAction.AllDone -> Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(Icons.Outlined.CheckCircle, tone = StatusTone.Success)
                     Spacer(Modifier.width(Spacing.md))
-                    Text("Semua sesi kelas hari ini sudah selesai.", style = SistaTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    SistaButton("Lihat", onOpenSessions, variant = ButtonVariant.Text)
+                    Text(stringResource(R.string.tc_all_done), style = SistaTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    SistaButton(stringResource(R.string.tc_view), onOpenSessions, variant = ButtonVariant.Text)
                 }
                 DashboardAction.NoClassesToday -> Unit
             }
@@ -99,5 +101,6 @@ fun TeacherClassSessionCard(
     }
 }
 
+@Composable
 private fun title(session: ClassSessionDto): String =
-    listOfNotNull(session.subjectName, session.classroomName).joinToString(" · ").ifBlank { "Sesi kelas" }
+    listOfNotNull(session.subjectName, session.classroomName).joinToString(" · ").ifBlank { stringResource(R.string.ta_session_fallback) }

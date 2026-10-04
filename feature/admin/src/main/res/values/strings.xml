@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Sesi kelas (admin) -->
+    <string name="as_title">Manajemen Sesi Kelas</string>
+    <string name="as_subtitle_correct">Pantau &amp; koreksi kehadiran per mapel</string>
+    <string name="as_subtitle_view">Pantau kehadiran per mapel (lihat saja)</string>
+    <string name="as_empty_title">Tidak Ada Sesi Kelas</string>
+    <string name="as_empty_on">Belum ada sesi kelas tercatat pada %1$s.</string>
+    <string name="as_empty_on_status">Belum ada sesi kelas tercatat pada %1$s dengan status %2$s.</string>
+    <string name="as_count">%1$d sesi pada %2$s</string>
+    <string name="as_pick_date">Pilih Tanggal Sesi</string>
+    <string name="as_date">Tanggal: %1$s</string>
+    <string name="as_all">Semua</string>
+    <string name="as_period">Jam %1$s</string>
+    <string name="as_presence">%1$d%% hadir • %2$d alpha</string>
+    <string name="as_detail_correct">Detail &amp; Koreksi</string>
+    <string name="as_detail">Detail</string>
+    <string name="as_reports">Laporan</string>
+    <string name="as_report_week">Rekap 7 Hari Terakhir</string>
+    <string name="as_report_month">Rekap 30 Hari Terakhir</string>
+    <string name="as_report_empty">Belum ada sesi kelas pada rentang ini.</string>
+    <string name="as_report_total">%1$d sesi • rata-rata %2$d%% hadir</string>
+    <string name="as_report_breakdown">Hadir %1$d • Telat %2$d • Sakit %3$d • Izin %4$d • Alpha %5$d</string>
+    <string name="as_per_class">Per kelas</string>
+    <string name="as_row_presence">%1$d%% • %2$d alpha</string>
+    <string name="ao_title_correct">Koreksi Absensi</string>
+    <string name="ao_title_view">Detail Kehadiran Sesi</string>
+    <string name="ao_teacher">Guru: %1$s</string>
+    <string name="ao_empty_title">Tidak ada data kehadiran</string>
+    <string name="ao_empty_body">Sesi ini belum punya daftar siswa.</string>
+    <string name="ao_mode_correct">Anda memasuki mode koreksi. Setiap perubahan tercatat di log audit dan wajib disertai alasan.</string>
+    <string name="ao_mode_view">Anda dapat melihat kehadiran sesi ini. Koreksi dilakukan oleh Admin, Waka Kurikulum, atau TU.</string>
+    <string name="ao_student">Siswa</string>
+    <string name="ao_nis">NIS: %1$s</string>
+    <string name="ao_reason">Alasan: %1$s</string>
+    <string name="ao_no_correction">— Tidak perlu koreksi —</string>
+    <string name="ao_change_to">Ubah ke:</string>
+    <string name="ao_reason_label">Alasan koreksi (wajib)</string>
+    <string name="ao_reason_short">Minimal %1$d karakter.</string>
+    <string name="ao_reason_hint">Contoh: terlambat karena upacara pramuka, dikonfirmasi pembina.</string>
+    <string name="ao_cancel">Batal</string>
+    <string name="ao_save">Simpan Koreksi</string>
+    <string name="ao_corrected">Kehadiran %1$s dikoreksi menjadi %2$s.</string>
+</resources>

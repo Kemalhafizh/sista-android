@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.teacher.sessions
 
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.teacher.R
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.mvi.MviViewModel
 import com.sultanagung1.sista.core.mvi.UiEffect
@@ -24,13 +27,14 @@ data class TeacherTodaySessionsState(
     /** True until the first answer (data or error) arrives. */
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     /** FASE 117 routes are missing on the server. */
     val notDeployed: Boolean = false,
     val startingScheduleId: Long? = null,
     /** Minutes of day (server-corrected); drives the "Mulai Kelas" windows. */
     val nowMinutes: Int = DateUtils.nowMinutesOfDay(),
-    val todayLabel: String = ""
+    /** Today in Asia/Jakarta; the screen writes it in the app's language. */
+    val today: java.time.LocalDate? = null
 ) : UiState
 
 sealed interface TeacherTodaySessionsEvent : UiEvent {
@@ -43,7 +47,7 @@ sealed interface TeacherTodaySessionsEvent : UiEvent {
 
 sealed interface TeacherTodaySessionsEffect : UiEffect {
     data class OpenActiveSession(val sessionId: Long) : TeacherTodaySessionsEffect
-    data class ShowMessage(val message: String) : TeacherTodaySessionsEffect
+    data class ShowMessage(val message: UiText) : TeacherTodaySessionsEffect
 }
 
 /**
@@ -55,7 +59,7 @@ sealed interface TeacherTodaySessionsEffect : UiEffect {
 class TeacherTodaySessionsViewModel @Inject constructor(
     private val repository: ClassSessionRepository
 ) : MviViewModel<TeacherTodaySessionsState, TeacherTodaySessionsEvent, TeacherTodaySessionsEffect>(
-    TeacherTodaySessionsState(todayLabel = todayLabel())
+    TeacherTodaySessionsState(today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta")))
 ) {
 
     private var pollJob: Job? = null
@@ -116,7 +120,7 @@ class TeacherTodaySessionsViewModel @Inject constructor(
                 copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = ClassSessionRules.genericMessage(result.error),
+                    errorMessage = ClassSessionText.generic(result.error),
                     notDeployed = result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED
                 )
             }
@@ -134,7 +138,7 @@ class TeacherTodaySessionsViewModel @Inject constructor(
                     if (sessionId != null) {
                         emitEffect { TeacherTodaySessionsEffect.OpenActiveSession(sessionId) }
                     } else {
-                        emitEffect { TeacherTodaySessionsEffect.ShowMessage("Kelas dimulai, tetapi server tidak mengirim nomor sesi. Muat ulang daftar.") }
+                        emitEffect { TeacherTodaySessionsEffect.ShowMessage(UiText.Res(R.string.ts_started_no_id)) }
                     }
                 }
                 is ClassSessionResult.Failure -> {
@@ -148,7 +152,7 @@ class TeacherTodaySessionsViewModel @Inject constructor(
                         // open that session instead of failing.
                         emitEffect { TeacherTodaySessionsEffect.OpenActiveSession(existing) }
                     } else {
-                        emitEffect { TeacherTodaySessionsEffect.ShowMessage(ClassSessionRules.startFailureMessage(result.error)) }
+                        emitEffect { TeacherTodaySessionsEffect.ShowMessage(ClassSessionText.startFailure(result.error)) }
                     }
                 }
             }
@@ -159,13 +163,5 @@ class TeacherTodaySessionsViewModel @Inject constructor(
     override fun onCleared() {
         stopPolling()
         super.onCleared()
-    }
-
-    private companion object {
-        fun todayLabel(): String {
-            val cal = DateUtils.nowCalendar()
-            val months = arrayOf("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember")
-            return "${DateUtils.todayDayNameIndonesian()}, ${cal.get(java.util.Calendar.DAY_OF_MONTH)} ${months[cal.get(java.util.Calendar.MONTH)]} ${cal.get(java.util.Calendar.YEAR)}"
-        }
     }
 }

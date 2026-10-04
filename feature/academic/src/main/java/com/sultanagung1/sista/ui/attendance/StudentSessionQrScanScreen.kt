@@ -80,6 +80,9 @@ import com.sultanagung1.sista.core.designsystem.SulaoneTopBar
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import java.util.concurrent.Executors
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.feature.academic.R
 
 /**
  * FASE 77.5: "Presensi Kelas" — scan the QR on the teacher's screen.
@@ -111,7 +114,7 @@ fun StudentSessionQrScanScreen(
     Scaffold(
         topBar = {
             SulaoneTopBar(
-                title = "Presensi Kelas",
+                title = stringResource(R.string.sq_title),
                 subtitle = active?.let { listOfNotNull(it.subjectName, it.classroomName).joinToString(" • ") },
                 onNavigateBack = onNavigateBack
             )
@@ -127,35 +130,35 @@ fun StudentSessionQrScanScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (state.notDeployed) {
-                ClassSessionUnavailableState(message = ClassSessionRules.NOT_DEPLOYED_MESSAGE, onRetry = null)
+                ClassSessionUnavailableState(message = ClassSessionText.notDeployed.asString(), onRetry = null)
                 return@Column
             }
             when (val phase = state.phase) {
                 is StudentScanPhase.Success -> ResultPanel(
                     icon = Icons.Default.CheckCircle,
                     tint = AccentGreen,
-                    title = "Presensi Berhasil!",
+                    title = stringResource(R.string.sq_success),
                     lines = listOfNotNull(
                         phase.subjectName,
-                        phase.classroomName?.let { "Kelas $it" },
-                        ClassSessionRules.clockOf(phase.checkedInAt)?.let { "Tercatat pukul $it WIB" }
+                        phase.classroomName?.let { stringResource(R.string.sq_class, it) },
+                        ClassSessionRules.clockOf(phase.checkedInAt)?.let { stringResource(R.string.sq_recorded_at, it) }
                     ),
-                    primary = "Kembali ke Beranda" to onNavigateHome
+                    primary = stringResource(R.string.sq_home) to onNavigateHome
                 )
                 is StudentScanPhase.AlreadyRecorded -> ResultPanel(
                     icon = Icons.Default.CheckCircle,
                     tint = AccentGreen,
-                    title = "Sudah Tercatat",
-                    lines = listOf(phase.message),
-                    primary = "Kembali ke Beranda" to onNavigateHome
+                    title = stringResource(R.string.sq_already),
+                    lines = listOf(phase.message.asString()),
+                    primary = stringResource(R.string.sq_home) to onNavigateHome
                 )
                 is StudentScanPhase.Blocked -> ResultPanel(
                     icon = Icons.Default.Block,
                     tint = AccentRose,
-                    title = "Presensi Tidak Tercatat",
-                    lines = listOf(phase.message),
-                    primary = "Pindai Lagi" to { viewModel.onEvent(StudentSessionQrScanEvent.ScanAgain) },
-                    secondary = "Kembali" to onNavigateBack
+                    title = stringResource(R.string.sq_failed),
+                    lines = listOf(phase.message.asString()),
+                    primary = stringResource(R.string.sq_scan_again) to { viewModel.onEvent(StudentSessionQrScanEvent.ScanAgain) },
+                    secondary = stringResource(R.string.sq_back) to onNavigateBack
                 )
                 StudentScanPhase.Scanning, StudentScanPhase.Submitting -> ScannerPanel(
                     state = state,
@@ -184,7 +187,7 @@ private fun ScannerPanel(
         InfoCard(
             icon = Icons.Default.Info,
             tint = AccentAmber,
-            text = "Belum ada sesi kelas aktif untuk kelas Anda. Jika guru sudah menampilkan QR, Anda tetap bisa memindainya."
+            text = stringResource(R.string.sq_no_active)
         )
     }
 
@@ -212,26 +215,26 @@ private fun ScannerPanel(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
-                Text("Izin kamera diperlukan untuk memindai QR sesi kelas.", color = Color.White, textAlign = TextAlign.Center)
-                SulaoneButton(text = "Izinkan Kamera", onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) })
+                Text(stringResource(R.string.sq_camera_needed), color = Color.White, textAlign = TextAlign.Center)
+                SulaoneButton(text = stringResource(R.string.sq_allow_camera), onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) })
             }
         }
         if (state.phase == StudentScanPhase.Submitting) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CircularProgressIndicator(color = Color.White)
-                Text("Mencatat presensi…", color = Color.White)
+                Text(stringResource(R.string.sq_recording), color = Color.White)
             }
         }
     }
 
     Text(
-        "Arahkan kamera ke QR yang ditampilkan di layar guru.",
+        stringResource(R.string.sq_aim),
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center
     )
     state.hint?.let { hint ->
         Text(
-            text = hint,
+            text = hint.asString(),
             style = MaterialTheme.typography.bodyMedium,
             color = AccentAmber,
             textAlign = TextAlign.Center,
@@ -241,12 +244,12 @@ private fun ScannerPanel(
     InfoCard(
         icon = Icons.Default.Warning,
         tint = AccentAmber,
-        text = "QR berganti setiap 30 detik. Pindai langsung dari layar guru, bukan dari screenshot."
+        text = stringResource(R.string.sq_rotation)
     )
     InfoCard(
         icon = Icons.Default.Info,
         tint = MaterialTheme.colorScheme.primary,
-        text = "Tidak bisa memindai? Minta guru mengabsen Anda secara manual dari perangkat guru."
+        text = stringResource(R.string.sq_manual)
     )
 }
 
@@ -268,8 +271,9 @@ private fun SessionQrCamera(isScanning: () -> Boolean, onDetected: (String) -> U
         }
     }
 
+    val cameraDescription = stringResource(R.string.sq_camera_cd)
     AndroidView(
-        modifier = modifier.semantics { contentDescription = "Kamera pemindai QR sesi kelas" },
+        modifier = modifier.semantics { contentDescription = cameraDescription },
         factory = { ctx ->
             val previewView = PreviewView(ctx)
             val providerFuture = ProcessCameraProvider.getInstance(ctx)

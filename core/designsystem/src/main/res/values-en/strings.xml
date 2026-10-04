@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Sesi kelas: label dan pesan bersama guru, siswa, admin -->
+    <string name="cs_status_hadir">Present</string>
+    <string name="cs_status_telat">Late</string>
+    <string name="cs_status_sakit">Sick</string>
+    <string name="cs_status_izin">Excused</string>
+    <string name="cs_status_alpha">Absent</string>
+    <string name="cs_session_scheduled">Scheduled</string>
+    <string name="cs_session_active">In progress</string>
+    <string name="cs_session_completed">Completed</string>
+    <string name="cs_session_cancelled">Cancelled</string>
+    <string name="cs_session_auto_closed">Closed automatically</string>
+    <string name="cs_live">LIVE</string>
+    <string name="cs_attendance_state">Attendance status: %1$s</string>
+    <string name="cs_session_state">Session status: %1$s</string>
+    <string name="cs_present_of">%1$d / %2$d present</string>
+    <string name="cs_present_of_cd">%1$d of %2$d students present</string>
+    <string name="cs_present_or_late">Present/Late</string>
+    <string name="cs_sick_or_excused">Sick/Excused</string>
+    <string name="cs_breakdown">%1$s %2$d</string>
+    <string name="cs_unavailable_title">Class sessions not available yet</string>
+    <string name="cs_retry">Try again</string>
+    <string name="cs_check_in_qr">QR scan %1$s</string>
+    <string name="cs_check_in_qr_bare">QR scan</string>
+    <string name="cs_check_in_manual">Manual %1$s</string>
+    <string name="cs_check_in_manual_bare">Marked by teacher</string>
+    <string name="cs_not_checked_in">Not checked in</string>
+    <string name="cs_override_by_at">Corrected by %1$s on %2$s</string>
+    <string name="cs_override_by">Corrected by %1$s</string>
+    <string name="cs_admin">an administrator</string>
+    <string name="cs_not_deployed">Class sessions aren\'t enabled on the school server yet. Ask the administrator or school office to enable them.</string>
+    <string name="cs_not_class_qr">This isn\'t a class QR code. Scan the QR on your teacher\'s screen during the class.</string>
+    <string name="cs_err_network">No connection to the server. Check your internet and try again.</string>
+    <string name="cs_err_unauthorized">Your sign-in has expired. Please sign in again.</string>
+    <string name="cs_err_rate_limited">Too many attempts. Wait a moment and try again.</string>
+    <string name="cs_err_forbidden">Your account doesn\'t have access to this feature.</string>
+    <string name="cs_err_generic">Something went wrong. Try again.</string>
+    <string name="cs_start_window">A class can be started from %1$d minutes before the lesson until it ends.</string>
+    <string name="cs_start_not_yours">This lesson isn\'t yours.</string>
+    <string name="cs_scan_expired">The QR code has changed. Scan the one now on your teacher\'s screen.</string>
+    <string name="cs_scan_invalid">QR code not recognised. Make sure you scan the class QR on your teacher\'s screen.</string>
+    <string name="cs_scan_not_enrolled">You aren\'t a student of this class. Contact the teacher.</string>
+    <string name="cs_scan_already_at">You were already checked in at %1$s WIB.</string>
+    <string name="cs_scan_already">You are already checked in for this session.</string>
+    <string name="cs_scan_ended">The class has ended. Ask the vice principal for curriculum or the school office for a correction.</string>
+    <string name="cs_scan_not_started">The teacher hasn\'t started this class yet. Try again once it starts.</string>
+    <string name="cs_override_not_allowed">This status change isn\'t allowed. A recorded presence can\'t be changed to absent.</string>
+</resources>

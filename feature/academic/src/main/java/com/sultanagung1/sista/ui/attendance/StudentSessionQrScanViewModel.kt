@@ -15,6 +15,10 @@ import com.sultanagung1.sista.data.repository.ClassSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.core.designsystem.R as DsR
+import com.sultanagung1.sista.feature.academic.R
 
 sealed interface StudentScanPhase {
     data object Scanning : StudentScanPhase
@@ -24,8 +28,8 @@ sealed interface StudentScanPhase {
         val classroomName: String?,
         val checkedInAt: String?
     ) : StudentScanPhase
-    data class AlreadyRecorded(val message: String) : StudentScanPhase
-    data class Blocked(val message: String) : StudentScanPhase
+    data class AlreadyRecorded(val message: UiText) : StudentScanPhase
+    data class Blocked(val message: UiText) : StudentScanPhase
 }
 
 data class StudentSessionQrScanState(
@@ -33,7 +37,7 @@ data class StudentSessionQrScanState(
     val isCheckingActive: Boolean = true,
     val phase: StudentScanPhase = StudentScanPhase.Scanning,
     /** A retryable problem shown under the camera (expired QR, another QR, no connection). */
-    val hint: String? = null,
+    val hint: UiText? = null,
     val notDeployed: Boolean = false
 ) : UiState {
     val isScanning: Boolean get() = phase == StudentScanPhase.Scanning && !notDeployed
@@ -106,7 +110,7 @@ class StudentSessionQrScanViewModel @Inject constructor(
         if (!currentState.isScanning) return
         val now = SystemClock.elapsedRealtime()
         if (!ClassSessionRules.isClassSessionQr(raw)) {
-            if (gate.shouldSubmit(raw, now)) setState { copy(hint = ClassSessionRules.NOT_A_CLASS_QR_MESSAGE) }
+            if (gate.shouldSubmit(raw, now)) setState { copy(hint = ClassSessionText.notAClassQr) }
             return
         }
         if (!gate.shouldSubmit(raw, now)) return
@@ -135,9 +139,9 @@ class StudentSessionQrScanViewModel @Inject constructor(
                     }
                     gate.markRefused(raw)
                     when (val outcome = ClassSessionRules.scanOutcome(result.error)) {
-                        is ScanOutcome.Retry -> setState { copy(phase = StudentScanPhase.Scanning, hint = outcome.message) }
-                        is ScanOutcome.AlreadyRecorded -> setState { copy(phase = StudentScanPhase.AlreadyRecorded(outcome.message)) }
-                        is ScanOutcome.Blocked -> setState { copy(phase = StudentScanPhase.Blocked(outcome.message)) }
+                        is ScanOutcome.Retry -> setState { copy(phase = StudentScanPhase.Scanning, hint = ClassSessionText.scan(outcome)) }
+                        is ScanOutcome.AlreadyRecorded -> setState { copy(phase = StudentScanPhase.AlreadyRecorded(ClassSessionText.scan(outcome))) }
+                        is ScanOutcome.Blocked -> setState { copy(phase = StudentScanPhase.Blocked(ClassSessionText.scan(outcome))) }
                     }
                     emitEffect { StudentSessionQrScanEffect.Refused }
                 }
@@ -145,10 +149,10 @@ class StudentSessionQrScanViewModel @Inject constructor(
         }
     }
 
-    private fun alreadyRecordedMessage(status: com.sultanagung1.sista.data.model.SessionAttendanceStatus?): String =
+    private fun alreadyRecordedMessage(status: com.sultanagung1.sista.data.model.SessionAttendanceStatus?): UiText =
         if (status != null) {
-            "Anda sudah tercatat ${ClassSessionRules.label(status).lowercase()} di sesi ini."
+            UiText.Res(R.string.sq_already_status, UiText.Res(ClassSessionText.label(status)))
         } else {
-            "Anda sudah tercatat hadir di sesi ini."
+            UiText.Res(DsR.string.cs_scan_already)
         }
 }

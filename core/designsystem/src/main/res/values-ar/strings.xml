@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Sesi kelas: label dan pesan bersama guru, siswa, admin -->
+    <string name="cs_status_hadir">حاضر</string>
+    <string name="cs_status_telat">متأخر</string>
+    <string name="cs_status_sakit">مريض</string>
+    <string name="cs_status_izin">إذن</string>
+    <string name="cs_status_alpha">غائب</string>
+    <string name="cs_session_scheduled">مجدولة</string>
+    <string name="cs_session_active">جارية</string>
+    <string name="cs_session_completed">انتهت</string>
+    <string name="cs_session_cancelled">أُلغيت</string>
+    <string name="cs_session_auto_closed">أُغلقت تلقائيًا</string>
+    <string name="cs_live">مباشر</string>
+    <string name="cs_attendance_state">حالة الحضور: %1$s</string>
+    <string name="cs_session_state">حالة الحصة: %1$s</string>
+    <string name="cs_present_of">%1$d / %2$d حاضر</string>
+    <string name="cs_present_of_cd">%1$d من أصل %2$d طالبًا حاضرون</string>
+    <string name="cs_present_or_late">حاضر/متأخر</string>
+    <string name="cs_sick_or_excused">مريض/إذن</string>
+    <string name="cs_breakdown">%1$s %2$d</string>
+    <string name="cs_unavailable_title">الحصص غير متاحة بعد</string>
+    <string name="cs_retry">حاول مرة أخرى</string>
+    <string name="cs_check_in_qr">مسح QR %1$s</string>
+    <string name="cs_check_in_qr_bare">مسح QR</string>
+    <string name="cs_check_in_manual">يدوي %1$s</string>
+    <string name="cs_check_in_manual_bare">سجّله المعلم</string>
+    <string name="cs_not_checked_in">لم يسجّل الحضور</string>
+    <string name="cs_override_by_at">صحّحه %1$s في %2$s</string>
+    <string name="cs_override_by">صحّحه %1$s</string>
+    <string name="cs_admin">المسؤول</string>
+    <string name="cs_not_deployed">ميزة الحصص غير مفعّلة على خادم المدرسة بعد. تواصل مع المسؤول أو الإدارة لتفعيلها.</string>
+    <string name="cs_not_class_qr">هذا ليس رمز QR للحصة. امسح الرمز الظاهر على شاشة المعلم أثناء الحصة.</string>
+    <string name="cs_err_network">لا يوجد اتصال بالخادم. تحقّق من الإنترنت وحاول مرة أخرى.</string>
+    <string name="cs_err_unauthorized">انتهت جلسة الدخول. يرجى تسجيل الدخول مجددًا.</string>
+    <string name="cs_err_rate_limited">محاولات كثيرة جدًا. انتظر قليلًا ثم حاول مرة أخرى.</string>
+    <string name="cs_err_forbidden">لا يملك حسابك صلاحية الوصول إلى هذه الميزة.</string>
+    <string name="cs_err_generic">حدث خطأ. حاول مرة أخرى.</string>
+    <string name="cs_start_window">يمكن بدء الحصة قبل موعدها بـ%1$d دقائق وحتى نهايتها.</string>
+    <string name="cs_start_not_yours">هذه الحصة ليست لك.</string>
+    <string name="cs_scan_expired">تغيّر رمز QR. امسح الرمز الظاهر الآن على شاشة المعلم.</string>
+    <string name="cs_scan_invalid">لم يُتعرّف على رمز QR. تأكد من مسح رمز الحصة من شاشة المعلم.</string>
+    <string name="cs_scan_not_enrolled">لست طالبًا في هذا الصف. تواصل مع معلم المادة.</string>
+    <string name="cs_scan_already_at">تم تسجيل حضورك بالفعل الساعة %1$s بتوقيت غرب إندونيسيا.</string>
+    <string name="cs_scan_already">تم تسجيل حضورك في هذه الحصة بالفعل.</string>
+    <string name="cs_scan_ended">انتهت الحصة. اطلب التصحيح من وكيل الشؤون التعليمية أو الإدارة.</string>
+    <string name="cs_scan_not_started">لم يبدأ المعلم هذه الحصة بعد. حاول مرة أخرى بعد بدئها.</string>
+    <string name="cs_override_not_allowed">هذا التغيير غير مسموح. لا يمكن تحويل حضور مسجّل إلى غياب.</string>
+</resources>

@@ -223,9 +223,9 @@ data class OverrideAttendanceRequest(
 // ── Errors ──────────────────────────────────────────────────────────────────
 
 /**
- * Error envelopes are `{ success: false, message, data, errors? }`. The server
- * sends no machine error code; the rejection is recognised from the HTTP status
- * and the (stable, documented) message — see [ClassSessionRules.rejectionOf].
+ * Error envelopes are `{ success: false, message, error_code, data, errors? }`.
+ * The rejection is read from the stable `error_code` (see
+ * [ClassSessionRules.rejectionOf]); `message` is in the user's language.
  * `data` carries `session_id` when a lesson was already started/ended, and
  * `status`/`checked_in_at` on a second scan.
  */
@@ -268,7 +268,7 @@ enum class ClassSessionRejection {
 
 data class ClassSessionError(
     val kind: ClassSessionErrorKind,
-    /** The server's own message (Indonesian, user-facing), or empty. */
+    /** The server's own message, in the user's language, or empty. Never parsed. */
     val message: String,
     val httpCode: Int? = null,
     val rejection: ClassSessionRejection? = null,

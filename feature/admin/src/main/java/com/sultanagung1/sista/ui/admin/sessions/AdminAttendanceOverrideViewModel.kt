@@ -18,6 +18,9 @@ import com.sultanagung1.sista.ui.navigation.UserRoles
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.feature.admin.R
 
 /** One row's unsaved correction. */
 data class OverrideDraft(
@@ -35,7 +38,7 @@ data class AdminAttendanceOverrideState(
     val savingAttendanceId: Long? = null,
     val canCorrect: Boolean = false,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val notDeployed: Boolean = false
 ) : UiState {
     /** Rows that can still be corrected first (alpha, then sakit/izin/telat), then by name. */
@@ -68,7 +71,7 @@ sealed interface AdminAttendanceOverrideEvent : UiEvent {
 }
 
 sealed interface AdminAttendanceOverrideEffect : UiEffect {
-    data class ShowMessage(val message: String) : AdminAttendanceOverrideEffect
+    data class ShowMessage(val message: UiText) : AdminAttendanceOverrideEffect
 }
 
 /**
@@ -123,7 +126,7 @@ class AdminAttendanceOverrideViewModel @Inject constructor(
                 is ClassSessionResult.Failure -> setState {
                     copy(
                         isLoading = false,
-                        errorMessage = ClassSessionRules.genericMessage(result.error),
+                        errorMessage = ClassSessionText.generic(result.error),
                         notDeployed = result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED
                     )
                 }
@@ -160,13 +163,13 @@ class AdminAttendanceOverrideViewModel @Inject constructor(
                     }
                     emitEffect {
                         AdminAttendanceOverrideEffect.ShowMessage(
-                            "Kehadiran ${row.studentName.orEmpty()} dikoreksi menjadi ${ClassSessionRules.label(updated.effectiveStatus)}."
+                            UiText.Res(R.string.ao_corrected, row.studentName.orEmpty(), UiText.Res(ClassSessionText.label(updated.effectiveStatus)))
                         )
                     }
                 }
                 is ClassSessionResult.Failure -> {
                     setState { copy(savingAttendanceId = null) }
-                    emitEffect { AdminAttendanceOverrideEffect.ShowMessage(ClassSessionRules.overrideFailureMessage(result.error)) }
+                    emitEffect { AdminAttendanceOverrideEffect.ShowMessage(ClassSessionText.overrideFailure(result.error)) }
                 }
             }
         }

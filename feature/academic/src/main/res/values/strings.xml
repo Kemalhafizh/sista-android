@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Presensi sesi kelas (siswa) -->
+    <string name="sq_title">Presensi Kelas</string>
+    <string name="sq_success">Presensi Berhasil!</string>
+    <string name="sq_class">Kelas %1$s</string>
+    <string name="sq_recorded_at">Tercatat pukul %1$s WIB</string>
+    <string name="sq_home">Kembali ke Beranda</string>
+    <string name="sq_already">Sudah Tercatat</string>
+    <string name="sq_failed">Presensi Tidak Tercatat</string>
+    <string name="sq_scan_again">Pindai Lagi</string>
+    <string name="sq_back">Kembali</string>
+    <string name="sq_no_active">Belum ada sesi kelas aktif untuk kelas Anda. Jika guru sudah menampilkan QR, Anda tetap bisa memindainya.</string>
+    <string name="sq_camera_needed">Izin kamera diperlukan untuk memindai QR sesi kelas.</string>
+    <string name="sq_allow_camera">Izinkan Kamera</string>
+    <string name="sq_recording">Mencatat presensi…</string>
+    <string name="sq_aim">Arahkan kamera ke QR yang ditampilkan di layar guru.</string>
+    <string name="sq_rotation">QR berganti setiap 30 detik. Pindai langsung dari layar guru, bukan dari screenshot.</string>
+    <string name="sq_manual">Tidak bisa memindai? Minta guru mengabsen Anda secara manual dari perangkat guru.</string>
+    <string name="sq_camera_cd">Kamera pemindai QR sesi kelas</string>
+    <string name="sq_already_status">Anda sudah tercatat dengan status %1$s di sesi ini.</string>
+</resources>

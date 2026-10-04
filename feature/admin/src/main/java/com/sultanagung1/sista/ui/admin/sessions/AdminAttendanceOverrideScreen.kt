@@ -45,6 +45,10 @@ import com.sultanagung1.sista.core.designsystem.SulaoneTieredLoading
 import com.sultanagung1.sista.core.designsystem.SulaoneTopBar
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.SessionAttendanceDto
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.feature.admin.R
 
 /**
  * FASE 77.6.2: "Koreksi Absensi" — every change needs a reason and is logged.
@@ -56,6 +60,7 @@ fun AdminAttendanceOverrideScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LifecycleStartStopEffect(
         onStart = { viewModel.onEvent(AdminAttendanceOverrideEvent.ScreenStarted) },
@@ -64,7 +69,7 @@ fun AdminAttendanceOverrideScreen(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is AdminAttendanceOverrideEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is AdminAttendanceOverrideEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolve(context))
             }
         }
     }
@@ -73,12 +78,12 @@ fun AdminAttendanceOverrideScreen(
     Scaffold(
         topBar = {
             SulaoneTopBar(
-                title = if (state.canCorrect) "Koreksi Absensi" else "Detail Kehadiran Sesi",
+                title = stringResource(if (state.canCorrect) R.string.ao_title_correct else R.string.ao_title_view),
                 subtitle = session?.let {
                     listOfNotNull(
                         listOfNotNull(it.subjectName, it.classroomName).joinToString(" • ").ifBlank { null },
-                        ClassSessionRules.formatDateId(it.sessionDate),
-                        it.teacherName?.let { t -> "Guru: $t" }
+                        ClassSessionText.date(it.sessionDate),
+                        it.teacherName?.let { t -> stringResource(R.string.ao_teacher, t) }
                     ).joinToString(" • ")
                 },
                 onNavigateBack = onNavigateBack
@@ -97,7 +102,7 @@ fun AdminAttendanceOverrideScreen(
             when {
                 state.notDeployed -> item(key = "unavailable") {
                     ClassSessionUnavailableState(
-                        message = state.errorMessage ?: ClassSessionRules.NOT_DEPLOYED_MESSAGE,
+                        message = (state.errorMessage ?: ClassSessionText.notDeployed).asString(),
                         onRetry = { viewModel.onEvent(AdminAttendanceOverrideEvent.Refresh) }
                     )
                 }
@@ -106,12 +111,12 @@ fun AdminAttendanceOverrideScreen(
                 }
                 state.rows.isEmpty() && state.errorMessage != null -> item(key = "error") {
                     SulaoneErrorBanner(
-                        message = state.errorMessage.orEmpty(),
+                        message = state.errorMessage?.asString().orEmpty(),
                         onRetry = { viewModel.onEvent(AdminAttendanceOverrideEvent.Refresh) }
                     )
                 }
                 state.rows.isEmpty() -> item(key = "empty") {
-                    SulaoneEmptyState(title = "Tidak ada data kehadiran", description = "Sesi ini belum punya daftar siswa.")
+                    SulaoneEmptyState(title = stringResource(R.string.ao_empty_title), description = stringResource(R.string.ao_empty_body))
                 }
                 else -> {
                     item(key = "summary") { SessionAttendanceSummary(ClassSessionRules.countsOf(state.rows)) }
@@ -141,11 +146,7 @@ private fun ModeBanner(canCorrect: Boolean) {
         ) {
             Icon(if (canCorrect) Icons.Default.Warning else Icons.Default.Visibility, contentDescription = null, tint = AccentAmber)
             Text(
-                if (canCorrect) {
-                    "Anda memasuki mode koreksi. Setiap perubahan tercatat di log audit dan wajib disertai alasan."
-                } else {
-                    "Anda dapat melihat kehadiran sesi ini. Koreksi dilakukan oleh Admin, Waka Kurikulum, atau TU."
-                },
+                stringResource(if (canCorrect) R.string.ao_mode_correct else R.string.ao_mode_view),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -169,9 +170,9 @@ private fun OverrideRow(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(row.studentName ?: "Siswa", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(row.studentName ?: stringResource(R.string.ao_student), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Text(
-                        listOfNotNull(row.studentNis?.let { "NIS: $it" }, ClassSessionRules.checkInLabel(row)).joinToString(" • "),
+                        listOfNotNull(row.studentNis?.let { stringResource(R.string.ao_nis, it) }, ClassSessionText.checkIn(row).asString()).joinToString(" • "),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -179,13 +180,13 @@ private fun OverrideRow(
                 SessionAttendanceChip(current)
             }
 
-            ClassSessionRules.overrideAuditLabel(row)?.let { audit ->
+            ClassSessionText.overrideAudit(row)?.asString()?.let { audit ->
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Default.History, contentDescription = null, tint = AccentAmber)
                     Column {
                         Text(audit, style = MaterialTheme.typography.labelMedium, color = AccentAmber)
                         row.overrideReason?.takeIf { it.isNotBlank() }?.let {
-                            Text("Alasan: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.ao_reason, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -193,19 +194,19 @@ private fun OverrideRow(
 
             when {
                 targets.isEmpty() -> Text(
-                    "— Tidak perlu koreksi —",
+                    stringResource(R.string.ao_no_correction),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 !state.canCorrect -> Unit
                 else -> {
-                    Text("Ubah ke:", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.ao_change_to), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         targets.forEach { target ->
                             FilterChip(
                                 selected = draft.target == target,
                                 onClick = { onTarget(target) },
-                                label = { Text(ClassSessionRules.label(target)) },
+                                label = { Text(stringResource(ClassSessionText.label(target))) },
                                 enabled = !saving
                             )
                         }
@@ -215,17 +216,17 @@ private fun OverrideRow(
                         SulaoneTextField(
                             value = draft.reason,
                             onValueChange = onReason,
-                            label = "Alasan koreksi (wajib)",
+                            label = stringResource(R.string.ao_reason_label),
                             singleLine = false,
                             isError = tooShort,
-                            errorMessage = if (tooShort) "Minimal ${ClassSessionRules.OVERRIDE_REASON_MIN_CHARS} karakter." else null,
-                            helperText = "Contoh: terlambat karena upacara pramuka, dikonfirmasi pembina.",
+                            errorMessage = if (tooShort) stringResource(R.string.ao_reason_short, ClassSessionRules.OVERRIDE_REASON_MIN_CHARS) else null,
+                            helperText = stringResource(R.string.ao_reason_hint),
                             enabled = !saving
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = onCancel, enabled = !saving) { Text("Batal") }
+                            TextButton(onClick = onCancel, enabled = !saving) { Text(stringResource(R.string.ao_cancel)) }
                             SulaoneButton(
-                                text = "Simpan Koreksi",
+                                text = stringResource(R.string.ao_save),
                                 onClick = onSubmit,
                                 isLoading = saving,
                                 enabled = draft.canSubmit && !saving && state.savingAttendanceId == null,

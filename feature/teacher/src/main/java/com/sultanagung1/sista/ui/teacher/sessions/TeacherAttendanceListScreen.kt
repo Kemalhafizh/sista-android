@@ -62,6 +62,10 @@ import com.sultanagung1.sista.core.ui.theme.colors
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.SessionAttendanceDto
 import com.sultanagung1.sista.data.model.SessionAttendanceStatus
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.sultanagung1.sista.feature.teacher.R
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
 
 /**
  * FASE 77.4: "Daftar Hadir" — who scanned, who did not, and manual marks.
@@ -76,6 +80,7 @@ fun TeacherAttendanceListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LifecycleStartStopEffect(
         onStart = { viewModel.onEvent(TeacherAttendanceListEvent.ScreenStarted) },
@@ -84,7 +89,7 @@ fun TeacherAttendanceListScreen(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is TeacherAttendanceListEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is TeacherAttendanceListEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolve(context))
             }
         }
     }
@@ -111,9 +116,9 @@ fun TeacherAttendanceListContent(
         Scaffold(
             topBar = {
                 SistaTopBar(
-                    title = "Daftar Hadir",
+                    title = stringResource(R.string.tl_title),
                     subtitle = session?.let {
-                        listOfNotNull(it.subjectName, it.classroomName, it.jamKe?.let { j -> "Jam ke-$j" }).joinToString(" · ")
+                        listOfNotNull(it.subjectName, it.classroomName, it.jamKe?.let { j -> stringResource(R.string.ts_period, j) }).joinToString(" · ")
                     },
                     onBack = onNavigateBack,
                 )
@@ -132,12 +137,12 @@ fun TeacherAttendanceListContent(
                 when {
                     state.isLoading && state.rows.isEmpty() -> item { SkeletonList(Modifier.padding(horizontal = Spacing.screen)) }
                     state.notDeployed -> item {
-                        SessionsUnavailable(state.errorMessage ?: ClassSessionRules.NOT_DEPLOYED_MESSAGE, onRetry = { onEvent(TeacherAttendanceListEvent.Refresh) })
+                        SessionsUnavailable((state.errorMessage ?: ClassSessionText.notDeployed).asString(), onRetry = { onEvent(TeacherAttendanceListEvent.Refresh) })
                     }
                     state.rows.isEmpty() && state.errorMessage != null -> item {
                         ErrorState(
-                            title = "Daftar hadir belum bisa dimuat",
-                            body = state.errorMessage,
+                            title = stringResource(R.string.tl_load_error),
+                            body = state.errorMessage.asString(),
                             onRetry = { onEvent(TeacherAttendanceListEvent.Refresh) },
                         )
                     }
@@ -145,7 +150,7 @@ fun TeacherAttendanceListContent(
                         if (session != null && !state.isEditable) {
                             item {
                                 InlineBanner(
-                                    message = "Sesi sudah berakhir. Koreksi kehadiran melalui Waka Kurikulum/TU.",
+                                    message = stringResource(R.string.tl_ended),
                                     tone = StatusTone.Info,
                                     modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.xs),
                                 )
@@ -155,17 +160,19 @@ fun TeacherAttendanceListContent(
                             SistaTextField(
                                 value = state.query,
                                 onValueChange = { onEvent(TeacherAttendanceListEvent.QueryChanged(it)) },
-                                label = "Cari nama siswa atau NIS",
+                                label = stringResource(R.string.tl_search),
                                 leadingIcon = Icons.Outlined.Search,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
                         }
                         item {
+                            val all = stringResource(R.string.tl_all)
+                            val labels = SessionAttendanceStatus.entries.associateWith { stringResource(ClassSessionText.label(it)) }
                             FilterChipRow(
                                 options = listOf<SessionAttendanceStatus?>(null) + SessionAttendanceStatus.entries,
                                 selected = state.filter,
                                 onSelect = { onEvent(TeacherAttendanceListEvent.FilterChanged(it)) },
-                                label = { it?.let(ClassSessionRules::label) ?: "Semua" },
+                                label = { it?.let(labels::getValue) ?: all },
                                 modifier = Modifier.padding(vertical = Spacing.sm),
                             )
                         }
@@ -173,8 +180,8 @@ fun TeacherAttendanceListContent(
                         if (visible.isEmpty()) {
                             item {
                                 EmptyState(
-                                    title = "Tidak ada siswa",
-                                    body = if (state.rows.isEmpty()) "Belum ada siswa terdaftar di sesi ini." else "Tidak ada siswa yang cocok dengan pencarian/filter.",
+                                    title = stringResource(R.string.tl_empty),
+                                    body = stringResource(if (state.rows.isEmpty()) R.string.tl_empty_none else R.string.tl_empty_filter),
                                     icon = Icons.Outlined.Groups,
                                 )
                             }
@@ -209,10 +216,10 @@ private fun SummaryBar(state: TeacherAttendanceListState, pendingCount: Int, onE
             AttendanceSummary(state.previewCounts)
             if (pendingCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    SistaButton("Batalkan", { onEvent(TeacherAttendanceListEvent.DiscardChanges) }, variant = ButtonVariant.Text)
+                    SistaButton(stringResource(R.string.tl_discard), { onEvent(TeacherAttendanceListEvent.DiscardChanges) }, variant = ButtonVariant.Text)
                     Spacer(Modifier.width(Spacing.sm))
                     SistaButton(
-                        "Simpan ($pendingCount diubah)",
+                        stringResource(R.string.tl_save, pendingCount),
                         { onEvent(TeacherAttendanceListEvent.Save) },
                         loading = state.isSaving,
                         enabled = !state.isSaving,
@@ -236,7 +243,9 @@ private fun StudentRow(
     onMark: (SessionAttendanceStatus) -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val name = row.studentName ?: "Siswa"
+    val name = row.studentName ?: stringResource(R.string.tl_student_fallback)
+    val statusLabel = stringResource(ClassSessionText.label(status))
+    val changeStatus = stringResource(R.string.tl_change_status_cd, name, statusLabel)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -249,8 +258,11 @@ private fun StudentRow(
         Column(Modifier.weight(1f)) {
             Text(name, style = SistaTheme.typography.bodyLarge, color = SistaTheme.colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                listOfNotNull(row.studentNis?.let { "NIS $it" }, ClassSessionRules.checkInLabel(row)).joinToString(" · ") +
-                    if (isEdited) " · belum disimpan" else "",
+                listOfNotNull(
+                    row.studentNis?.let { stringResource(R.string.tl_nis, it) },
+                    ClassSessionText.checkIn(row).asString(),
+                    if (isEdited) stringResource(R.string.tl_unsaved) else null,
+                ).joinToString(" · "),
                 style = SistaTheme.typography.bodySmall,
                 color = if (isEdited) StatusTone.Warning.colors().content else SistaTheme.colors.onSurfaceVariant,
                 maxLines = 1,
@@ -265,7 +277,7 @@ private fun StudentRow(
                         if (editable) {
                             Modifier
                                 .clickable(role = Role.DropdownList) { menuOpen = true }
-                                .semantics { contentDescription = "Ubah status $name, sekarang ${ClassSessionRules.label(status)}" }
+                                .semantics { contentDescription = changeStatus }
                         } else {
                             Modifier
                         },
