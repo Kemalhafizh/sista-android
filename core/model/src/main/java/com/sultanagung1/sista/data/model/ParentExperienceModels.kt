@@ -7,7 +7,13 @@ data class ChildActivityEvent(
     @SerializedName("timestamp") val timestamp: Long,
     @SerializedName("title") val title: String,
     @SerializedName("type") val type: String,
-    @SerializedName("description") val description: String
+    @SerializedName("description") val description: String,
+    /**
+     * What happened, in a code that never changes with the language: present,
+     * sick, permit, absent, attendance, grade, assessment, reward, violation,
+     * loan, return, tahfidz. The title is translated, so never read it.
+     */
+    @SerializedName("code") val code: String? = null,
 )
 
 data class ChildActivityFeedResponse(

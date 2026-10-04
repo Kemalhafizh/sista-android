@@ -40,6 +40,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.style.TextOverflow
 import com.sultanagung1.sista.core.designsystem.SulaonePullToRefreshBox
 import com.sultanagung1.sista.core.ui.component.Avatar
@@ -61,6 +63,8 @@ import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.core.util.DateUtils
+import com.sultanagung1.sista.feature.parent.R
+import com.sultanagung1.sista.core.ui.R as CoreUiR
 import com.sultanagung1.sista.data.model.ChildVsClassComparison
 import com.sultanagung1.sista.data.model.ParentChildItem
 import com.sultanagung1.sista.data.model.WeeklyDigest
@@ -71,16 +75,16 @@ import java.util.Calendar
 
 /** A parent shortcut. Shown only when the account may open [route]. */
 @Immutable
-data class ParentShortcut(val title: String, val icon: ImageVector, val route: String)
+data class ParentShortcut(@StringRes val title: Int, val icon: ImageVector, val route: String)
 
 /** Shortcuts for the chosen child; routes carry the child so every screen shows the same one. */
 fun parentShortcuts(childUuid: String?): List<ParentShortcut> = listOfNotNull(
-    childUuid?.let { ParentShortcut("Detail anak", Icons.Outlined.Person, Screen.ChildDetail.createRoute(it)) },
-    ParentShortcut("Aktivitas", Icons.Outlined.Timeline, Screen.ChildActivityFeed.createRoute(childUuid)),
-    ParentShortcut("Tagihan", Icons.Outlined.AccountBalanceWallet, Screen.Billing.route),
-    ParentShortcut("Tata tertib", Icons.Outlined.Gavel, Screen.Discipline.createRoute(childUuid)),
-    ParentShortcut("Pesan guru", Icons.AutoMirrored.Outlined.Chat, Screen.ConversationList.route),
-    ParentShortcut("Progres belajar", Icons.Outlined.Insights, Screen.ChildProgress.createRoute(childUuid)),
+    childUuid?.let { ParentShortcut(R.string.shortcut_child_detail, Icons.Outlined.Person, Screen.ChildDetail.createRoute(it)) },
+    ParentShortcut(R.string.shortcut_activity, Icons.Outlined.Timeline, Screen.ChildActivityFeed.createRoute(childUuid)),
+    ParentShortcut(R.string.stat_bills, Icons.Outlined.AccountBalanceWallet, Screen.Billing.route),
+    ParentShortcut(R.string.shortcut_rules, Icons.Outlined.Gavel, Screen.Discipline.createRoute(childUuid)),
+    ParentShortcut(R.string.shortcut_message_teacher, Icons.AutoMirrored.Outlined.Chat, Screen.ConversationList.route),
+    ParentShortcut(R.string.shortcut_progress, Icons.Outlined.Insights, Screen.ChildProgress.createRoute(childUuid)),
 )
 
 /**
@@ -158,12 +162,12 @@ fun ParentHomeContent(
                     item(key = "header") {
                         GreetingHeader(
                             greeting = greeting,
-                            name = state.parentName.ifBlank { "Wali murid" },
+                            name = state.parentName.ifBlank { stringResource(R.string.parent_default_name) },
                             details = listOf(
                                 when (state.children.size) {
-                                    0 -> "Wali murid"
-                                    1 -> "Wali dari ${state.children.first().name}"
-                                    else -> "Wali dari ${state.children.size} anak"
+                                    0 -> stringResource(R.string.parent_role_none)
+                                    1 -> stringResource(R.string.parent_role_one, state.children.first().name)
+                                    else -> stringResource(R.string.parent_role_many, state.children.size)
                                 },
                             ),
                             unreadCount = state.unreadNotifications,
@@ -174,7 +178,7 @@ fun ParentHomeContent(
                         state.isLoading && state.children.isEmpty() -> item(key = "loading") { SkeletonList(rows = 4) }
                         state.errorMessage != null && state.children.isEmpty() -> item(key = "error") {
                             ErrorState(
-                                title = "Data anak belum bisa dimuat",
+                                title = stringResource(R.string.parent_children_error),
                                 body = state.errorMessage,
                                 onRetry = onRetry,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
@@ -182,8 +186,8 @@ fun ParentHomeContent(
                         }
                         state.children.isEmpty() -> item(key = "no_children") {
                             EmptyState(
-                                title = "Belum ada anak yang ditautkan",
-                                body = "Akun ini belum ditautkan ke data siswa. Hubungi Tata Usaha sekolah untuk menautkannya.",
+                                title = stringResource(R.string.parent_no_children),
+                                body = stringResource(R.string.parent_no_children_body),
                                 icon = Icons.Outlined.FamilyRestroom,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
@@ -202,8 +206,8 @@ fun ParentHomeContent(
                     state.liveGateStatus?.let { gate ->
                         item(key = "gate") {
                             InlineBanner(
-                                title = "${gate.studentName} tercatat di ${gate.gate}",
-                                message = "${gate.status} · pukul ${gate.checkInTime}",
+                                title = stringResource(R.string.parent_gate_title, gate.studentName, gate.gate),
+                                message = stringResource(R.string.parent_gate_body, gate.status, gate.checkInTime),
                                 tone = StatusTone.Success,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
@@ -213,9 +217,9 @@ fun ParentHomeContent(
                         if (state.childErrorMessage != null) {
                             item(key = "child_error") {
                                 InlineBanner(
-                                    message = "Sebagian data belum bisa dimuat. ${state.childErrorMessage}",
+                                    message = stringResource(R.string.parent_partial_error, state.childErrorMessage),
                                     tone = StatusTone.Warning,
-                                    actionLabel = "Muat ulang",
+                                    actionLabel = stringResource(CoreUiR.string.core_reload),
                                     onAction = onRefresh,
                                     modifier = Modifier.padding(horizontal = Spacing.screen),
                                 )
@@ -249,17 +253,17 @@ private fun ChildCard(child: ParentChildItem, state: ParentUiState, onClick: () 
                 Text(child.name, style = SistaTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     listOfNotNull(
-                        child.classroom?.takeIf { it.isNotBlank() && it != "N/A" }?.let { "Kelas $it" },
-                        child.nis?.let { "NIS $it" },
-                    ).joinToString(" · "),
+                        child.classroom?.takeIf { it.isNotBlank() && it != "N/A" }?.let { stringResource(R.string.parent_detail_class, it) },
+                        child.nis?.let { stringResource(R.string.parent_detail_nis, it) },
+                    ).joinToString(" · ") { "\u2068$it\u2069" },
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                 )
                 if (homeroom != null) {
-                    Text("Wali kelas: $homeroom", style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                    Text(stringResource(R.string.parent_homeroom, homeroom), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                 }
             }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = "Lihat detail", tint = SistaTheme.colors.onSurfaceVariant)
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = stringResource(R.string.parent_view_detail), tint = SistaTheme.colors.onSurfaceVariant)
         }
     }
 }
@@ -270,48 +274,53 @@ private fun ChildStats(state: ParentUiState, onOpenBilling: () -> Unit) {
     // "–" until the summary arrives or when it failed: never a 0 that looks like a fact.
     val unpaid = stats?.unpaidBillingsCount
     val points = stats?.totalBkPoints
+    val locale = parentLocale()
     Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
             StatTile(
-                label = "Kehadiran",
-                value = stats?.attendanceRate?.let { "${decimal(it)}%" } ?: "–",
-                supporting = if (stats != null && stats.attendanceRate == null) "belum ada presensi" else "tahun ajaran ini",
+                label = stringResource(R.string.stat_attendance),
+                value = stats?.attendanceRate?.let { "${decimal(it, locale)}%" } ?: "–",
+                supporting = stringResource(if (stats != null && stats.attendanceRate == null) R.string.stat_attendance_none else R.string.stat_this_year),
                 icon = Icons.Outlined.EventAvailable,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
             StatTile(
-                label = "Rata-rata nilai",
-                value = stats?.averageGrade?.let { decimal(it) } ?: "–",
-                supporting = if (stats != null && stats.averageGrade == null) "belum ada nilai" else "semua mapel",
+                label = stringResource(R.string.stat_average),
+                value = stats?.averageGrade?.let { decimal(it, locale) } ?: "–",
+                supporting = stringResource(if (stats != null && stats.averageGrade == null) R.string.stat_average_none else R.string.stat_all_subjects),
                 icon = Icons.Outlined.Grade,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
         }
         Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
             StatTile(
-                label = "Poin pelanggaran",
+                label = stringResource(R.string.stat_points),
                 value = points?.toString() ?: "–",
-                supporting = when {
-                    points == null -> "belum ada data"
-                    points == 0 -> "tidak ada catatan"
-                    else -> "dari tata tertib"
-                },
+                supporting = stringResource(
+                    when {
+                        points == null -> R.string.stat_no_data
+                        points == 0 -> R.string.stat_no_record
+                        else -> R.string.stat_from_rules
+                    },
+                ),
                 icon = Icons.Outlined.Gavel,
                 tone = if ((points ?: 0) > 0) StatusTone.Warning else StatusTone.Neutral,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
             StatTile(
-                label = "Tagihan",
+                label = stringResource(R.string.stat_bills),
                 value = when {
                     unpaid == null -> "–"
-                    unpaid == 0 -> "Lunas"
+                    unpaid == 0 -> stringResource(R.string.stat_paid)
                     else -> "$unpaid"
                 },
-                supporting = when {
-                    unpaid == null -> "belum ada data"
-                    unpaid == 0 -> "tidak ada tagihan"
-                    else -> "belum lunas"
-                },
+                supporting = stringResource(
+                    when {
+                        unpaid == null -> R.string.stat_no_data
+                        unpaid == 0 -> R.string.stat_no_bills
+                        else -> R.string.stat_unpaid
+                    },
+                ),
                 icon = Icons.Outlined.AccountBalanceWallet,
                 tone = if ((unpaid ?: 0) > 0) StatusTone.Danger else StatusTone.Neutral,
                 onClick = onOpenBilling,
@@ -323,21 +332,22 @@ private fun ChildStats(state: ParentUiState, onOpenBilling: () -> Unit) {
 
 @Composable
 private fun WeekDigest(digest: WeeklyDigest?, loading: Boolean) {
+    val locale = parentLocale()
     Column(Modifier.padding(horizontal = Spacing.screen)) {
-        SectionHeader("Minggu ini")
+        SectionHeader(stringResource(R.string.digest_title))
         SistaCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Row {
-                    DigestNumber("Hadir", digest?.attendancePercentage?.let { "${decimal(it)}%" }, Modifier.weight(1f))
-                    DigestNumber("Nilai baru", digest?.averageGrade?.let { decimal(it) }, Modifier.weight(1f))
-                    DigestNumber("Ibadah", digest?.ibadahScore?.toString(), Modifier.weight(1f))
+                    DigestNumber(stringResource(R.string.digest_present), digest?.attendancePercentage?.let { "${decimal(it, locale)}%" }, Modifier.weight(1f))
+                    DigestNumber(stringResource(R.string.digest_new_grades), digest?.averageGrade?.let { decimal(it, locale) }, Modifier.weight(1f))
+                    DigestNumber(stringResource(R.string.digest_ibadah), digest?.ibadahScore?.toString(), Modifier.weight(1f))
                 }
                 HorizontalDivider(color = SistaTheme.colors.outlineVariant)
                 val highlights = digest?.highlights.orEmpty()
                 when {
-                    loading && digest == null -> Text("Memuat…", style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                    loading && digest == null -> Text(stringResource(CoreUiR.string.core_loading), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                     highlights.isEmpty() -> Text(
-                        "Belum ada catatan sekolah minggu ini.",
+                        stringResource(R.string.digest_empty),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
@@ -362,14 +372,14 @@ private fun DigestNumber(label: String, value: String?, modifier: Modifier = Mod
 private fun RecentActivity(state: ParentUiState, nowMillis: Long, onOpenFeed: () -> Unit) {
     Column(Modifier.padding(horizontal = Spacing.screen)) {
         SectionHeader(
-            "Aktivitas terbaru",
-            actionLabel = if (state.activityFeed.size > 3) "Semua" else null,
+            stringResource(R.string.recent_title),
+            actionLabel = if (state.activityFeed.size > 3) stringResource(R.string.recent_all) else null,
             onAction = onOpenFeed,
         )
         when {
             state.isLoadingExperience && state.activityFeed.isEmpty() -> SkeletonList(rows = 3)
             state.activityFeed.isEmpty() -> Text(
-                "Belum ada catatan dalam 14 hari terakhir.",
+                stringResource(R.string.recent_empty),
                 style = SistaTheme.typography.bodyMedium,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
@@ -387,8 +397,9 @@ private fun RecentActivity(state: ParentUiState, nowMillis: Long, onOpenFeed: ()
 
 @Composable
 private fun ClassComparison(rows: List<ChildVsClassComparison>) {
+    val locale = parentLocale()
     Column(Modifier.padding(horizontal = Spacing.screen)) {
-        SectionHeader("Dibanding rata-rata kelas")
+        SectionHeader(stringResource(R.string.comparison_title))
         SistaCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 rows.forEachIndexed { index, row ->
@@ -397,17 +408,18 @@ private fun ClassComparison(rows: List<ChildVsClassComparison>) {
                         Column(Modifier.weight(1f)) {
                             Text(row.subject, style = SistaTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
-                                "Kelas ${decimal(row.classAverage)}",
+                                stringResource(R.string.comparison_class, decimal(row.classAverage, locale)),
                                 style = SistaTheme.typography.bodySmall,
                                 color = SistaTheme.colors.onSurfaceVariant,
                             )
                         }
-                        Text(decimal(row.childScore), style = SistaTheme.typography.titleMedium)
+                        Text(decimal(row.childScore, locale), style = SistaTheme.typography.titleMedium)
                         row.classAverage?.let { average ->
                             val diff = row.childScore - average
                             Spacer(Modifier.width(Spacing.sm))
                             StatusPill(
-                                (if (diff >= 0) "+" else "−") + decimal(kotlin.math.abs(diff)),
+                                // Isolated left-to-right so the sign stays in front in Arabic.
+                                "\u2066" + (if (diff >= 0) "+" else "−") + decimal(kotlin.math.abs(diff), locale) + "\u2069",
                                 if (diff >= 0) StatusTone.Success else StatusTone.Warning,
                             )
                         }
@@ -421,10 +433,10 @@ private fun ClassComparison(rows: List<ChildVsClassComparison>) {
 @Composable
 private fun Shortcuts(shortcuts: List<ParentShortcut>, onOpenRoute: (String) -> Unit) {
     Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        SectionHeader("Akses cepat", actionLabel = "Semua layanan", onAction = { onOpenRoute(Screen.ServicesHub.route) })
+        SectionHeader(stringResource(R.string.parent_quick_access), actionLabel = stringResource(R.string.parent_all_services), onAction = { onOpenRoute(Screen.ServicesHub.route) })
         shortcuts.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                row.forEach { item -> FeatureTile(item.title, item.icon, onClick = { onOpenRoute(item.route) }, modifier = Modifier.weight(1f)) }
+                row.forEach { item -> FeatureTile(stringResource(item.title), item.icon, onClick = { onOpenRoute(item.route) }, modifier = Modifier.weight(1f)) }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }

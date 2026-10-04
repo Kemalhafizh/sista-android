@@ -10,12 +10,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-/**
- * The locale numbers and dates are written in: the app's language, with Latin
- * digits for Arabic (as the web shows them).
- */
+/** See [com.sultanagung1.sista.core.ui.text.displayLocale], shared by every module. */
 fun displayLocale(locale: Locale = Locale.getDefault()): Locale =
-    if (locale.language == "ar") Locale.forLanguageTag("ar-u-nu-latn") else locale
+    com.sultanagung1.sista.core.ui.text.displayLocale(locale)
 
 /** "80,5" in Indonesian, "80.5" in English; "1.250" / "1,250"; "–" when there is no figure. */
 fun idNumber(value: Double?, locale: Locale = displayLocale()): String = value?.let {

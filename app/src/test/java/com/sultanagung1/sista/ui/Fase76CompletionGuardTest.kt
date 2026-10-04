@@ -127,7 +127,9 @@ class Fase76CompletionGuardTest {
         // The rebuilt teacher home shows a list skeleton for its first load, not a spinner.
         val teacher = code(teacherDash)
         assertTrue("teacher home: first-load skeleton", teacher.contains("firstLoad -> SkeletonList("))
-        assertTrue("Parent portal has a real empty state", code(parentDash).contains("Belum ada anak yang ditautkan"))
+        // The text is in strings.xml now (id, en, ar).
+        assertTrue("Parent portal has a real empty state", code(parentDash).contains("R.string.parent_no_children"))
+        assertTrue(source("feature/parent/src/main/res/values/strings.xml").contains(">Belum ada anak yang ditautkan<"))
         assertTrue("parent home: first-load skeleton", code(parentDash).contains("SkeletonList("))
     }
 

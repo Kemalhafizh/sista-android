@@ -17,6 +17,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.feature.parent.R
 import com.sultanagung1.sista.core.ui.component.EmptyState
 import com.sultanagung1.sista.core.ui.component.ErrorState
 import com.sultanagung1.sista.core.ui.component.SectionHeader
@@ -67,10 +69,11 @@ fun ChildActivityFeedContent(
     onNavigateBack: (() -> Unit)?,
 ) {
     // Events arrive newest first; keep that order within and across days.
-    val days = remember(events, nowMillis) { events.groupBy { dayLabel(it.timestamp, nowMillis) }.toList() }
+    val locale = parentLocale()
+    val days = remember(events, nowMillis, locale) { events.groupBy { dayLabel(it.timestamp, nowMillis, locale) }.toList() }
     ShellTheme {
         Scaffold(
-            topBar = { SistaTopBar(title = "Aktivitas", subtitle = childName?.let { "$it · 14 hari terakhir" }, onBack = onNavigateBack) },
+            topBar = { SistaTopBar(title = stringResource(R.string.shortcut_activity), subtitle = childName?.let { stringResource(R.string.feed_subtitle, it) }, onBack = onNavigateBack) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             LazyColumn(
@@ -83,19 +86,19 @@ fun ChildActivityFeedContent(
                 when {
                     loading && events.isEmpty() -> item(key = "loading") { SkeletonList(rows = 6) }
                     errorMessage != null && events.isEmpty() -> item(key = "error") {
-                        ErrorState(title = "Aktivitas belum bisa dimuat", body = errorMessage, onRetry = onRetry)
+                        ErrorState(title = stringResource(R.string.feed_error), body = errorMessage, onRetry = onRetry)
                     }
                     events.isEmpty() -> item(key = "empty") {
                         EmptyState(
-                            title = "Belum ada aktivitas",
-                            body = "Presensi, nilai, poin, perpustakaan, dan setoran tahfidz 14 hari terakhir muncul di sini.",
+                            title = stringResource(R.string.feed_empty),
+                            body = stringResource(R.string.feed_empty_body),
                             icon = Icons.Outlined.Timeline,
                         )
                     }
                     else -> days.forEach { (day, dayEvents) ->
                         item(key = "day_$day", contentType = "day") {
                             Column {
-                                SectionHeader(day)
+                                SectionHeader(day.asString())
                                 SistaCard(modifier = Modifier.fillMaxWidth()) {
                                     Column {
                                         dayEvents.forEachIndexed { index, event ->
