@@ -1,8 +1,5 @@
 package com.sultanagung1.sista.ui.teacher
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -48,11 +45,17 @@ class TeacherHomeScreenshotTest {
 
     private val shortcuts = TEACHER_SHORTCUTS.take(6)
 
-    private fun capture(name: String, state: TeacherUiState, dark: Boolean = false, tiles: List<TeacherShortcut> = shortcuts) {
+    private fun capture(
+        name: String,
+        state: TeacherUiState,
+        dark: Boolean = false,
+        tiles: List<TeacherShortcut> = shortcuts,
+        greeting: String = "Selamat pagi",
+    ) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            AppLocaleContent(dark) {
                 TeacherHomeContent(
-                    greeting = "Selamat pagi",
+                    greeting = greeting,
                     state = state,
                     shortcuts = tiles,
                     refreshing = false,
@@ -81,6 +84,12 @@ class TeacherHomeScreenshotTest {
     @Test fun teaching() = capture("teaching", loaded)
 
     @Test fun teachingDark() = capture("teaching_dark", loaded, dark = true)
+
+    @Test @Config(qualifiers = "en-w400dp-h1600dp-xhdpi")
+    fun teachingEnglish() = capture("teaching_en", loaded, greeting = "Good morning")
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1600dp-xhdpi")
+    fun teachingArabic() = capture("teaching_ar", loaded, greeting = "صباح الخير")
 
     @Test fun loading() = capture("loading", TeacherUiState(isLoading = true, teacherName = "Siti Rahmawati, S.Pd.", nip = "198703122010012004"))
 

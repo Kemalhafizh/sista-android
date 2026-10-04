@@ -830,7 +830,7 @@ class AiRepository(private val apiClient: ApiClient) {
  * [TeachingJournalRepository] (teacher/schedule, teacher/journals), which
  * TeacherViewModel composes alongside these calls instead of duplicating them.
  */
-class TeacherRepository(private val apiClient: ApiClient) {
+class TeacherRepository(private val apiClient: ApiClient, private val messages: FallbackMessages) {
 
     fun getClasses(): Flow<NetworkResult<List<TeacherClassSummary>>> = flow {
         emit(NetworkResult.Loading)
@@ -840,10 +840,10 @@ class TeacherRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body?.success == true) {
                 emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar kelas", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.teacher_classes_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -855,10 +855,10 @@ class TeacherRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body?.success == true) {
                 emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar siswa kelas", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.class_students_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -871,10 +871,10 @@ class TeacherRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body?.success == true && data != null) {
                 emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal menyimpan presensi kelas", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.class_attendance_save_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat menyimpan presensi"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 }

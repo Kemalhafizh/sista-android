@@ -52,15 +52,21 @@ import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.JournalScheduleItem
 import com.sultanagung1.sista.ui.common.DraftRestoreDialog
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.teacher.R
 
-/** Common methods offered as one tap; the server accepts any text for `learning_method`. */
+/**
+ * Common methods offered as one tap, in the app's language. The server accepts
+ * any text for `learning_method`, so the chosen words are stored as written.
+ */
 val JOURNAL_METHODS = listOf(
-    "Ceramah & tanya jawab",
-    "Diskusi kelompok",
-    "Praktikum",
-    "Problem Based Learning",
-    "Project Based Learning",
-    "Pembelajaran kolaboratif",
+    R.string.jf_m_lecture,
+    R.string.jf_m_group,
+    R.string.jf_m_practicum,
+    R.string.jf_m_pbl,
+    R.string.jf_m_pjbl,
+    R.string.jf_m_collab,
 )
 
 /** What the form sends, from the draft kept in [JournalMobileViewModel] (survives process death). */
@@ -106,6 +112,7 @@ fun JournalFormScreen(
     val uiState by viewModel.uiState.collectAsState()
     val schedule = viewModel.getScheduleById(scheduleId)
     val context = LocalContext.current
+    val savedToast = stringResource(R.string.jf_saved_toast)
 
     // FASE 69.1: the draft lives in the ViewModel (SavedStateHandle-backed), seeded once
     // the slot is known so an existing entry's values are not lost to a blank seed.
@@ -159,7 +166,7 @@ fun JournalFormScreen(
                 catatan = draft.obstacles.trim(),
                 tindakLanjut = draft.followUp.trim(),
                 onSuccess = {
-                    Toast.makeText(context, "Jurnal tersimpan sebagai draf.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, savedToast, Toast.LENGTH_LONG).show()
                     onNavigateBack()
                 },
             )
@@ -176,7 +183,7 @@ fun JournalFormContent(
     loading: Boolean,
     draft: JournalDraft,
     submitting: Boolean,
-    errorMessage: String?,
+    errorMessage: UiText?,
     actions: JournalDraftActions,
     onRetry: () -> Unit,
     onSubmit: () -> Unit,
@@ -190,8 +197,8 @@ fun JournalFormContent(
         Scaffold(
             topBar = {
                 SistaTopBar(
-                    title = if (readOnly) "Jurnal mengajar" else "Isi jurnal mengajar",
-                    subtitle = schedule?.let { "${it.subject} · Kelas ${it.className}" },
+                    title = stringResource(if (readOnly) R.string.th_shortcut_journal else R.string.jf_title_fill),
+                    subtitle = schedule?.let { "${it.subject} · ${stringResource(R.string.th_class, it.className)}" },
                     onBack = onNavigateBack,
                 )
             },
@@ -200,8 +207,8 @@ fun JournalFormContent(
             when {
                 schedule == null && loading -> SkeletonList(Modifier.padding(padding), rows = 4)
                 schedule == null -> ErrorState(
-                    title = if (errorMessage != null) "Jadwal belum bisa dimuat" else "Jadwal tidak ditemukan",
-                    body = errorMessage ?: "Jam pelajaran ini tidak ada di jadwal Anda hari ini.",
+                    title = stringResource(if (errorMessage != null) R.string.th_schedule_error else R.string.jf_not_found),
+                    body = errorMessage?.asString() ?: stringResource(R.string.jf_not_found_body),
                     onRetry = onRetry,
                     modifier = Modifier
                         .padding(padding)
@@ -219,26 +226,26 @@ fun JournalFormContent(
                     SlotSummary(schedule)
                     if (readOnly) {
                         InlineBanner(
-                            message = "Jurnal ini sudah tersimpan. Mengubah atau mengirimnya untuk direview dilakukan di menu Jurnal Mengajar pada web.",
+                            message = stringResource(R.string.jf_readonly),
                             tone = StatusTone.Info,
                         )
                     }
 
-                    FormSection("Pembelajaran") {
+                    FormSection(stringResource(R.string.jf_section_learning)) {
                         SistaTextField(
                             value = draft.topic,
                             onValueChange = actions.onTopic,
-                            label = "Materi pokok *",
-                            placeholder = "Contoh: Hukum Newton II",
-                            errorText = "Materi pokok wajib diisi".takeIf { showErrors && draft.topicMissing },
+                            label = stringResource(R.string.jf_topic),
+                            placeholder = stringResource(R.string.jf_topic_hint),
+                            errorText = stringResource(R.string.jf_topic_required).takeIf { showErrors && draft.topicMissing },
                             singleLine = false,
                             minLines = 2,
                             enabled = !readOnly,
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         )
-                        Text("Metode *", style = SistaTheme.typography.labelLarge)
+                        Text(stringResource(R.string.jf_method), style = SistaTheme.typography.labelLarge)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                            val options = (JOURNAL_METHODS + draft.method).filter { it.isNotBlank() }.distinct()
+                            val options = (JOURNAL_METHODS.map { stringResource(it) } + draft.method).filter { it.isNotBlank() }.distinct()
                             options.forEach { method ->
                                 val selected = draft.method == method
                                 FilterChip(
@@ -251,14 +258,14 @@ fun JournalFormContent(
                             }
                         }
                         if (showErrors && draft.methodMissing) {
-                            Text("Pilih metode pembelajaran", style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.error)
+                            Text(stringResource(R.string.jf_method_required), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.error)
                         }
                         SistaTextField(
                             value = draft.activity,
                             onValueChange = actions.onActivity,
-                            label = "Kegiatan pembelajaran *",
-                            placeholder = "Pendahuluan, kegiatan inti, penutup",
-                            errorText = "Kegiatan pembelajaran wajib diisi".takeIf { showErrors && draft.activityMissing },
+                            label = stringResource(R.string.jf_activity),
+                            placeholder = stringResource(R.string.jf_activity_hint),
+                            errorText = stringResource(R.string.jf_activity_required).takeIf { showErrors && draft.activityMissing },
                             singleLine = false,
                             minLines = 3,
                             enabled = !readOnly,
@@ -266,16 +273,16 @@ fun JournalFormContent(
                         )
                     }
 
-                    FormSection("Kehadiran siswa") {
+                    FormSection(stringResource(R.string.jf_section_attendance)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                            CountField("Hadir *", draft.present, actions.onPresent, showErrors && draft.presentInvalid, !readOnly, Modifier.weight(1f))
-                            CountField("Tidak hadir *", draft.absent, actions.onAbsent, showErrors && draft.absentInvalid, !readOnly, Modifier.weight(1f))
+                            CountField(stringResource(R.string.jf_present), draft.present, actions.onPresent, showErrors && draft.presentInvalid, !readOnly, Modifier.weight(1f))
+                            CountField(stringResource(R.string.jf_absent), draft.absent, actions.onAbsent, showErrors && draft.absentInvalid, !readOnly, Modifier.weight(1f))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("Tujuan pembelajaran tercapai", style = SistaTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.jf_objectives), style = SistaTheme.typography.bodyLarge)
                                 Text(
-                                    "Sebagian besar siswa mencapai tujuan hari ini",
+                                    stringResource(R.string.jf_objectives_hint),
                                     style = SistaTheme.typography.bodySmall,
                                     color = SistaTheme.colors.onSurfaceVariant,
                                 )
@@ -285,11 +292,11 @@ fun JournalFormContent(
                         }
                     }
 
-                    FormSection("Catatan (opsional)") {
+                    FormSection(stringResource(R.string.jf_section_notes)) {
                         SistaTextField(
                             value = draft.obstacles,
                             onValueChange = actions.onObstacles,
-                            label = "Kendala pembelajaran",
+                            label = stringResource(R.string.jf_obstacles),
                             singleLine = false,
                             minLines = 2,
                             enabled = !readOnly,
@@ -298,8 +305,8 @@ fun JournalFormContent(
                         SistaTextField(
                             value = draft.followUp,
                             onValueChange = actions.onFollowUp,
-                            label = "Rencana tindak lanjut",
-                            placeholder = "Contoh: remedial untuk 3 siswa",
+                            label = stringResource(R.string.jf_follow_up),
+                            placeholder = stringResource(R.string.jf_follow_up_hint),
                             singleLine = false,
                             minLines = 2,
                             enabled = !readOnly,
@@ -307,10 +314,10 @@ fun JournalFormContent(
                         )
                     }
 
-                    if (errorMessage != null) InlineBanner(message = errorMessage, tone = StatusTone.Danger)
+                    if (errorMessage != null) InlineBanner(message = errorMessage.asString(), tone = StatusTone.Danger)
                     if (!readOnly) {
                         SistaButton(
-                            text = "Simpan jurnal",
+                            text = stringResource(R.string.jf_save),
                             onClick = {
                                 showErrors = true
                                 if (draft.isComplete) onSubmit()
@@ -321,7 +328,7 @@ fun JournalFormContent(
                             fullWidth = true,
                         )
                         Text(
-                            "Jurnal disimpan sebagai draf. Mengubah dan mengirimnya untuk direview dilakukan di menu Jurnal Mengajar pada web.",
+                            stringResource(R.string.jf_footer),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                         )
@@ -338,7 +345,12 @@ private fun SlotSummary(schedule: JournalScheduleItem) {
         Column {
             Text(schedule.subject, style = SistaTheme.typography.titleMedium)
             Text(
-                listOfNotNull("Kelas ${schedule.className}", schedule.date?.let(::journalDate), schedule.timeSlot).joinToString(" · "),
+                listOfNotNull(
+                    stringResource(R.string.th_class, schedule.className),
+                    schedule.date?.let { journalDate(it) },
+                    schedule.timeRange,
+                    stringResource(R.string.tj_period, schedule.jamKe),
+                ).joinToString(" · "),
                 style = SistaTheme.typography.bodySmall,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
@@ -360,7 +372,7 @@ private fun CountField(label: String, value: String, onChange: (String) -> Unit,
         value = value,
         onValueChange = { input -> onChange(input.filter(Char::isDigit).take(3)) },
         label = label,
-        errorText = "Isi angka".takeIf { error },
+        errorText = stringResource(R.string.jf_number).takeIf { error },
         enabled = enabled,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
         modifier = modifier,

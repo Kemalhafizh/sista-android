@@ -12,4 +12,20 @@
     <string name="schedule_load_failed">تعذّر تحميل جدول الحصص (الرمز %1$d).</string>
     <string name="notifications_load_failed">تعذّر تحميل الإشعارات (الرمز %1$d).</string>
     <string name="home_context_load_failed">تعذّر تحميل معلومات الصفحة الرئيسية (الرمز %1$d).</string>
+
+    <!-- Guru: kelas, jurnal, penilaian harian -->
+    <string name="teacher_classes_load_failed">تعذّر تحميل قائمة الفصول (الرمز %1$d).</string>
+    <string name="class_students_load_failed">تعذّر تحميل قائمة طلاب الفصل (الرمز %1$d).</string>
+    <string name="class_attendance_save_failed">لم يتم حفظ حضور الفصل (الرمز %1$d).</string>
+    <string name="teaching_schedule_load_failed">تعذّر تحميل جدول التدريس (الرمز %1$d).</string>
+    <string name="journals_load_failed">تعذّر تحميل سجلات التدريس (الرمز %1$d).</string>
+    <string name="journal_save_failed">لم يتم حفظ السجل (الرمز %1$d).</string>
+    <string name="assessments_load_failed">تعذّر تحميل التقييمات اليومية (الرمز %1$d).</string>
+    <string name="score_sheet_load_failed">تعذّر تحميل كشف الدرجات (الرمز %1$d).</string>
+    <string name="assessment_create_failed">تعذّر إنشاء التقييم (الرمز %1$d).</string>
+    <string name="scores_save_failed">لم يتم حفظ درجات الطلاب (الرمز %1$d).</string>
+    <string name="remedial_auto_failed">تعذّر تشغيل العلاج التلقائي (الرمز %1$d).</string>
+    <string name="remedial_auto_done">تم تشغيل العلاج التلقائي.</string>
+    <string name="remedials_load_failed">تعذّر تحميل قائمة العلاج (الرمز %1$d).</string>
+    <string name="assessment_history_load_failed">تعذّر تحميل سجل التقييمات (الرمز %1$d).</string>
 </resources>

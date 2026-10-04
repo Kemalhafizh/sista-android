@@ -51,7 +51,8 @@ fun NavGraphBuilder.teacherNavGraph(
         val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: 0L
         val rawClassName = backStackEntry.arguments?.getString("className") ?: ""
         val className = URLDecoder.decode(rawClassName, StandardCharsets.UTF_8.toString())
-        val viewModel: TeacherViewModel = hiltViewModel()
+            .takeUnless { it == Screen.TeacherAttendance.NO_CLASS_NAME }.orEmpty()
+        val viewModel: TeacherAttendanceViewModel = hiltViewModel()
 
         TeacherAttendanceScreen(
             classroomId = classroomId,

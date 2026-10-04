@@ -57,13 +57,14 @@ data class StoreJournalRequest(
 
 data class JournalScheduleItem(
     val id: String,
-    val timeSlot: String,
     val subject: String,
     val className: String,
     val isFilled: Boolean,
     val subjectId: Long,
     val classroomId: Long,
     val jamKe: Int,
+    /** "07:00–08:30" from the schedule; null for a filed journal or a slot without times. */
+    val timeRange: String? = null,
     val date: String? = null,
     val topic: String? = null,
     val method: String? = null,

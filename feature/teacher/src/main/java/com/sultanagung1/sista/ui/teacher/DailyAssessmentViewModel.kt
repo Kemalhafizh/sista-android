@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.ui.text.asUiText
+import com.sultanagung1.sista.feature.teacher.R
 
 data class DailyAssessmentUiState(
     val isLoading: Boolean = false,
@@ -32,7 +35,7 @@ data class DailyAssessmentUiState(
     val edits: Map<Long, String> = emptyMap(),
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null,
+    val successMessage: UiText? = null,
 ) {
     val summary: ScoreSheetRules.Summary?
         get() = sheet?.let { ScoreSheetRules.summary(it.students, edits, it.assessment.kkm, it.assessment.maxScore) }
@@ -109,8 +112,11 @@ class DailyAssessmentViewModel @Inject constructor(
                             it.copy(
                                 isSubmitting = false,
                                 edits = emptyMap(),
-                                successMessage = "${result.data.totalSaved} nilai tersimpan." +
-                                    if (under > 0) " $under siswa di bawah KKM." else "",
+                                successMessage = if (under > 0) {
+                                    UiText.Res(R.string.si_saved_below, result.data.totalSaved, under)
+                                } else {
+                                    UiText.Res(R.string.si_saved, result.data.totalSaved)
+                                },
                             )
                         }
                         loadScoreSheet(assessmentId)
@@ -126,7 +132,7 @@ class DailyAssessmentViewModel @Inject constructor(
             repository.autoAssignRemedial(assessmentId, deadline).collect { result ->
                 when (result) {
                     is NetworkResult.Loading -> _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
-                    is NetworkResult.Success -> _uiState.update { it.copy(isSubmitting = false, successMessage = result.data) }
+                    is NetworkResult.Success -> _uiState.update { it.copy(isSubmitting = false, successMessage = result.data.asUiText()) }
                     is NetworkResult.Error -> _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message) }
                 }
             }

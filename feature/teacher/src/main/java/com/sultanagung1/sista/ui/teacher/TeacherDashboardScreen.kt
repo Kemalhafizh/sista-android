@@ -71,21 +71,25 @@ import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.navigation.canOpen
 import com.sultanagung1.sista.ui.teacher.sessions.TeacherClassSessionCard
 import java.util.Calendar
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.text.localDecimal
+import com.sultanagung1.sista.feature.teacher.R
 import java.util.Locale
 
 /** A teacher shortcut. Shown only when the account may open [route]. */
 @Immutable
-data class TeacherShortcut(val title: String, val icon: ImageVector, val route: String)
+data class TeacherShortcut(@StringRes val title: Int, val icon: ImageVector, val route: String)
 
 val TEACHER_SHORTCUTS = listOf(
-    TeacherShortcut("Sesi kelas", Icons.Outlined.CoPresent, Screen.TeacherTodaySessions.route),
-    TeacherShortcut("Jurnal mengajar", Icons.Outlined.EditNote, Screen.TeachingJournalMobile.route),
-    TeacherShortcut("Penilaian harian", Icons.Outlined.Grade, Screen.DailyAssessmentList.route),
-    TeacherShortcut("Ujian & pengawasan", Icons.Outlined.Quiz, Screen.TeacherProctorExams.route),
-    TeacherShortcut("Bank soal", Icons.Outlined.Source, Screen.QuestionBank.route),
-    TeacherShortcut("Kelas online", Icons.Outlined.Class, Screen.ElearningClassList.route),
-    TeacherShortcut("Pesan orang tua", Icons.AutoMirrored.Outlined.Chat, Screen.ConversationList.route),
-    TeacherShortcut("Koreksi tahsin", Icons.Outlined.RecordVoiceOver, Screen.TahsinTeacherReview.route),
+    TeacherShortcut(R.string.th_shortcut_sessions, Icons.Outlined.CoPresent, Screen.TeacherTodaySessions.route),
+    TeacherShortcut(R.string.th_shortcut_journal, Icons.Outlined.EditNote, Screen.TeachingJournalMobile.route),
+    TeacherShortcut(R.string.th_shortcut_assessment, Icons.Outlined.Grade, Screen.DailyAssessmentList.route),
+    TeacherShortcut(R.string.th_shortcut_exams, Icons.Outlined.Quiz, Screen.TeacherProctorExams.route),
+    TeacherShortcut(R.string.th_shortcut_question_bank, Icons.Outlined.Source, Screen.QuestionBank.route),
+    TeacherShortcut(R.string.th_shortcut_elearning, Icons.Outlined.Class, Screen.ElearningClassList.route),
+    TeacherShortcut(R.string.th_shortcut_messages, Icons.AutoMirrored.Outlined.Chat, Screen.ConversationList.route),
+    TeacherShortcut(R.string.th_shortcut_tahsin, Icons.Outlined.RecordVoiceOver, Screen.TahsinTeacherReview.route),
 )
 
 /**
@@ -123,7 +127,7 @@ fun TeacherDashboardScreen(
             viewModel.loadDashboard()
         },
         onOpenRoute = onNavigateRoute,
-        onAttendance = { slot -> onNavigateToAttendance(slot.classroomId, slot.id, slot.classroomName ?: "Tanpa kelas") },
+        onAttendance = { slot -> onNavigateToAttendance(slot.classroomId, slot.id, slot.classroomName.orEmpty()) },
         onJournal = onNavigateToJournal,
     )
 }
@@ -161,8 +165,8 @@ fun TeacherHomeContent(
                     item(key = "header") {
                         GreetingHeader(
                             greeting = greeting,
-                            name = state.teacherName.ifBlank { "Guru" },
-                            details = listOfNotNull(state.nip.takeIf { it.isNotBlank() }?.let { "NIP $it" }),
+                            name = state.teacherName.ifBlank { stringResource(R.string.th_teacher) },
+                            details = listOfNotNull(state.nip.takeIf { it.isNotBlank() }?.let { stringResource(R.string.th_nip, it) }),
                             unreadCount = state.unreadNotifications,
                             onOpenNotifications = { onOpenRoute(Screen.NotificationCenter.route) },
                         )
@@ -181,9 +185,9 @@ fun TeacherHomeContent(
                     if (state.errorMessage != null && !firstLoad && state.todaySchedules.isNotEmpty()) {
                         item(key = "stale") {
                             InlineBanner(
-                                message = "Menampilkan data tersimpan. ${state.errorMessage}",
+                                message = stringResource(R.string.th_stale, state.errorMessage),
                                 tone = StatusTone.Warning,
-                                actionLabel = "Muat ulang",
+                                actionLabel = stringResource(R.string.th_reload),
                                 onAction = onRefresh,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
@@ -195,16 +199,16 @@ fun TeacherHomeContent(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         ) {
                             StatTile(
-                                label = "Kelas diampu",
-                                value = if (statsUnknown) "–" else state.totalClasses.toString(),
-                                supporting = "dari jadwal mengajar",
+                                label = stringResource(R.string.th_classes),
+                                value = if (statsUnknown) "–" else localDecimal(state.totalClasses.toDouble()),
+                                supporting = stringResource(R.string.th_classes_hint),
                                 icon = Icons.Outlined.Groups,
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                             )
                             StatTile(
-                                label = "Jam mengajar",
-                                value = if (statsUnknown) "–" else formatHours(state.teachingHoursThisWeek),
-                                supporting = "minggu ini, dari jadwal",
+                                label = stringResource(R.string.th_hours),
+                                value = if (statsUnknown) "–" else stringResource(R.string.th_hours_value, localDecimal(state.teachingHoursThisWeek)),
+                                supporting = stringResource(R.string.th_hours_hint),
                                 icon = Icons.Outlined.Schedule,
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                             )
@@ -238,17 +242,17 @@ private fun TodayTeaching(
     onOpenJournals: () -> Unit,
 ) {
     Column(Modifier.padding(horizontal = Spacing.screen)) {
-        SectionHeader("Jadwal mengajar hari ini", actionLabel = "Jurnal", onAction = onOpenJournals)
+        SectionHeader(stringResource(R.string.th_today), actionLabel = stringResource(R.string.th_journal), onAction = onOpenJournals)
         when {
             firstLoad -> SkeletonList(rows = 3)
             state.todaySchedules.isEmpty() && state.errorMessage != null -> ErrorState(
-                title = "Jadwal belum bisa dimuat",
+                title = stringResource(R.string.th_schedule_error),
                 body = state.errorMessage,
                 onRetry = onRetry,
             )
             state.todaySchedules.isEmpty() -> EmptyState(
-                title = "Tidak ada jadwal mengajar hari ini",
-                body = "Jadwal minggu ini tetap tersedia di Jurnal mengajar.",
+                title = stringResource(R.string.th_no_lessons),
+                body = stringResource(R.string.th_no_lessons_body),
                 icon = Icons.Outlined.EventAvailable,
             )
             else -> SistaCard(modifier = Modifier.fillMaxWidth()) {
@@ -270,20 +274,20 @@ private fun ScheduleRow(slot: TeacherScheduleSlot, isNow: Boolean, onAttendance:
                 Text(clock(slot.sessionEnd), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
             }
             Column(Modifier.weight(1f)) {
-                Text(slot.subjectName ?: "Mata pelajaran", style = SistaTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(slot.subjectName ?: stringResource(R.string.th_subject_unknown), style = SistaTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    listOfNotNull(slot.classroomName?.let { "Kelas $it" }, slot.roomName).joinToString(" · "),
+                    listOfNotNull(slot.classroomName?.let { stringResource(R.string.th_class, it) }, slot.roomName).joinToString(" · "),
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (isNow) StatusPill("Berlangsung", StatusTone.Success)
+            if (isNow) StatusPill(stringResource(R.string.th_now), StatusTone.Success)
         }
         Row(Modifier.padding(start = 52.dp), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            SistaButton("Presensi", onAttendance, variant = ButtonVariant.Secondary, leadingIcon = Icons.Outlined.CheckCircle)
-            SistaButton("Jurnal", onJournal, variant = ButtonVariant.Outlined, leadingIcon = Icons.Outlined.EditNote)
+            SistaButton(stringResource(R.string.th_attendance), onAttendance, variant = ButtonVariant.Secondary, leadingIcon = Icons.Outlined.CheckCircle)
+            SistaButton(stringResource(R.string.th_journal), onJournal, variant = ButtonVariant.Outlined, leadingIcon = Icons.Outlined.EditNote)
         }
     }
 }
@@ -291,11 +295,11 @@ private fun ScheduleRow(slot: TeacherScheduleSlot, isNow: Boolean, onAttendance:
 @Composable
 private fun Shortcuts(shortcuts: List<TeacherShortcut>, onOpenRoute: (String) -> Unit) {
     Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        SectionHeader("Akses cepat", actionLabel = "Semua layanan", onAction = { onOpenRoute(Screen.ServicesHub.route) })
+        SectionHeader(stringResource(R.string.th_quick), actionLabel = stringResource(R.string.th_all_services), onAction = { onOpenRoute(Screen.ServicesHub.route) })
         shortcuts.take(6).chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 row.forEach { item ->
-                    FeatureTile(item.title, item.icon, onClick = { onOpenRoute(item.route) }, modifier = Modifier.weight(1f))
+                    FeatureTile(stringResource(item.title), item.icon, onClick = { onOpenRoute(item.route) }, modifier = Modifier.weight(1f))
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
@@ -306,7 +310,7 @@ private fun Shortcuts(shortcuts: List<TeacherShortcut>, onOpenRoute: (String) ->
 @Composable
 private fun RecentJournals(journals: List<TeachingJournalEntry>, onOpen: () -> Unit) {
     Column(Modifier.padding(horizontal = Spacing.screen)) {
-        SectionHeader("Jurnal terakhir", actionLabel = "Semua", onAction = onOpen)
+        SectionHeader(stringResource(R.string.th_recent_journals), actionLabel = stringResource(R.string.th_all), onAction = onOpen)
         SistaCard(modifier = Modifier.fillMaxWidth(), onClick = onOpen) {
             journals.forEachIndexed { index, journal ->
                 if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
@@ -319,20 +323,20 @@ private fun RecentJournals(journals: List<TeachingJournalEntry>, onOpen: () -> U
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            listOfNotNull(journal.teachingDate?.let(::journalDate), journal.topic?.takeIf { it.isNotBlank() }).joinToString(" · "),
+                            listOfNotNull(journal.teachingDate?.let { journalDate(it) }, journal.topic?.takeIf { it.isNotBlank() }).joinToString(" · "),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            "Hadir ${journal.studentsPresent} · Absen ${journal.studentsAbsent}",
+                            stringResource(R.string.th_present_absent, journal.studentsPresent, journal.studentsAbsent),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                         )
                     }
                     Spacer(Modifier.width(Spacing.sm))
-                    journalReviewStatus(journal.status).let { (label, tone) -> StatusPill(label, tone) }
+                    journalReviewStatus(journal.status).let { (label, tone) -> StatusPill(stringResource(label), tone) }
                 }
             }
         }
@@ -340,17 +344,10 @@ private fun RecentJournals(journals: List<TeachingJournalEntry>, onOpen: () -> U
 }
 
 private fun clock(time: String?): String =
-    DateUtils.parseMinutesOfDay(time)?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "—"
+    DateUtils.parseMinutesOfDay(time)?.let { String.format(Locale.ROOT, "%02d:%02d", it / 60, it % 60) } ?: "—"
 
 private fun isNow(slot: TeacherScheduleSlot, nowMinutes: Int): Boolean {
     val start = DateUtils.parseMinutesOfDay(slot.sessionStart) ?: return false
     val end = DateUtils.parseMinutesOfDay(slot.sessionEnd) ?: return false
     return nowMinutes in start until end
-}
-
-/** 12.5 → "12,5 jam"; 12.0 → "12 jam". */
-private fun formatHours(hours: Double): String {
-    val rounded = Math.round(hours * 10) / 10.0
-    val text = if (rounded % 1.0 == 0.0) rounded.toLong().toString() else String.format(Locale.forLanguageTag("id-ID"), "%.1f", rounded)
-    return "$text jam"
 }

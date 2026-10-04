@@ -46,7 +46,9 @@ import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.DailyAssessmentItem
 import com.sultanagung1.sista.data.model.RemedialDashboard
-import com.sultanagung1.sista.data.model.ScoreSheetRules
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.text.localDecimal
+import com.sultanagung1.sista.feature.teacher.R
 
 /**
  * The teacher's daily assessments from `assessments/teacher`: what each one
@@ -94,7 +96,7 @@ fun DailyAssessmentContent(
 ) {
     ShellTheme {
         Scaffold(
-            topBar = { SistaTopBar(title = "Penilaian harian", onBack = onNavigateBack) },
+            topBar = { SistaTopBar(title = stringResource(R.string.th_shortcut_assessment), onBack = onNavigateBack) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             SulaonePullToRefreshBox(
@@ -115,9 +117,9 @@ fun DailyAssessmentContent(
                     if (errorMessage != null && assessments.isNotEmpty()) {
                         item(key = "stale") {
                             InlineBanner(
-                                message = "Gagal memperbarui. $errorMessage",
+                                message = stringResource(R.string.tj_stale, errorMessage),
                                 tone = StatusTone.Warning,
-                                actionLabel = "Coba lagi",
+                                actionLabel = stringResource(R.string.tj_retry),
                                 onAction = onRefresh,
                             )
                         }
@@ -125,12 +127,12 @@ fun DailyAssessmentContent(
                     when {
                         isLoading && assessments.isEmpty() -> item(key = "loading") { SkeletonList(rows = 4) }
                         errorMessage != null && assessments.isEmpty() -> item(key = "error") {
-                            ErrorState(title = "Penilaian belum bisa dimuat", body = errorMessage, onRetry = onRefresh)
+                            ErrorState(title = stringResource(R.string.da_error), body = errorMessage, onRetry = onRefresh)
                         }
                         assessments.isEmpty() -> item(key = "empty") {
                             EmptyState(
-                                title = "Belum ada penilaian harian",
-                                body = "Penilaian yang Anda buat di menu Penilaian Harian pada web akan muncul di sini untuk diisi nilainya.",
+                                title = stringResource(R.string.da_empty),
+                                body = stringResource(R.string.da_empty_body),
                                 icon = Icons.AutoMirrored.Outlined.Assignment,
                             )
                         }
@@ -151,13 +153,13 @@ private fun RemedialSummary(remedial: RemedialDashboard) {
             IconBadge(Icons.Outlined.Replay, tone = if (remedial.pending > 0) StatusTone.Warning else StatusTone.Success)
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
-                Text("Remedial", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
+                Text(stringResource(R.string.da_remedial), style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
                 Text(
-                    if (remedial.pending > 0) "${remedial.pending} menunggu nilai" else "Semua sudah dinilai",
+                    if (remedial.pending > 0) stringResource(R.string.da_remedial_pending, remedial.pending) else stringResource(R.string.da_remedial_done),
                     style = SistaTheme.typography.titleMedium,
                 )
                 Text(
-                    "${remedial.completed} dari ${remedial.total} selesai",
+                    stringResource(R.string.da_remedial_progress, remedial.completed, remedial.total),
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                 )
@@ -178,7 +180,7 @@ private fun AssessmentCard(item: DailyAssessmentItem, onClick: () -> Unit) {
                     Text(
                         listOfNotNull(
                             item.subject?.name,
-                            item.classroom?.name?.let { "Kelas $it" },
+                            item.classroom?.name?.let { stringResource(R.string.th_class, it) },
                             journalDate(item.assessmentDate),
                         ).joinToString(" · "),
                         style = SistaTheme.typography.bodySmall,
@@ -186,7 +188,7 @@ private fun AssessmentCard(item: DailyAssessmentItem, onClick: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.width(Spacing.sm))
-                StatusPill("KKM ${ScoreSheetRules.format(item.kkm)}", StatusTone.Neutral)
+                StatusPill(stringResource(R.string.da_kkm, localDecimal(item.kkm)), StatusTone.Neutral)
             }
             if (total != null && scored != null && total > 0) {
                 val done = scored >= total
@@ -203,7 +205,7 @@ private fun AssessmentCard(item: DailyAssessmentItem, onClick: () -> Unit) {
                     )
                     Spacer(Modifier.width(Spacing.md))
                     Text(
-                        if (done) "Semua dinilai" else "$scored/$total dinilai",
+                        if (done) stringResource(R.string.da_remedial_done) else stringResource(R.string.da_scored, scored, total),
                         style = SistaTheme.typography.labelMedium,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )

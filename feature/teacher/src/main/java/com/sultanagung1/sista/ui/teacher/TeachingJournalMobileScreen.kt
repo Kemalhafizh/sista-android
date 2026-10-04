@@ -56,9 +56,16 @@ import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.JournalScheduleItem
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.text.displayLocale
+import com.sultanagung1.sista.core.ui.text.localDecimal
+import com.sultanagung1.sista.feature.teacher.R
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** The three periods the journal list can show, in tab order (matches `selectedTab`). */
-private val PERIODS = listOf(0 to "Hari ini", 1 to "7 hari", 2 to "30 hari")
+private val PERIODS = listOf(0 to R.string.tj_today, 1 to R.string.tj_7days, 2 to R.string.tj_30days)
 
 /**
  * Jurnal mengajar: today's slots from `teacher/schedule` with whether each
@@ -110,9 +117,11 @@ fun TeachingJournalContent(
     val items = state.currentTabSchedules
     val today = state.selectedTab == 0
     val hasAnyData = state.todaySchedule.isNotEmpty() || state.weekJournals.isNotEmpty() || state.monthJournals.isNotEmpty()
+    // FilterChipRow's label is not composable; resolve the period names here.
+    val periodLabels = PERIODS.associate { (index, label) -> index to stringResource(label) }
     ShellTheme {
         Scaffold(
-            topBar = { SistaTopBar(title = "Jurnal mengajar", onBack = onNavigateBack) },
+            topBar = { SistaTopBar(title = stringResource(R.string.th_shortcut_journal), onBack = onNavigateBack) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             SulaonePullToRefreshBox(
@@ -132,7 +141,7 @@ fun TeachingJournalContent(
                             options = PERIODS,
                             selected = PERIODS[state.selectedTab.coerceIn(0, 2)],
                             onSelect = { onSelectPeriod(it.first) },
-                            label = { it.second },
+                            label = { periodLabels.getValue(it.first) },
                             modifier = Modifier.padding(top = Spacing.sm),
                         )
                     }
@@ -142,9 +151,9 @@ fun TeachingJournalContent(
                     if (state.errorMessage != null && hasAnyData) {
                         item(key = "stale") {
                             InlineBanner(
-                                message = "Gagal memperbarui. ${state.errorMessage}",
+                                message = stringResource(R.string.tj_stale, state.errorMessage.asString()),
                                 tone = StatusTone.Warning,
-                                actionLabel = "Coba lagi",
+                                actionLabel = stringResource(R.string.tj_retry),
                                 onAction = onRefresh,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
@@ -154,16 +163,16 @@ fun TeachingJournalContent(
                         state.isLoading && !hasAnyData -> item(key = "loading") { SkeletonList(rows = 4) }
                         state.errorMessage != null && !hasAnyData -> item(key = "error") {
                             ErrorState(
-                                title = "Jurnal belum bisa dimuat",
-                                body = state.errorMessage,
+                                title = stringResource(R.string.tj_error),
+                                body = state.errorMessage.asString(),
                                 onRetry = onRefresh,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
                         }
                         items.isEmpty() -> item(key = "empty") {
                             EmptyState(
-                                title = if (today) "Tidak ada jadwal mengajar hari ini" else "Belum ada jurnal pada periode ini",
-                                body = if (today) "Jurnal diisi per jam pelajaran sesuai jadwal Anda." else "Jurnal yang Anda kirim akan muncul di sini.",
+                                title = stringResource(if (today) R.string.th_no_lessons else R.string.tj_empty_period),
+                                body = stringResource(if (today) R.string.tj_empty_today_body else R.string.tj_empty_period_body),
                                 icon = Icons.AutoMirrored.Outlined.MenuBook,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
@@ -191,13 +200,13 @@ private fun TodayProgress(state: JournalMobileUiState, modifier: Modifier = Modi
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Jurnal hari ini", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
-                    Text("${c.filledCount} dari ${c.totalScheduled} jam terisi", style = SistaTheme.typography.titleMedium)
+                    Text(stringResource(R.string.tj_today_label), style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
+                    Text(stringResource(R.string.tj_filled, c.filledCount, c.totalScheduled), style = SistaTheme.typography.titleMedium)
                 }
                 if (missing == 0) {
-                    StatusPill("Lengkap", StatusTone.Success)
+                    StatusPill(stringResource(R.string.tj_complete), StatusTone.Success)
                 } else {
-                    StatusPill("$missing belum diisi", StatusTone.Warning)
+                    StatusPill(stringResource(R.string.tj_missing, missing), StatusTone.Warning)
                 }
             }
             LinearProgressIndicator(
@@ -218,11 +227,12 @@ private fun TodayProgress(state: JournalMobileUiState, modifier: Modifier = Modi
 private fun JournalCard(item: JournalScheduleItem, showDate: Boolean, onFill: () -> Unit, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable(item.id) { mutableStateOf(false) }
     val (label, tone) = journalState(item)
+    val stateText = stringResource(if (expanded) R.string.tj_expanded else R.string.tj_collapsed)
     SistaCard(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize()
-            .semantics { if (item.isFilled) stateDescription = if (expanded) "Rincian terbuka" else "Rincian tertutup" },
+            .semantics { if (item.isFilled) stateDescription = stateText },
         onClick = if (item.isFilled) ({ expanded = !expanded }) else onFill,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -231,20 +241,21 @@ private fun JournalCard(item: JournalScheduleItem, showDate: Boolean, onFill: ()
                     Text(item.subject, style = SistaTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
                         listOfNotNull(
-                            item.date?.takeIf { showDate }?.let(::journalDate),
-                            "Kelas ${item.className}",
-                            item.timeSlot,
+                            item.date?.takeIf { showDate }?.let { journalDate(it) },
+                            stringResource(R.string.th_class, item.className),
+                            item.timeRange,
+                            stringResource(R.string.tj_period, item.jamKe),
                         ).joinToString(" · "),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
                 }
                 Spacer(Modifier.width(Spacing.sm))
-                StatusPill(label, tone)
+                StatusPill(stringResource(label), tone)
             }
             if (item.isFilled) {
                 Text(
-                    item.topic?.takeIf { it.isNotBlank() } ?: "Tanpa materi",
+                    item.topic?.takeIf { it.isNotBlank() } ?: stringResource(R.string.tj_no_topic),
                     style = SistaTheme.typography.bodyMedium,
                     maxLines = if (expanded) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis,
@@ -252,7 +263,11 @@ private fun JournalCard(item: JournalScheduleItem, showDate: Boolean, onFill: ()
                 if (expanded) JournalDetails(item)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Hadir ${item.attendancePresent ?: "–"} · Tidak hadir ${item.attendanceAbsent ?: "–"}",
+                        stringResource(
+                            R.string.tj_attendance,
+                            item.attendancePresent?.let { localDecimal(it.toDouble()) } ?: "–",
+                            item.attendanceAbsent?.let { localDecimal(it.toDouble()) } ?: "–",
+                        ),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
@@ -264,7 +279,7 @@ private fun JournalCard(item: JournalScheduleItem, showDate: Boolean, onFill: ()
                     )
                 }
             } else {
-                SistaButton("Isi jurnal", onFill, leadingIcon = Icons.Outlined.EditNote, fullWidth = true, variant = ButtonVariant.Primary)
+                SistaButton(stringResource(R.string.tj_fill), onFill, leadingIcon = Icons.Outlined.EditNote, fullWidth = true, variant = ButtonVariant.Primary)
             }
         }
     }
@@ -274,10 +289,10 @@ private fun JournalCard(item: JournalScheduleItem, showDate: Boolean, onFill: ()
 private fun JournalDetails(item: JournalScheduleItem) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         HorizontalDivider(color = SistaTheme.colors.outlineVariant)
-        Detail("Metode", item.method)
-        Detail("Kegiatan pembelajaran", item.media)
-        Detail("Kendala", item.notes)
-        Detail("Catatan & tindak lanjut", item.followUp)
+        Detail(stringResource(R.string.tj_method), item.method)
+        Detail(stringResource(R.string.tj_activity), item.media)
+        Detail(stringResource(R.string.tj_obstacles), item.notes)
+        Detail(stringResource(R.string.tj_notes), item.followUp)
     }
 }
 
@@ -291,26 +306,20 @@ private fun Detail(label: String, value: String?) {
 }
 
 /** The pill: whether today's slot is still empty, else the journal's review status. */
-private fun journalState(item: JournalScheduleItem): Pair<String, StatusTone> =
-    if (!item.isFilled) "Belum diisi" to StatusTone.Warning else journalReviewStatus(item.status)
+private fun journalState(item: JournalScheduleItem): Pair<Int, StatusTone> =
+    if (!item.isFilled) R.string.tj_not_filled to StatusTone.Warning else journalReviewStatus(item.status)
 
 /**
  * `teaching_journals.status` is draft → submitted → reviewed. The app files
  * drafts; submitting for review happens in the web's Jurnal Mengajar.
  */
-internal fun journalReviewStatus(status: String?): Pair<String, StatusTone> = when (status?.lowercase()) {
-    "draft" -> "Draf" to StatusTone.Warning
-    "submitted" -> "Menunggu review" to StatusTone.Info
-    "reviewed" -> "Sudah direview" to StatusTone.Success
-    else -> "Terisi" to StatusTone.Neutral
+internal fun journalReviewStatus(status: String?): Pair<Int, StatusTone> = when (status?.lowercase()) {
+    "draft" -> R.string.tj_draft to StatusTone.Warning
+    "submitted" -> R.string.tj_submitted to StatusTone.Info
+    "reviewed" -> R.string.tj_reviewed to StatusTone.Success
+    else -> R.string.tj_filed to StatusTone.Neutral
 }
 
-private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
-
-/** "2026-09-25" → "25 Sep". */
-internal fun journalDate(iso: String): String {
-    val parts = iso.take(10).split("-")
-    val month = parts.getOrNull(1)?.toIntOrNull()?.let { MONTHS.getOrNull(it - 1) }
-    val day = parts.getOrNull(2)?.toIntOrNull()
-    return if (month != null && day != null) "$day $month" else iso
-}
+/** "2026-09-25" → "25 Sep" in the app's language; the text itself when it is not a date. */
+internal fun journalDate(iso: String, locale: Locale = displayLocale()): String =
+    runCatching { LocalDate.parse(iso.take(10)).format(DateTimeFormatter.ofPattern("d MMM", locale)) }.getOrDefault(iso)

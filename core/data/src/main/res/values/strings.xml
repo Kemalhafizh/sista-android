@@ -12,4 +12,20 @@
     <string name="schedule_load_failed">Jadwal pelajaran belum bisa dimuat (kode %1$d).</string>
     <string name="notifications_load_failed">Notifikasi belum bisa dimuat (kode %1$d).</string>
     <string name="home_context_load_failed">Info beranda belum bisa dimuat (kode %1$d).</string>
+
+    <!-- Guru: kelas, jurnal, penilaian harian -->
+    <string name="teacher_classes_load_failed">Daftar kelas belum bisa dimuat (kode %1$d).</string>
+    <string name="class_students_load_failed">Daftar siswa kelas belum bisa dimuat (kode %1$d).</string>
+    <string name="class_attendance_save_failed">Presensi kelas belum tersimpan (kode %1$d).</string>
+    <string name="teaching_schedule_load_failed">Jadwal mengajar belum bisa dimuat (kode %1$d).</string>
+    <string name="journals_load_failed">Jurnal mengajar belum bisa dimuat (kode %1$d).</string>
+    <string name="journal_save_failed">Jurnal belum tersimpan (kode %1$d).</string>
+    <string name="assessments_load_failed">Daftar penilaian harian belum bisa dimuat (kode %1$d).</string>
+    <string name="score_sheet_load_failed">Daftar nilai belum bisa dimuat (kode %1$d).</string>
+    <string name="assessment_create_failed">Penilaian belum bisa dibuat (kode %1$d).</string>
+    <string name="scores_save_failed">Nilai siswa belum tersimpan (kode %1$d).</string>
+    <string name="remedial_auto_failed">Remedial otomatis belum bisa dijalankan (kode %1$d).</string>
+    <string name="remedial_auto_done">Remedial otomatis sudah dijalankan.</string>
+    <string name="remedials_load_failed">Daftar remedial belum bisa dimuat (kode %1$d).</string>
+    <string name="assessment_history_load_failed">Riwayat penilaian belum bisa dimuat (kode %1$d).</string>
 </resources>

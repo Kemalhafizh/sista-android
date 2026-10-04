@@ -54,10 +54,12 @@ sealed class Screen(val route: String, val title: String = "") {
     // Teacher Screens
     object TeacherDashboard : Screen("teacher_dashboard", "Dashboard Guru")
     object TeacherAttendance : Screen("teacher_attendance/{classroomId}/{scheduleId}/{className}", "Presensi Kelas") {
+        /** A class without a name travels as [NO_CLASS_NAME]: an empty path segment would not match the route. */
         fun createRoute(classroomId: Long, scheduleId: Long, className: String): String {
-            val encClass = URLEncoder.encode(className, StandardCharsets.UTF_8.toString())
+            val encClass = URLEncoder.encode(className.ifBlank { NO_CLASS_NAME }, StandardCharsets.UTF_8.toString())
             return "teacher_attendance/$classroomId/$scheduleId/$encClass"
         }
+        const val NO_CLASS_NAME = "-"
     }
 
     // Parent Screens

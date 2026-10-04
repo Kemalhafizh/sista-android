@@ -1,11 +1,9 @@
 package com.sultanagung1.sista.ui.teacher
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.sultanagung1.sista.core.ui.text.UiText
 import com.sultanagung1.sista.data.model.JournalScheduleItem
 import org.junit.Rule
 import org.junit.Test
@@ -24,7 +22,7 @@ class TeachingJournalScreenshotTest {
     val compose = createComposeRule()
 
     private val filled = JournalScheduleItem(
-        id = "sched-1", timeSlot = "07:00–08:30 · Jam ke-1", subject = "Fisika", className = "XI MIPA 1",
+        id = "sched-1", timeRange = "07:00–08:30", subject = "Fisika", className = "XI MIPA 1",
         isFilled = true, subjectId = 5, classroomId = 21, jamKe = 1, date = "2026-09-28",
         topic = "Gerak parabola: komponen kecepatan dan titik tertinggi", method = "Diskusi kelompok",
         media = "Apersepsi lempar bola, diskusi LKPD, presentasi tiap kelompok.",
@@ -32,20 +30,20 @@ class TeachingJournalScreenshotTest {
         followUp = "Rencana Tindak Lanjut: LKPD dilanjutkan pertemuan berikutnya.", isEditable = false, status = "draft",
     )
     private val empty1 = JournalScheduleItem(
-        id = "sched-2", timeSlot = "08:30–10:00 · Jam ke-2", subject = "Fisika", className = "XI MIPA 2",
+        id = "sched-2", timeRange = "08:30–10:00", subject = "Fisika", className = "XI MIPA 2",
         isFilled = false, subjectId = 5, classroomId = 22, jamKe = 2, date = "2026-09-28",
     )
-    private val empty2 = empty1.copy(id = "sched-3", timeSlot = "10:15–11:45 · Jam ke-3", className = "XI MIPA 3", classroomId = 23, jamKe = 3)
+    private val empty2 = empty1.copy(id = "sched-3", timeRange = "10:15–11:45", className = "XI MIPA 3", classroomId = 23, jamKe = 3)
 
     private val week = listOf(
-        filled.copy(id = "entry-a", date = "2026-09-25", className = "XI MIPA 2", topic = "Hukum Newton II", timeSlot = "Jam ke-3", status = "reviewed"),
-        filled.copy(id = "entry-b", date = "2026-09-24", className = "X-4", topic = "Besaran dan satuan", timeSlot = "Jam ke-5", status = "submitted"),
-        filled.copy(id = "entry-c", date = "2026-09-24", className = "XI MIPA 1", topic = "Gerak lurus berubah beraturan", timeSlot = "Jam ke-1", status = "draft"),
+        filled.copy(id = "entry-a", date = "2026-09-25", className = "XI MIPA 2", topic = "Hukum Newton II", timeRange = null, jamKe = 3, status = "reviewed"),
+        filled.copy(id = "entry-b", date = "2026-09-24", className = "X-4", topic = "Besaran dan satuan", timeRange = null, jamKe = 5, status = "submitted"),
+        filled.copy(id = "entry-c", date = "2026-09-24", className = "XI MIPA 1", topic = "Gerak lurus berubah beraturan", timeRange = null, jamKe = 1, status = "draft"),
     )
 
     private fun list(name: String, state: JournalMobileUiState, dark: Boolean = false) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            AppLocaleContent(dark) {
                 TeachingJournalContent(state, refreshing = false, onSelectPeriod = {}, onRefresh = {}, onFill = {}, onNavigateBack = {})
             }
         }
@@ -60,15 +58,21 @@ class TeachingJournalScreenshotTest {
 
     @Test fun listWeek() = list("week", today.copy(selectedTab = 1))
 
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1400dp-xhdpi")
+    fun listTodayArabic() = list("today_ar", today)
+
+    @Test @Config(qualifiers = "en-w400dp-h1400dp-xhdpi")
+    fun listWeekEnglish() = list("week_en", today.copy(selectedTab = 1))
+
     @Test fun listLoading() = list("loading", JournalMobileUiState(isLoading = true))
 
-    @Test fun listError() = list("error", JournalMobileUiState(errorMessage = "Tidak dapat terhubung ke server."))
+    @Test fun listError() = list("error", JournalMobileUiState(errorMessage = UiText.Raw("Tidak dapat terhubung ke server.")))
 
     @Test fun listEmptyMonth() = list("empty", JournalMobileUiState(todaySchedule = listOf(empty1), selectedTab = 2))
 
-    private fun form(name: String, schedule: JournalScheduleItem?, draft: JournalDraft, errors: Boolean = false, error: String? = null) {
+    private fun form(name: String, schedule: JournalScheduleItem?, draft: JournalDraft, errors: Boolean = false, error: UiText? = null) {
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+            AppLocaleContent {
                 JournalFormContent(
                     schedule = schedule,
                     loading = false,
@@ -102,7 +106,7 @@ class TeachingJournalScreenshotTest {
             objectivesMet = false,
             followUp = "Remedial untuk 4 siswa pada pertemuan berikutnya.",
         ),
-        error = "Tahun akademik aktif tidak ditemukan",
+        error = UiText.Raw("Tahun akademik aktif tidak ditemukan"),
     )
 
     @Test fun formFiledReadOnly() = form(
@@ -112,4 +116,10 @@ class TeachingJournalScreenshotTest {
     )
 
     @Test fun formSlotMissing() = form("not_found", null, JournalDraft())
+
+    @Test @Config(qualifiers = "en-w400dp-h1400dp-xhdpi")
+    fun formMissingFieldsEnglish() = form("missing_en", empty1, JournalDraft(topic = "Newton's third law", method = "Practical work", present = "31"), errors = true)
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1400dp-xhdpi")
+    fun formBlankArabic() = form("blank_ar", empty1, JournalDraft())
 }
