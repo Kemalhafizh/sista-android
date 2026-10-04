@@ -6,11 +6,12 @@ import androidx.compose.ui.graphics.luminance
 
 /**
  * Design system v2 inside the current app theme: follows the light/dark
- * choice the user made in Settings (ThemeManager), not only the system's.
+ * choice the user made in Settings (ThemeManager), not only the system's,
+ * plus their display preferences (true black, high contrast, dyslexia).
  * Used by every rebuilt surface until the whole app runs on SistaTheme.
  */
 @Composable
 fun ShellTheme(content: @Composable () -> Unit) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    SistaTheme(darkTheme = dark, content = content)
+    SistaTheme(darkTheme = dark, preferences = LocalDisplayPreferences.current, content = content)
 }

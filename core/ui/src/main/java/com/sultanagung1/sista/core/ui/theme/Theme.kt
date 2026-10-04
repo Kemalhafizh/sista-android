@@ -41,14 +41,15 @@ object Spacing {
 @Composable
 fun SistaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    preferences: DisplayPreferences = DisplayPreferences(),
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalExtendedColors provides if (darkTheme) DarkExtendedColors else LightExtendedColors,
     ) {
         MaterialTheme(
-            colorScheme = if (darkTheme) DarkColors else LightColors,
-            typography = SistaTypography,
+            colorScheme = colorsFor(darkTheme, preferences),
+            typography = typographyFor(preferences),
             shapes = SistaShapes,
             content = content,
         )

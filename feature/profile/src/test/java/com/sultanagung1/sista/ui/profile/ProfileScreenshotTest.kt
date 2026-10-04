@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -11,6 +12,8 @@ import com.sultanagung1.sista.core.accessibility.AppThemeMode
 import com.sultanagung1.sista.core.display.DisplayCapabilities
 import com.sultanagung1.sista.core.display.RefreshRateMode
 import com.sultanagung1.sista.core.security.DeviceIntegrityReport
+import com.sultanagung1.sista.core.ui.theme.DisplayPreferences
+import com.sultanagung1.sista.core.ui.theme.LocalDisplayPreferences
 import com.sultanagung1.sista.data.model.MeAcademicYear
 import com.sultanagung1.sista.data.model.MeChild
 import com.sultanagung1.sista.data.model.MeClassroom
@@ -56,13 +59,17 @@ class ProfileScreenshotTest {
         children = listOf(MeChild("u1", "Nadia Putri Rahmawati", "XI MIPA 2"), MeChild("u2", "Raka Pratama", "X IPS 1")),
     )
 
-    private fun capture(name: String, dark: Boolean = false, content: @Composable () -> Unit) {
-        compose.setContent { MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) { content() } }
+    private fun capture(name: String, dark: Boolean = false, display: DisplayPreferences = DisplayPreferences(), content: @Composable () -> Unit) {
+        compose.setContent {
+            CompositionLocalProvider(LocalDisplayPreferences provides display) {
+                MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) { content() }
+            }
+        }
         compose.onRoot().captureRoboImage("screenshots/$name.png")
     }
 
     private fun profile(name: String, state: ProfileUiState, dark: Boolean = false, theme: AppThemeMode = AppThemeMode.SYSTEM) =
-        capture("profile_$name", dark) {
+        capture("profile_$name", dark, DisplayPreferences(amoledBlack = theme == AppThemeMode.AMOLED_BLACK)) {
             ProfileContent(
                 state = state, sessionName = "Nadia Putri Rahmawati", themeMode = theme, display = display,
                 appVersion = "1.4.0 (build 140)", canOpen = { true }, onRetry = {}, onNavigate = {}, onThemeMode = {},

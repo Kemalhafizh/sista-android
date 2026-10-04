@@ -21,7 +21,12 @@ class StudentProfileRepository(private val apiService: StudentProfileApiService)
             if (response.isSuccessful && response.body()?.data != null) {
                 emit(NetworkResult.Success(response.body()!!.data!!))
             } else {
-                emit(NetworkResult.Error("Gagal memuat profil siswa", response.code()))
+                emit(
+                    NetworkResult.Error(
+                        serverMessageOf(response.errorBody()?.string()) ?: "Profil siswa belum bisa dimuat (kode ${response.code()}).",
+                        response.code(),
+                    )
+                )
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))

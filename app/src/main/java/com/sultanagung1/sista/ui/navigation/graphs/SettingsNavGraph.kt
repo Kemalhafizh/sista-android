@@ -150,28 +150,14 @@ fun NavGraphBuilder.settingsNavGraph(
             type = NavType.LongType
             defaultValue = 0L
         })
-    ) { backStackEntry ->
+    ) {
+        // Which student comes from the route (read by StudentProfileViewModel);
+        // the server decides who may see it and answers 403/404 otherwise.
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
-            val studentId = backStackEntry.arguments?.getLong("studentId")
-            val isViewingOther = studentId != null && studentId > 0L
-            val isPrivileged = userRole.contains("teacher", ignoreCase = true) ||
-                    userRole.contains("guru", ignoreCase = true) ||
-                    userRole.contains("admin", ignoreCase = true) ||
-                    userRole.contains("kepsek", ignoreCase = true) ||
-                    userRole.contains("principal", ignoreCase = true) ||
-                    userRole.contains("superadmin", ignoreCase = true) ||
-                    userRole.contains("bk", ignoreCase = true)
-
-            if (isViewingOther && !isPrivileged) {
-                Box(Modifier.fillMaxSize())
-            } else {
-                val viewModel: StudentProfileViewModel = hiltViewModel()
-                StudentProfileComprehensiveScreen(
-                    studentId = if (studentId != null && studentId > 0) studentId else null,
-                    viewModel = viewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
+            StudentProfileComprehensiveScreen(
+                viewModel = hiltViewModel<StudentProfileViewModel>(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 

@@ -1,403 +1,128 @@
 package com.sultanagung1.sista.ui.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.PersonOff
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.motion.sulaoneSharedElement
-import androidx.compose.material.icons.Icons
-import com.sultanagung1.sista.data.model.*
+import com.sultanagung1.sista.core.ui.component.Avatar
+import com.sultanagung1.sista.core.ui.component.EmptyState
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.FilterChipRow
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatTile
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.data.model.StudentProfile360Data
 
+/** A student's academic, ibadah, discipline, activity and health records, as the school has them. */
 @Composable
 fun StudentProfileComprehensiveScreen(
-    studentId: Long? = null,
     viewModel: StudentProfileViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val tabs = listOf("Akademik", "Ibadah & Tahfidz", "Disiplin", "Prestasi", "Kesehatan")
+    val state by viewModel.uiState.collectAsState()
+    StudentProfileContent(state, onRetry = viewModel::load, onTab = viewModel::selectTab, onNavigateBack = onNavigateBack)
+}
 
-    LaunchedEffect(studentId) {
-        viewModel.loadProfile(studentId)
-    }
-
-    val profile = uiState.profile ?: StudentProfile360Data()
-
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Profil Siswa 360°",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                // Profile Header Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Emerald800)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Emerald900, Emerald700)
-                                )
+/** The 360 profile without a ViewModel, for previews and screenshots. */
+@Composable
+fun StudentProfileContent(
+    state: StudentProfileUiState,
+    onRetry: () -> Unit,
+    onTab: (ProfileTab) -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    ShellTheme {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = { SistaTopBar(title = "Profil lengkap", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            val profile = state.profile
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("student_profile_root"),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                when {
+                    profile == null && state.errorMessage != null -> item(key = "error") {
+                        ErrorState(title = "Profil belum bisa dimuat", body = state.errorMessage, onRetry = onRetry, icon = Icons.Outlined.PersonOff)
+                    }
+                    profile == null -> item(key = "loading") { SkeletonList(rows = 6, modifier = Modifier.padding(top = Spacing.sm)) }
+                    else -> {
+                        item(key = "header") { Header(profile) }
+                        item(key = "tabs") {
+                            FilterChipRow(
+                                options = ProfileTab.entries,
+                                selected = state.tab,
+                                onSelect = onTab,
+                                label = { it.label },
+                                contentPadding = PaddingValues(vertical = Spacing.sm),
                             )
-                            .padding(20.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Gold500.copy(alpha = 0.25f),
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .sulaoneSharedElement(key = "student_avatar")
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = null,
-                                        tint = Gold400,
-                                        modifier = Modifier.size(38.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    profile.biodata.name,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    "${profile.biodata.className ?: "-"} • NISN ${profile.biodata.nisn ?: "-"}",
-                                    fontSize = 12.sp,
-                                    color = Emerald100
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Gold600.copy(alpha = 0.25f)
-                                ) {
-                                    Text(
-                                        "Kategori Siswa: ${profile.disciplineSummary.category}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Gold400,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
+                        }
+                        when (state.tab) {
+                            ProfileTab.Academic -> academic(profile)
+                            ProfileTab.Ibadah -> ibadah(profile)
+                            ProfileTab.Discipline -> discipline(profile)
+                            ProfileTab.Activities -> activities(profile)
+                            ProfileTab.Health -> health(profile)
                         }
                     }
                 }
             }
-
-            // Scrollable Tab Row
-            item {
-                ScrollableTabRow(
-                    selectedTabIndex = uiState.selectedTab,
-                    edgePadding = 0.dp,
-                    containerColor = Color.Transparent,
-                    contentColor = Emerald700,
-                    divider = {}
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = uiState.selectedTab == index,
-                            onClick = { viewModel.selectTab(index) },
-                            text = {
-                                Text(
-                                    title,
-                                    fontWeight = if (uiState.selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-            when (uiState.selectedTab) {
-                0 -> item { AcademicSummarySection(profile = profile) }
-                1 -> item { IbadahSummarySection(profile = profile) }
-                2 -> item { DisciplineSummarySection(profile = profile) }
-                3 -> item { AchievementsAndEkskulSection(profile = profile) }
-                4 -> item { HealthSummarySection(profile = profile) }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(30.dp))
-            }
         }
     }
 }
 
 @Composable
-fun AcademicSummarySection(profile: StudentProfile360Data) {
-    val acad = profile.academicSummary
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ProfileInfoCard(
-                title = "Rata-Rata Nilai",
-                value = "${acad.averageScore}",
-                subtitle = "Skala 100",
-                icon = Icons.Default.Grade,
-                color = Emerald700,
-                modifier = Modifier.weight(1f)
-            )
-            ProfileInfoCard(
-                title = "Peringkat Kelas",
-                value = "#${acad.rankInClass}",
-                subtitle = "Dari ${acad.totalClassStudents} Siswa",
-                icon = Icons.Default.EmojiEvents,
-                color = Gold600,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Analisis Minat & Mata Pelajaran", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ThumbUp, contentDescription = null, tint = Emerald700, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Paling Unggul: ", fontSize = 12.sp, color = Slate500)
-                    Text(acad.strongestSubject ?: "Belum ada data", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Emerald800)
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = AccentAmber, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Perlu Ditingkatkan: ", fontSize = 12.sp, color = Slate500)
-                    Text(acad.improvementNeeded ?: "Belum ada data", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AccentAmber)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun IbadahSummarySection(profile: StudentProfile360Data) {
-    val ibd = profile.ibadahSummary
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Capaian Tahfidz Al-Qur'an", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text("${ibd.tahfidzJuzCompleted} / ${ibd.targetJuz} Juz", fontWeight = FontWeight.Bold, color = Emerald700)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    progress = { ibd.tahfidzProgressPercent / 100f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = Emerald600,
-                    trackColor = Emerald100
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Hafalan Saat Ini: ${ibd.currentSurah ?: "Belum ada setoran tercatat"}", fontSize = 12.sp, color = Slate500)
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ProfileInfoCard(
-                title = "Sholat Jamaah",
-                value = "${ibd.sholatJamaahPercent}%",
-                subtitle = "Di Masjid Sekolah",
-                icon = Icons.Default.Mosque,
-                color = Emerald700,
-                modifier = Modifier.weight(1f)
-            )
-            ProfileInfoCard(
-                title = "Streak Mutaba'ah",
-                value = "${ibd.mutabaahWeeklyStreak} Mgg",
-                subtitle = "Konsistensi Harian",
-                icon = Icons.Default.Whatshot,
-                color = AccentAmber,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-fun DisciplineSummarySection(profile: StudentProfile360Data) {
-    val dsp = profile.disciplineSummary
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ProfileInfoCard(
-                title = "Poin Kebaikan (+)",
-                value = "+${dsp.totalPositivePoints}",
-                subtitle = "Aktivitas Positif",
-                icon = Icons.Default.Star,
-                color = Emerald700,
-                modifier = Modifier.weight(1f)
-            )
-            ProfileInfoCard(
-                title = "Poin Pelanggaran (-)",
-                value = "-${dsp.totalViolationPoints}",
-                subtitle = "Pelanggaran Tatib",
-                icon = Icons.Default.ErrorOutline,
-                color = AccentRose,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Status Kedisiplinan & Integritas", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Poin Bersih (Netto): ${dsp.netPoints} Poin", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Text("Sanksi / Pembinaan Aktif: ${dsp.activeSanctions}", fontSize = 13.sp, color = if (dsp.activeSanctions == 0) Emerald700 else AccentRose)
-            }
-        }
-    }
-}
-
-@Composable
-fun AchievementsAndEkskulSection(profile: StudentProfile360Data) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Prestasi & Penghargaan", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        profile.achievementList.forEach { ach ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.MilitaryTech, contentDescription = null, tint = Gold600, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(ach.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Tingkat ${ach.level} • ${ach.year ?: "-"}", fontSize = 11.sp, color = Slate500)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-        Text("Ekstrakurikuler & Organisasi", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        profile.extracurricularList.forEach { eks ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Groups, contentDescription = null, tint = Emerald700, modifier = Modifier.size(22.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(eks.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("${eks.role} • Bergabung ${eks.joinedYear}", fontSize = 11.sp, color = Slate500)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun HealthSummarySection(profile: StudentProfile360Data) {
-    val hlt = profile.healthSummary
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ProfileInfoCard(
-                title = "Golongan Darah",
-                value = hlt.bloodType ?: "-",
-                subtitle = "Data UKS",
-                icon = Icons.Default.Bloodtype,
-                color = AccentRose,
-                modifier = Modifier.weight(1f)
-            )
-            ProfileInfoCard(
-                title = "Tinggi / Berat",
-                value = if (hlt.heightCm != null && hlt.weightKg != null) "${hlt.heightCm}cm / ${hlt.weightKg}kg" else "Belum tercatat",
-                subtitle = "BMI Ideal",
-                icon = Icons.Default.AccessibilityNew,
-                color = Emerald700,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Rekam Medis & Kunjungan UKS", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Total Kunjungan UKS: ${hlt.totalUksVisits} Kali", fontSize = 12.sp)
-                Text("Kunjungan Terakhir: ${hlt.lastVisitDate ?: "Belum pernah"}", fontSize = 12.sp, color = Slate500)
-                Spacer(modifier = Modifier.height(4.dp))
+private fun Header(profile: StudentProfile360Data) {
+    val bio = profile.biodata
+    val name = bio.name?.takeIf { it.isNotBlank() }
+    SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Avatar(name ?: "?", size = 56.dp, modifier = Modifier.sulaoneSharedElement(key = "student_avatar"))
+            Spacer(Modifier.width(Spacing.lg))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+                Text(name ?: MISSING, style = SistaTheme.typography.titleLarge)
                 Text(
-                    "Catatan Alergi: ${hlt.allergies.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "Tidak ada catatan alergi"}",
-                    fontSize = 12.sp,
-                    color = Slate500
+                    listOf("Kelas ${bio.className ?: MISSING}", "NISN ${bio.nisn ?: MISSING}").joinToString(" · "),
+                    style = SistaTheme.typography.bodyMedium,
+                    color = SistaTheme.colors.onSurfaceVariant,
                 )
             }
         }
@@ -405,26 +130,149 @@ fun HealthSummarySection(profile: StudentProfile360Data) {
 }
 
 @Composable
-fun ProfileInfoCard(
-    title: String,
-    value: String,
-    subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(title, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Slate700)
-            Text(subtitle, fontSize = 10.sp, color = Slate400)
+private fun TileRow(vararg tiles: Triple<String, String, String?>) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        tiles.forEach { (label, value, supporting) ->
+            StatTile(label = label, value = value, supporting = supporting, modifier = Modifier.weight(1f))
         }
+    }
+}
+
+@Composable
+private fun FactCard(vararg rows: Pair<String, String>) {
+    SistaCard(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            rows.forEach { (label, value) ->
+                Row {
+                    Text(label, style = SistaTheme.typography.bodyMedium, color = SistaTheme.colors.onSurfaceVariant, modifier = Modifier.width(150.dp))
+                    Text(value, style = SistaTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+private fun LazyListScope.academic(profile: StudentProfile360Data) {
+    val a = profile.academicSummary
+    item(key = "academic_tiles") {
+        TileRow(
+            Triple("Rata-rata nilai", idNumber(a.averageScore), "Tahun ajaran ini, skala 100"),
+            Triple("Peringkat kelas", rankLabel(a.rankInClass, null), a.totalClassStudents?.takeIf { a.rankInClass != null }?.let { "dari $it siswa" }),
+        )
+    }
+    item(key = "academic_subjects") {
+        FactCard(
+            "Paling unggul" to (a.strongestSubject ?: MISSING),
+            "Perlu ditingkatkan" to (a.improvementNeeded ?: MISSING),
+            "Rata-rata rapor" to (a.trend.takeIf { it.isNotEmpty() }?.joinToString(" → ") { idNumber(it) } ?: MISSING),
+        )
+    }
+}
+
+private fun LazyListScope.ibadah(profile: StudentProfile360Data) {
+    val i = profile.ibadahSummary
+    item(key = "tahfidz") {
+        SistaCard(modifier = Modifier.fillMaxWidth()) {
+            Text("Tahfidz", style = SistaTheme.typography.titleMedium)
+            val juz = juzLabel(i.tahfidzJuzCompleted, i.targetJuz)
+            if (juz == null) {
+                Text(
+                    "Belum ada target hafalan untuk tahun ajaran ini.",
+                    style = SistaTheme.typography.bodyMedium,
+                    color = SistaTheme.colors.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+            } else {
+                Text(juz, style = SistaTheme.typography.headlineSmall, color = SistaTheme.colors.primary, modifier = Modifier.padding(top = Spacing.xs))
+                i.tahfidzProgressPercent?.let {
+                    LinearProgressIndicator(progress = { it / 100f }, modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm))
+                }
+            }
+            Text(
+                "Setoran terakhir: ${i.currentSurah ?: MISSING}",
+                style = SistaTheme.typography.bodySmall,
+                color = SistaTheme.colors.onSurfaceVariant,
+            )
+        }
+    }
+    item(key = "ibadah_tiles") {
+        TileRow(
+            Triple("Sholat berjamaah", percentLabel(i.sholatJamaahPercent), "Dari sholat yang tercatat, 30 hari"),
+            Triple("Mutaba'ah beruntun", streakLabel(i.mutabaahStreakDays), "Hari berturut-turut"),
+        )
+    }
+}
+
+private fun LazyListScope.discipline(profile: StudentProfile360Data) {
+    val d = profile.disciplineSummary
+    item(key = "discipline_status") {
+        SistaCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Status", style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                d.category?.let { StatusPill(it, if (it == "Aman") StatusTone.Success else StatusTone.Warning) } ?: Text(MISSING)
+            }
+            Text(
+                "Sanksi aktif: ${d.activeSanctions ?: MISSING}",
+                style = SistaTheme.typography.bodyMedium,
+                color = SistaTheme.colors.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.sm),
+            )
+        }
+    }
+    item(key = "discipline_tiles") {
+        TileRow(
+            Triple("Poin prestasi", signedPoints(d.totalPositivePoints, "+"), null),
+            Triple("Poin pelanggaran", signedPoints(d.totalViolationPoints, "−"), null),
+        )
+    }
+}
+
+private fun LazyListScope.activities(profile: StudentProfile360Data) {
+    item(key = "achievements_title") { Text("Prestasi", style = SistaTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm)) }
+    if (profile.achievementList.isEmpty()) {
+        item(key = "achievements_empty") { EmptyState(title = "Belum ada prestasi tervalidasi", icon = Icons.Outlined.EmojiEvents) }
+    }
+    items(profile.achievementList, key = { "ach_${it.title}_${it.year}" }) { a ->
+        SistaCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.Outlined.EmojiEvents, tone = StatusTone.Warning)
+                Spacer(Modifier.width(Spacing.md))
+                Column(Modifier.weight(1f)) {
+                    Text(a.title, style = SistaTheme.typography.titleSmall)
+                    Text(
+                        listOfNotNull(a.level?.let { "Tingkat $it" }, a.category, a.year?.toString()).joinToString(" · ").ifEmpty { MISSING },
+                        style = SistaTheme.typography.bodySmall,
+                        color = SistaTheme.colors.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+    item(key = "ekskul_title") { Text("Ekstrakurikuler", style = SistaTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.md)) }
+    if (profile.extracurricularList.isEmpty()) {
+        item(key = "ekskul_empty") { EmptyState(title = "Belum terdaftar di ekstrakurikuler", icon = Icons.Outlined.Groups) }
+    }
+    items(profile.extracurricularList, key = { "eks_${it.name}" }) { e ->
+        SistaCard(modifier = Modifier.fillMaxWidth()) {
+            Text(e.name, style = SistaTheme.typography.titleSmall)
+            Text(
+                listOfNotNull(e.role, e.joinedYear?.let { "sejak $it" }).joinToString(" · ").ifEmpty { MISSING },
+                style = SistaTheme.typography.bodySmall,
+                color = SistaTheme.colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun LazyListScope.health(profile: StudentProfile360Data) {
+    val h = profile.healthSummary
+    item(key = "health") {
+        FactCard(
+            "Golongan darah" to (h.bloodType ?: MISSING),
+            "Tinggi · berat" to bodyLabel(h.heightCm, h.weightKg),
+            "Alergi" to (h.allergies.filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "Tidak ada yang tercatat"),
+            "Kunjungan UKS" to (h.totalUksVisits?.let { "$it kali" } ?: MISSING),
+            "Kunjungan terakhir" to dateLabel(h.lastVisitDate),
+        )
     }
 }

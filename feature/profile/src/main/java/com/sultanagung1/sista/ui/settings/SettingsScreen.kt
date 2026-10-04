@@ -1,28 +1,54 @@
 package com.sultanagung1.sista.ui.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.AccessibilityNew
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import com.sultanagung1.sista.core.accessibility.AppLanguage
 import com.sultanagung1.sista.core.accessibility.AppThemeMode
-import com.sultanagung1.sista.core.accessibility.LocalAppStrings
-import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.SectionHeader
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaListItem
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
+import com.sultanagung1.sista.ui.navigation.Screen
+import com.sultanagung1.sista.ui.navigation.canOpen
+import com.sultanagung1.sista.ui.profile.themeLabel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Settings of this phone: theme, language, accessibility. Saved on the phone, for this app only. */
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
@@ -30,280 +56,123 @@ fun SettingsScreen(
     onNavigateToAccessibility: () -> Unit,
     onNavigateToBiometrics: () -> Unit,
     onNavigateToSecurity: () -> Unit = {},
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
-    val currentTheme by viewModel.currentTheme.collectAsState()
-    val currentLanguage by viewModel.currentLanguage.collectAsState()
-    val strings = LocalAppStrings.current
+    val theme by viewModel.currentTheme.collectAsState()
+    val language by viewModel.currentLanguage.collectAsState()
+    val capabilities = LocalCapabilityState.current
+    SettingsContent(
+        theme = theme,
+        language = language,
+        canOpen = { capabilities.canOpen(it) },
+        onTheme = viewModel::setTheme,
+        onLanguage = onNavigateToLanguage,
+        onAccessibility = onNavigateToAccessibility,
+        onBiometrics = onNavigateToBiometrics,
+        onSecurity = onNavigateToSecurity,
+        onNavigateBack = onNavigateBack,
+    )
+}
 
-    var showThemeDialog by remember { mutableStateOf(false) }
+/** Themes in the order they are offered; high contrast is a theme of its own too. */
+internal val SETTINGS_THEMES = listOf(
+    AppThemeMode.SYSTEM, AppThemeMode.LIGHT, AppThemeMode.DARK, AppThemeMode.AMOLED_BLACK, AppThemeMode.HIGH_CONTRAST,
+)
 
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = strings.settingsTitle,
-                subtitle = "Preferensi Bahasa, Tema & Aksesibilitas",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            // Theme Selector Direct Card
-            Text(
-                text = "TEMA WARNA APLIKASI",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
-            )
+internal fun themeHint(mode: AppThemeMode): String = when (mode) {
+    AppThemeMode.SYSTEM -> "Terang atau gelap mengikuti setelan HP"
+    AppThemeMode.LIGHT -> "Latar terang"
+    AppThemeMode.DARK -> "Latar gelap, nyaman di malam hari"
+    AppThemeMode.AMOLED_BLACK -> "Hitam murni; hemat baterai di layar OLED/AMOLED, tidak di LCD"
+    AppThemeMode.HIGH_CONTRAST -> "Teks dan garis lebih tegas"
+}
 
-            SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Mode Tampilan Aplikasi",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Perubahan tema langsung aktif seketika dengan transisi halus",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // 3-Pill Quick Segmented Buttons: Terang, Gelap, Sistem
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val themeOptions = listOf(
-                        Triple(AppThemeMode.LIGHT, "Terang", Icons.Default.LightMode),
-                        Triple(AppThemeMode.DARK, "Gelap", Icons.Default.DarkMode),
-                        Triple(AppThemeMode.SYSTEM, "Sistem", Icons.Default.BrightnessAuto)
-                    )
-
-                    themeOptions.forEach { (mode, label, icon) ->
-                        val isSelected = currentTheme == mode
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    viewModel.setTheme(mode)
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) Emerald700 else MaterialTheme.colorScheme.surfaceVariant,
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) Gold400 else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
+/** The settings page without a ViewModel, for previews and screenshots. */
+@Composable
+fun SettingsContent(
+    theme: AppThemeMode,
+    language: AppLanguage,
+    canOpen: (String) -> Boolean,
+    onTheme: (AppThemeMode) -> Unit,
+    onLanguage: () -> Unit,
+    onAccessibility: () -> Unit,
+    onBiometrics: () -> Unit,
+    onSecurity: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    ShellTheme {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = { SistaTopBar(title = "Pengaturan", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("settings_root"),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                item(key = "theme_header") { SectionHeader("Tema") }
+                item(key = "theme") {
+                    SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                        SETTINGS_THEMES.forEach { mode ->
+                            Row(
+                                Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 12.dp, horizontal = 4.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .selectable(selected = mode == theme, role = Role.RadioButton, onClick = { onTheme(mode) })
+                                    .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = label,
-                                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium),
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
-                                )
+                                RadioButton(selected = mode == theme, onClick = null)
+                                Spacer(Modifier.width(Spacing.md))
+                                Column(Modifier.weight(1f)) {
+                                    Text(themeLabel(mode), style = SistaTheme.typography.bodyLarge)
+                                    Text(themeHint(mode), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                                }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Extended Palette Options Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { showThemeDialog = true }
-                        .padding(vertical = 8.dp, horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Palette,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Tema Aktif: ${currentTheme.title}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                item(key = "general_header") { SectionHeader("Bahasa & aksesibilitas", Modifier.padding(top = Spacing.md)) }
+                item(key = "general") {
+                    SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                        SettingsRow(Icons.Outlined.Translate, "Bahasa", language.title, onLanguage)
+                        HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                        SettingsRow(Icons.Outlined.AccessibilityNew, "Aksesibilitas", "Ukuran teks, ramah disleksia, kontras tinggi", onAccessibility)
                     }
-                    Text(
-                        text = "Opsi Lainnya",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
-                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // General Preferences
-            Text(
-                text = "BAHASA & AKSESIBILITAS",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
-            )
-
-            SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                SettingsItem(
-                    icon = Icons.Default.Translate,
-                    title = strings.languageTitle,
-                    subtitle = "${currentLanguage.title} (${currentLanguage.nativeName})",
-                    onClick = onNavigateToLanguage
+                val security = listOfNotNull(
+                    Triple(Icons.Outlined.Fingerprint, "Kunci biometrik", onBiometrics).takeIf { canOpen(Screen.FaceEnrollment.route) },
+                    Triple(Icons.Outlined.Security, "Keamanan perangkat", onSecurity).takeIf { canOpen(Screen.SecuritySettings.route) },
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                SettingsItem(
-                    icon = Icons.Default.AccessibilityNew,
-                    title = strings.accessibilityTitle,
-                    subtitle = "Ukuran teks, ramah disleksia & kontras tinggi",
-                    onClick = onNavigateToAccessibility
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Security & Hardware
-            Text(
-                text = "KEAMANAN & HARDWARE",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
-            )
-
-            SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                SettingsItem(
-                    icon = Icons.Default.Fingerprint,
-                    title = "Keamanan Sidik Jari (m-Banking)",
-                    subtitle = "Kunci aplikasi & otentikasi Keystore Vault",
-                    onClick = onNavigateToBiometrics
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-
-                SettingsItem(
-                    icon = Icons.Default.Security,
-                    title = "Keamanan & Integritas Perangkat",
-                    subtitle = "Audit Root, Anti-Cheat CBT, SHA-256 APK Hash",
-                    onClick = onNavigateToSecurity
-                )
+                if (security.isNotEmpty()) {
+                    item(key = "security_header") { SectionHeader("Keamanan", Modifier.padding(top = Spacing.md)) }
+                    item(key = "security") {
+                        SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                            security.forEachIndexed { index, (icon, title, onClick) ->
+                                if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                                SettingsRow(icon, title, null, onClick)
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
-
-    // Theme Picker Dialog
-    if (showThemeDialog) {
-        AlertDialog(
-            onDismissRequest = { showThemeDialog = false },
-            title = {
-                Text("Pilih Tema Aplikasi", fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Column {
-                    AppThemeMode.entries.forEach { mode ->
-                        val isSelected = mode == currentTheme
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    viewModel.setTheme(mode)
-                                    showThemeDialog = false
-                                }
-                                .padding(vertical = 10.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = mode.title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Emerald700 else MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = mode.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            if (isSelected) {
-                                Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Emerald700)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showThemeDialog = false }) {
-                    Text("Tutup")
-                }
-            }
-        )
     }
 }
 
 @Composable
-private fun SettingsItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-
-        Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Slate400)
-    }
+private fun SettingsRow(icon: ImageVector, title: String, subtitle: String?, onClick: () -> Unit) {
+    SistaListItem(
+        headline = title,
+        supporting = subtitle,
+        leading = { IconBadge(icon, tone = StatusTone.Neutral) },
+        trailing = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant) },
+        onClick = onClick,
+    )
 }
