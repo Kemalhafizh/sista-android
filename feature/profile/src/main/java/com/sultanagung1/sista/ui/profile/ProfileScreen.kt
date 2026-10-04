@@ -1,47 +1,83 @@
 package com.sultanagung1.sista.ui.profile
 
 import android.app.Activity
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import android.os.Build
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.R
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import com.sultanagung1.sista.core.accessibility.LocalAppStrings
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import com.sultanagung1.sista.core.accessibility.AppThemeMode
 import com.sultanagung1.sista.core.accessibility.ThemeManager
-import com.sultanagung1.sista.core.accessibility.sulaoneInteractiveTouchTarget
-import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.display.AdaptiveRefreshRateManager
+import com.sultanagung1.sista.core.display.DisplayCapabilities
 import com.sultanagung1.sista.core.display.RefreshRateMode
-import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
-import com.sultanagung1.sista.core.motion.springPressable
 import com.sultanagung1.sista.core.motion.sulaoneSharedElement
 import com.sultanagung1.sista.core.storage.SessionManager
-
+import com.sultanagung1.sista.core.ui.component.Avatar
+import com.sultanagung1.sista.core.ui.component.ButtonVariant
+import com.sultanagung1.sista.core.ui.component.FilterChipRow
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SectionHeader
+import com.sultanagung1.sista.core.ui.component.SistaButton
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaListItem
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonBlock
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.data.model.MeProfile
+import com.sultanagung1.sista.data.model.SchoolIdentity
+import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
+import com.sultanagung1.sista.ui.navigation.Screen
+import com.sultanagung1.sista.ui.navigation.canOpen
 
 /**
  * FASE 76.6: why true black helps, without overselling. OLED pixels showing
@@ -50,780 +86,374 @@ import com.sultanagung1.sista.core.storage.SessionManager
 internal const val AMOLED_BATTERY_NOTE =
     "Hitam pekat mematikan piksel di layar OLED/AMOLED, jadi lebih hemat baterai. Di layar LCD tampilannya saja yang berubah."
 
+/** The refresh-rate row: what this phone's screen can do and what is chosen. */
+data class DisplayChoice(val capabilities: DisplayCapabilities, val mode: RefreshRateMode)
+
+/**
+ * The signed-in account as the school records it (GET me), then the settings
+ * of this phone. Every role sees the same page; which rows appear depends on
+ * what the server sent and which routes this account may open.
+ */
 @Composable
 fun ProfileScreen(
+    viewModel: ProfileViewModel,
     sessionManager: SessionManager,
-    themeManager: ThemeManager? = null,
+    themeManager: ThemeManager,
+    onNavigate: (String) -> Unit,
+    onLogout: () -> Unit,
     onNavigateBack: (() -> Unit)? = null,
-    onNavigateToBiometrics: () -> Unit = {},
-    onNavigateToAnnouncements: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
-    onNavigateToDiagnostics: () -> Unit = {},
-    onNavigateToComprehensiveProfile: (() -> Unit)? = null,
-    onLogout: () -> Unit
 ) {
-    val userName by sessionManager.userNameFlow.collectAsState(initial = "Ahmad Kemal Hafizh")
-    val userRole by sessionManager.userRoleFlow.collectAsState(initial = "student")
-    val strings = LocalAppStrings.current
-    val haptics = rememberHapticFeedbackHelper()
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val borderColor = if (isDark) Slate800 else Slate200
-    val cardBg = if (isDark) MaterialTheme.colorScheme.surface else Color.White
-
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
-    var showRefreshRateDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val currentRefreshMode by AdaptiveRefreshRateManager.getStoredModeFlow(sessionManager)
+    val state by viewModel.uiState.collectAsState()
+    val sessionName by sessionManager.userNameFlow.collectAsState(initial = null)
+    val themeMode by themeManager.themeMode.collectAsState()
+    val refreshMode by AdaptiveRefreshRateManager.getStoredModeFlow(sessionManager)
         .collectAsState(initial = RefreshRateMode.ADAPTIVE_SMOOTH)
-    val displayCaps = remember { AdaptiveRefreshRateManager.detectCapabilities(context) }
-    val isAdminOrSuper = userRole?.contains("admin", ignoreCase = true) == true || userRole?.contains("superadmin", ignoreCase = true) == true
-
-    val roleBadge = when {
-        userRole?.contains("superadmin", ignoreCase = true) == true -> strings.superadminBadge
-        userRole?.contains("admin", ignoreCase = true) == true || userRole?.contains("kepsek", ignoreCase = true) == true -> strings.principalBadge
-        userRole?.contains("teacher", ignoreCase = true) == true || userRole?.contains("guru", ignoreCase = true) == true -> strings.teacherBadge
-        userRole?.contains("parent", ignoreCase = true) == true || userRole?.contains("ortu", ignoreCase = true) == true -> strings.parentBadge
-        else -> strings.studentActive
+    val context = LocalContext.current
+    val capabilities = LocalCapabilityState.current
+    val display = remember { AdaptiveRefreshRateManager.detectCapabilities(context) }
+    val appVersion = remember {
+        runCatching {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong()
+            appVersionLabel(info.versionName, code)
+        }.getOrNull()
     }
 
-    val cardTitle = when {
-        userRole?.contains("superadmin", ignoreCase = true) == true -> "KARTU IDENTITAS EKSEKUTIF"
-        userRole?.contains("admin", ignoreCase = true) == true || userRole?.contains("kepsek", ignoreCase = true) == true -> "KARTU IDENTITAS PIMPINAN"
-        userRole?.contains("teacher", ignoreCase = true) == true || userRole?.contains("guru", ignoreCase = true) == true -> "KARTU IDENTITAS PENDIDIK"
-        userRole?.contains("parent", ignoreCase = true) == true || userRole?.contains("ortu", ignoreCase = true) == true -> "KARTU IDENTITAS WALI MURID"
-        else -> "KARTU TANDA PELAJAR DIGITAL"
-    }
+    ProfileContent(
+        state = state,
+        sessionName = sessionName,
+        themeMode = themeMode,
+        display = DisplayChoice(display, refreshMode),
+        appVersion = appVersion,
+        canOpen = { capabilities.canOpen(it) },
+        onRetry = viewModel::load,
+        onNavigate = onNavigate,
+        onThemeMode = themeManager::setThemeMode,
+        onRefreshMode = { mode -> AdaptiveRefreshRateManager.saveMode(sessionManager, mode, context as? Activity) },
+        onLogout = onLogout,
+        onNavigateBack = onNavigateBack,
+    )
+}
 
-    val idNumberLabel = when {
-        userRole?.contains("superadmin", ignoreCase = true) == true -> "ID OTORITAS: YBWSA-001"
-        userRole?.contains("admin", ignoreCase = true) == true || userRole?.contains("kepsek", ignoreCase = true) == true -> "NIP: 197405121998031002"
-        userRole?.contains("teacher", ignoreCase = true) == true || userRole?.contains("guru", ignoreCase = true) == true -> "NIP: 198203152006042001"
-        userRole?.contains("parent", ignoreCase = true) == true || userRole?.contains("ortu", ignoreCase = true) == true -> "ID WALI: WM-2024-8891"
-        else -> "NISN: 0071829102 • Kelas XII MIPA 1"
-    }
-
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = strings.profileTab,
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(if (isDark) MaterialTheme.colorScheme.background else Slate50)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 1. Digital Institutional ID Card (SuperApp High-Fidelity Pass)
-            DigitalInstitutionalIdCard(
-                cardTitle = cardTitle,
-                userName = userName ?: "Pengguna Sulaone",
-                roleBadge = roleBadge,
-                idNumber = idNumberLabel,
-                userRole = userRole ?: "student",
-                isDark = isDark,
-                borderColor = borderColor,
-                cardBg = cardBg
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 2. Section: Keamanan & Preferensi Akun
-            ProfileSectionHeader(title = "Keamanan & Tampilan")
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = cardBg,
-                border = BorderStroke(0.5.dp, borderColor),
-                shadowElevation = 0.dp,
-                modifier = Modifier.fillMaxWidth()
+/** The profile page without a ViewModel, for previews and screenshots. */
+@Composable
+fun ProfileContent(
+    state: ProfileUiState,
+    sessionName: String?,
+    themeMode: AppThemeMode,
+    display: DisplayChoice?,
+    appVersion: String?,
+    canOpen: (String) -> Boolean,
+    onRetry: () -> Unit,
+    onNavigate: (String) -> Unit,
+    onThemeMode: (AppThemeMode) -> Unit,
+    onRefreshMode: (RefreshRateMode) -> Unit,
+    onLogout: () -> Unit,
+    onNavigateBack: (() -> Unit)?,
+) {
+    var dialog by rememberSaveable { mutableStateOf<ProfileDialog?>(null) }
+    ShellTheme {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = { SistaTopBar(title = "Profil", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("profile_root"),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    if (themeManager != null) {
-                        val currentThemeMode by themeManager.themeMode.collectAsState()
-                        val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
-                        val isDarkEffective = when (currentThemeMode) {
-                            com.sultanagung1.sista.core.accessibility.AppThemeMode.LIGHT -> false
-                            com.sultanagung1.sista.core.accessibility.AppThemeMode.DARK,
-                            com.sultanagung1.sista.core.accessibility.AppThemeMode.AMOLED_BLACK,
-                            com.sultanagung1.sista.core.accessibility.AppThemeMode.HIGH_CONTRAST -> true
-                            com.sultanagung1.sista.core.accessibility.AppThemeMode.SYSTEM -> isSystemDark
-                        }
+                item(key = "identity") { IdentityCard(state, sessionName, onRetry) }
 
+                val account = listOfNotNull(
+                    MenuEntry(Icons.Outlined.AccountCircle, "Profil lengkap", "Akademik, ibadah, kedisiplinan, dan kesehatan", Screen.StudentProfileComprehensive.createRoute())
+                        .takeIf { state.profile?.studentData != null },
+                    MenuEntry(Icons.Outlined.Notifications, "Notifikasi", "Kabar untuk akun ini", Screen.NotificationCenter.route),
+                    MenuEntry(Icons.Outlined.Campaign, "Pengumuman", "Pengumuman sekolah", Screen.AnnouncementFeed.route),
+                ).filter { canOpen(it.route) }
+                menuSection("account", "Akun", account, onNavigate)
+
+                val security = listOf(
+                    MenuEntry(Icons.Outlined.Fingerprint, "Kunci biometrik", "Masuk dengan sidik jari atau wajah di HP ini", Screen.FaceEnrollment.route),
+                    MenuEntry(Icons.Outlined.Security, "Keamanan perangkat", "Pemeriksaan root, emulator, dan debugging", Screen.SecuritySettings.route),
+                ).filter { canOpen(it.route) }
+                menuSection("security", "Keamanan", security, onNavigate)
+
+                item(key = "display_header") { SectionHeader("Tampilan", Modifier.padding(top = Spacing.md)) }
+                item(key = "display") {
+                    SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.sm)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    haptics.tapLight()
-                                    themeManager.toggleDarkLight(isDarkEffective)
-                                }
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(Emerald50),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isDarkEffective) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                    contentDescription = null,
-                                    tint = if (isDarkEffective) Gold700 else Emerald700,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Mode Gelap (Dark Mode)",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (isDarkEffective) "Tema gelap aktif (nyaman di mata)" else "Tema terang aktif (bersih & cerah)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            Switch(
-                                checked = isDarkEffective,
-                                onCheckedChange = { checked ->
-                                    haptics.tapLight()
-                                    themeManager.setThemeMode(
-                                        if (checked) com.sultanagung1.sista.core.accessibility.AppThemeMode.DARK
-                                        else com.sultanagung1.sista.core.accessibility.AppThemeMode.LIGHT
-                                    )
-                                },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Emerald700,
-                                    uncheckedThumbColor = Slate400,
-                                    uncheckedTrackColor = Slate200
-                                )
+                            IconBadge(Icons.Outlined.Palette, tone = StatusTone.Brand)
+                            Spacer(Modifier.width(Spacing.lg))
+                            Text("Tema", style = SistaTheme.typography.bodyLarge)
+                        }
+                        // High contrast is set under Aksesibilitas; show it as chosen there.
+                        FilterChipRow(
+                            options = if (themeMode in PROFILE_THEMES) PROFILE_THEMES else PROFILE_THEMES + themeMode,
+                            selected = themeMode,
+                            onSelect = onThemeMode,
+                            label = ::themeLabel,
+                            contentPadding = PaddingValues(horizontal = Spacing.lg),
+                        )
+                        if (themeMode == AppThemeMode.AMOLED_BLACK) {
+                            Text(
+                                AMOLED_BATTERY_NOTE,
+                                style = SistaTheme.typography.bodySmall,
+                                color = SistaTheme.colors.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
                             )
                         }
-
-                        // FASE 76.6: true-black AMOLED existed (AmoledColorScheme, pure
-                        // #000000) but was only reachable from a dialog in Settings, with a
-                        // vague "super hemat baterai" line. Offer it right where people turn
-                        // dark mode on, with an honest note on when it saves battery.
-                        val isAmoled = currentThemeMode == com.sultanagung1.sista.core.accessibility.AppThemeMode.AMOLED_BLACK
-                        val isHighContrast = currentThemeMode == com.sultanagung1.sista.core.accessibility.AppThemeMode.HIGH_CONTRAST
-                        if (isDarkEffective && !isHighContrast) {
-                            Column(modifier = Modifier.padding(start = 52.dp, bottom = 12.dp)) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    FilterChip(
-                                        selected = !isAmoled,
-                                        onClick = {
-                                            haptics.tapLight()
-                                            themeManager.setThemeMode(com.sultanagung1.sista.core.accessibility.AppThemeMode.DARK)
-                                        },
-                                        label = { Text("Gelap") }
-                                    )
-                                    FilterChip(
-                                        selected = isAmoled,
-                                        onClick = {
-                                            haptics.tapLight()
-                                            themeManager.setThemeMode(com.sultanagung1.sista.core.accessibility.AppThemeMode.AMOLED_BLACK)
-                                        },
-                                        label = { Text("Hitam Pekat") }
-                                    )
-                                }
-                                Text(
-                                    text = AMOLED_BATTERY_NOTE,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                        if (display != null) {
+                            HorizontalDivider(Modifier.padding(top = Spacing.sm), color = SistaTheme.colors.outlineVariant)
+                            MenuRow(
+                                MenuEntry(Icons.Outlined.Speed, "Laju penyegaran layar", "${display.capabilities.summaryText} · ${refreshModeLabel(display.mode)}", ""),
+                                onClick = { dialog = ProfileDialog.RefreshRate },
+                            )
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                        if (canOpen(Screen.Settings.route)) {
+                            HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                            MenuRow(
+                                MenuEntry(Icons.Outlined.Tune, "Bahasa & ukuran teks", "Bahasa, aksesibilitas, kontras tinggi", Screen.Settings.route),
+                                onClick = { onNavigate(Screen.Settings.route) },
+                            )
+                        }
                     }
-
-                    ModernProfileMenuItem(
-                        icon = Icons.Default.Fingerprint,
-                        iconTint = Emerald700,
-                        iconBg = Emerald50,
-                        title = strings.biometricSecurity,
-                        subtitle = "Kunci aplikasi & masuk instan dengan sidik jari",
-                        onClick = {
-                            haptics.tapLight()
-                            onNavigateToBiometrics()
-                        }
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-                    ModernProfileMenuItem(
-                        icon = Icons.Default.Speed,
-                        iconTint = Gold700,
-                        iconBg = Gold50,
-                        title = "Laju Penyegaran Layar (Refresh Rate)",
-                        subtitle = "Layar: ${displayCaps.summaryText} • ${currentRefreshMode.title.split(" (").first()}",
-                        onClick = {
-                            haptics.tapLight()
-                            showRefreshRateDialog = true
-                        }
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-                    ModernProfileMenuItem(
-                        icon = Icons.Default.BugReport,
-                        iconTint = AccentRose,
-                        iconBg = AccentRose.copy(alpha = 0.12f),
-                        title = "Pusat Diagnostik & Laporan Kendala",
-                        subtitle = "Status telemetri sistem, crash analytics & laporan IT",
-                        onClick = {
-                            haptics.tapLight()
-                            onNavigateToDiagnostics()
-                        }
-                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // 3. Section: Pengaturan & Multi-Role
-            ProfileSectionHeader(title = "Layanan & Preferensi")
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = cardBg,
-                border = BorderStroke(0.5.dp, borderColor),
-                shadowElevation = 0.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    ModernProfileMenuItem(
-                        icon = Icons.Default.Notifications,
-                        iconTint = AccentBlue,
-                        iconBg = AccentBlue.copy(alpha = 0.12f),
-                        title = strings.notificationsTitle,
-                        subtitle = "Pengumuman yayasan, jadwal sholat & KBM",
-                        onClick = {
-                            haptics.tapLight()
-                            onNavigateToAnnouncements()
+                val help = listOf(
+                    MenuEntry(Icons.Outlined.SystemUpdate, "Pembaruan aplikasi", appVersion?.let { "Terpasang $it" } ?: "Periksa versi terbaru", Screen.InAppUpdate.route),
+                    MenuEntry(Icons.Outlined.BugReport, "Diagnostik & laporan kendala", "Catatan galat di HP ini untuk dikirim ke IT sekolah", Screen.DiagnosticReport.route),
+                ).filter { canOpen(it.route) }
+                item(key = "help_header") { SectionHeader("Bantuan", Modifier.padding(top = Spacing.md)) }
+                item(key = "help") {
+                    SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                        help.forEach { entry ->
+                            MenuRow(entry, onClick = { onNavigate(entry.route) })
+                            HorizontalDivider(color = SistaTheme.colors.outlineVariant)
                         }
-                    )
-                    HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
-
-                    ModernProfileMenuItem(
-                        icon = Icons.Default.Tune,
-                        iconTint = Gold700,
-                        iconBg = Gold50,
-                        title = strings.settingsTitle,
-                        subtitle = "Bahasa (ID, EN, AR), font scaling & ukuran teks",
-                        onClick = {
-                            haptics.tapLight()
-                            onNavigateToSettings()
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // 4. Section: Lembaga & Informasi Hukum
-            ProfileSectionHeader(title = "Lembaga & Informasi")
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = cardBg,
-                border = BorderStroke(0.5.dp, borderColor),
-                shadowElevation = 0.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    ModernProfileMenuItem(
-                        drawableRes = R.drawable.logo_kotak,
-                        title = strings.aboutSchool,
-                        subtitle = "SMA Islam Sultan Agung 1 • SULAONE Enterprise v2.0",
-                        onClick = {
-                            haptics.tapLight()
-                            showAboutDialog = true
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 5. Logout Button (Outlined Minimalist Style with 48dp target)
-            OutlinedButton(
-                onClick = {
-                    haptics.tapLight()
-                    showLogoutDialog = true
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .sulaoneInteractiveTouchTarget(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = strings.logoutButton,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(36.dp))
-        }
-    }
-
-    // Confirmation Logout Dialog
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(28.dp)
-                )
-            },
-            title = {
-                Text(strings.logoutConfirmTitle, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Text(strings.logoutConfirmMessage)
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showLogoutDialog = false
-                        haptics.tapHeavy()
-                        onLogout()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(strings.confirmLogoutText)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showLogoutDialog = false }) {
-                    Text(strings.cancelText)
-                }
-            }
-        )
-    }
-
-    // About Dialog with Official Crest
-    if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            icon = {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_kotak),
-                    contentDescription = "Logo SMA Islam Sultan Agung 1",
-                    modifier = Modifier.size(52.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "SMA Islam Sultan Agung 1",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo_lonjong),
-                            contentDescription = "Banner SMA Islam Sultan Agung 1",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        MenuRow(
+                            MenuEntry(Icons.Outlined.Info, "Tentang", state.school?.name ?: "Sekolah dan versi aplikasi", ""),
+                            onClick = { dialog = ProfileDialog.About },
                         )
                     }
-
-                    Text(
-                        text = "SULAONE Enterprise Mobile Suite",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Emerald800
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Aplikasi SuperApp Terpadu SMA Islam Sultan Agung 1 Semarang. Mengintegrasikan Kurikulum Merdeka, CBT Anti-Cheat, Presensi Geofence, Socratic AI Tutor, Paspor Digital Web3, dan Pembayaran SPP.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "• Versi: 2.0.0-PROD (Enterprise Release)\n• Yayasan: Badan Wakaf Sultan Agung (YBWSA)\n• Framework: Jetpack Compose Material 3 Native\n• Arsitektur: MVVM + Offline-First Room DB",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showAboutDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
-                ) {
-                    Text("Tutup")
+
+                item(key = "logout") {
+                    SistaButton(
+                        text = "Keluar",
+                        onClick = { dialog = ProfileDialog.Logout },
+                        variant = ButtonVariant.Outlined,
+                        leadingIcon = Icons.AutoMirrored.Outlined.Logout,
+                        fullWidth = true,
+                        modifier = Modifier.padding(top = Spacing.xl),
+                    )
                 }
             }
-        )
-    }
+        }
 
-    if (showRefreshRateDialog) {
-        AlertDialog(
-            onDismissRequest = { showRefreshRateDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Speed,
-                    contentDescription = null,
-                    tint = Gold700,
-                    modifier = Modifier.size(32.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "Laju Penyegaran Layar",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Kemampuan Layar: ${displayCaps.summaryText}",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Emerald800
-                    )
-                    Text(
-                        text = "Frekuensi hardware: ${displayCaps.supportedRefreshRates.map { "${it.toInt()}Hz" }.joinToString(", ")}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    RefreshRateMode.entries.forEach { mode ->
-                        val isSelected = currentRefreshMode == mode
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) Emerald50 else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isSelected) Emerald600 else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    haptics.tapLight()
-                                    AdaptiveRefreshRateManager.saveMode(
-                                        sessionManager = sessionManager,
-                                        mode = mode,
-                                        activity = context as? Activity
-                                    )
-                                    showRefreshRateDialog = false
-                                }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = null,
-                                    colors = RadioButtonDefaults.colors(selectedColor = Emerald700)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = mode.title,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Emerald900 else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = mode.description,
-                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showRefreshRateDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
-                ) {
-                    Text("Tutup")
-                }
+        when (dialog) {
+            ProfileDialog.Logout -> LogoutDialog(onConfirm = { dialog = null; onLogout() }, onDismiss = { dialog = null })
+            ProfileDialog.About -> AboutDialog(state.school, appVersion, onDismiss = { dialog = null })
+            ProfileDialog.RefreshRate -> if (display != null) {
+                RefreshRateDialog(display, onSelect = { onRefreshMode(it); dialog = null }, onDismiss = { dialog = null })
             }
-        )
+            null -> Unit
+        }
     }
+}
+
+private enum class ProfileDialog { Logout, About, RefreshRate }
+
+private data class MenuEntry(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val subtitle: String, val route: String)
+
+private fun androidx.compose.foundation.lazy.LazyListScope.menuSection(
+    key: String,
+    title: String,
+    entries: List<MenuEntry>,
+    onNavigate: (String) -> Unit,
+) {
+    if (entries.isEmpty()) return
+    item(key = "${key}_header") { SectionHeader(title, Modifier.padding(top = Spacing.md)) }
+    item(key = key) {
+        SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+            entries.forEachIndexed { index, entry ->
+                if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                MenuRow(entry, onClick = { onNavigate(entry.route) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuRow(entry: MenuEntry, onClick: () -> Unit) {
+    SistaListItem(
+        headline = entry.title,
+        supporting = entry.subtitle,
+        leading = { IconBadge(entry.icon, tone = StatusTone.Neutral) },
+        trailing = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant) },
+        onClick = onClick,
+    )
 }
 
 /**
- * High-Fidelity Digital Institutional ID Card (Kartu Identitas Digital Resmi)
+ * Name, role and the school's own numbers for this account. While the server
+ * answers, the name the app got at sign-in is shown with placeholders; when it
+ * can't answer, the card says so instead of filling in sample numbers.
  */
 @Composable
-private fun DigitalInstitutionalIdCard(
-    cardTitle: String,
-    userName: String,
-    roleBadge: String,
-    idNumber: String,
-    userRole: String,
-    isDark: Boolean = false,
-    borderColor: Color = Slate200,
-    cardBg: Color = Color.White
-) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = cardBg,
-        border = BorderStroke(0.5.dp, borderColor),
-        shadowElevation = 0.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Official School Brand & Title
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_kotak),
-                        contentDescription = "Logo Sulaone",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "SMA ISLAM SULTAN AGUNG 1",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.5.sp,
-                            color = Emerald800
-                        )
-                        Text(
-                            text = cardTitle,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+private fun IdentityCard(state: ProfileUiState, sessionName: String?, onRetry: () -> Unit) {
+    val profile = state.profile
+    val name = profile?.name?.takeIf { it.isNotBlank() } ?: sessionName?.takeIf { it.isNotBlank() }
+    SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Avatar(name ?: "?", size = 64.dp, modifier = Modifier.sulaoneSharedElement(key = "student_avatar"))
+            Spacer(Modifier.width(Spacing.lg))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                if (name != null) {
+                    Text(name, style = SistaTheme.typography.titleLarge, maxLines = 2)
+                } else {
+                    SkeletonBlock(width = 160.dp, height = 20.dp)
                 }
-
-                SulaoneBadge(
-                    text = "RESMI",
-                    containerColor = if (isDark) Gold900.copy(alpha = 0.4f) else Gold50,
-                    contentColor = if (isDark) Gold300 else Gold800
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Body: Avatar, Name, Verification, and ID details
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .sulaoneSharedElement(key = "student_avatar")
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(Emerald700, Emerald900))),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = userName.split(" ").take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString(""),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
+                when {
+                    profile?.roleLabel != null -> StatusPill(profile.roleLabel!!, StatusTone.Brand)
+                    state.isLoading -> SkeletonBlock(width = 80.dp, height = 20.dp)
                 }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.Verified,
-                            contentDescription = "Terverifikasi",
-                            tint = Emerald600,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = idNumber,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-                    SulaoneBadge(
-                        text = roleBadge,
-                        containerColor = if (isDark) Emerald900.copy(alpha = 0.4f) else Emerald50,
-                        contentColor = if (isDark) Emerald300 else Emerald800
-                    )
+                academicYearLabel(profile?.academicYear)?.let {
+                    Text(it, style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Footer: Digital Security Code Bar
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = if (isDark) Slate850 else Slate100,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.QrCode,
-                            contentDescription = null,
-                            tint = Emerald700,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "SMART CARD TOKEN • VERIFIED",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                            color = Emerald800
-                        )
-                    }
-
-                    Text(
-                        text = "AKTIF 2026/2027",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = if (isDark) Slate400 else Slate500
-                    )
-                }
+        }
+        when {
+            profile != null -> IdentityDetails(profile)
+            state.errorMessage != null -> InlineBanner(
+                title = "Data akun belum bisa dimuat",
+                message = state.errorMessage,
+                tone = StatusTone.Warning,
+                actionLabel = "Coba lagi",
+                onAction = onRetry,
+                modifier = Modifier.padding(top = Spacing.lg),
+            )
+            else -> Column(Modifier.padding(top = Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                repeat(3) { SkeletonBlock() }
             }
         }
     }
 }
 
 @Composable
-private fun ProfileSectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 6.dp)
+private fun IdentityDetails(profile: MeProfile) {
+    val rows = identityRows(profile)
+    if (rows.isEmpty() && !hasNoLinkedChildren(profile)) return
+    HorizontalDivider(Modifier.padding(vertical = Spacing.lg), color = SistaTheme.colors.outlineVariant)
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        rows.forEach { InfoLine(it) }
+        if (hasNoLinkedChildren(profile)) {
+            Text(
+                "Belum ada siswa yang ditautkan ke akun ini. Hubungi tata usaha sekolah.",
+                style = SistaTheme.typography.bodyMedium,
+                color = SistaTheme.colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun InfoLine(row: InfoRow) {
+    Row(Modifier.fillMaxWidth()) {
+        Text(
+            row.label,
+            style = SistaTheme.typography.bodyMedium,
+            color = SistaTheme.colors.onSurfaceVariant,
+            modifier = Modifier.width(112.dp),
+        )
+        Text(row.value, style = SistaTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun LogoutDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
+        title = { Text("Keluar dari akun?") },
+        text = { Text("Sesi di HP ini diakhiri. Masuk lagi dengan email, NIS, atau NIP dan kata sandi.") },
+        confirmButton = { SistaButton("Keluar", onConfirm, variant = ButtonVariant.Danger) },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } },
+    )
+}
+
+/** The school as the server records it, and the installed app's real version. */
+@Composable
+private fun AboutDialog(school: SchoolIdentity?, appVersion: String?, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(school?.name ?: "SISTA") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text(
+                    "Aplikasi layanan sekolah untuk siswa, wali murid, guru, dan staf.",
+                    style = SistaTheme.typography.bodyMedium,
+                )
+                schoolRows(school).forEach { InfoLine(it) }
+                if (school == null) {
+                    Text(
+                        "Data sekolah belum bisa dimuat dari server.",
+                        style = SistaTheme.typography.bodySmall,
+                        color = SistaTheme.colors.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(Spacing.xs))
+                InfoLine(InfoRow("Versi aplikasi", appVersion ?: MISSING))
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
     )
 }
 
 @Composable
-fun ModernProfileMenuItem(
-    icon: ImageVector? = null,
-    iconTint: Color = Emerald700,
-    iconBg: Color = Emerald50,
-    drawableRes: Int? = null,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .sulaoneInteractiveTouchTarget(48.dp)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(iconBg),
-            contentAlignment = Alignment.Center
-        ) {
-            if (drawableRes != null) {
-                Image(
-                    painter = painterResource(id = drawableRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp)
+private fun RefreshRateDialog(display: DisplayChoice, onSelect: (RefreshRateMode) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Laju penyegaran layar") },
+        text = {
+            Column {
+                Text(
+                    "Layar HP ini: ${display.capabilities.supportedRefreshRates.joinToString(", ") { "${it.toInt()} Hz" }}",
+                    style = SistaTheme.typography.bodyMedium,
+                    color = SistaTheme.colors.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = Spacing.sm),
                 )
-            } else if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
+                RefreshRateMode.entries.forEach { mode ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .selectable(selected = mode == display.mode, role = Role.RadioButton, onClick = { onSelect(mode) })
+                            .padding(vertical = Spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = mode == display.mode, onClick = null)
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(Modifier.weight(1f)) {
+                            Text(refreshModeLabel(mode), style = SistaTheme.typography.bodyLarge)
+                            Text(mode.description, style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                        }
+                    }
+                }
             }
-        }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
+    )
+}
 
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = Slate400,
-            modifier = Modifier.size(18.dp)
-        )
-    }
+internal fun refreshModeLabel(mode: RefreshRateMode): String = when (mode) {
+    RefreshRateMode.ADAPTIVE_SMOOTH -> "Adaptif (setinggi yang didukung layar)"
+    RefreshRateMode.POWER_SAVER_60HZ -> "Hemat daya (60 Hz)"
+    RefreshRateMode.SYSTEM_DEFAULT -> "Ikuti sistem"
 }

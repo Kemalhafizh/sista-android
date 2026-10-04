@@ -131,7 +131,6 @@ sealed class Screen(val route: String, val title: String = "") {
     object Extracurricular : Screen("extracurricular", "Ekstrakurikuler & OSIS")
     object AchievementUpload : Screen("achievement_upload", "Portofolio Prestasi")
     object TeacherEvaluation : Screen("teacher_evaluation", "Evaluasi Guru & E-Voting")
-    object LiteModeSettings : Screen("lite_mode_settings", "Mode Hemat Kuota")
 
     // Teacher CBT Online Proctoring & Exam Creation
     object TeacherProctor : Screen("teacher_proctor/{examId}", "Pengawas Ujian Daring") {

@@ -21,7 +21,7 @@ object FeatureCatalog {
     val OPEN: Set<String> = setOf(
         Screen.Login, Screen.ServicesHub, Screen.Profile, Screen.Settings,
         Screen.LanguageSettings, Screen.AccessibilitySettings, Screen.SecuritySettings,
-        Screen.LiteModeSettings, Screen.NotificationSettings, Screen.DiagnosticReport,
+        Screen.NotificationSettings, Screen.DiagnosticReport,
         Screen.InAppUpdate, Screen.ModuleFavorites, Screen.EnterpriseCatalog,
         Screen.PdfViewer, Screen.DownloadHistory, Screen.SsoWebView,
         // Admissions are public: anyone may look up or register.
