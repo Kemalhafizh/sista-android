@@ -137,4 +137,8 @@
     <string name="widget_prayer_unavailable">مواقيت الصلاة غير متاحة بعد</string>
     <string name="widget_prayer_no_source">لا يوجد مصدر رسمي لمواقيت الصلاة في التطبيق بعد</string>
     <string name="widget_prayer_tap">اضغط لفتح المتابعة ➔</string>
+
+    <!-- Tab utama -->
+    <string name="nav_services">الخدمات</string>
+    <string name="nav_notifications">الإشعارات</string>
 </resources>

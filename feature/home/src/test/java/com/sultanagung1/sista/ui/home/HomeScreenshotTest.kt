@@ -19,7 +19,7 @@ import org.robolectric.annotation.GraphicsMode
 /** The student's Beranda in its states. The data below exists only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1000dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1000dp-xhdpi")
 class HomeScreenshotTest {
 
     @get:Rule

@@ -1,6 +1,7 @@
 package com.sultanagung1.sista
 
 import android.Manifest
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -13,7 +14,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.fragment.app.FragmentActivity
@@ -21,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.sultanagung1.sista.core.accessibility.FontScaleManager
+import com.sultanagung1.sista.core.accessibility.AppLocale
 import com.sultanagung1.sista.core.accessibility.LanguageManager
 import com.sultanagung1.sista.core.accessibility.ThemeManager
 import com.sultanagung1.sista.core.designsystem.SulaoneTheme
@@ -40,6 +41,11 @@ class MainActivity : FragmentActivity() {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    // Android 8–12: show the language picked in the app (Android 13+ applies it itself).
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
     @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +57,15 @@ class MainActivity : FragmentActivity() {
 
         val sessionManager = SessionManager(applicationContext)
         val apiClient = ApiClient(applicationContext)
-        val languageManager = LanguageManager(sessionManager, lifecycleScope)
+        val languageManager = LanguageManager(applicationContext)
+        // Android 8–12 has no per-app language: when it changes, rebuild this
+        // activity so attachBaseContext applies it (13+ does this itself).
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            val shownLanguage = AppLocale.current(this)
+            lifecycleScope.launch {
+                AppLocale.changes.collect { changed -> if (changed != null && changed != shownLanguage) recreate() }
+            }
+        }
         val fontScaleManager = FontScaleManager(sessionManager, lifecycleScope)
         val themeManager = ThemeManager(sessionManager, lifecycleScope)
 
@@ -92,7 +106,6 @@ class MainActivity : FragmentActivity() {
             }
             val themeMode by themeManager.themeMode.collectAsState()
             val isHighContrast by themeManager.isHighContrast.collectAsState()
-            val currentLang by languageManager.currentLanguage.collectAsState()
             val fontScale by fontScaleManager.fontScale.collectAsState()
             val isDyslexicFriendly by fontScaleManager.isDyslexicFriendly.collectAsState()
 
@@ -100,11 +113,9 @@ class MainActivity : FragmentActivity() {
                 themeMode = themeMode,
                 isHighContrast = isHighContrast,
                 fontScale = fontScale,
-                isDyslexicFriendly = isDyslexicFriendly,
-                language = currentLang
+                isDyslexicFriendly = isDyslexicFriendly
             ) {
                 CompositionLocalProvider(
-                    LocalLayoutDirection provides currentLang.layoutDirection,
                     // Rebuilt screens (ShellTheme) read these; SulaoneTheme above
                     // only reaches the older ones.
                     com.sultanagung1.sista.core.ui.theme.LocalDisplayPreferences provides

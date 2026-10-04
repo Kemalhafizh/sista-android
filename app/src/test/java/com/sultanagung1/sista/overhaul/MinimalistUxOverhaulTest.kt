@@ -78,7 +78,7 @@ class MinimalistUxOverhaulTest {
         assertTrue("Must contain FASE 60.3 comment", content.contains("FASE 60.3: Consolidated 4-Tab System"))
         // One tab list for every account, built from the server's capability
         // list — no branch per role any more.
-        assertTrue(content.contains("ShellTabs.entries(homeRoute, capabilityState, strings)"))
+        assertTrue(content.contains("ShellTabs.entries(homeRoute, capabilityState, tabLabels)"))
         assertFalse(content.contains("UserRoles.groupOf("))
 
         val tabs = findSourceFile("src/main/java/com/sultanagung1/sista/ui/navigation/ShellTabs.kt").readText()

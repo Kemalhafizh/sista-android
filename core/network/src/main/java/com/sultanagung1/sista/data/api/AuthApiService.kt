@@ -6,6 +6,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 interface AuthApiService {
 
@@ -32,6 +33,10 @@ interface AuthApiService {
     // The profile page's identity card (ApiAuthController::me).
     @GET("me")
     suspend fun getCurrentUser(): Response<ApiEnvelope<MeProfile>>
+
+    // Saves the app's language on the account (users.preferred_locale, read by the web too).
+    @PUT("me/locale")
+    suspend fun updateLocale(@Body request: LocaleRequest): Response<ApiEnvelope<LocaleData>>
 
     @POST("logout")
     suspend fun logout(): Response<Map<String, Any>>

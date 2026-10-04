@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,10 +52,11 @@ fun SistaButton(
     loading: Boolean = false,
     fullWidth: Boolean = false,
 ) {
+    val processing = stringResource(R.string.core_processing)
     val sized = modifier
         .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
         .heightIn(min = size.minHeight.dp)
-        .semantics { if (loading) stateDescription = "Memproses" }
+        .semantics { if (loading) stateDescription = processing }
     val padding = PaddingValues(horizontal = size.horizontalPadding.dp)
     val click = { if (!loading) onClick() }
     val label: @Composable () -> Unit = { ButtonLabel(text, leadingIcon, loading) }

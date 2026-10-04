@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -113,9 +115,10 @@ private fun EntryIcon(entry: NavEntry, selected: Boolean) {
     val icon = if (selected) entry.selectedIcon else entry.icon
     if (entry.badge > 0) {
         val text = if (entry.badge > 99) "99+" else entry.badge.toString()
+        val unreadLabel = stringResource(R.string.core_unread_count, text)
         BadgedBox(
             badge = {
-                Badge(Modifier.semantics { contentDescription = "$text belum dibaca" }) { Text(text) }
+                Badge(Modifier.semantics { contentDescription = unreadLabel }) { Text(text) }
             },
         ) { Icon(icon, contentDescription = null) }
     } else {

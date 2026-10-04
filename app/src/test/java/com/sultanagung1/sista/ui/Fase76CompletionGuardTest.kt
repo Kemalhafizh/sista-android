@@ -145,7 +145,10 @@ class Fase76CompletionGuardTest {
         val p = code(profile)
         assertTrue(p.contains("AppThemeMode.AMOLED_BLACK)"))
         assertTrue(p.contains("AMOLED_BATTERY_NOTE"))
-        assertTrue("Honest about LCD", source(profile).contains("Di layar LCD"))
+        // The note is in strings.xml now (id, en, ar); still honest about LCD in each.
+        val res = "feature/profile/src/main/res"
+        assertTrue("Honest about LCD", source("$res/values/strings.xml").contains("Di layar LCD"))
+        assertTrue("Honest about LCD (en)", source("$res/values-en/strings.xml").contains("On LCD screens"))
         assertFalse(code(themeManager).contains("Super hemat baterai"))
     }
 

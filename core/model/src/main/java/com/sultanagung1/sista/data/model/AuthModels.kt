@@ -29,8 +29,14 @@ data class UserProfile(
     @SerializedName("nisn") val nisn: String? = null,
     @SerializedName("nip") val nip: String? = null,
     @SerializedName("classroom") val classroom: String? = null,
-    @SerializedName("avatar_url") val avatarUrl: String? = null
+    @SerializedName("avatar_url") val avatarUrl: String? = null,
+    // id/en/ar saved on the account (also used by the web).
+    @SerializedName("preferred_locale") val preferredLocale: String? = null
 )
+
+data class LocaleRequest(@SerializedName("locale") val locale: String)
+
+data class LocaleData(@SerializedName("locale") val locale: String? = null)
 
 data class BiometricChallengeRequest(
     @SerializedName("device_id") val deviceId: String

@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.settings
 
+import com.sultanagung1.sista.feature.profile.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -77,7 +80,7 @@ fun AccessibilitySettingsContent(
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = { SistaTopBar(title = "Aksesibilitas", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            topBar = { SistaTopBar(title = stringResource(R.string.a11y_title), onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             LazyColumn(
@@ -90,9 +93,10 @@ fun AccessibilitySettingsContent(
             ) {
                 item(key = "size") {
                     val current = nearestScale(fontScale)
+                    val textSizeLabel = stringResource(R.string.a11y_text_size)
                     SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Ukuran teks", style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.a11y_text_size), style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                             Text(scaleLabel(current), style = SistaTheme.typography.titleMedium, color = SistaTheme.colors.primary)
                         }
                         Slider(
@@ -101,7 +105,7 @@ fun AccessibilitySettingsContent(
                             valueRange = TEXT_SCALES.first()..TEXT_SCALES.last(),
                             steps = TEXT_SCALES.size - 2,
                             modifier = Modifier.semantics {
-                                contentDescription = "Ukuran teks"
+                                contentDescription = textSizeLabel
                                 stateDescription = scaleLabel(current)
                             },
                         )
@@ -111,7 +115,7 @@ fun AccessibilitySettingsContent(
                             }
                         }
                         Text(
-                            "Ditambah ke ukuran huruf yang diatur di HP.",
+                            stringResource(R.string.a11y_text_size_hint),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                             modifier = Modifier.padding(top = Spacing.sm),
@@ -122,27 +126,27 @@ fun AccessibilitySettingsContent(
                 item(key = "reading") {
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
                         ToggleRow(
-                            title = "Ramah disleksia",
-                            body = "Jarak antarhuruf dan antarbaris lebih lebar.",
+                            title = stringResource(R.string.a11y_dyslexia),
+                            body = stringResource(R.string.a11y_dyslexia_hint),
                             checked = dyslexicFriendly,
                             onChange = onDyslexicFriendly,
                         )
                         HorizontalDivider(color = SistaTheme.colors.outlineVariant)
                         ToggleRow(
-                            title = "Kontras tinggi",
-                            body = "Teks tanpa warna abu-abu dan garis lebih tegas.",
+                            title = stringResource(R.string.a11y_high_contrast),
+                            body = stringResource(R.string.a11y_high_contrast_hint),
                             checked = highContrast,
                             onChange = onHighContrast,
                         )
                     }
                 }
 
-                item(key = "preview_header") { SectionHeader("Pratinjau", Modifier.padding(top = Spacing.md)) }
+                item(key = "preview_header") { SectionHeader(stringResource(R.string.a11y_preview), Modifier.padding(top = Spacing.md)) }
                 item(key = "preview") {
                     SistaCard(modifier = Modifier.fillMaxWidth()) {
-                        Text("Contoh judul", style = SistaTheme.typography.titleMedium)
+                        Text(stringResource(R.string.a11y_preview_title), style = SistaTheme.typography.titleMedium)
                         Text(
-                            "Seperti inilah teks di aplikasi dengan pengaturan di atas. Ubah ukuran atau mode baca lalu lihat bedanya di sini.",
+                            stringResource(R.string.a11y_preview_body),
                             style = SistaTheme.typography.bodyMedium,
                             color = SistaTheme.colors.onSurfaceVariant,
                             modifier = Modifier.padding(top = Spacing.xs),

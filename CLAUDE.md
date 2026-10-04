@@ -33,7 +33,15 @@ What each role may open is decided by the server.
 - Build screens with `:core:ui` (`SistaTopBar`, `SistaCard`, `StatTile`, `StatusPill`, `InlineBanner`, `EmptyState`, `ErrorState`, `SkeletonList`, `FilterChipRow`, theme tokens `SistaTheme`, `Spacing`, `StatusTone`), not the old `Sulaone*` components.
 - Pattern: a stateful `XxxScreen(viewModel, …)` that collects state, plus a stateless `XxxContent(state, callbacks)` used by previews and screenshots.
 - Every role's home uses the same layout; only the features shown differ.
-- Text is Indonesian. Times are in `Asia/Jakarta`. Numbers use Indonesian separators (`12.480`, `96,5`).
+- Times are in `Asia/Jakarta`. Numbers and dates follow the app's language (`12.480` / `12,480`), with Latin digits for Arabic like the web.
+
+### Tiga bahasa
+The app is offered in Indonesian, English and Arabic, like the web (`users.preferred_locale` is shared).
+- Text on screen comes from `res/values/strings.xml` (Indonesian) with the same keys in `values-en` and `values-ar`: `stringResource(...)` in Compose, `UiText` (`:core:ui`) from ViewModels and formatting functions. Never a literal.
+- Server data (names, classes, the server's own messages) is shown as sent; the server already answers in the user's language.
+- Arabic is right-to-left: use `start`/`end`, never `left`/`right`. Screenshot tests run in Indonesian (`in-` qualifier); add `en-`/`ar-ldrtl-` screenshots for new screens.
+- **CI guards:** `LocalizationTest` fails when a key is missing in one language or placeholders differ; `HardcodedUiTextTest` fails on new on-screen literals. Its `debt` list only shrinks: translate a file, then lower or remove its entry.
+- Language is applied by `AppLocale` and kept in sync with the account by `LocaleSync` (`PUT me/locale`).
 
 ## Sebelum push
 ```bash

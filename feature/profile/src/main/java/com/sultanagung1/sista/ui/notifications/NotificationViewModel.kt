@@ -1,5 +1,7 @@
 package com.sultanagung1.sista.ui.notifications
 
+import com.sultanagung1.sista.feature.profile.R
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
@@ -13,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class NotificationFilter(val label: String) { All("Semua"), Unread("Belum dibaca") }
+enum class NotificationFilter(@StringRes val label: Int) { All(R.string.notif_filter_all), Unread(R.string.notif_filter_unread) }
 
 data class NotificationUiState(
     val isLoading: Boolean = false,

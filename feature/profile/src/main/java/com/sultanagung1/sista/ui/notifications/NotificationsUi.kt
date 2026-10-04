@@ -1,5 +1,13 @@
 package com.sultanagung1.sista.ui.notifications
 
+import java.util.Locale
+import java.time.format.DateTimeFormatter
+import com.sultanagung1.sista.ui.profile.displayLocale
+import com.sultanagung1.sista.feature.profile.R
+import com.sultanagung1.sista.core.notification.descriptionRes
+import com.sultanagung1.sista.core.notification.labelRes
+import com.sultanagung1.sista.core.ui.text.UiText
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.EventAvailable
@@ -16,32 +24,33 @@ import java.time.ZonedDateTime
 
 internal val SCHOOL_ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
 
-private val DAYS = listOf("Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu")
-private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
 
 internal fun parseInstant(iso: String?): ZonedDateTime? =
     iso?.let { runCatching { OffsetDateTime.parse(it).atZoneSameInstant(SCHOOL_ZONE) }.getOrNull() }
 
-/** "Hari ini", "Kemarin", "Senin, 28 Sep", or "Senin, 28 Sep 2025" in another year. */
-internal fun dayHeader(date: LocalDate, today: LocalDate): String = when (date) {
-    today -> "Hari ini"
-    today.minusDays(1) -> "Kemarin"
-    else -> buildString {
-        append("${DAYS[date.dayOfWeek.value - 1]}, ${date.dayOfMonth} ${MONTHS[date.monthValue - 1]}")
-        if (date.year != today.year) append(" ${date.year}")
-    }
+/**
+ * "Hari ini", "Kemarin", or the date in the app's language: "Senin, 28 Sep" /
+ * "Monday, 28 Sep" / "الاثنين، 28 سبتمبر", with the year when it isn't this year.
+ */
+internal fun dayHeader(date: LocalDate, today: LocalDate, locale: Locale = displayLocale()): UiText = when (date) {
+    today -> UiText.Res(R.string.notif_today)
+    today.minusDays(1) -> UiText.Res(R.string.notif_yesterday)
+    else -> UiText.Raw(
+        date.format(DateTimeFormatter.ofPattern(if (date.year == today.year) "EEEE, d MMM" else "EEEE, d MMM yyyy", locale)),
+    )
 }
 
-/** "16.20" — the day is in the header above. */
-internal fun clock(time: ZonedDateTime): String = "%02d.%02d".format(time.hour, time.minute)
+/** "16.20" in Indonesian, "16:20" otherwise — the day is in the header above. */
+internal fun clock(time: ZonedDateTime, locale: Locale = displayLocale()): String =
+    "%02d%s%02d".format(time.hour, if (locale.language == "id" || locale.language == "in") "." else ":", time.minute)
 
 /** Items in order, split into days; items without a time go last under "Lainnya". */
-internal fun <T> groupByDay(items: List<T>, today: LocalDate, timeOf: (T) -> ZonedDateTime?): List<Pair<String, List<T>>> {
+internal fun <T> groupByDay(items: List<T>, today: LocalDate, timeOf: (T) -> ZonedDateTime?): List<Pair<UiText, List<T>>> {
     val (timed, untimed) = items.partition { timeOf(it) != null }
     val days = timed.groupBy { timeOf(it)!!.toLocalDate() }
         .toSortedMap(compareByDescending { it })
         .map { (date, list) -> dayHeader(date, today) to list.sortedByDescending { timeOf(it) } }
-    return if (untimed.isEmpty()) days else days + ("Lainnya" to untimed)
+    return if (untimed.isEmpty()) days else days + (UiText.Res(R.string.notif_other) to untimed)
 }
 
 internal fun channelOf(id: String): NotificationChannelType =
@@ -64,4 +73,8 @@ internal fun NotificationChannelType.tone(): StatusTone = when (this) {
 }
 
 /** The channel's name as the user sees it in the app and in Android's settings. */
-internal val NotificationChannelType.label: String get() = channelName
+@get:StringRes
+internal val NotificationChannelType.label: Int get() = labelRes()
+
+@get:StringRes
+internal val NotificationChannelType.description: Int get() = descriptionRes()

@@ -41,6 +41,8 @@ data class ProfileDisciplineSummary(
     @SerializedName("total_violation_points") val totalViolationPoints: Int? = null,
     @SerializedName("net_points") val netPoints: Int? = null,
     val category: String? = null,
+    // aman / perhatian / sp1 / sp2 / sp3 — category is the label in the app's language.
+    @SerializedName("category_code") val categoryCode: String? = null,
     @SerializedName("active_sanctions") val activeSanctions: Int? = null
 )
 

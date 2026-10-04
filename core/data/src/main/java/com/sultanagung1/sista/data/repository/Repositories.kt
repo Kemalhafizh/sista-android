@@ -94,7 +94,8 @@ class AuthRepository(
     private val apiClient: ApiClient,
     private val sessionManager: SessionManager,
     private val userDao: UserDao? = null,
-    private val widgetSnapshots: WidgetSnapshotStore? = null
+    private val widgetSnapshots: WidgetSnapshotStore? = null,
+    private val localeSync: LocaleSync? = null
 ) {
     fun getLocalUser(): Flow<UserProfile?> {
         return userDao?.getLoggedInUser()?.map { it?.toUserProfile() } ?: flow { emit(null) }
@@ -122,13 +123,17 @@ class AuthRepository(
                     userDao?.insertUser(UserEntity.fromUserProfile(user))
                     // Home-screen widgets start empty for the new session.
                     widgetSnapshots?.startNewSession()
+                    // A language picked on the login screen is saved on the
+                    // account; otherwise the account's language is applied.
+                    localeSync?.reconcile(user.preferredLocale)
 
                     emit(NetworkResult.Success(loginResponse))
                 } else {
                     emit(NetworkResult.Error(loginResponse.message ?: "Data login tidak valid."))
                 }
             } else {
-                val errMessage = when (response.code()) {
+                // The server answers in the app's language (Accept-Language).
+                val errMessage = serverMessageOf(response.errorBody()?.string()) ?: when (response.code()) {
                     401 -> "Kredensial salah. Periksa kembali email/NISN dan kata sandi."
                     404 -> "Server endpoint login tidak ditemukan (404)."
                     500 -> "Terjadi kesalahan internal pada server backend (500)."

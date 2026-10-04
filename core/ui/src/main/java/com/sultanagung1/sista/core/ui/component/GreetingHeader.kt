@@ -1,6 +1,9 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,13 +26,17 @@ import androidx.compose.ui.unit.dp
 import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 
-/** "Selamat pagi" for an hour of the day (0–23). */
-fun greetingFor(hour: Int): String = when (hour) {
-    in 3..10 -> "Selamat pagi"
-    in 11..14 -> "Selamat siang"
-    in 15..17 -> "Selamat sore"
-    else -> "Selamat malam"
+/** The greeting for an hour of the day (0–23): "Selamat pagi", "Good morning"… */
+@StringRes
+fun greetingRes(hour: Int): Int = when (hour) {
+    in 3..10 -> R.string.greeting_morning
+    in 11..14 -> R.string.greeting_noon
+    in 15..17 -> R.string.greeting_afternoon
+    else -> R.string.greeting_night
 }
+
+@Composable
+fun greetingFor(hour: Int): String = stringResource(greetingRes(hour))
 
 /**
  * The top of every home screen, whatever the role: who is signed in, one

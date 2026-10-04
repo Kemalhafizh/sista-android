@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -71,7 +73,7 @@ fun SistaTextField(
                 IconButton(onClick = { visible = !visible }) {
                     Icon(
                         if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                        contentDescription = if (visible) "Sembunyikan kata sandi" else "Tampilkan kata sandi",
+                        contentDescription = stringResource(if (visible) R.string.core_password_hide else R.string.core_password_show),
                     )
                 }
             }

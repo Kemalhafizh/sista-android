@@ -1,183 +1,113 @@
 package com.sultanagung1.sista.ui.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import com.sultanagung1.sista.core.accessibility.AppLanguage
-import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.feature.profile.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Indonesian, English or Arabic, as on the web. The choice applies at once
+ * (Arabic right-to-left) and is saved on the account so the web follows it.
+ */
 @Composable
 fun LanguageSettingsScreen(
     viewModel: SettingsViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
-    val currentLanguage by viewModel.currentLanguage.collectAsState()
+    val current by viewModel.currentLanguage.collectAsState()
+    LanguageSettingsContent(current = current, onSelect = viewModel::setLanguage, onNavigateBack = onNavigateBack)
+}
 
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Pengaturan Bahasa",
-                subtitle = "Language & Locale Settings",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp)
-        ) {
-            Text(
-                text = "Pilih Bahasa Aplikasi",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "Perubahan bahasa dan tata letak RTL akan diterapkan langsung secara real-time.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+/** What each language is called in the language showing now ("Arabic", "العربية"…). */
+@StringRes
+internal fun languageName(language: AppLanguage): Int = when (language) {
+    AppLanguage.INDONESIAN -> R.string.lang_name_id
+    AppLanguage.ENGLISH -> R.string.lang_name_en
+    AppLanguage.ARABIC -> R.string.lang_name_ar
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Language Options
-            AppLanguage.values().forEach { lang ->
-                val isSelected = lang == currentLanguage
-                SulaoneCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clickable { viewModel.setLanguage(lang) }
-                        .border(
-                            width = if (isSelected) 2.dp else 0.dp,
-                            color = if (isSelected) Emerald700 else Color.Transparent,
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    elevation = if (isSelected) 4.dp else 1.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(if (isSelected) Emerald100 else MaterialTheme.colorScheme.surfaceVariant),
-                                contentAlignment = Alignment.Center
+/** The language page without a ViewModel, for previews and screenshots. */
+@Composable
+fun LanguageSettingsContent(
+    current: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    ShellTheme {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = { SistaTopBar(title = stringResource(R.string.lang_title), onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("language_root"),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                item(key = "languages") {
+                    SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                        AppLanguage.entries.forEachIndexed { index, language ->
+                            if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .selectable(selected = language == current, role = Role.RadioButton, onClick = { onSelect(language) })
+                                    .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Translate,
-                                    contentDescription = null,
-                                    tint = if (isSelected) Emerald800 else Slate500,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column {
-                                Text(
-                                    text = lang.title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = lang.nativeName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        if (isSelected) {
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(Emerald700),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                RadioButton(selected = language == current, onClick = null)
+                                Spacer(Modifier.width(Spacing.md))
+                                Column(Modifier.weight(1f)) {
+                                    // The language's own name, so anyone can find theirs.
+                                    Text(language.nativeName, style = SistaTheme.typography.bodyLarge)
+                                    val localName = stringResource(languageName(language))
+                                    if (localName != language.nativeName) {
+                                        Text(localName, style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Live Preview Card
-            Text(
-                text = "Pratinjau Teks & Tata Letak",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Emerald900)
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    horizontalAlignment = if (currentLanguage == AppLanguage.ARABIC) Alignment.End else Alignment.Start
-                ) {
+                item(key = "note") {
                     Text(
-                        text = when (currentLanguage) {
-                            AppLanguage.INDONESIAN -> "Assalamu'alaikum Warahmatullahi Wabarakatuh"
-                            AppLanguage.ENGLISH -> "May Peace & Blessings be upon You"
-                            AppLanguage.ARABIC -> "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Gold400,
-                        textAlign = if (currentLanguage == AppLanguage.ARABIC) TextAlign.Right else TextAlign.Left
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = when (currentLanguage) {
-                            AppLanguage.INDONESIAN -> "Selamat datang di Sulaone SuperApp SMA Islam Sultan Agung 1 Semarang. Ekosistem pendidikan islami terpadu Kurikulum Merdeka."
-                            AppLanguage.ENGLISH -> "Welcome to Sulaone SuperApp at Sultan Agung 1 Islamic High School. Integrated Islamic educational ecosystem."
-                            AppLanguage.ARABIC -> "مرحبًا بكم في التطبيق الشامل لمدرسة السلطان أجونج 1 الإسلامية الثانوية بمدينة سيمارانج."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Emerald100,
-                        textAlign = if (currentLanguage == AppLanguage.ARABIC) TextAlign.Right else TextAlign.Left
+                        stringResource(R.string.lang_note),
+                        style = SistaTheme.typography.bodySmall,
+                        color = SistaTheme.colors.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = Spacing.xs),
                     )
                 }
             }

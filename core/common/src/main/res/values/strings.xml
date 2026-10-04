@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Kategori notifikasi (juga tampil di pengaturan Android) -->
+    <string name="channel_attendance">Presensi &amp; Kehadiran</string>
+    <string name="channel_attendance_desc">Notifikasi kehadiran siswa tiba di gerbang sekolah</string>
+    <string name="channel_academic">Akademik &amp; Rapor</string>
+    <string name="channel_academic_desc">Pembaruan nilai rapor, jadwal asesmen, dan tugas</string>
+    <string name="channel_finance">Keuangan &amp; SPP</string>
+    <string name="channel_finance_desc">Pengingat tagihan SPP dan status pembayaran</string>
+    <string name="channel_emergency">Darurat &amp; Krisis</string>
+    <string name="channel_emergency_desc">Siaran darurat krisis dan keselamatan kampus</string>
+    <string name="channel_general">Informasi Umum</string>
+    <string name="channel_general_desc">Pengumuman kegiatan yayasan dan berita sekolah</string>
+</resources>

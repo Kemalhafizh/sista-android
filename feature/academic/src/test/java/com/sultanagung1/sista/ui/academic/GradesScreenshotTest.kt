@@ -17,7 +17,7 @@ import org.robolectric.annotation.GraphicsMode
 /** The student's grades in their states. The grades below exist only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h860dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h860dp-xhdpi")
 class GradesScreenshotTest {
 
     @get:Rule

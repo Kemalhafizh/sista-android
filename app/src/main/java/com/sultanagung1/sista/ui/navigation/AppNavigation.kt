@@ -30,8 +30,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.sultanagung1.sista.core.accessibility.FontScaleManager
+import com.sultanagung1.sista.R
 import com.sultanagung1.sista.core.accessibility.LanguageManager
-import com.sultanagung1.sista.core.accessibility.LocalAppStrings
 import com.sultanagung1.sista.core.audio.AudioRecorderManager
 import com.sultanagung1.sista.core.accessibility.ThemeManager
 import com.sultanagung1.sista.core.designsystem.*
@@ -84,7 +84,12 @@ fun AppNavigation(
     initialDeepLinkRoute: String? = null
 ) {
     val context = LocalContext.current
-    val strings = LocalAppStrings.current
+    val tabLabels = ShellTabs.Labels(
+        home = androidx.compose.ui.res.stringResource(R.string.nav_home),
+        services = androidx.compose.ui.res.stringResource(R.string.nav_services),
+        notifications = androidx.compose.ui.res.stringResource(R.string.nav_notifications),
+        profile = androidx.compose.ui.res.stringResource(R.string.nav_profile),
+    )
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -205,8 +210,8 @@ fun AppNavigation(
     // The same places for every account (FASE 60.3: Consolidated 4-Tab System):
     // Beranda opens the home of whatever the account may use, Layanan lists
     // every feature it has. Roles differ in content, never in the shell.
-    val bottomNavItems = remember(homeRoute, capabilityState, strings) {
-        ShellTabs.entries(homeRoute, capabilityState, strings)
+    val bottomNavItems = remember(homeRoute, capabilityState, tabLabels) {
+        ShellTabs.entries(homeRoute, capabilityState, tabLabels)
     }
 
     val tabRoutes = remember(bottomNavItems) { bottomNavItems.map { it.key }.toSet() }

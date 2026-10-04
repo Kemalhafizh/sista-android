@@ -63,8 +63,8 @@ object StorageModule {
 
     @Provides
     @Singleton
-    fun provideLanguageManager(sessionManager: SessionManager): LanguageManager {
-        return LanguageManager(sessionManager)
+    fun provideLanguageManager(@ApplicationContext context: Context): LanguageManager {
+        return LanguageManager(context)
     }
 
     @Provides

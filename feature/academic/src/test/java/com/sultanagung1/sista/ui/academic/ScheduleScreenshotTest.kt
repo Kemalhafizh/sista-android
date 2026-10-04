@@ -21,7 +21,7 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h860dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h860dp-xhdpi")
 class ScheduleScreenshotTest {
 
     @get:Rule

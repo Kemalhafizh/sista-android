@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.settings
 
+import com.sultanagung1.sista.feature.profile.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -89,7 +92,7 @@ fun SecuritySettingsContent(
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = { SistaTopBar(title = "Keamanan perangkat", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            topBar = { SistaTopBar(title = stringResource(R.string.sec_title), onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             LazyColumn(
@@ -105,21 +108,22 @@ fun SecuritySettingsContent(
                     return@LazyColumn
                 }
                 item(key = "verdict") {
-                    val (verdict, tone) = securityVerdict(report)
+                    val (verdictRes, tone) = securityVerdict(report)
+                    val verdict = stringResource(verdictRes)
                     SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("HP ini", style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.sec_this_phone), style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                             StatusPill(verdict, tone)
                         }
                         Text(
-                            "Diperiksa di HP ini setiap kali halaman dibuka. Server tetap memeriksa setiap permintaan sendiri.",
+                            stringResource(R.string.sec_checked_hint),
                             style = SistaTheme.typography.bodyMedium,
                             color = SistaTheme.colors.onSurfaceVariant,
                             modifier = Modifier.padding(top = Spacing.sm),
                         )
                     }
                 }
-                item(key = "checks_header") { SectionHeader("Pemeriksaan", Modifier.padding(top = Spacing.md)) }
+                item(key = "checks_header") { SectionHeader(stringResource(R.string.sec_checks), Modifier.padding(top = Spacing.md)) }
                 items(securityChecks(report), key = { it.title }) { check ->
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(Spacing.lg)) {
                         Row(verticalAlignment = Alignment.Top) {
@@ -133,17 +137,17 @@ fun SecuritySettingsContent(
                             )
                             Spacer(Modifier.width(Spacing.lg))
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
-                                Text(check.title, style = SistaTheme.typography.titleSmall)
-                                Text(check.detail, style = SistaTheme.typography.bodyMedium, color = SistaTheme.colors.onSurfaceVariant)
+                                Text(stringResource(check.title), style = SistaTheme.typography.titleSmall)
+                                Text(stringResource(check.detail), style = SistaTheme.typography.bodyMedium, color = SistaTheme.colors.onSurfaceVariant)
                             }
                         }
                     }
                 }
                 item(key = "signature") {
                     SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.md)) {
-                        Text("Sidik jari tanda tangan aplikasi", style = SistaTheme.typography.titleSmall)
+                        Text(stringResource(R.string.sec_signature), style = SistaTheme.typography.titleSmall)
                         Text(
-                            "SHA-256 sertifikat yang menandatangani aplikasi ini. IT sekolah bisa mencocokkannya dengan versi resmi.",
+                            stringResource(R.string.sec_signature_hint),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = Spacing.sm),
@@ -154,7 +158,7 @@ fun SecuritySettingsContent(
                                 Text(signature, style = SistaTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
                             }
                         } else {
-                            Text("Tidak terbaca di HP ini.", style = SistaTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.sec_signature_unreadable), style = SistaTheme.typography.bodyMedium)
                         }
                     }
                 }
@@ -162,8 +166,8 @@ fun SecuritySettingsContent(
                     item(key = "biometrics") {
                         SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.md), contentPadding = PaddingValues(vertical = Spacing.xs)) {
                             SistaListItem(
-                                headline = "Kunci biometrik",
-                                supporting = "Atur masuk dengan sidik jari atau wajah",
+                                headline = stringResource(R.string.sec_biometric),
+                                supporting = stringResource(R.string.sec_biometric_hint),
                                 leading = { IconBadge(Icons.Outlined.Fingerprint, tone = StatusTone.Neutral) },
                                 trailing = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant) },
                                 onClick = onOpenBiometrics,

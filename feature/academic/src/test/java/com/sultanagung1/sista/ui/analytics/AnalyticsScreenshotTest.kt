@@ -27,7 +27,7 @@ import java.time.LocalDate
 /** The student, teacher and parent analytics screens in their states. The data exists only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1400dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1400dp-xhdpi")
 class AnalyticsScreenshotTest {
 
     @get:Rule

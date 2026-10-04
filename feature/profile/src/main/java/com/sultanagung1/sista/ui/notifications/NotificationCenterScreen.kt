@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.notifications
 
+import com.sultanagung1.sista.feature.profile.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -130,15 +133,15 @@ fun NotificationCenterContent(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 SistaTopBar(
-                    title = "Notifikasi",
+                    title = stringResource(R.string.notif_title),
                     scrollBehavior = scrollBehavior,
-                    subtitle = if (state.unreadCount > 0) "${state.unreadCount} belum dibaca" else null,
+                    subtitle = if (state.unreadCount > 0) stringResource(R.string.notif_unread_count, state.unreadCount) else null,
                     onBack = onNavigateBack,
                     actions = {
                         if (state.unreadCount > 0) {
-                            IconButton(onClick = onMarkAllRead) { Icon(Icons.Outlined.DoneAll, contentDescription = "Tandai semua sudah dibaca") }
+                            IconButton(onClick = onMarkAllRead) { Icon(Icons.Outlined.DoneAll, contentDescription = stringResource(R.string.notif_mark_all)) }
                         }
-                        IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, contentDescription = "Pengaturan notifikasi") }
+                        IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.notif_settings)) }
                     },
                 )
             },
@@ -160,36 +163,38 @@ fun NotificationCenterContent(
                 ) {
                     when {
                         notifications == null && state.errorMessage != null -> item(key = "error") {
-                            ErrorState(title = "Notifikasi belum bisa dimuat", body = state.errorMessage, onRetry = onRetry)
+                            ErrorState(title = stringResource(R.string.notif_load_failed), body = state.errorMessage, onRetry = onRetry)
                         }
                         notifications == null -> item(key = "loading") { SkeletonList(rows = 5) }
                         notifications.isEmpty() -> item(key = "empty") {
                             EmptyState(
-                                title = "Belum ada notifikasi",
-                                body = "Kabar presensi, tagihan, dan layanan sekolah muncul di sini.",
+                                title = stringResource(R.string.notif_empty),
+                                body = stringResource(R.string.notif_empty_hint),
                                 icon = Icons.Outlined.NotificationsNone,
                             )
                         }
                         else -> {
                             item(key = "filter") {
+                                val filterLabels = NotificationFilter.values().associateWith { stringResource(it.label) }
+                                val unreadWithCount = stringResource(R.string.notif_filter_with_count, filterLabels.getValue(NotificationFilter.Unread), state.unreadCount)
                                 FilterChipRow(
                                     options = NotificationFilter.values().toList(),
                                     selected = state.filter,
                                     onSelect = onFilter,
-                                    label = { if (it == NotificationFilter.Unread && state.unreadCount > 0) "${it.label} (${state.unreadCount})" else it.label },
+                                    label = { if (it == NotificationFilter.Unread && state.unreadCount > 0) unreadWithCount else filterLabels.getValue(it) },
                                     contentPadding = PaddingValues(vertical = Spacing.sm),
                                 )
                             }
                             val visible = state.visible
                             if (visible.isEmpty()) {
                                 item(key = "all_read") {
-                                    EmptyState(title = "Semua sudah dibaca", icon = Icons.Outlined.DoneAll)
+                                    EmptyState(title = stringResource(R.string.notif_all_read), icon = Icons.Outlined.DoneAll)
                                 }
                             }
                             groupByDay(visible, today) { parseInstant(it.timestamp) }.forEach { (day, items) ->
-                                item(key = "day_$day") {
+                                item(key = "day_${day.hashCode()}") {
                                     Text(
-                                        day,
+                                        day.asString(),
                                         style = SistaTheme.typography.labelLarge,
                                         color = SistaTheme.colors.onSurfaceVariant,
                                         modifier = Modifier.padding(top = Spacing.md, bottom = Spacing.xs),
@@ -255,7 +260,7 @@ private fun NotificationRow(
                     )
                 }
                 Text(
-                    listOfNotNull(parseInstant(item.timestamp)?.let(::clock), channel.label, if (opens) "Ketuk untuk membuka" else null)
+                    listOfNotNull(parseInstant(item.timestamp)?.let { clock(it) }, stringResource(channel.label), if (opens) stringResource(R.string.notif_tap_to_open) else null)
                         .joinToString(" · "),
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
@@ -263,13 +268,13 @@ private fun NotificationRow(
             }
             Box {
                 IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Outlined.MoreVert, contentDescription = "Pilihan untuk ${item.title}")
+                    Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.notif_options_for, item.title))
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     if (!item.isRead) {
-                        DropdownMenuItem(text = { Text("Tandai sudah dibaca") }, onClick = { menu = false; onMarkRead() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.notif_mark_read)) }, onClick = { menu = false; onMarkRead() })
                     }
-                    DropdownMenuItem(text = { Text("Hapus") }, onClick = { menu = false; onDelete() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.notif_delete)) }, onClick = { menu = false; onDelete() })
                 }
             }
         }

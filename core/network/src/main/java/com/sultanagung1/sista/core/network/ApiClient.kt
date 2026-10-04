@@ -24,6 +24,7 @@ class ApiClient(private val context: Context) {
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(IdempotencyInterceptor())
         .addInterceptor(AuthInterceptor(sessionManager))
+        .addInterceptor(LanguageInterceptor { com.sultanagung1.sista.core.accessibility.AppLocale.headerValue(context) })
         .addInterceptor(loggingInterceptor)
         .apply {
             if (BuildConfig.DEBUG) {

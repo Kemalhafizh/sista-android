@@ -28,7 +28,7 @@ import java.util.TimeZone
 /** The parent's screens in their states. The data exists only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1900dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1900dp-xhdpi")
 class ParentScreenshotTest {
 
     @get:Rule

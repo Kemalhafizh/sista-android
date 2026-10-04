@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Kategori notifikasi (juga tampil di pengaturan Android) -->
+    <string name="channel_attendance">الحضور</string>
+    <string name="channel_attendance_desc">عند وصول الطالب إلى بوابة المدرسة</string>
+    <string name="channel_academic">الأكاديمي والشهادات</string>
+    <string name="channel_academic_desc">درجات الشهادات ومواعيد التقييم والواجبات</string>
+    <string name="channel_finance">المالية والرسوم</string>
+    <string name="channel_finance_desc">تذكيرات الرسوم وحالة الدفع</string>
+    <string name="channel_emergency">الطوارئ</string>
+    <string name="channel_emergency_desc">بث الطوارئ وسلامة الحرم المدرسي</string>
+    <string name="channel_general">معلومات عامة</string>
+    <string name="channel_general_desc">أنشطة المؤسسة وأخبار المدرسة</string>
+</resources>

@@ -1,6 +1,7 @@
 package com.sultanagung1.sista.ui.settings
 
 import com.sultanagung1.sista.core.accessibility.AppThemeMode
+import com.sultanagung1.sista.feature.profile.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,6 +24,6 @@ class SettingsFormatTest {
     fun everyThemeIsOffered() {
         assertEquals(AppThemeMode.entries.toSet(), SETTINGS_THEMES.toSet())
         // AMOLED is honest about LCD screens.
-        assertEquals(true, themeHint(AppThemeMode.AMOLED_BLACK).contains("tidak di LCD"))
+        assertEquals(R.string.theme_hint_amoled, themeHint(AppThemeMode.AMOLED_BLACK))
     }
 }
