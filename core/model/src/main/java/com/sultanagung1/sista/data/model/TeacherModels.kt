@@ -30,16 +30,17 @@ data class TeacherClassStudent(
 )
 
 /**
- * UI-mutable attendance row built from [TeacherClassStudent] — carries the
- * teacher's in-progress H/I/S/A selection before it's submitted.
+ * One student on the class attendance sheet with the teacher's selection,
+ * kept as the code `teacher/attendance` stores (H, I, S, A). The screen words
+ * the code in the app's language; it used to keep the Indonesian label and
+ * translate it to a code only when sending.
  */
 data class StudentAttendanceInputItem(
     val studentId: Long,
-    val nisn: String,
     val name: String,
-    val gender: String = "L",
-    var status: String = "Hadir", // UI label: Hadir/Izin/Sakit/Alpha — mapped to H/I/S/A only at submit time
-    var notes: String = ""
+    val nis: String? = null,
+    val nisn: String? = null,
+    val status: String = "H",
 )
 
 data class AttendanceStudentStatus(

@@ -5,12 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
-import com.sultanagung1.sista.data.model.AttendanceStudentStatus
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionErrorKind
 import com.sultanagung1.sista.data.model.ClassSessionResult
-import com.sultanagung1.sista.data.model.StudentAttendanceInputItem
-import com.sultanagung1.sista.data.model.SubmitClassAttendanceRequest
 import com.sultanagung1.sista.data.model.TeacherScheduleSlot
 import com.sultanagung1.sista.data.model.TeachingJournalEntry
 import com.sultanagung1.sista.data.repository.NotificationRepository
@@ -37,10 +34,6 @@ data class TeacherUiState(
     val teachingHoursThisWeek: Double = 0.0,
     val todaySchedules: List<TeacherScheduleSlot> = emptyList(),
     val recentJournals: List<TeachingJournalEntry> = emptyList(),
-    val activeClassStudents: List<StudentAttendanceInputItem> = emptyList(),
-    val isLoadingStudents: Boolean = false,
-    val isSubmittingAttendance: Boolean = false,
-    val attendanceSubmittedSuccess: Boolean = false,
     val errorMessage: String? = null,
     /** FASE 77.7.2: today's class sessions for the dashboard's "Mulai/Kembali ke Kelas" card. */
     val classSessions: List<ClassSessionDto> = emptyList(),
@@ -73,8 +66,6 @@ class TeacherViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(TeacherUiState())
     val uiState: StateFlow<TeacherUiState> = _uiState.asStateFlow()
-
-    private var currentClassroomId: Long? = null
 
     init {
         loadDashboard()
@@ -176,90 +167,5 @@ class TeacherViewModel @Inject constructor(
         val startMin = minutesOf(start) ?: return 0.0
         val endMin = minutesOf(end) ?: return 0.0
         return (endMin - startMin).coerceAtLeast(0) / 60.0
-    }
-
-    fun loadClassStudents(classroomId: Long) {
-        currentClassroomId = classroomId
-        _uiState.update { it.copy(isLoadingStudents = true, errorMessage = null) }
-        viewModelScope.launch {
-            teacherRepository.getClassStudents(classroomId).collect { result ->
-                when (result) {
-                    is NetworkResult.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoadingStudents = false,
-                                activeClassStudents = result.data.map { s ->
-                                    StudentAttendanceInputItem(
-                                        studentId = s.id,
-                                        nisn = s.nisn ?: s.nis ?: "-",
-                                        name = s.name,
-                                        gender = s.gender
-                                    )
-                                }
-                            )
-                        }
-                    }
-                    is NetworkResult.Error -> {
-                        _uiState.update { it.copy(isLoadingStudents = false, errorMessage = result.message) }
-                    }
-                    is NetworkResult.Loading -> Unit
-                }
-            }
-        }
-    }
-
-    fun updateStudentStatus(studentId: Long, newStatus: String) {
-        val updated = _uiState.value.activeClassStudents.map {
-            if (it.studentId == studentId) it.copy(status = newStatus) else it
-        }
-        _uiState.update { it.copy(activeClassStudents = updated) }
-    }
-
-    fun markAllPresent() {
-        val updated = _uiState.value.activeClassStudents.map { it.copy(status = "Hadir") }
-        _uiState.update { it.copy(activeClassStudents = updated) }
-    }
-
-    fun submitClassAttendance(scheduleId: Long?) {
-        val classroomId = currentClassroomId
-        if (classroomId == null) {
-            _uiState.update { it.copy(errorMessage = "Kelas tidak ditemukan. Muat ulang halaman.") }
-            return
-        }
-        val statusCodeMap = mapOf("Hadir" to "H", "Sakit" to "S", "Izin" to "I", "Alpha" to "A")
-        _uiState.update { it.copy(isSubmittingAttendance = true, errorMessage = null) }
-        viewModelScope.launch {
-            val request = SubmitClassAttendanceRequest(
-                classroomId = classroomId,
-                date = DateUtils.todayIso(),
-                scheduleId = scheduleId,
-                students = _uiState.value.activeClassStudents.map { s ->
-                    AttendanceStudentStatus(
-                        studentId = s.studentId,
-                        status = statusCodeMap[s.status] ?: "H",
-                        notes = s.notes.ifBlank { null }
-                    )
-                }
-            )
-            teacherRepository.submitClassAttendance(request).collect { result ->
-                when (result) {
-                    is NetworkResult.Success -> {
-                        _uiState.update {
-                            it.copy(isSubmittingAttendance = false, attendanceSubmittedSuccess = true)
-                        }
-                    }
-                    is NetworkResult.Error -> {
-                        _uiState.update { it.copy(isSubmittingAttendance = false, errorMessage = result.message) }
-                    }
-                    is NetworkResult.Loading -> Unit
-                }
-            }
-        }
-    }
-
-    fun resetFlags() {
-        _uiState.update {
-            it.copy(attendanceSubmittedSuccess = false, errorMessage = null)
-        }
     }
 }

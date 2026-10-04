@@ -12,4 +12,20 @@
     <string name="schedule_load_failed">The timetable couldn\'t be loaded (code %1$d).</string>
     <string name="notifications_load_failed">Notifications couldn\'t be loaded (code %1$d).</string>
     <string name="home_context_load_failed">Home information couldn\'t be loaded (code %1$d).</string>
+
+    <!-- Guru: kelas, jurnal, penilaian harian -->
+    <string name="teacher_classes_load_failed">Couldn\'t load the class list (code %1$d).</string>
+    <string name="class_students_load_failed">Couldn\'t load the class roster (code %1$d).</string>
+    <string name="class_attendance_save_failed">Class attendance wasn\'t saved (code %1$d).</string>
+    <string name="teaching_schedule_load_failed">Couldn\'t load the teaching schedule (code %1$d).</string>
+    <string name="journals_load_failed">Couldn\'t load teaching journals (code %1$d).</string>
+    <string name="journal_save_failed">The journal wasn\'t saved (code %1$d).</string>
+    <string name="assessments_load_failed">Couldn\'t load daily assessments (code %1$d).</string>
+    <string name="score_sheet_load_failed">Couldn\'t load the score sheet (code %1$d).</string>
+    <string name="assessment_create_failed">Couldn\'t create the assessment (code %1$d).</string>
+    <string name="scores_save_failed">Student scores weren\'t saved (code %1$d).</string>
+    <string name="remedial_auto_failed">Couldn\'t run automatic remedial (code %1$d).</string>
+    <string name="remedial_auto_done">Automatic remedial has run.</string>
+    <string name="remedials_load_failed">Couldn\'t load remedials (code %1$d).</string>
+    <string name="assessment_history_load_failed">Couldn\'t load assessment history (code %1$d).</string>
 </resources>

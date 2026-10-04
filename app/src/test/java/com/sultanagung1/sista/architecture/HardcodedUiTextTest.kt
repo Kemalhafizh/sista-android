@@ -109,17 +109,11 @@ class HardcodedUiTextTest {
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/ScanResultHandler.kt" to 5,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/update/UpdatePromptScreen.kt" to 7,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/AutoGenerateExamScreen.kt" to 12,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/DailyAssessmentScreen.kt" to 7,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/JournalFormScreen.kt" to 12,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/QuestionBankScreen.kt" to 19,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/RemedialScreen.kt" to 9,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/ScoreInputScreen.kt" to 13,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherAttendanceScreen.kt" to 20,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherCreateExamScreen.kt" to 23,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherDashboardScreen.kt" to 12,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherProctorDashboardScreen.kt" to 11,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherProctorExamsScreen.kt" to 6,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeachingJournalMobileScreen.kt" to 6,
     )
 
     private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"([^"\\]*+(?:\\.[^"\\]*+)*+)"""")

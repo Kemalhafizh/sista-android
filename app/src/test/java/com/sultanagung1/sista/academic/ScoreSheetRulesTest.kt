@@ -33,9 +33,9 @@ class ScoreSheetRulesTest {
 
     @Test
     fun outOfRangeAndNonNumbersAreRejected() {
-        assertEquals("0–100", ScoreSheetRules.errorOf("101", 100.0, null))
-        assertEquals("0–50", ScoreSheetRules.errorOf("51", 50.0, null))
-        assertEquals("Bukan angka", ScoreSheetRules.errorOf("8,5,1", 100.0, null))
+        assertEquals(ScoreSheetRules.ScoreError.OUT_OF_RANGE, ScoreSheetRules.errorOf("101", 100.0, null))
+        assertEquals(ScoreSheetRules.ScoreError.OUT_OF_RANGE, ScoreSheetRules.errorOf("51", 50.0, null))
+        assertEquals(ScoreSheetRules.ScoreError.NOT_A_NUMBER, ScoreSheetRules.errorOf("8,5,1", 100.0, null))
         assertNull(ScoreSheetRules.errorOf("50", 50.0, null))
         assertTrue(ScoreSheetRules.changes(rows, mapOf(2L to "150"), 100.0).isEmpty())
     }
@@ -43,12 +43,12 @@ class ScoreSheetRulesTest {
     @Test
     fun theServerCeilingOf100WinsOverALargerMaxScore() {
         assertEquals(100.0, ScoreSheetRules.ceiling(150.0), 0.0)
-        assertEquals("0–100", ScoreSheetRules.errorOf("120", 150.0, null))
+        assertEquals(ScoreSheetRules.ScoreError.OUT_OF_RANGE, ScoreSheetRules.errorOf("120", 150.0, null))
     }
 
     @Test
     fun aStoredScoreCannotBeClearedBecauseTheServerCannotDeleteIt() {
-        assertEquals("Tidak bisa dikosongkan", ScoreSheetRules.errorOf("", 100.0, 82.5))
+        assertEquals(ScoreSheetRules.ScoreError.CANNOT_CLEAR, ScoreSheetRules.errorOf("", 100.0, 82.5))
         assertNull(ScoreSheetRules.errorOf("", 100.0, null))
     }
 
@@ -64,9 +64,11 @@ class ScoreSheetRulesTest {
     }
 
     @Test
-    fun scoresAreShownTheIndonesianWay() {
+    fun scoresUseTheDecimalSeparatorOfTheAppLanguage() {
         assertEquals("80", ScoreSheetRules.format(80.0))
         assertEquals("82,5", ScoreSheetRules.format(82.5))
+        assertEquals("82.5", ScoreSheetRules.format(82.5, '.'))
+        assertEquals("82.5", ScoreSheetRules.textOf(82.5, '.'))
         assertEquals("", ScoreSheetRules.textOf(null))
         assertEquals(82.5, ScoreSheetRules.parse(" 82,5 ")!!, 0.0)
     }

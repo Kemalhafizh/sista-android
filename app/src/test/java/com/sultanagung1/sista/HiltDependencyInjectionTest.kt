@@ -26,6 +26,7 @@ class HiltDependencyInjectionTest {
         com.sultanagung1.sista.ui.ibadah.IbadahViewModel::class.java,
         com.sultanagung1.sista.ui.ai.AiViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.TeacherViewModel::class.java,
+        com.sultanagung1.sista.ui.teacher.TeacherAttendanceViewModel::class.java,
         com.sultanagung1.sista.ui.parent.ParentViewModel::class.java,
         com.sultanagung1.sista.ui.admin.AdminViewModel::class.java,
         com.sultanagung1.sista.ui.chat.ChatViewModel::class.java,

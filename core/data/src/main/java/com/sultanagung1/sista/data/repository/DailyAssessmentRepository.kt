@@ -8,7 +8,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
-class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApiService) {
+class DailyAssessmentRepository(
+    private val apiService: DailyAssessmentMobileApiService,
+    private val messages: FallbackMessages,
+) {
 
     fun getTeacherAssessments(): Flow<NetworkResult<TeacherAssessmentsData>> = flow {
         emit(NetworkResult.Loading)
@@ -17,10 +20,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal memuat daftar penilaian harian", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.assessments_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -32,13 +35,11 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error(
-                    if (response.code() == 403) "Penilaian ini bukan milik Anda." else "Gagal memuat daftar nilai",
-                    response.code(),
-                ))
+                // A 403 carries the server's own "data ini milik kelas guru lain".
+                emit(NetworkResult.Error(messages.failure(response, R.string.score_sheet_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -49,10 +50,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal membuat penilaian", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.assessment_create_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -63,10 +64,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal menyimpan nilai siswa secara massal", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.scores_save_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan saat menyimpan nilai"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -75,12 +76,12 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
         try {
             val response = apiService.autoRemedial(assessmentId, deadline)
             if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!.message ?: "Otomasi penugasan remedial berhasil dijalankan."))
+                emit(NetworkResult.Success(response.body()!!.message ?: messages.get(R.string.remedial_auto_done)))
             } else {
-                emit(NetworkResult.Error("Gagal menjalankan otomasi remedial", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.remedial_auto_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan saat menjalankan otomasi remedial"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -91,10 +92,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal memuat daftar remedial", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.remedials_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -105,10 +106,10 @@ class DailyAssessmentRepository(private val apiService: DailyAssessmentMobileApi
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal memuat riwayat penilaian", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.assessment_history_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 }

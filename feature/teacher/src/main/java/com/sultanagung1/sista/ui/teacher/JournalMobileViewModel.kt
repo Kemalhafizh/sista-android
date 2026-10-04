@@ -24,6 +24,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.ui.text.asUiText
+import com.sultanagung1.sista.feature.teacher.R
+import java.util.Locale
 
 /** Serialized shape written to [FormDraftStore] by [JournalMobileViewModel], keyed per schedule slot. */
 private data class JournalDraftPayload(
@@ -50,8 +54,9 @@ data class JournalMobileUiState(
     val weekJournals: List<JournalScheduleItem> = emptyList(),
     val monthJournals: List<JournalScheduleItem> = emptyList(),
     val isSubmitting: Boolean = false,
-    val errorMessage: String? = null,
-    val successMessage: String? = null,
+    /** The server's message (as sent), or the form's own check. */
+    val errorMessage: UiText? = null,
+    val successMessage: UiText? = null,
     // FASE 69.1: an in-progress KBM journal entry (materi/catatan/tindak lanjut)
     // survives process death instead of resetting to blank, keyed by scheduleId.
     val draftScheduleId: String = "",
@@ -270,7 +275,7 @@ class JournalMobileViewModel @Inject constructor(
                         loadJournals()
                     }
                     is NetworkResult.Error -> {
-                        _uiState.update { it.copy(isLoading = false, errorMessage = scheduleResult.message) }
+                        _uiState.update { it.copy(isLoading = false, errorMessage = scheduleResult.message.asUiText()) }
                     }
                     is NetworkResult.Loading -> Unit
                 }
@@ -287,7 +292,7 @@ class JournalMobileViewModel @Inject constructor(
                         rebuildState()
                     }
                     is NetworkResult.Error -> {
-                        _uiState.update { it.copy(isLoading = false, errorMessage = journalResult.message) }
+                        _uiState.update { it.copy(isLoading = false, errorMessage = journalResult.message.asUiText()) }
                     }
                     is NetworkResult.Loading -> Unit
                 }
@@ -332,7 +337,7 @@ class JournalMobileViewModel @Inject constructor(
     private fun TeacherScheduleSlot.toJournalScheduleItem(jamKe: Int, entry: TeachingJournalEntry?, dateOverride: String): JournalScheduleItem {
         return JournalScheduleItem(
             id = "sched-$id",
-            timeSlot = listOfNotNull(timeRange(sessionStart, sessionEnd), "Jam ke-$jamKe").joinToString(" · "),
+            timeRange = timeRange(sessionStart, sessionEnd),
             subject = subjectName ?: "-",
             className = classroomName ?: "-",
             isFilled = entry != null,
@@ -355,7 +360,6 @@ class JournalMobileViewModel @Inject constructor(
     private fun TeachingJournalEntry.toJournalScheduleItem(): JournalScheduleItem {
         return JournalScheduleItem(
             id = "entry-$uuid",
-            timeSlot = "Jam ke-$jamKe",
             subject = subjectName ?: "-",
             className = classroomName ?: "-",
             isFilled = true,
@@ -378,7 +382,7 @@ class JournalMobileViewModel @Inject constructor(
 
     /** "07:00:00", "08:30:00" → "07:00–08:30"; null when the schedule has no times. */
     private fun timeRange(start: String?, end: String?): String? {
-        fun clock(t: String?) = DateUtils.parseMinutesOfDay(t)?.let { "%02d:%02d".format(it / 60, it % 60) }
+        fun clock(t: String?) = DateUtils.parseMinutesOfDay(t)?.let { String.format(Locale.ROOT, "%02d:%02d", it / 60, it % 60) }
         val from = clock(start) ?: return null
         return clock(end)?.let { "$from–$it" } ?: from
     }
@@ -407,11 +411,11 @@ class JournalMobileViewModel @Inject constructor(
     ) {
         val slot = getScheduleById(scheduleId)
         if (slot == null) {
-            _uiState.update { it.copy(errorMessage = "Jadwal tidak ditemukan. Muat ulang halaman.") }
+            _uiState.update { it.copy(errorMessage = UiText.Res(R.string.jf_missing_slot)) }
             return
         }
         if (materiPokok.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Materi pokok KBM wajib diisi.") }
+            _uiState.update { it.copy(errorMessage = UiText.Res(R.string.jf_topic_required)) }
             return
         }
 
@@ -429,6 +433,9 @@ class JournalMobileViewModel @Inject constructor(
                     // The backend's TeachingJournal model has no dedicated "follow-up plan" column —
                     // "Kendala Pembelajaran" maps to the real obstacles field, and "Rencana Tindak
                     // Lanjut" is folded into notes (labeled) rather than silently dropped.
+                    // These labels are stored with the journal and read by the curriculum
+                    // reviewers on the web, so they stay in the school's language (Indonesian)
+                    // whatever language the teacher's app is in.
                     obstacles = catatan.ifBlank { null },
                     notes = buildList {
                         if (!isKompetensiTercapai) add("Kompetensi/tujuan pembelajaran BELUM tercapai.")
@@ -448,13 +455,13 @@ class JournalMobileViewModel @Inject constructor(
                                 // The backend saves this as status "draft" awaiting
                                 // review, not an already-validated record — see
                                 // ApiTeacherController::storeJournal's comment.
-                                successMessage = "Jurnal Mengajar KBM berhasil disimpan, menunggu validasi Kurikulum."
+                                successMessage = UiText.Res(R.string.jf_saved)
                             )
                         }
                         onSuccess()
                     }
                     is NetworkResult.Error -> {
-                        _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message) }
+                        _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message.asUiText()) }
                     }
                     is NetworkResult.Loading -> Unit
                 }

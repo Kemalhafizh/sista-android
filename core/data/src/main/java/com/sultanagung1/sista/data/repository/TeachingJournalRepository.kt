@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
-class TeachingJournalRepository(private val apiService: TeachingJournalMobileApiService) {
+class TeachingJournalRepository(
+    private val apiService: TeachingJournalMobileApiService,
+    private val messages: FallbackMessages,
+) {
 
     fun getTeacherSchedule(): Flow<NetworkResult<List<TeacherScheduleSlot>>> = flow {
         emit(NetworkResult.Loading)
@@ -20,10 +23,10 @@ class TeachingJournalRepository(private val apiService: TeachingJournalMobileApi
             if (response.isSuccessful && body?.success == true) {
                 emit(NetworkResult.Success(body.data ?: emptyList<TeacherScheduleSlot>()))
             } else {
-                emit(NetworkResult.Error(body?.message ?: serverMessageOf(response.errorBody()?.string()) ?: "Gagal memuat jadwal mengajar (kode ${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.teaching_schedule_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan jadwal mengajar"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -35,10 +38,10 @@ class TeachingJournalRepository(private val apiService: TeachingJournalMobileApi
             if (response.isSuccessful && body?.success == true) {
                 emit(NetworkResult.Success(body.data ?: emptyList<TeachingJournalEntry>()))
             } else {
-                emit(NetworkResult.Error(body?.message ?: serverMessageOf(response.errorBody()?.string()) ?: "Gagal memuat daftar jurnal mengajar (kode ${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.journals_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan jurnal mengajar"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -53,13 +56,10 @@ class TeachingJournalRepository(private val apiService: TeachingJournalMobileApi
             } else {
                 // A refusal (403 kelas guru lain, 422 data tidak valid) comes in the
                 // error body; show the server's own sentence, not a generic one.
-                val message = body?.message
-                    ?: serverMessageOf(response.errorBody()?.string())
-                    ?: "Jurnal belum tersimpan (kode ${response.code()})."
-                emit(NetworkResult.Error(message, response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.journal_save_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat simpan jurnal"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 }

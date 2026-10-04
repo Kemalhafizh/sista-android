@@ -1,12 +1,11 @@
 package com.sultanagung1.sista.ui.teacher
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.sultanagung1.sista.core.ui.text.UiText
 import com.sultanagung1.sista.data.model.AssessmentScoreRow
+import com.sultanagung1.sista.feature.teacher.R
 import com.sultanagung1.sista.data.model.AssessmentScoreSheet
 import com.sultanagung1.sista.data.model.AssessmentSheetHeader
 import com.sultanagung1.sista.data.model.DailyAssessmentItem
@@ -42,7 +41,7 @@ class DailyAssessmentScreenshotTest {
 
     private fun list(name: String, items: List<DailyAssessmentItem>, loading: Boolean = false, error: String? = null, dark: Boolean = false) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            AppLocaleContent(dark) {
                 DailyAssessmentContent(
                     assessments = items,
                     remedial = RemedialDashboard(total = 9, pending = 4, completed = 5).takeIf { items.isNotEmpty() },
@@ -64,6 +63,9 @@ class DailyAssessmentScreenshotTest {
 
     @Test fun listEmpty() = list("empty", emptyList())
 
+    @Test @Config(qualifiers = "en-w400dp-h1300dp-xhdpi")
+    fun listEnglish() = list("list_en", assessments)
+
     @Test fun listError() = list("error", emptyList(), error = "Tidak dapat terhubung ke server.")
 
     private val sheet = AssessmentScoreSheet(
@@ -81,9 +83,9 @@ class DailyAssessmentScreenshotTest {
         ),
     )
 
-    private fun sheet(name: String, edits: Map<Long, String>, success: String? = null, dark: Boolean = false) {
+    private fun sheet(name: String, edits: Map<Long, String>, success: UiText? = null, dark: Boolean = false) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            AppLocaleContent(dark) {
                 ScoreInputContent(
                     sheet = sheet,
                     loading = false,
@@ -109,11 +111,18 @@ class DailyAssessmentScreenshotTest {
 
     @Test fun sheetEditingDark() = sheet("editing_dark", mapOf(3L to "79", 4L to "105"), dark = true)
 
-    @Test fun sheetSaved() = sheet("saved", emptyMap(), success = "2 nilai tersimpan. 1 siswa di bawah KKM.")
+    // Bagas's 64.5 with a decimal point in Arabic; Dimas out of range.
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1300dp-xhdpi")
+    fun sheetEditingArabic() = sheet("editing_ar", mapOf(3L to "79", 4L to "105"))
+
+    @Test @Config(qualifiers = "en-w400dp-h1300dp-xhdpi")
+    fun sheetSavedEnglish() = sheet("saved_en", emptyMap(), success = UiText.Res(R.string.si_saved_below, 2, 1))
+
+    @Test fun sheetSaved() = sheet("saved", emptyMap(), success = UiText.Res(R.string.si_saved_below, 2, 1))
 
     @Test fun sheetLoadFailed() {
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+            AppLocaleContent {
                 ScoreInputContent(
                     sheet = null, loading = false, loadError = "Penilaian ini bukan milik Anda.", edits = emptyMap(),
                     submitting = false, errorMessage = null, successMessage = null, onEdit = { _, _ -> }, onSave = {},

@@ -64,6 +64,11 @@ import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.AssessmentScoreRow
 import com.sultanagung1.sista.data.model.AssessmentScoreSheet
 import com.sultanagung1.sista.data.model.ScoreSheetRules
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.ui.text.displayLocale
+import com.sultanagung1.sista.feature.teacher.R
+import java.text.DecimalFormatSymbols
 
 /**
  * Scores for one daily assessment. The class and its stored scores come from
@@ -105,7 +110,7 @@ fun ScoreInputContent(
     edits: Map<Long, String>,
     submitting: Boolean,
     errorMessage: String?,
-    successMessage: String?,
+    successMessage: UiText?,
     onEdit: (studentId: Long, text: String) -> Unit,
     onSave: () -> Unit,
     onAutoRemedial: () -> Unit,
@@ -119,23 +124,24 @@ fun ScoreInputContent(
     val summary = sheet?.let { ScoreSheetRules.summary(it.students, edits, it.assessment.kkm, it.assessment.maxScore) }
     // Remedial is assigned from what is stored on the server, not from unsaved edits.
     val storedBelowKkm = sheet?.students?.count { row -> row.score?.let { it < sheet.assessment.kkm } == true } ?: 0
+    val separator = decimalSeparator()
 
     ShellTheme {
         Scaffold(
             topBar = {
                 SistaTopBar(
-                    title = "Input nilai",
+                    title = stringResource(R.string.si_title),
                     subtitle = header?.title,
                     onBack = onNavigateBack,
                     actions = {
                         if (sheet != null) {
                             Box {
                                 IconButton(onClick = { menuOpen = true }) {
-                                    Icon(Icons.Outlined.MoreVert, contentDescription = "Menu lainnya")
+                                    Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.si_more))
                                 }
                                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                     DropdownMenuItem(
-                                        text = { Text("Tugaskan remedial") },
+                                        text = { Text(stringResource(R.string.si_assign_remedial)) },
                                         enabled = !submitting,
                                         onClick = {
                                             menuOpen = false
@@ -158,8 +164,8 @@ fun ScoreInputContent(
             when {
                 sheet == null && loading -> SkeletonList(Modifier.padding(padding), rows = 6)
                 sheet == null -> ErrorState(
-                    title = "Daftar nilai belum bisa dimuat",
-                    body = loadError ?: "Coba muat ulang.",
+                    title = stringResource(R.string.si_error),
+                    body = loadError ?: stringResource(R.string.si_error_body),
                     onRetry = onRetry,
                     modifier = Modifier
                         .padding(padding)
@@ -177,10 +183,10 @@ fun ScoreInputContent(
                         Text(
                             listOfNotNull(
                                 header?.subjectName,
-                                header?.classroomName?.let { "Kelas $it" },
-                                header?.assessmentDate?.let(::journalDate),
-                                "KKM ${ScoreSheetRules.format(sheet.assessment.kkm)}",
-                                "Maks ${ScoreSheetRules.format(ScoreSheetRules.ceiling(sheet.assessment.maxScore))}",
+                                header?.classroomName?.let { stringResource(R.string.th_class, it) },
+                                header?.assessmentDate?.let { journalDate(it) },
+                                stringResource(R.string.da_kkm, ScoreSheetRules.format(sheet.assessment.kkm, separator)),
+                                stringResource(R.string.si_max, ScoreSheetRules.format(ScoreSheetRules.ceiling(sheet.assessment.maxScore), separator)),
                             ).joinToString(" · "),
                             style = SistaTheme.typography.bodyMedium,
                             color = SistaTheme.colors.onSurfaceVariant,
@@ -189,9 +195,9 @@ fun ScoreInputContent(
                     if (summary != null) {
                         item(key = "stats") {
                             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                                StatTile(label = "Sudah dinilai", value = "${summary.filled}/${summary.total}", modifier = Modifier.weight(1f))
+                                StatTile(label = stringResource(R.string.si_scored), value = "${summary.filled}/${summary.total}", modifier = Modifier.weight(1f))
                                 StatTile(
-                                    label = "Di bawah KKM",
+                                    label = stringResource(R.string.si_below),
                                     value = summary.belowKkm.toString(),
                                     tone = if (summary.belowKkm > 0) StatusTone.Warning else StatusTone.Neutral,
                                     modifier = Modifier.weight(1f),
@@ -201,7 +207,7 @@ fun ScoreInputContent(
                     }
                     if (successMessage != null) {
                         item(key = "success") {
-                            InlineBanner(message = successMessage, tone = StatusTone.Success, onDismiss = onDismissMessage)
+                            InlineBanner(message = successMessage.asString(), tone = StatusTone.Success, onDismiss = onDismissMessage)
                         }
                     }
                     if (errorMessage != null) {
@@ -212,16 +218,16 @@ fun ScoreInputContent(
                     if (loadError != null) {
                         item(key = "stale") {
                             InlineBanner(
-                                message = "Gagal memperbarui. $loadError",
+                                message = stringResource(R.string.tj_stale, loadError),
                                 tone = StatusTone.Warning,
-                                actionLabel = "Coba lagi",
+                                actionLabel = stringResource(R.string.tj_retry),
                                 onAction = onRetry,
                             )
                         }
                     }
                     if (sheet.students.isEmpty()) {
                         item(key = "empty") {
-                            InlineBanner(message = "Belum ada siswa di kelas ini.", tone = StatusTone.Info)
+                            InlineBanner(message = stringResource(R.string.si_no_students), tone = StatusTone.Info)
                         }
                     } else {
                         item(key = "roster") {
@@ -232,7 +238,7 @@ fun ScoreInputContent(
                                         ScoreRow(
                                             number = index + 1,
                                             row = row,
-                                            text = edits[row.studentId] ?: ScoreSheetRules.textOf(row.score),
+                                            text = edits[row.studentId] ?: ScoreSheetRules.textOf(row.score, separator),
                                             edited = row.studentId in edits,
                                             kkm = sheet.assessment.kkm,
                                             maxScore = sheet.assessment.maxScore,
@@ -253,13 +259,13 @@ fun ScoreInputContent(
         val unsaved = (summary?.changed ?: 0) > 0
         AlertDialog(
             onDismissRequest = { confirmRemedial = false },
-            title = { Text("Tugaskan remedial?") },
+            title = { Text(stringResource(R.string.si_remedial_title)) },
             text = {
                 Text(
                     when {
-                        unsaved -> "Ada nilai yang belum disimpan. Simpan dulu, karena remedial ditugaskan dari nilai yang tersimpan."
-                        storedBelowKkm == 0 -> "Tidak ada nilai tersimpan di bawah KKM ${ScoreSheetRules.format(sheet.assessment.kkm)}."
-                        else -> "$storedBelowKkm siswa dengan nilai di bawah KKM ${ScoreSheetRules.format(sheet.assessment.kkm)} akan ditugaskan remedial."
+                        unsaved -> stringResource(R.string.si_remedial_unsaved)
+                        storedBelowKkm == 0 -> stringResource(R.string.si_remedial_none, ScoreSheetRules.format(sheet.assessment.kkm, separator))
+                        else -> stringResource(R.string.si_remedial_some, storedBelowKkm, ScoreSheetRules.format(sheet.assessment.kkm, separator))
                     },
                 )
             },
@@ -268,11 +274,11 @@ fun ScoreInputContent(
                     TextButton(onClick = {
                         confirmRemedial = false
                         onAutoRemedial()
-                    }) { Text("Tugaskan") }
+                    }) { Text(stringResource(R.string.si_assign)) }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmRemedial = false }) { Text(if (unsaved || storedBelowKkm == 0) "Tutup" else "Batal") }
+                TextButton(onClick = { confirmRemedial = false }) { Text(stringResource(if (unsaved || storedBelowKkm == 0) R.string.si_close else R.string.si_cancel)) }
             },
         )
     }
@@ -290,6 +296,9 @@ private fun ScoreRow(
     onEdit: (String) -> Unit,
 ) {
     val error = if (edited) ScoreSheetRules.errorOf(text, maxScore, row.score) else null
+    val errorText = error?.let { scoreErrorText(it, maxScore) }
+    val unsavedLabel = stringResource(R.string.si_unsaved_dot)
+    val scoreLabel = stringResource(R.string.si_score_of, row.name)
     val value = if (error == null) ScoreSheetRules.parse(text) else null
     Row(
         modifier = Modifier.padding(vertical = Spacing.sm),
@@ -318,19 +327,19 @@ private fun ScoreRow(
                         Modifier
                             .size(8.dp)
                             .background(SistaTheme.colors.primary, CircleShape)
-                            .semantics { contentDescription = "Belum disimpan" },
+                            .semantics { contentDescription = unsavedLabel },
                     )
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    (row.nis ?: row.nisn)?.let { "NIS $it" } ?: "Tanpa NIS",
+                    studentNumber(row.nis, row.nisn),
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                 )
                 if (value != null && value < kkm) {
                     Spacer(Modifier.width(Spacing.sm))
-                    StatusPill("Di bawah KKM", StatusTone.Warning)
+                    StatusPill(stringResource(R.string.si_below), StatusTone.Warning)
                 }
             }
         }
@@ -340,11 +349,11 @@ private fun ScoreRow(
             onValueChange = { input -> onEdit(input.filter { it.isDigit() || it == ',' || it == '.' }.take(6)) },
             modifier = Modifier
                 .width(84.dp)
-                .semantics { contentDescription = "Nilai ${row.name}" },
+                .semantics { contentDescription = scoreLabel },
             enabled = enabled,
             singleLine = true,
             isError = error != null,
-            supportingText = error?.let { { Text(it, maxLines = 1) } },
+            supportingText = errorText?.let { { Text(it, maxLines = 1) } },
             placeholder = { Text("–") },
             textStyle = SistaTheme.typography.titleMedium.copy(textAlign = TextAlign.Center),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
@@ -365,16 +374,16 @@ private fun SaveBar(changed: Int, invalid: Int, submitting: Boolean, onSave: () 
         ) {
             Text(
                 when {
-                    invalid > 0 -> "$invalid nilai belum valid"
-                    changed > 0 -> "$changed nilai belum disimpan"
-                    else -> "Semua nilai tersimpan"
+                    invalid > 0 -> stringResource(R.string.si_invalid, invalid)
+                    changed > 0 -> stringResource(R.string.si_unsaved, changed)
+                    else -> stringResource(R.string.si_all_saved)
                 },
                 style = SistaTheme.typography.bodyMedium,
                 color = if (invalid > 0) SistaTheme.colors.error else SistaTheme.colors.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             SistaButton(
-                text = if (changed > 0) "Simpan ($changed)" else "Simpan",
+                text = if (changed > 0) stringResource(R.string.si_save_n, changed) else stringResource(R.string.si_save),
                 onClick = onSave,
                 variant = ButtonVariant.Primary,
                 leadingIcon = Icons.Outlined.Save,
@@ -383,4 +392,28 @@ private fun SaveBar(changed: Int, invalid: Int, submitting: Boolean, onSave: () 
             )
         }
     }
+}
+
+/**
+ * The decimal separator of the app's language: ',' in Indonesian, '.' in English and
+ * Arabic. Only the two that [ScoreSheetRules.parse] reads back.
+ */
+@Composable
+private fun decimalSeparator(): Char =
+    if (DecimalFormatSymbols.getInstance(displayLocale()).decimalSeparator == ',') ',' else '.'
+
+@Composable
+private fun scoreErrorText(error: ScoreSheetRules.ScoreError, maxScore: Double): String = when (error) {
+    ScoreSheetRules.ScoreError.CANNOT_CLEAR -> stringResource(R.string.si_err_clear)
+    ScoreSheetRules.ScoreError.NOT_A_NUMBER -> stringResource(R.string.si_err_nan)
+    ScoreSheetRules.ScoreError.OUT_OF_RANGE ->
+        stringResource(R.string.si_err_range, ScoreSheetRules.format(ScoreSheetRules.ceiling(maxScore), decimalSeparator()))
+}
+
+/** "NIS 22101", else "NISN 0081234567": a NISN is not labelled as a NIS. */
+@Composable
+internal fun studentNumber(nis: String?, nisn: String?): String = when {
+    nis != null -> stringResource(R.string.si_nis, nis)
+    nisn != null -> stringResource(R.string.si_nisn, nisn)
+    else -> stringResource(R.string.si_no_nis)
 }

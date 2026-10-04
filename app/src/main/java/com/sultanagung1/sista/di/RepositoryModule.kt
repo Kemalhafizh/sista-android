@@ -79,8 +79,8 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideTeacherRepository(apiClient: ApiClient): TeacherRepository =
-        TeacherRepository(apiClient)
+    fun provideTeacherRepository(apiClient: ApiClient, messages: FallbackMessages): TeacherRepository =
+        TeacherRepository(apiClient, messages)
 
     @Provides
     @Singleton
@@ -166,8 +166,8 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideDailyAssessmentRepository(dailyAssessmentApi: DailyAssessmentMobileApiService): DailyAssessmentRepository =
-        DailyAssessmentRepository(dailyAssessmentApi)
+    fun provideDailyAssessmentRepository(dailyAssessmentApi: DailyAssessmentMobileApiService, messages: FallbackMessages): DailyAssessmentRepository =
+        DailyAssessmentRepository(dailyAssessmentApi, messages)
 
     @Provides
     @Singleton
@@ -201,8 +201,8 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideTeachingJournalRepository(journalApi: TeachingJournalMobileApiService): TeachingJournalRepository =
-        TeachingJournalRepository(journalApi)
+    fun provideTeachingJournalRepository(journalApi: TeachingJournalMobileApiService, messages: FallbackMessages): TeachingJournalRepository =
+        TeachingJournalRepository(journalApi, messages)
 
     // FASE 77: Sesi Kelas Hidup — guru, siswa, dan admin/Waka Kurikulum/TU.
     @Provides

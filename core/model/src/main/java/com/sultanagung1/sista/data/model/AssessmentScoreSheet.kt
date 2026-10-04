@@ -58,19 +58,25 @@ object ScoreSheetRules {
 
     fun ceiling(maxScore: Double): Double = if (maxScore > 0) minOf(maxScore, SERVER_MAX) else SERVER_MAX
 
-    /** 80.0 → "80", 82.5 → "82,5". */
-    fun format(value: Double): String =
-        if (value % 1.0 == 0.0) value.toLong().toString() else value.toString().replace('.', ',')
+    /** Why a typed score cannot be saved. The screen words it in the app's language. */
+    enum class ScoreError { CANNOT_CLEAR, NOT_A_NUMBER, OUT_OF_RANGE }
+
+    /** 80.0 → "80", 82.5 → "82,5" with [decimalSeparator] ',' (Indonesian) or "82.5" with '.'. */
+    fun format(value: Double, decimalSeparator: Char = ','): String =
+        if (value % 1.0 == 0.0) value.toLong().toString() else value.toString().replace('.', decimalSeparator)
 
     /** What the field shows before it is edited. */
-    fun textOf(score: Double?): String = score?.let(::format) ?: ""
+    fun textOf(score: Double?, decimalSeparator: Char = ','): String = score?.let { format(it, decimalSeparator) } ?: ""
 
-    /** Why [text] cannot be saved, or null. The server has no way to clear a stored score. */
-    fun errorOf(text: String, maxScore: Double, stored: Double?): String? {
-        if (text.isBlank()) return if (stored != null) "Tidak bisa dikosongkan" else null
-        val value = parse(text) ?: return "Bukan angka"
+    /**
+     * Why [text] cannot be saved, or null. The server has no way to clear a stored score.
+     * [ScoreError.OUT_OF_RANGE] means outside 0..[ceiling] of [maxScore].
+     */
+    fun errorOf(text: String, maxScore: Double, stored: Double?): ScoreError? {
+        if (text.isBlank()) return if (stored != null) ScoreError.CANNOT_CLEAR else null
+        val value = parse(text) ?: return ScoreError.NOT_A_NUMBER
         val max = ceiling(maxScore)
-        return if (value < 0 || value > max) "0–${format(max)}" else null
+        return if (value < 0 || value > max) ScoreError.OUT_OF_RANGE else null
     }
 
     /** The score that would stand after saving: the valid edit, else the stored one. */

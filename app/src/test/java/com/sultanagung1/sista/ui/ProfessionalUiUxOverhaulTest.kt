@@ -69,9 +69,11 @@ class ProfessionalUiUxOverhaulTest {
         // Same header, cards and tiles as every other role's Beranda.
         assertTrue("Must use the shared GreetingHeader", content.contains("GreetingHeader("))
         assertTrue("Must show real stats as StatTiles", content.contains("StatTile("))
-        assertTrue("Must show Kelas diampu", content.contains("Kelas diampu"))
-        assertTrue("Must offer Presensi per slot", content.contains("\"Presensi\""))
-        assertTrue("Must offer Jurnal per slot", content.contains("\"Jurnal\""))
+        // Texts live in feature/teacher's strings.xml (id/en/ar); the code names the resource.
+        val strings = read("feature/teacher/src/main/res/values/strings.xml")
+        assertTrue("Must show Kelas diampu", content.contains("R.string.th_classes") && strings.contains(">Kelas diampu<"))
+        assertTrue("Must offer Presensi per slot", content.contains("SistaButton(stringResource(R.string.th_attendance)") && strings.contains(">Presensi<"))
+        assertTrue("Must offer Jurnal per slot", content.contains("SistaButton(stringResource(R.string.th_journal)") && strings.contains(">Jurnal<"))
         // Shortcuts are only those the server grants this account.
         assertTrue("Shortcuts must be capability-filtered", content.contains("capabilities.canOpen(it.route)"))
         // The old header navigated to "scanner"/"notifications"/"profile" — none are routes.
