@@ -5,6 +5,7 @@ import com.sultanagung1.sista.data.model.BillingInvoice
 import com.sultanagung1.sista.data.model.ChildAttendanceLog
 import com.sultanagung1.sista.data.model.ChildSummaryResponse
 import com.sultanagung1.sista.data.model.ScheduleItem
+import com.sultanagung1.sista.data.model.ScheduleRules
 
 /**
  * API response → [WidgetSnapshot] section. Pure functions, no Android types,
@@ -21,8 +22,8 @@ object WidgetSnapshots {
                 day = it.day,
                 start = it.startTime,
                 end = it.endTime,
-                subject = it.subjectName,
-                room = it.room
+                subject = ScheduleRules.known(it.subjectName),
+                room = ScheduleRules.known(it.room)
             )
         },
         fetchedAt = fetchedAt

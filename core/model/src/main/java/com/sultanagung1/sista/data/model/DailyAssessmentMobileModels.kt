@@ -60,15 +60,20 @@ data class RemedialItem(
     @SerializedName("teacher_notes") val teacherNotes: String? = null
 )
 
+/**
+ * GET assessments/student. Title, subject and date are null when the assessment
+ * or its subject is gone; kkm and isTuntas are null when the assessment has no
+ * KKM (the server no longer assumes 75).
+ */
 data class StudentAssessmentHistoryItem(
     val id: Long,
-    @SerializedName("assessment_title") val assessmentTitle: String,
-    @SerializedName("subject_name") val subjectName: String,
-    @SerializedName("assessment_date") val assessmentDate: String,
-    val kkm: Double,
+    @SerializedName("assessment_title") val assessmentTitle: String? = null,
+    @SerializedName("subject_name") val subjectName: String? = null,
+    @SerializedName("assessment_date") val assessmentDate: String? = null,
+    val kkm: Double? = null,
     @SerializedName("original_score") val originalScore: Double,
     @SerializedName("final_score") val finalScore: Double,
-    @SerializedName("is_tuntas") val isTuntas: Boolean
+    @SerializedName("is_tuntas") val isTuntas: Boolean? = null
 )
 
 data class AssessmentResponse<T>(

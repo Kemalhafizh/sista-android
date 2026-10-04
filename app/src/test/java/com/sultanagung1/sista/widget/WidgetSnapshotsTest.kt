@@ -109,6 +109,20 @@ class WidgetSnapshotsTest {
     }
 
     @Test
+    fun scheduleKeepsAMissingSubjectAndClassUnknown() {
+        val schedule = WidgetSnapshots.schedule(
+            listOf(
+                ScheduleItem(1, "Senin", "07:00:00", "08:30:00", null, null, null),
+                // Cached from a server that still sent "N/A".
+                ScheduleItem(2, "Senin", "08:30:00", "10:00:00", "N/A", "N/A", "N/A")
+            ),
+            fetchedAt = 3
+        )
+        assertEquals(listOf(null, null), schedule.lessons.map { it.subject })
+        assertEquals(listOf(null, null), schedule.lessons.map { it.room })
+    }
+
+    @Test
     fun parentWidgetsFollowOneChild() {
         val budiBilling = BillingSnapshot(childUuid = "budi", childName = "Budi", unpaidCount = 1, unpaidTotal = null, invoiceCount = null, fetchedAt = 1)
         val budiAttendance = AttendanceSnapshot(childUuid = "budi", date = "2026-09-27", statusCode = "H", statusLabel = "Hadir", fetchedAt = 2)

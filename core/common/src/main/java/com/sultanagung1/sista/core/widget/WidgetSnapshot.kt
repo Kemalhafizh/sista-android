@@ -26,7 +26,8 @@ data class WidgetLesson(
     val day: String,
     val start: String,
     val end: String,
-    val subject: String,
+    /** Null when the subject is gone; the widget shows "–". */
+    val subject: String?,
     val room: String?
 )
 

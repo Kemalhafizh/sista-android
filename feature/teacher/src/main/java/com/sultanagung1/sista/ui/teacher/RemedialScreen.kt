@@ -120,13 +120,13 @@ private fun RemedialCardItem(item: RemedialItem) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.subjectName ?: "Mata Pelajaran",
+                    text = item.subjectName ?: "–",
                     style = MaterialTheme.typography.labelSmall,
                     color = Emerald700,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = item.assessmentTitle ?: "Ulangan Harian",
+                    text = item.assessmentTitle ?: "–",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )

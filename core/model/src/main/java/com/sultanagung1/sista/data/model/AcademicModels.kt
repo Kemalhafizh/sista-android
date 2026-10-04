@@ -7,10 +7,12 @@ data class ScheduleItem(
     @SerializedName("day") val day: String,
     @SerializedName("session_start") val startTime: String,
     @SerializedName("session_end") val endTime: String,
-    @SerializedName("subject_name") val subjectName: String,
-    @SerializedName("teacher_name") val teacherName: String,
-    /** The class this lesson belongs to (e.g. "XII MIPA 1") — not a room. */
-    @SerializedName("classroom_name") val room: String,
+    /** Null when the subject was deleted; shown as "–" via [ScheduleRules.subjectOf]. */
+    @SerializedName("subject_name") val subjectName: String?,
+    /** Null when the teacher account was removed. */
+    @SerializedName("teacher_name") val teacherName: String?,
+    /** The class this lesson belongs to (e.g. "XII MIPA 1") — not a room. Null when unknown. */
+    @SerializedName("classroom_name") val room: String?,
     /** The physical room, when the schedule has one. */
     @SerializedName("room_name") val roomName: String? = null
 )

@@ -234,7 +234,7 @@ class WidgetTextMapperTest {
 
     // ---------------------------------------------------------------- schedule
 
-    private fun lesson(day: String, start: String, subject: String, room: String? = "XII MIPA 1") =
+    private fun lesson(day: String, start: String, subject: String?, room: String? = "XII MIPA 1") =
         WidgetLesson(day = day, start = start, end = "", subject = subject, room = room)
 
     @Test
@@ -284,6 +284,18 @@ class WidgetTextMapperTest {
             listOf("07:00  Mapel 7 (XII MIPA 1)", "08:00  Mapel 8 (XII MIPA 1)", "+3 pelajaran lainnya"),
             content.lines.map(::render)
         )
+    }
+
+    @Test
+    fun scheduleShowsADashForAMissingSubject() {
+        val snapshot = student.copy(
+            schedule = ScheduleSnapshot(
+                listOf(lesson("Senin", "07:00:00", null), lesson("Senin", "08:30:00", " ", room = null)),
+                0
+            )
+        )
+        val content = WidgetTextMapper.schedule(snapshot, mondayMorning)
+        assertEquals(listOf("07:00  – (XII MIPA 1)", "08:30  –"), content.lines.map(::render))
     }
 
     @Test

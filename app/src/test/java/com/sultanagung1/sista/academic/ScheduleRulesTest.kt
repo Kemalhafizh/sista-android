@@ -127,6 +127,58 @@ class ScheduleRulesTest {
     }
 
     @Test
+    fun `a lesson whose subject, teacher and class are gone parses and shows a dash`() {
+        // ScheduleResource sends null (no longer "N/A") when a relation is missing.
+        val json = """
+            {"id":13,"day":"Senin","session_start":"07:00:00","session_end":"08:30:00","subject_id":3,
+             "subject_name":null,"subject_code":null,"teacher_name":null,"classroom_id":4,
+             "classroom_name":null,"room_name":null}
+        """.trimIndent()
+        val item = Gson().fromJson(json, ScheduleItem::class.java)
+
+        assertNull(item.subjectName)
+        assertNull(item.teacherName)
+        assertNull(item.room)
+        assertEquals("–", ScheduleRules.subjectOf(item))
+        assertEquals("–", ScheduleRules.locationOf(item))
+        assertEquals("–", ScheduleRules.detailsOf(item))
+        assertNull(ScheduleRules.classNameOf(listOf(item)))
+    }
+
+    @Test
+    fun `the detail line leaves out whatever is unknown`() {
+        val noTeacher = ScheduleItem(1, "Senin", "07:00", "08:00", "Fisika", null, "XI MIPA 2", "Lab Fisika")
+        val noPlace = ScheduleItem(2, "Senin", "07:00", "08:00", "Fisika", "Bu Rina", null, null)
+        val both = ScheduleItem(3, "Senin", "07:00", "08:00", "Fisika", "Bu Rina", "XI MIPA 2", null)
+
+        assertEquals("Lab Fisika", ScheduleRules.detailsOf(noTeacher))
+        assertEquals("Bu Rina", ScheduleRules.detailsOf(noPlace))
+        assertEquals("Bu Rina · XI MIPA 2", ScheduleRules.detailsOf(both))
+        assertEquals("Fisika", ScheduleRules.subjectOf(both))
+    }
+
+    @Test
+    fun `N-A from older servers or the cached schedule counts as missing`() {
+        val legacy = ScheduleItem(1, "Senin", "07:00", "08:00", "N/A", "N/A", "N/A", null)
+
+        assertEquals("–", ScheduleRules.subjectOf(legacy))
+        assertEquals("–", ScheduleRules.detailsOf(legacy))
+        assertNull(ScheduleRules.known(" "))
+        assertEquals("XI MIPA 2", ScheduleRules.classNameOf(listOf(legacy, lesson(2, "Senin", "08:00", "09:00"))))
+    }
+
+    @Test
+    fun `lessons without a subject still sort by time`() {
+        val all = listOf(
+            ScheduleItem(1, "Senin", "08:30", "10:00", null, null, null),
+            ScheduleItem(2, "Senin", "07:00", "08:30", "Fisika", "Bu Rina", "XI MIPA 2"),
+            ScheduleItem(3, "Senin", "08:30", "10:00", "Biologi", null, null),
+        )
+
+        assertEquals(listOf(2L, 1L, 3L), ScheduleRules.lessonsFor(all, "Senin").map { it.id })
+    }
+
+    @Test
     fun `the schedule screen no longer ships sample lessons or fixed dates`() {
         val screen = File("../feature/academic/src/main/java/com/sultanagung1/sista/ui/academic/ScheduleScreen.kt")
             .takeIf { it.exists() } ?: File("feature/academic/src/main/java/com/sultanagung1/sista/ui/academic/ScheduleScreen.kt")
