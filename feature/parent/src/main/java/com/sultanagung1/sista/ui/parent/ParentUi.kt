@@ -17,30 +17,51 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import com.sultanagung1.sista.core.ui.component.IconBadge
 import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.ui.text.displayLocale
+import com.sultanagung1.sista.core.ui.text.localDecimal
 import com.sultanagung1.sista.data.model.ChildActivityEvent
-import java.util.Calendar
+import com.sultanagung1.sista.feature.parent.R
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
-import java.util.TimeZone
 
-/** Icon and tone for a `parent/child/{uuid}/feed` event type. */
-internal fun activityStyle(type: String, title: String): Pair<ImageVector, StatusTone> = when (type) {
-    "attendance" -> Icons.Outlined.EventAvailable to if (title.endsWith("Hadir")) StatusTone.Success else StatusTone.Warning
+/**
+ * Icon and tone for a `parent/child/{uuid}/feed` event. The tone comes from the
+ * event's [ChildActivityEvent.code]; the title is in the parent's language and
+ * is never read.
+ */
+internal fun activityStyle(type: String, code: String?): Pair<ImageVector, StatusTone> = when (type) {
+    "attendance" -> Icons.Outlined.EventAvailable to when (code) {
+        "present" -> StatusTone.Success
+        "absent" -> StatusTone.Danger
+        else -> StatusTone.Warning
+    }
     "academic" -> Icons.Outlined.Assignment to StatusTone.Info
-    "discipline" -> Icons.Outlined.Gavel to if (title.contains("prestasi")) StatusTone.Success else StatusTone.Danger
+    "discipline" -> Icons.Outlined.Gavel to if (code == "reward") StatusTone.Success else StatusTone.Danger
     "library" -> Icons.AutoMirrored.Outlined.MenuBook to StatusTone.Brand
     "ibadah" -> Icons.Outlined.Mosque to StatusTone.Brand
     else -> Icons.Outlined.Notifications to StatusTone.Neutral
 }
 
+/** The app's language for numbers and dates, with Latin digits for Arabic. */
+@Composable
+internal fun parentLocale(): Locale = displayLocale(LocalConfiguration.current.locales[0])
+
 /** One school event: what happened, the detail, and when. */
 @Composable
 internal fun ActivityRow(event: ChildActivityEvent, nowMillis: Long, modifier: Modifier = Modifier, showDay: Boolean = true) {
-    val (icon, tone) = activityStyle(event.type, event.title)
+    val (icon, tone) = activityStyle(event.type, event.code)
+    val locale = parentLocale()
     Row(modifier.padding(vertical = Spacing.sm), verticalAlignment = Alignment.Top) {
         IconBadge(icon, tone = tone)
         Spacer(Modifier.width(Spacing.md))
@@ -56,68 +77,47 @@ internal fun ActivityRow(event: ChildActivityEvent, nowMillis: Long, modifier: M
         }
         Spacer(Modifier.width(Spacing.sm))
         Text(
-            if (showDay) eventTimeLabel(event.timestamp, nowMillis) else clockOf(event.timestamp),
+            if (showDay) eventTimeLabel(event.timestamp, nowMillis, locale).asString() else clockOf(event.timestamp),
             style = SistaTheme.typography.labelSmall,
             color = SistaTheme.colors.onSurfaceVariant,
         )
     }
 }
 
-private val ZONE: TimeZone = TimeZone.getTimeZone("Asia/Jakarta")
-private val DAYS = listOf("Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu")
-private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+private val ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
 
-private fun calendarOf(epochMillis: Long): Calendar = Calendar.getInstance(ZONE).apply { timeInMillis = epochMillis }
+private fun dateOf(epochMillis: Long): LocalDate = Instant.ofEpochMilli(epochMillis).atZone(ZONE).toLocalDate()
 
-private fun dayIndex(epochMillis: Long): Long {
-    val c = calendarOf(epochMillis)
-    return c.get(Calendar.YEAR) * 400L + c.get(Calendar.DAY_OF_YEAR)
-}
+private fun daysAgo(epochSeconds: Long, nowMillis: Long): Long =
+    ChronoUnit.DAYS.between(dateOf(epochSeconds * 1000), dateOf(nowMillis))
 
 /** Feed timestamps are epoch seconds. Events recorded per day carry midnight, so no time is shown for them. */
-private fun clockOf(epochSeconds: Long): String {
-    val c = calendarOf(epochSeconds * 1000)
-    val h = c.get(Calendar.HOUR_OF_DAY)
-    val m = c.get(Calendar.MINUTE)
-    return if (h == 0 && m == 0) "" else String.format(Locale.US, "%02d:%02d", h, m)
+internal fun clockOf(epochSeconds: Long): String {
+    val t = Instant.ofEpochSecond(epochSeconds).atZone(ZONE).toLocalTime()
+    return if (t.hour == 0 && t.minute == 0) "" else String.format(Locale.ROOT, "%02d:%02d", t.hour, t.minute)
 }
 
-/** "Hari ini", "Kemarin", or "Senin, 28 Sep" — the heading for a day of events. */
-internal fun dayLabel(epochSeconds: Long, nowMillis: Long): String {
-    val millis = epochSeconds * 1000
-    return when (dayIndex(nowMillis) - dayIndex(millis)) {
-        0L -> "Hari ini"
-        1L -> "Kemarin"
-        else -> {
-            val c = calendarOf(millis)
-            "${DAYS[c.get(Calendar.DAY_OF_WEEK) - 1]}, ${c.get(Calendar.DAY_OF_MONTH)} ${MONTHS[c.get(Calendar.MONTH)]}"
-        }
-    }
+/** "Hari ini", "Kemarin", or "Senin, 28 Sep" / "Monday, 28 Sep": the heading for a day of events. */
+internal fun dayLabel(epochSeconds: Long, nowMillis: Long, locale: Locale): UiText = when (daysAgo(epochSeconds, nowMillis)) {
+    0L -> UiText.Res(R.string.day_today)
+    1L -> UiText.Res(R.string.day_yesterday)
+    else -> UiText.Raw(dateOf(epochSeconds * 1000).format(DateTimeFormatter.ofPattern("EEEE'${comma(locale)}' d MMM", locale)))
 }
+
+/** Arabic writes its own comma between the day name and the date. */
+private fun comma(locale: Locale): String = if (locale.language == "ar") "،" else ","
 
 /** "07:12" today, "Kemarin", or "28 Sep". */
-internal fun eventTimeLabel(epochSeconds: Long, nowMillis: Long): String {
-    val millis = epochSeconds * 1000
-    return when (dayIndex(nowMillis) - dayIndex(millis)) {
-        0L -> clockOf(epochSeconds).ifEmpty { "Hari ini" }
-        1L -> "Kemarin"
-        else -> calendarOf(millis).let { "${it.get(Calendar.DAY_OF_MONTH)} ${MONTHS[it.get(Calendar.MONTH)]}" }
-    }
+internal fun eventTimeLabel(epochSeconds: Long, nowMillis: Long, locale: Locale): UiText = when (daysAgo(epochSeconds, nowMillis)) {
+    0L -> clockOf(epochSeconds).takeIf { it.isNotEmpty() }?.let { UiText.Raw(it) } ?: UiText.Res(R.string.day_today)
+    1L -> UiText.Res(R.string.day_yesterday)
+    else -> UiText.Raw(dateOf(epochSeconds * 1000).format(DateTimeFormatter.ofPattern("d MMM", locale)))
 }
 
-/** 96.5 → "96,5", 90.0 → "90"; null → "–". */
-internal fun decimal(value: Number?): String {
-    val v = value?.toDouble() ?: return "–"
-    val rounded = Math.round(v * 10) / 10.0
-    return if (rounded % 1.0 == 0.0) rounded.toLong().toString() else String.format(Locale.US, "%.1f", rounded).replace('.', ',')
-}
+/** 96.5 → "96,5" in Indonesian, "96.5" otherwise; 90.0 → "90"; null → "–". */
+internal fun decimal(value: Number?, locale: Locale): String = value?.let { localDecimal(it.toDouble(), locale) } ?: "–"
 
-/** "2026-09-29" → "Senin, 29 Sep 2026"; null when it is not a date. */
-internal fun dateLabel(iso: String?): String? {
-    val parts = iso?.take(10)?.split("-") ?: return null
-    val y = parts.getOrNull(0)?.toIntOrNull() ?: return null
-    val m = parts.getOrNull(1)?.toIntOrNull()?.takeIf { it in 1..12 } ?: return null
-    val d = parts.getOrNull(2)?.toIntOrNull() ?: return null
-    val c = Calendar.getInstance(ZONE).apply { clear(); set(y, m - 1, d) }
-    return "${DAYS[c.get(Calendar.DAY_OF_WEEK) - 1]}, $d ${MONTHS[m - 1]} $y"
-}
+/** "2026-09-29" → "Selasa, 29 Sep 2026" / "Tuesday, 29 Sep 2026"; null when it is not a date. */
+internal fun dateLabel(iso: String?, locale: Locale): String? =
+    iso?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        ?.format(DateTimeFormatter.ofPattern("EEEE'${comma(locale)}' d MMM yyyy", locale))

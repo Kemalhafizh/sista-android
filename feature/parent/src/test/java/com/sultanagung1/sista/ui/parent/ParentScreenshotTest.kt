@@ -3,7 +3,12 @@ package com.sultanagung1.sista.ui.parent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.sultanagung1.sista.core.websocket.WebSocketEvent
@@ -48,12 +53,31 @@ class ParentScreenshotTest {
     private val raka = ParentChildItem(uuid = "u2", name = "Raka Aditya", nis = "24031", classroom = "X-3")
 
     private val feed = listOf(
-        ChildActivityEvent("attendance_1", at(0, 0), "Presensi: Hadir", "attendance", "Tercatat di presensi kelas."),
-        ChildActivityEvent("assessment_4", at(0, 10, 15), "Nilai UH 2 Hukum Newton", "academic", "Nilai 88"),
-        ChildActivityEvent("points_2", at(1, 13, 5), "Poin prestasi +10", "discipline", "Juara 2 lomba karya tulis"),
-        ChildActivityEvent("loan_9", at(1, 9, 40), "Meminjam buku", "library", "Fisika Dasar Jilid 1"),
-        ChildActivityEvent("tahfidz_3", at(2, 0), "Setoran tahfidz", "ibadah", "Al-Mulk ayat 1–15"),
-        ChildActivityEvent("attendance_0", at(2, 0), "Presensi: Sakit", "attendance", "Demam, surat dokter menyusul."),
+        ChildActivityEvent("attendance_1", at(0, 0), "Presensi: Hadir", "attendance", "Tercatat di presensi kelas.", "present"),
+        ChildActivityEvent("assessment_4", at(0, 10, 15), "Nilai UH 2 Hukum Newton", "academic", "Nilai 88", "assessment"),
+        ChildActivityEvent("points_2", at(1, 13, 5), "Poin prestasi +10", "discipline", "Juara 2 lomba karya tulis", "reward"),
+        ChildActivityEvent("loan_9", at(1, 9, 40), "Meminjam buku", "library", "Fisika Dasar Jilid 1", "loan"),
+        ChildActivityEvent("tahfidz_3", at(2, 0), "Setoran tahfidz", "ibadah", "Al-Mulk ayat 1–15", "tahfidz"),
+        ChildActivityEvent("attendance_0", at(2, 0), "Presensi: Sakit", "attendance", "Demam, surat dokter menyusul.", "sick"),
+    )
+
+    // The server answers in the parent's language (sistem-terpadu ParentExperienceService);
+    // what a teacher typed stays as typed.
+    private val feedEn = listOf(
+        feed[0].copy(title = "Attendance: Present", description = "Recorded in class attendance."),
+        feed[1].copy(title = "Grade for UH 2 Hukum Newton", description = "Score 88"),
+        feed[2].copy(title = "Achievement points +10"),
+        feed[3].copy(title = "Borrowed a book"),
+        feed[4].copy(title = "Tahfidz recitation", description = "Al-Mulk, verses 1–15"),
+        feed[5].copy(title = "Attendance: Sick"),
+    )
+    private val feedAr = listOf(
+        feed[0].copy(title = "الحضور: حاضر", description = "سُجِّل في حضور الحصة."),
+        feed[1].copy(title = "درجة UH 2 Hukum Newton", description = "الدرجة 88"),
+        feed[2].copy(title = "نقاط التميز +10"),
+        feed[3].copy(title = "استعار كتابًا"),
+        feed[4].copy(title = "تسميع التحفيظ", description = "Al-Mulk، الآيات 1–15"),
+        feed[5].copy(title = "الحضور: مريض"),
     )
 
     private val loaded = ParentUiState(
@@ -76,11 +100,22 @@ class ParentScreenshotTest {
         ),
     )
 
-    private fun home(name: String, state: ParentUiState, dark: Boolean = false) {
+    private fun show(dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            // The app's manifest sets supportsRtl; this module's test manifest doesn't,
+            // so take the direction from the locale like the app does.
+            val rtl = LocalConfiguration.current.locales[0].language == "ar"
+            CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+                MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) { content() }
+            }
+        }
+    }
+
+    private fun home(name: String, state: ParentUiState, dark: Boolean = false, greeting: String = "Selamat sore") {
+        show(dark) {
+            run {
                 ParentHomeContent(
-                    greeting = "Selamat sore",
+                    greeting = greeting,
                     state = state,
                     nowMillis = now,
                     shortcuts = parentShortcuts(state.selectedChild?.uuid),
@@ -136,11 +171,11 @@ class ParentScreenshotTest {
         ChildAttendanceLog(5, "2026-09-24", "I", "Izin", notes = "Acara keluarga"),
     )
 
-    private fun detail(name: String, tab: Int) {
-        compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+    private fun detail(name: String, tab: Int, details: List<String> = listOf("Kelas XI MIPA 2", "NIS 22114")) {
+        show {
+            run {
                 ChildDetailContent(
-                    name = nadia.name, details = listOf("Kelas XI MIPA 2", "NIS 22114"),
+                    name = nadia.name, details = details,
                     grades = grades, attendance = attendance, loading = false, errorMessage = null, notFound = false,
                     tab = tab, onTab = {}, onRetry = {}, onNavigateBack = {},
                 )
@@ -153,21 +188,42 @@ class ParentScreenshotTest {
 
     @Test fun detailAttendance() = detail("attendance", 1)
 
-    @Test fun feedByDay() {
-        compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
-                ChildActivityFeedContent(nadia.name, feed, now, loading = false, errorMessage = null, onRetry = {}, onNavigateBack = {})
-            }
-        }
-        compose.onRoot().captureRoboImage("screenshots/child_feed.png")
+    private fun feedScreen(name: String, events: List<ChildActivityEvent>) {
+        show { ChildActivityFeedContent(nadia.name, events, now, loading = false, errorMessage = null, onRetry = {}, onNavigateBack = {}) }
+        compose.onRoot().captureRoboImage("screenshots/$name.png")
     }
 
-    @Test fun feedEmpty() {
-        compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
-                ChildActivityFeedContent(nadia.name, emptyList(), now, loading = false, errorMessage = null, onRetry = {}, onNavigateBack = {})
-            }
-        }
-        compose.onRoot().captureRoboImage("screenshots/child_feed_empty.png")
-    }
+    @Test fun feedByDay() = feedScreen("child_feed", feed)
+
+    @Test fun feedEmpty() = feedScreen("child_feed_empty", emptyList())
+
+    @Test @Config(qualifiers = "en-w400dp-h1900dp-xhdpi")
+    fun homeEnglish() = home(
+        "en",
+        loaded.copy(
+            activityFeed = feedEn,
+            weeklyDigest = loaded.weeklyDigest!!.copy(
+                highlights = listOf("Present 2 of 3 recorded attendances.", "Absent: 1 sick.", "New grades: 1.", "Achievement points +10."),
+            ),
+        ),
+        greeting = "Good afternoon",
+    )
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1900dp-xhdpi")
+    fun homeArabic() = home(
+        "ar",
+        loaded.copy(
+            activityFeed = feedAr,
+            weeklyDigest = loaded.weeklyDigest!!.copy(
+                highlights = listOf("حاضر 2 من أصل 3 سجلات حضور.", "الغياب: 1 مريض.", "درجات جديدة: 1.", "نقاط التميز +10."),
+            ),
+        ),
+        greeting = "مساء الخير",
+    )
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1900dp-xhdpi")
+    fun feedArabic() = feedScreen("child_feed_ar", feedAr)
+
+    @Test @Config(qualifiers = "en-w400dp-h1900dp-xhdpi")
+    fun detailAttendanceEnglish() = detail("attendance_en", 1, details = listOf("Class XI MIPA 2", "NIS 22114"))
 }

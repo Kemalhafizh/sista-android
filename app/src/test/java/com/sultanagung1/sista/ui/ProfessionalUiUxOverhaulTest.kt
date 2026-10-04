@@ -127,7 +127,9 @@ class ProfessionalUiUxOverhaulTest {
         // Missing statistics used to fall through `?: 0` to "LUNAS — Aman".
         val content = read(parentDashboard)
         assertTrue("Unknown billing must show a dash, not Lunas", content.contains("unpaid == null -> \"–\""))
-        assertTrue("Unknown billing state must be described as no data", content.contains("belum ada data"))
+        assertTrue("Unknown billing state must be described as no data", content.contains("unpaid == null -> R.string.stat_no_data"))
+        // The text is in strings.xml now (id, en, ar).
+        assertTrue(read("feature/parent/src/main/res/values/strings.xml").contains("<string name=\"stat_no_data\">belum ada data<"))
     }
 
     @Test
