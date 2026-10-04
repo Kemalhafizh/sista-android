@@ -1,233 +1,177 @@
 package com.sultanagung1.sista.ui.settings
 
-import android.content.Context
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.*
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import com.sultanagung1.sista.core.security.DeviceIntegrityChecker
 import com.sultanagung1.sista.core.security.DeviceIntegrityReport
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.SectionHeader
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaListItem
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
+import com.sultanagung1.sista.ui.navigation.Screen
+import com.sultanagung1.sista.ui.navigation.canOpen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * What this phone's own checks found. The biometric lock is set on its own
+ * page (FaceEnrollment), where it is saved; this page used to carry a second
+ * switch that only changed local state and came back on every visit.
+ */
 @Composable
 fun SecuritySettingsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigate: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val integrityChecker = remember { DeviceIntegrityChecker(context) }
+    val capabilities = LocalCapabilityState.current
     var report by remember { mutableStateOf<DeviceIntegrityReport?>(null) }
-    var biometricLockEnabled by remember { mutableStateOf(true) }
-
     LaunchedEffect(Unit) {
-        report = integrityChecker.checkIntegrity()
+        report = withContext(Dispatchers.Default) { DeviceIntegrityChecker(context).checkIntegrity() }
     }
-
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Keamanan & Integritas Perangkat",
-                subtitle = "Bank-Grade Anti-Tamper Protection",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Security Status Header
-            SulaoneGradientCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(if (report?.isSecure == true) Gold400 else AccentRose),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (report?.isSecure == true) Icons.Default.VerifiedUser else Icons.Default.GppBad,
-                            contentDescription = null,
-                            tint = Slate950,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (report?.isSecure == true) "STATUS SISTEM: AMAN (TERVERIFIKASI)" else "STATUS SISTEM: PERINGATAN",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Gold400
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Proteksi Enterprise Aktif",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "SMA Islam Sultan Agung 1 Semarang",
-                            fontSize = 11.sp,
-                            color = Emerald100
-                        )
-                    }
-                }
-            }
-
-            // Integrity Checklist Card
-            SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Audit Integritas Hardware & OS",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                report?.let { rep ->
-                    SecurityCheckRow(
-                        title = "Deteksi Root & Magisk",
-                        subtitle = if (!rep.isRooted) "Biner su tidak ditemukan (Bersih)" else "Perangkat dalam kondisi Root!",
-                        isPassed = !rep.isRooted
-                    )
-
-                    SecurityCheckRow(
-                        title = "Isolasi Emulator (CBT Anti-Cheat)",
-                        subtitle = if (!rep.isEmulator) "Perangkat Fisik Asli Terdeteksi" else "Menjalankan Emulator (Tidak Diizinkan)",
-                        isPassed = !rep.isEmulator
-                    )
-
-                    SecurityCheckRow(
-                        title = "USB Debugging (ADB Mode)",
-                        subtitle = if (!rep.isUsbDebuggingEnabled) "Mode pengembang aman" else "USB Debugging aktif",
-                        isPassed = !rep.isUsbDebuggingEnabled
-                    )
-
-                    SecurityCheckRow(
-                        title = "Enkripsi Jaringan TLS 1.3 & Pinning",
-                        subtitle = "Certificate Pinning domain resmi sista.sultanagung1.sch.id",
-                        isPassed = true
-                    )
-                }
-            }
-
-            // APK Signature Card
-            SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Sidik Jari SHA-256 APK Resmi",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    SulaoneBadge(
-                        text = "Anti-Tamper",
-                        containerColor = Emerald100,
-                        contentColor = Emerald800
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = report?.signatureHash?.takeIf { it.isNotEmpty() } ?: "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp
-                )
-            }
-
-            // Biometric App Lock Setting
-            SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Kunci Aplikasi dengan Biometrik",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Wajibkan Sidik Jari / Face Unlock saat membuka SuperApp",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Switch(
-                        checked = biometricLockEnabled,
-                        onCheckedChange = { biometricLockEnabled = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Emerald700
-                        )
-                    )
-                }
-            }
-        }
-    }
+    SecuritySettingsContent(
+        report = report,
+        canOpenBiometrics = capabilities.canOpen(Screen.FaceEnrollment.route),
+        onOpenBiometrics = { onNavigate(Screen.FaceEnrollment.route) },
+        onNavigateBack = onNavigateBack,
+    )
 }
 
+/** The security page without the checker, for previews and screenshots. [report] null = still checking. */
 @Composable
-private fun SecurityCheckRow(title: String, subtitle: String, isPassed: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(if (isPassed) Emerald100 else AccentRose.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (isPassed) Icons.Default.Check else Icons.Default.Close,
-                contentDescription = null,
-                tint = if (isPassed) Emerald800 else AccentRose,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-            Text(subtitle, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+fun SecuritySettingsContent(
+    report: DeviceIntegrityReport?,
+    canOpenBiometrics: Boolean,
+    onOpenBiometrics: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    ShellTheme {
+        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = { SistaTopBar(title = "Keamanan perangkat", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("security_root"),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                if (report == null) {
+                    item(key = "loading") { SkeletonList(rows = 4, modifier = Modifier.padding(top = Spacing.sm)) }
+                    return@LazyColumn
+                }
+                item(key = "verdict") {
+                    val (verdict, tone) = securityVerdict(report)
+                    SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("HP ini", style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            StatusPill(verdict, tone)
+                        }
+                        Text(
+                            "Diperiksa di HP ini setiap kali halaman dibuka. Server tetap memeriksa setiap permintaan sendiri.",
+                            style = SistaTheme.typography.bodyMedium,
+                            color = SistaTheme.colors.onSurfaceVariant,
+                            modifier = Modifier.padding(top = Spacing.sm),
+                        )
+                    }
+                }
+                item(key = "checks_header") { SectionHeader("Pemeriksaan", Modifier.padding(top = Spacing.md)) }
+                items(securityChecks(report), key = { it.title }) { check ->
+                    SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(Spacing.lg)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            IconBadge(
+                                icon = when (check.tone) {
+                                    StatusTone.Success -> Icons.Outlined.CheckCircle
+                                    StatusTone.Warning -> Icons.Outlined.WarningAmber
+                                    else -> Icons.Outlined.ErrorOutline
+                                },
+                                tone = check.tone,
+                            )
+                            Spacer(Modifier.width(Spacing.lg))
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+                                Text(check.title, style = SistaTheme.typography.titleSmall)
+                                Text(check.detail, style = SistaTheme.typography.bodyMedium, color = SistaTheme.colors.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                item(key = "signature") {
+                    SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.md)) {
+                        Text("Sidik jari tanda tangan aplikasi", style = SistaTheme.typography.titleSmall)
+                        Text(
+                            "SHA-256 sertifikat yang menandatangani aplikasi ini. IT sekolah bisa mencocokkannya dengan versi resmi.",
+                            style = SistaTheme.typography.bodySmall,
+                            color = SistaTheme.colors.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = Spacing.sm),
+                        )
+                        val signature = signatureLabel(report.signatureHash)
+                        if (signature != null) {
+                            SelectionContainer {
+                                Text(signature, style = SistaTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
+                            }
+                        } else {
+                            Text("Tidak terbaca di HP ini.", style = SistaTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+                if (canOpenBiometrics) {
+                    item(key = "biometrics") {
+                        SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.md), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                            SistaListItem(
+                                headline = "Kunci biometrik",
+                                supporting = "Atur masuk dengan sidik jari atau wajah",
+                                leading = { IconBadge(Icons.Outlined.Fingerprint, tone = StatusTone.Neutral) },
+                                trailing = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant) },
+                                onClick = onOpenBiometrics,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

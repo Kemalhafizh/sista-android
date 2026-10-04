@@ -104,7 +104,15 @@ class MainActivity : FragmentActivity() {
                 language = currentLang
             ) {
                 CompositionLocalProvider(
-                    LocalLayoutDirection provides currentLang.layoutDirection
+                    LocalLayoutDirection provides currentLang.layoutDirection,
+                    // Rebuilt screens (ShellTheme) read these; SulaoneTheme above
+                    // only reaches the older ones.
+                    com.sultanagung1.sista.core.ui.theme.LocalDisplayPreferences provides
+                        com.sultanagung1.sista.core.ui.theme.DisplayPreferences(
+                            amoledBlack = themeMode == com.sultanagung1.sista.core.accessibility.AppThemeMode.AMOLED_BLACK,
+                            highContrast = isHighContrast || themeMode == com.sultanagung1.sista.core.accessibility.AppThemeMode.HIGH_CONTRAST,
+                            dyslexicFriendly = isDyslexicFriendly,
+                        )
                 ) {
                     // FASE 74.1: Compose's testTag() is invisible to an external
                     // UiAutomator2/Appium driver by default — it only lives in

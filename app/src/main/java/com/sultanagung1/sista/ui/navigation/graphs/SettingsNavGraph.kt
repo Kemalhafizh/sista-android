@@ -16,7 +16,6 @@ import com.sultanagung1.sista.core.motion.LocalNavAnimatedVisibilityScope
 import com.sultanagung1.sista.core.audio.AudioRecorderManager
 import com.sultanagung1.sista.core.accessibility.ThemeManager
 import com.sultanagung1.sista.core.document.DownloadManager
-import com.sultanagung1.sista.core.lite.LiteModeManager
 import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.update.InAppUpdateManager
 import com.sultanagung1.sista.ui.auth.LoginViewModel
@@ -51,6 +50,7 @@ import com.sultanagung1.sista.ui.portal.EnterpriseCatalogScreen
 import com.sultanagung1.sista.ui.portal.ModuleFavoritesScreen
 import com.sultanagung1.sista.ui.portal.SsoWebViewScreen
 import com.sultanagung1.sista.ui.profile.ProfileScreen
+import com.sultanagung1.sista.ui.profile.ProfileViewModel
 import com.sultanagung1.sista.ui.profile.StudentProfileComprehensiveScreen
 import com.sultanagung1.sista.ui.profile.StudentProfileViewModel
 import com.sultanagung1.sista.ui.scanner.QrScannerScreen
@@ -79,21 +79,17 @@ fun NavGraphBuilder.settingsNavGraph(
     navigateToRoleHome: () -> Unit,
     audioRecorderManager: AudioRecorderManager,
     downloadManager: DownloadManager,
-    inAppUpdateManager: InAppUpdateManager,
-    liteModeManager: LiteModeManager
+    inAppUpdateManager: InAppUpdateManager
 ) {
     // --- Profile & Settings ---
     guardedComposable(Screen.Profile.route) {
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
             val loginViewModel: LoginViewModel = hiltViewModel()
             ProfileScreen(
+                viewModel = hiltViewModel<ProfileViewModel>(),
                 sessionManager = sessionManager,
                 themeManager = themeManager,
-                onNavigateBack = null,
-                onNavigateToBiometrics = { navController.navigate(Screen.FaceEnrollment.route) },
-                onNavigateToAnnouncements = { navController.navigate(Screen.AnnouncementFeed.route) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                onNavigateToDiagnostics = { navController.navigate(Screen.DiagnosticReport.route) },
+                onNavigate = { route -> navController.navigate(route) },
                 onLogout = {
                     loginViewModel.logout {
                         navController.navigate(Screen.Login.route) {
@@ -143,14 +139,8 @@ fun NavGraphBuilder.settingsNavGraph(
 
     guardedComposable(Screen.SecuritySettings.route) {
         SecuritySettingsScreen(
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.LiteModeSettings.route) {
-        LiteModeSettingsScreen(
-            liteModeManager = liteModeManager,
-            onNavigateBack = { navController.popBackStack() }
+            onNavigateBack = { navController.popBackStack() },
+            onNavigate = { route -> navController.navigate(route) }
         )
     }
 
@@ -160,28 +150,14 @@ fun NavGraphBuilder.settingsNavGraph(
             type = NavType.LongType
             defaultValue = 0L
         })
-    ) { backStackEntry ->
+    ) {
+        // Which student comes from the route (read by StudentProfileViewModel);
+        // the server decides who may see it and answers 403/404 otherwise.
         CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
-            val studentId = backStackEntry.arguments?.getLong("studentId")
-            val isViewingOther = studentId != null && studentId > 0L
-            val isPrivileged = userRole.contains("teacher", ignoreCase = true) ||
-                    userRole.contains("guru", ignoreCase = true) ||
-                    userRole.contains("admin", ignoreCase = true) ||
-                    userRole.contains("kepsek", ignoreCase = true) ||
-                    userRole.contains("principal", ignoreCase = true) ||
-                    userRole.contains("superadmin", ignoreCase = true) ||
-                    userRole.contains("bk", ignoreCase = true)
-
-            if (isViewingOther && !isPrivileged) {
-                Box(Modifier.fillMaxSize())
-            } else {
-                val viewModel: StudentProfileViewModel = hiltViewModel()
-                StudentProfileComprehensiveScreen(
-                    studentId = if (studentId != null && studentId > 0) studentId else null,
-                    viewModel = viewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
+            StudentProfileComprehensiveScreen(
+                viewModel = hiltViewModel<StudentProfileViewModel>(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 

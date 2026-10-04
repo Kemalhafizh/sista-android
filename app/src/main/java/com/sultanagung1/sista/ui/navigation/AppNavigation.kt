@@ -37,7 +37,6 @@ import com.sultanagung1.sista.core.accessibility.ThemeManager
 import com.sultanagung1.sista.core.designsystem.*
 import com.sultanagung1.sista.core.document.DownloadManager
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
-import com.sultanagung1.sista.core.lite.LiteModeManager
 import com.sultanagung1.sista.core.motion.LocalSharedTransitionScope
 import com.sultanagung1.sista.core.motion.SulaoneNavTransitions
 import com.sultanagung1.sista.core.network.ApiClient
@@ -202,7 +201,6 @@ fun AppNavigation(
     val audioRecorderManager = remember { AudioRecorderManager(context) }
     val downloadManager = remember { DownloadManager(context) }
     val inAppUpdateManager = remember { InAppUpdateManager(context, com.sultanagung1.sista.core.network.ApiClient(context)) }
-    val liteModeManager = remember { LiteModeManager(context) }
 
     // The same places for every account (FASE 60.3: Consolidated 4-Tab System):
     // Beranda opens the home of whatever the account may use, Layanan lists
@@ -399,8 +397,7 @@ fun AppNavigation(
                         navigateToRoleHome = navigateToRoleHome,
                         audioRecorderManager = audioRecorderManager,
                         downloadManager = downloadManager,
-                        inAppUpdateManager = inAppUpdateManager,
-                        liteModeManager = liteModeManager
+                        inAppUpdateManager = inAppUpdateManager
                     )
                 }
             }

@@ -148,13 +148,16 @@ class ProfessionalUiUxOverhaulTest {
     // ------------------------------------------------------------------------
 
     @Test
-    fun testProfileScreenImplementsDigitalInstitutionalId() {
+    fun testProfileIdentityComesFromTheServer() {
+        // The old card printed the same NIP for every teacher, "NISN 0071829102 •
+        // Kelas XII MIPA 1" for every student and a "SMART CARD TOKEN • VERIFIED"
+        // badge nothing verified. The card now shows GET me and nothing else.
         val content = read(profileScreen)
-        assertTrue("Must have DigitalInstitutionalIdCard", content.contains("DigitalInstitutionalIdCard("))
-        assertTrue("Must include official school branding", content.contains("SMA ISLAM SULTAN AGUNG 1"))
-        assertTrue("Must include verified smart card token", content.contains("SMART CARD TOKEN • VERIFIED"))
-        assertTrue("Must use ModernProfileMenuItem with 48dp target", content.contains("ModernProfileMenuItem("))
-        assertTrue("Must support Dark Mode toggle", content.contains("Mode Gelap (Dark Mode)"))
+        assertTrue("Identity rows come from GET me", content.contains("identityRows(profile)"))
+        assertTrue("The page is built from :core:ui", content.contains("SistaCard(") && content.contains("SistaTopBar("))
+        for (fake in listOf("SMART CARD TOKEN", "198203152006042001", "197405121998031002", "0071829102", "WM-2024-8891", "AKTIF 2026/2027", "2.0.0-PROD", "Ahmad Kemal Hafizh")) {
+            assertFalse("No made-up identity: $fake", content.contains(fake))
+        }
         // The old "Ganti Peran Dashboard (Multi-Role)" item wrote a fake
         // session (token_teacher, token_parent, ...) that the backend rejects.
         // The backend has no role-switch endpoint, so the switcher is gone.

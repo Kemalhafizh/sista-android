@@ -98,6 +98,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideProfileRepository(apiClient: ApiClient): ProfileRepository =
+        ProfileRepository(apiClient)
+
+    @Provides
+    @Singleton
     fun provideDocumentRepository(apiClient: ApiClient): DocumentRepository =
         DocumentRepository(apiClient)
 

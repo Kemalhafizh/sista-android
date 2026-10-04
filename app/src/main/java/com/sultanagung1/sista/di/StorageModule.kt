@@ -7,7 +7,6 @@ import com.sultanagung1.sista.core.accessibility.ThemeManager
 import com.sultanagung1.sista.core.audio.AudioRecorderManager
 import com.sultanagung1.sista.core.document.DownloadManager
 import com.sultanagung1.sista.core.feature.FeatureFlagManager
-import com.sultanagung1.sista.core.lite.LiteModeManager
 import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.core.notification.NotificationChannelManager
 import com.sultanagung1.sista.core.storage.SessionManager
@@ -159,11 +158,5 @@ object StorageModule {
     @Singleton
     fun provideServerTimeProvider(@ApplicationContext context: Context, apiClient: ApiClient): ServerTimeProvider {
         return ServerTimeProvider(context, apiClient)
-    }
-
-    @Provides
-    @Singleton
-    fun provideLiteModeManager(@ApplicationContext context: Context): LiteModeManager {
-        return LiteModeManager(context)
     }
 }

@@ -29,11 +29,9 @@ interface AuthApiService {
         @Body request: RegisterBiometricRequest
     ): Response<RegisterBiometricResponse>
 
-    // Not currently called anywhere — profile fields come from the login
-    // response instead. Kept enveloped-correct (ApiAuthController::me() wraps
-    // via successResponse) so it's safe to wire up later.
+    // The profile page's identity card (ApiAuthController::me).
     @GET("me")
-    suspend fun getCurrentUser(): Response<ApiEnvelope<UserProfile>>
+    suspend fun getCurrentUser(): Response<ApiEnvelope<MeProfile>>
 
     @POST("logout")
     suspend fun logout(): Response<Map<String, Any>>

@@ -147,3 +147,29 @@ internal val DarkExtendedColors = ExtendedColors(
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }
+
+// Display preferences (DisplayPreferences.kt) — kept here with every other colour.
+
+/** True black behind everything, so OLED pixels switch off; cards stay a step above it. */
+internal fun ColorScheme.amoledBlack(): ColorScheme = copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceDim = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF0C100E),
+    surfaceContainer = Color(0xFF111614),
+    surfaceContainerHigh = Color(0xFF181D1B),
+    surfaceContainerHighest = Color(0xFF1F2522),
+)
+
+/** Text at full strength (no muted grey) and outlines that read as lines. */
+internal fun ColorScheme.highContrast(dark: Boolean): ColorScheme {
+    val ink = if (dark) Color.White else Color.Black
+    return copy(
+        onBackground = ink,
+        onSurface = ink,
+        onSurfaceVariant = ink,
+        outline = ink,
+        outlineVariant = if (dark) Color(0xFFB8C2BC) else Color(0xFF3F4944),
+    )
+}

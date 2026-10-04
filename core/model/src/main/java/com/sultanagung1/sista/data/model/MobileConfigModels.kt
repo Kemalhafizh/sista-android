@@ -11,7 +11,9 @@ data class MobileConfigResponse(
     @SerializedName("version_check") val versionCheck: VersionCheckInfo? = null,
     @SerializedName("contact_support") val contactSupport: ContactSupportInfo? = null,
     // Attendance geofence — App\Support\School::campus() on the server.
-    @SerializedName("campus") val campus: CampusInfo? = null
+    @SerializedName("campus") val campus: CampusInfo? = null,
+    // Name, NPSN and contacts for the "Tentang" page — App\Support\School.
+    @SerializedName("school") val school: SchoolIdentity? = null
 )
 
 data class CampusInfo(

@@ -51,6 +51,7 @@ class HiltDependencyInjectionTest {
         com.sultanagung1.sista.ui.teacher.DailyAssessmentViewModel::class.java,
         com.sultanagung1.sista.ui.elearning.ElearningViewModel::class.java,
         com.sultanagung1.sista.ui.counseling.CounselingViewModel::class.java,
+        com.sultanagung1.sista.ui.profile.ProfileViewModel::class.java,
         com.sultanagung1.sista.ui.profile.StudentProfileViewModel::class.java,
         com.sultanagung1.sista.ui.calendar.CalendarViewModel::class.java,
         com.sultanagung1.sista.ui.spmb.SpmbViewModel::class.java,

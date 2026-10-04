@@ -394,19 +394,23 @@ fun DiagnosticReportScreen(
                         Text("Bagikan Diagnostik Lengkap ke IT Sekolah")
                     }
 
-                    TextButton(
-                        onClick = {
-                            haptics.tapMedium()
-                            showCrashConfirmDialog = true
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .sizeIn(minHeight = 48.dp)
-                    ) {
-                        Icon(imageVector = Icons.Filled.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Simulasi Uji Crash (Verifikasi Handler)")
+                    // Crashing the app on purpose is a developer's check of the crash
+                    // handler; it has no place in the build students and parents get.
+                    if (crashDrillAvailable(context.applicationInfo.flags)) {
+                        TextButton(
+                            onClick = {
+                                haptics.tapMedium()
+                                showCrashConfirmDialog = true
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .sizeIn(minHeight = 48.dp)
+                        ) {
+                            Icon(imageVector = Icons.Filled.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Simulasi Uji Crash (Verifikasi Handler)")
+                        }
                     }
                 }
             }
@@ -554,3 +558,7 @@ private fun buildDiagnosticOverview(
     sb.append("SMA Islam Sultan Agung 1 Semarang • SISTA Super App")
     return sb.toString()
 }
+
+/** The deliberate-crash button exists only in debuggable builds. */
+internal fun crashDrillAvailable(applicationFlags: Int): Boolean =
+    applicationFlags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
