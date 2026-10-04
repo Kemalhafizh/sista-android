@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Pesan saat server tidak menjelaskan -->
+    <string name="error_offline">تعذّر الاتصال بالخادم. تحقّق من اتصالك بالإنترنت.</string>
+    <string name="error_timeout">استغرق الخادم وقتًا طويلًا للرد. حاول مرة أخرى بعد قليل.</string>
+    <string name="login_failed">تعذّر تسجيل الدخول (الرمز %1$d).</string>
+    <string name="login_incomplete_response">استجابة الخادم لتسجيل الدخول غير مكتملة. حاول مرة أخرى.</string>
+    <string name="biometric_challenge_failed">تعذّر على الخادم بدء الدخول بالبصمة (الرمز %1$d).</string>
+    <string name="biometric_verify_failed">فشل التحقق من البصمة (الرمز %1$d).</string>
+    <string name="biometric_register_failed">تعذّر تسجيل البصمة (الرمز %1$d).</string>
+    <string name="schedule_load_failed">تعذّر تحميل جدول الحصص (الرمز %1$d).</string>
+    <string name="notifications_load_failed">تعذّر تحميل الإشعارات (الرمز %1$d).</string>
+    <string name="home_context_load_failed">تعذّر تحميل معلومات الصفحة الرئيسية (الرمز %1$d).</string>
+</resources>

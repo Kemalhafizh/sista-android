@@ -3,6 +3,10 @@ package com.sultanagung1.sista.ui.home
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -39,29 +43,35 @@ class HomeScreenshotTest {
         loading: Boolean = false,
         error: String? = null,
         dark: Boolean = false,
+        greeting: String = "Selamat pagi",
     ) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
-                HomeContent(
-                    greeting = "Selamat pagi",
-                    name = "Aisyah Putri Rahmadani",
-                    classroom = "XI MIPA 2",
-                    identifier = "0071234567",
-                    unreadCount = 3,
-                    activeClass = activeClass,
-                    todaySchedules = schedules,
-                    nowMinutes = 9 * 60,
-                    isLoading = loading,
-                    errorMessage = error,
-                    quickItems = STUDENT_QUICK_ITEMS,
-                    usage = usage,
-                    canScanClassQr = true,
-                    refreshing = false,
-                    onRefresh = {},
-                    onOpenRoute = {},
-                    onOpenQuickItem = {},
-                    onResetUsage = {},
-                )
+            // The app's manifest sets supportsRtl; this module's test manifest doesn't,
+            // so take the direction from the locale like the app does.
+            val rtl = LocalConfiguration.current.locales[0].language == "ar"
+            CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+                MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+                    HomeContent(
+                        greeting = greeting,
+                        name = "Aisyah Putri Rahmadani",
+                        classroom = "XI MIPA 2",
+                        identifier = "0071234567",
+                        unreadCount = 3,
+                        activeClass = activeClass,
+                        todaySchedules = schedules,
+                        nowMinutes = 9 * 60,
+                        isLoading = loading,
+                        errorMessage = error,
+                        quickItems = STUDENT_QUICK_ITEMS,
+                        usage = usage,
+                        canScanClassQr = true,
+                        refreshing = false,
+                        onRefresh = {},
+                        onOpenRoute = {},
+                        onOpenQuickItem = {},
+                        onResetUsage = {},
+                    )
+                }
             }
         }
         compose.onRoot().captureRoboImage("screenshots/home_$name.png")
@@ -82,4 +92,11 @@ class HomeScreenshotTest {
     @Test fun firstLoad() = capture("loading", schedules = emptyList(), loading = true)
 
     @Test fun noLessons() = capture("free_day", schedules = emptyList())
+
+    // Names, subjects and rooms come from the server as they are; only the app's own text changes.
+    @Test @Config(qualifiers = "en-w400dp-h1000dp-xhdpi")
+    fun english() = capture("en", greeting = "Good morning", activeClass = ActiveClassSessionDto(sessionId = 7, subjectName = "Fisika", canScanQr = true))
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1000dp-xhdpi")
+    fun arabic() = capture("ar", greeting = "صباح الخير", usage = mapOf("student.billing" to 6, "student.grades" to 4))
 }

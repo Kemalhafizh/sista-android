@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Beranda siswa -->
+    <string name="home_stale_data">يتم عرض البيانات المحفوظة. %1$s</string>
+    <string name="home_class_fallback">الحصة</string>
+    <string name="home_class_ongoing">%1$s جارية الآن</string>
+    <string name="home_class_checked_in">تم تسجيل حضورك في الحصة.</string>
+    <string name="home_class_scan_hint">امسح رمز QR من المعلم لتسجيل حضور الحصة.</string>
+    <string name="home_scan_qr">مسح QR</string>
+    <string name="home_detail_class">الصف %1$s</string>
+    <string name="home_detail_nis">NIS %1$s</string>
+    <string name="quick_gps_attendance">الحضور عبر GPS</string>
+    <string name="quick_class_qr">مسح QR الحصة</string>
+    <string name="quick_grades">الدرجات الأكاديمية</string>
+    <string name="quick_cbt">الاختبارات الإلكترونية</string>
+    <string name="quick_billing">الفواتير</string>
+    <string name="quick_elearning">الفصول الإلكترونية</string>
+    <string name="quick_mutabaah">المتابعة اليومية</string>
+    <string name="quick_rapor">الشهادة المدرسية</string>
+    <string name="home_frequent">الأكثر استخدامًا</string>
+    <string name="home_quick_access">وصول سريع</string>
+    <string name="home_all_services">كل الخدمات</string>
+    <string name="home_usage_note">مرتبة حسب ما تفتحه أكثر على هذا الهاتف.</string>
+    <string name="home_usage_reset">إعادة الضبط</string>
+    <string name="home_today">اليوم</string>
+    <string name="home_full_schedule">الجدول الكامل</string>
+    <string name="home_schedule_error">تعذّر تحميل الجدول</string>
+    <string name="home_no_lessons">لا توجد حصص اليوم</string>
+    <string name="home_no_lessons_body">يمكنك رؤية جدول هذا الأسبوع في الجدول الكامل.</string>
+    <string name="home_lesson_cd">%1$s، من %2$s إلى %3$s</string>
+    <string name="home_lesson_cd_status">%1$s، %2$s</string>
+    <string name="lesson_ongoing">جارية</string>
+    <string name="lesson_next">التالية</string>
+    <string name="lesson_done">انتهت</string>
+</resources>

@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -47,7 +48,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import com.sultanagung1.sista.core.designsystem.R
+import com.sultanagung1.sista.core.designsystem.R as DesignR
+import com.sultanagung1.sista.feature.auth.R
 import com.sultanagung1.sista.core.haptics.rememberHapticFeedbackHelper
 import com.sultanagung1.sista.core.security.BiometricVault
 import com.sultanagung1.sista.core.ui.component.ButtonSize
@@ -75,6 +77,9 @@ fun LoginScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val haptics = rememberHapticFeedbackHelper()
+    val fingerprintTitle = stringResource(R.string.login_with_fingerprint)
+    val fingerprintHint = stringResource(R.string.login_fingerprint_hint)
+    val usePassword = stringResource(R.string.login_use_password)
 
     var identifier by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -107,9 +112,9 @@ fun LoginScreen(
                 focusManager.clearFocus()
                 BiometricVault.authenticate(
                     activity = activity,
-                    title = "Masuk dengan sidik jari",
-                    subtitle = "Sentuh sensor sidik jari untuk masuk",
-                    negativeButtonText = "Pakai kata sandi",
+                    title = fingerprintTitle,
+                    subtitle = fingerprintHint,
+                    negativeButtonText = usePassword,
                     onSuccess = {
                         haptics.success()
                         viewModel.loginWithBiometric()
@@ -127,7 +132,7 @@ fun LoginScreen(
         password = password,
         onPasswordChange = { password = it },
         loading = uiState.isLoading,
-        errorMessage = uiState.errorMessage,
+        errorMessage = uiState.errorMessage?.asString(),
         onDismissError = viewModel::clearError,
         onSubmit = submit,
         onBiometric = onBiometric,
@@ -164,15 +169,14 @@ fun LoginContent(
                     Spacer(Modifier.height(Spacing.xxxl))
 
                     Text(
-                        "Masuk ke akun Anda",
+                        stringResource(R.string.login_title),
                         style = SistaTheme.typography.headlineSmall,
                         color = SistaTheme.colors.onSurface,
                         modifier = Modifier.semantics { heading() },
                     )
                     Spacer(Modifier.height(Spacing.xs))
                     Text(
-                        "Satu akun untuk siswa, guru, orang tua, dan staf sekolah. " +
-                            "Menu akan menyesuaikan peran akun Anda.",
+                        stringResource(R.string.login_intro),
                         style = SistaTheme.typography.bodyMedium,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
@@ -182,7 +186,7 @@ fun LoginContent(
                         InlineBanner(
                             message = errorMessage,
                             tone = StatusTone.Danger,
-                            title = "Belum bisa masuk",
+                            title = stringResource(R.string.login_error_title),
                             onDismiss = onDismissError,
                             modifier = Modifier.testTag("login_error"),
                         )
@@ -193,7 +197,7 @@ fun LoginContent(
                         SistaTextField(
                             value = identifier,
                             onValueChange = onIdentifierChange,
-                            label = "NISN, NIP, atau email",
+                            label = stringResource(R.string.login_identifier_label),
                             leadingIcon = Icons.Outlined.Person,
                             enabled = !loading,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
@@ -202,7 +206,7 @@ fun LoginContent(
                         SistaTextField(
                             value = password,
                             onValueChange = onPasswordChange,
-                            label = "Kata sandi",
+                            label = stringResource(R.string.login_password_label),
                             leadingIcon = Icons.Outlined.Lock,
                             isPassword = true,
                             enabled = !loading,
@@ -214,7 +218,7 @@ fun LoginContent(
                     Spacer(Modifier.height(Spacing.xl))
 
                     SistaButton(
-                        text = "Masuk",
+                        text = stringResource(R.string.login_submit),
                         onClick = onSubmit,
                         size = ButtonSize.Large,
                         fullWidth = true,
@@ -226,7 +230,7 @@ fun LoginContent(
                     if (onBiometric != null) {
                         OrDivider()
                         SistaButton(
-                            text = "Masuk dengan sidik jari",
+                            text = stringResource(R.string.login_with_fingerprint),
                             onClick = onBiometric,
                             variant = ButtonVariant.Secondary,
                             size = ButtonSize.Large,
@@ -239,7 +243,7 @@ fun LoginContent(
 
                     Spacer(Modifier.height(Spacing.xxl))
                     Text(
-                        "Lupa kata sandi? Hubungi tata usaha atau admin sekolah untuk mengatur ulang.",
+                        stringResource(R.string.login_forgot_password),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -263,16 +267,16 @@ private fun SchoolHeader() {
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(R.drawable.logo_kotak),
-                contentDescription = "Logo SMA Islam Sultan Agung 1",
+                painter = painterResource(DesignR.drawable.logo_kotak),
+                contentDescription = stringResource(R.string.login_school_logo),
                 modifier = Modifier.fillMaxSize(),
             )
         }
         Spacer(Modifier.size(Spacing.md))
         Column {
-            Text("Sulaone", style = SistaTheme.typography.titleLarge, color = SistaTheme.colors.onSurface)
+            Text(stringResource(R.string.login_app_name), style = SistaTheme.typography.titleLarge, color = SistaTheme.colors.onSurface)
             Text(
-                "SMA Islam Sultan Agung 1 Semarang",
+                stringResource(R.string.login_school_name),
                 style = SistaTheme.typography.bodyMedium,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
@@ -288,7 +292,7 @@ private fun OrDivider() {
     ) {
         HorizontalDivider(Modifier.weight(1f), color = SistaTheme.colors.outlineVariant)
         Text(
-            "atau",
+            stringResource(R.string.login_or),
             style = SistaTheme.typography.labelMedium,
             color = SistaTheme.colors.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Spacing.md),

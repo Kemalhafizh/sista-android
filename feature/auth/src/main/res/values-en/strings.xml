@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Masuk -->
+    <string name="login_app_name">Sulaone</string>
+    <string name="login_school_name">SMA Islam Sultan Agung 1 Semarang</string>
+    <string name="login_school_logo">SMA Islam Sultan Agung 1 logo</string>
+    <string name="login_title">Sign in to your account</string>
+    <string name="login_intro">One account for students, teachers, parents and school staff. The menu adapts to your account\'s role.</string>
+    <string name="login_error_title">Couldn\'t sign in</string>
+    <string name="login_identifier_label">NISN, NIP or email</string>
+    <string name="login_password_label">Password</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_or">or</string>
+    <string name="login_with_fingerprint">Sign in with fingerprint</string>
+    <string name="login_fingerprint_hint">Touch the fingerprint sensor to sign in</string>
+    <string name="login_use_password">Use password</string>
+    <string name="login_forgot_password">Forgot your password? Ask the school office or administrator to reset it.</string>
+    <string name="login_error_missing_fields">Please enter your NISN/NIP and password.</string>
+    <string name="login_error_no_device_session">This device\'s session isn\'t available.</string>
+    <string name="login_error_biometric_first">Sign in with your password at least once before using fingerprint sign-in.</string>
+</resources>

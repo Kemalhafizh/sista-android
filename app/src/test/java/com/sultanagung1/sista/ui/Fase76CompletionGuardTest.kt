@@ -35,6 +35,8 @@ class Fase76CompletionGuardTest {
     private val quickActions = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickAccess.kt"
     private val homeScreen = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt"
     private val schedulePreview = "feature/home/src/main/java/com/sultanagung1/sista/ui/home/sections/HomeTodayCard.kt"
+    private val homeStrings = "feature/home/src/main/res/values/strings.xml"
+    private val homeStringsAr = "feature/home/src/main/res/values-ar/strings.xml"
     private val database = "core/database/src/main/java/com/sultanagung1/sista/data/local/SistaDatabase.kt"
     private val usageDao = "core/database/src/main/java/com/sultanagung1/sista/data/local/dao/FeatureUsageDao.kt"
     private val tieredLoading = "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SulaoneTieredLoading.kt"
@@ -96,11 +98,15 @@ class Fase76CompletionGuardTest {
 
     @Test
     fun personalizationIsLabelledHonestly() {
-        val all = listOf(quickActions, homeScreen).joinToString("\n") { code(it) }
-        assertTrue(all.contains("Sering Dipakai"))
+        // The text lives in strings.xml now (id, en, ar); the labels say what it is in each.
+        val all = (listOf(quickActions, homeScreen).map { code(it) } + source(homeStrings)).joinToString("\n")
+        assertTrue(code(quickActions).contains("R.string.home_frequent"))
+        assertTrue(source(homeStrings).contains(">Sering Dipakai<"))
         assertFalse("A tap counter is not AI", Regex("(?i)(rekomendasi|direkomendasikan)\\s+ai|ai personali").containsMatchIn(all))
+        assertFalse("A tap counter is not AI", source(homeStringsAr).contains("ذكاء"))
         assertTrue(code(quickActions).contains("UsageRanking.rank("))
-        assertTrue("User can reset", code(quickActions).contains("Atur ulang"))
+        assertTrue("User can reset", code(quickActions).contains("R.string.home_usage_reset"))
+        assertTrue(source(homeStrings).contains(">Atur ulang<"))
         assertTrue(code(homeScreen).contains("viewModel::recordFeatureUse"))
     }
 
@@ -130,7 +136,7 @@ class Fase76CompletionGuardTest {
         val c = code(schedulePreview)
         val loading = c.indexOf("todaySchedules.isEmpty() && isLoading")
         val error = c.indexOf("todaySchedules.isEmpty() && loadError != null")
-        val empty = c.indexOf("title = \"Tidak ada pelajaran hari ini\"")
+        val empty = c.indexOf("title = stringResource(R.string.home_no_lessons)")
         assertTrue(loading in 0 until empty)
         assertTrue(error in 0 until empty)
         val home = code(homeScreen)

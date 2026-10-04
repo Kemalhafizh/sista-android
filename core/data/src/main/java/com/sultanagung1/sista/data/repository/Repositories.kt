@@ -95,7 +95,8 @@ class AuthRepository(
     private val sessionManager: SessionManager,
     private val userDao: UserDao? = null,
     private val widgetSnapshots: WidgetSnapshotStore? = null,
-    private val localeSync: LocaleSync? = null
+    private val localeSync: LocaleSync? = null,
+    private val messages: FallbackMessages,
 ) {
     fun getLocalUser(): Flow<UserProfile?> {
         return userDao?.getLoggedInUser()?.map { it?.toUserProfile() } ?: flow { emit(null) }
@@ -129,25 +130,14 @@ class AuthRepository(
 
                     emit(NetworkResult.Success(loginResponse))
                 } else {
-                    emit(NetworkResult.Error(loginResponse.message ?: "Data login tidak valid."))
+                    emit(NetworkResult.Error(loginResponse.message ?: messages.get(R.string.login_incomplete_response)))
                 }
             } else {
                 // The server answers in the app's language (Accept-Language).
-                val errMessage = serverMessageOf(response.errorBody()?.string()) ?: when (response.code()) {
-                    401 -> "Kredensial salah. Periksa kembali email/NISN dan kata sandi."
-                    404 -> "Server endpoint login tidak ditemukan (404)."
-                    500 -> "Terjadi kesalahan internal pada server backend (500)."
-                    else -> response.message().ifEmpty { "Gagal masuk (Kode: ${response.code()})" }
-                }
-                emit(NetworkResult.Error(errMessage, response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.login_failed), response.code()))
             }
         } catch (e: Exception) {
-            val errorMsg = when (e) {
-                is java.net.ConnectException -> "Gagal terhubung ke server backend! Pastikan backend Laravel sudah dinyalakan ('php artisan serve')."
-                is java.net.SocketTimeoutException -> "Koneksi ke backend server timeout. Pastikan server aktif dan merespons."
-                else -> "Gagal terhubung ke backend: ${e.localizedMessage ?: "Koneksi terputus"}. Pastikan backend Laravel sudah dinyalakan ('php artisan serve')."
-            }
-            emit(NetworkResult.Error(errorMsg))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -158,10 +148,10 @@ class AuthRepository(
             if (response.isSuccessful && response.body() != null && response.body()!!.nonce.isNotBlank()) {
                 emit(NetworkResult.Success(response.body()!!.nonce))
             } else {
-                emit(NetworkResult.Error("Gagal mendapatkan challenge biometrik dari server (${response.code()})."))
+                emit(NetworkResult.Error(messages.failure(response, R.string.biometric_challenge_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error("Server tidak dapat dijangkau untuk autentikasi biometrik: ${e.localizedMessage}"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -185,10 +175,10 @@ class AuthRepository(
                 widgetSnapshots?.startNewSession()
                 emit(NetworkResult.Success(body))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Verifikasi biometrik gagal.", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.biometric_verify_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Gagal memverifikasi biometrik."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -201,10 +191,10 @@ class AuthRepository(
             if (response.isSuccessful && response.body()?.success == true) {
                 emit(NetworkResult.Success(Unit))
             } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal mendaftarkan kredensial biometrik (${response.code()})."))
+                emit(NetworkResult.Error(response.body()?.message ?: messages.failure(response, R.string.biometric_register_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Gagal mendaftarkan kredensial biometrik."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -221,7 +211,8 @@ class AuthRepository(
 class StudentRepository(
     private val apiClient: ApiClient,
     private val localStore: com.sultanagung1.sista.data.local.SulaoneLocalStore? = null,
-    private val widgetSnapshots: WidgetSnapshotStore? = null
+    private val widgetSnapshots: WidgetSnapshotStore? = null,
+    private val messages: FallbackMessages,
 ) {
 
     fun getSchedule(): Flow<NetworkResult<List<ScheduleItem>>> = flow {
@@ -239,11 +230,11 @@ class StudentRepository(
                 widgetSnapshots?.update { it.copy(schedule = WidgetSnapshots.schedule(data, DateUtils.nowMillis())) }
                 emit(NetworkResult.Success(data))
             } else if (localStore?.getCachedSchedule() == null) {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat jadwal pelajaran", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.schedule_load_failed), response.code()))
             }
         } catch (e: Exception) {
             if (localStore?.getCachedSchedule() == null) {
-                emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat memuat jadwal pelajaran."))
+                emit(NetworkResult.Error(messages.connection(e)))
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -332,10 +323,10 @@ class StudentRepository(
             if (response.isSuccessful && data != null) {
                 emit(NetworkResult.Success(data.count { it.readAt == null }))
             } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat notifikasi", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.notifications_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -352,10 +343,10 @@ class StudentRepository(
                 // card on any backend error).
                 emit(NetworkResult.Success(response.body()?.data))
             } else {
-                emit(NetworkResult.Error(response.message().ifBlank { "Gagal memuat data kontekstual beranda" }, response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.home_context_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan koneksi saat memuat beranda"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 }

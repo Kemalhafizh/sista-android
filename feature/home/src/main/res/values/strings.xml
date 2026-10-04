@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Beranda siswa -->
+    <string name="home_stale_data">Menampilkan data tersimpan. %1$s</string>
+    <string name="home_class_fallback">Kelas</string>
+    <string name="home_class_ongoing">%1$s sedang berlangsung</string>
+    <string name="home_class_checked_in">Presensi kelas Anda sudah tercatat.</string>
+    <string name="home_class_scan_hint">Pindai QR dari guru untuk presensi kelas.</string>
+    <string name="home_scan_qr">Pindai QR</string>
+    <string name="home_detail_class">Kelas %1$s</string>
+    <string name="home_detail_nis">NIS %1$s</string>
+    <string name="quick_gps_attendance">Presensi GPS</string>
+    <string name="quick_class_qr">Scan QR Kelas</string>
+    <string name="quick_grades">Nilai</string>
+    <string name="quick_cbt">Ujian CBT</string>
+    <string name="quick_billing">Tagihan</string>
+    <string name="quick_elearning">Kelas Online</string>
+    <string name="quick_mutabaah">Mutaba\'ah</string>
+    <string name="quick_rapor">E-Rapor</string>
+    <string name="home_frequent">Sering Dipakai</string>
+    <string name="home_quick_access">Akses cepat</string>
+    <string name="home_all_services">Semua layanan</string>
+    <string name="home_usage_note">Urutan mengikuti yang paling sering Anda buka di HP ini.</string>
+    <string name="home_usage_reset">Atur ulang</string>
+    <string name="home_today">Hari ini</string>
+    <string name="home_full_schedule">Jadwal lengkap</string>
+    <string name="home_schedule_error">Jadwal belum bisa dimuat</string>
+    <string name="home_no_lessons">Tidak ada pelajaran hari ini</string>
+    <string name="home_no_lessons_body">Jadwal minggu ini tetap bisa dilihat di Jadwal lengkap.</string>
+    <string name="home_lesson_cd">%1$s, %2$s sampai %3$s</string>
+    <string name="home_lesson_cd_status">%1$s, %2$s</string>
+    <string name="lesson_ongoing">Berlangsung</string>
+    <string name="lesson_next">Berikutnya</string>
+    <string name="lesson_done">Selesai</string>
+</resources>
