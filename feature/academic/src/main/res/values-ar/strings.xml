@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Presensi sesi kelas (siswa) -->
+    <string name="sq_title">حضور الحصة</string>
+    <string name="sq_success">تم تسجيل الحضور!</string>
+    <string name="sq_class">الصف %1$s</string>
+    <string name="sq_recorded_at">سُجِّل الساعة %1$s بتوقيت غرب إندونيسيا</string>
+    <string name="sq_home">العودة إلى الرئيسية</string>
+    <string name="sq_already">مسجّل بالفعل</string>
+    <string name="sq_failed">لم يُسجَّل الحضور</string>
+    <string name="sq_scan_again">امسح مرة أخرى</string>
+    <string name="sq_back">رجوع</string>
+    <string name="sq_no_active">لا توجد حصة جارية لصفك بعد. إذا كان المعلم يعرض رمز QR، يمكنك مسحه.</string>
+    <string name="sq_camera_needed">يلزم إذن الكاميرا لمسح رمز QR للحصة.</string>
+    <string name="sq_allow_camera">السماح بالكاميرا</string>
+    <string name="sq_recording">جارٍ تسجيل الحضور…</string>
+    <string name="sq_aim">وجّه الكاميرا نحو رمز QR على شاشة المعلم.</string>
+    <string name="sq_rotation">يتغير الرمز كل 30 ثانية. امسحه مباشرة من شاشة المعلم وليس من لقطة شاشة.</string>
+    <string name="sq_manual">لا تستطيع المسح؟ اطلب من المعلم تسجيل حضورك يدويًا من جهازه.</string>
+    <string name="sq_camera_cd">كاميرا مسح رمز QR للحصة</string>
+    <string name="sq_already_status">أنت مسجّل بالفعل بحالة %1$s في هذه الحصة.</string>
+</resources>

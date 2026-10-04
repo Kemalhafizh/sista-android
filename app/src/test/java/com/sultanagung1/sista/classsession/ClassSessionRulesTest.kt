@@ -23,6 +23,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.core.designsystem.R as DsR
+import java.util.Locale
 
 /** FASE 77.8.1: the rules the class-session screens are built on. */
 class ClassSessionRulesTest {
@@ -249,12 +253,21 @@ class ClassSessionRulesTest {
         assertEquals(listOf(HADIR, SAKIT, IZIN, ALPHA), ClassSessionRules.TEACHER_MARK_OPTIONS)
     }
 
+    // Labels and messages are string resources in three languages (core/designsystem
+    // ClassSessionText); these tests pin which text is chosen and with what values.
+
     @Test
     fun checkInLabels() {
-        assertEquals("Scan QR 08:32", ClassSessionRules.checkInLabel(SessionAttendanceDto(checkInMethod = SessionCheckInMethod.QR_SCAN, checkedInAt = "2026-10-07T08:32:00+07:00")))
-        assertEquals("Manual 08:35", ClassSessionRules.checkInLabel(SessionAttendanceDto(checkInMethod = SessionCheckInMethod.MANUAL_TEACHER, checkedInAt = "08:35")))
-        assertEquals("Belum absen", ClassSessionRules.checkInLabel(SessionAttendanceDto(checkInMethod = SessionCheckInMethod.AUTO_ALPHA)))
-        assertEquals("Belum absen", ClassSessionRules.checkInLabel(SessionAttendanceDto()))
+        assertEquals(
+            UiText.Res(DsR.string.cs_check_in_qr, "08:32"),
+            ClassSessionText.checkIn(SessionAttendanceDto(checkInMethod = SessionCheckInMethod.QR_SCAN, checkedInAt = "2026-10-07T08:32:00+07:00"))
+        )
+        assertEquals(
+            UiText.Res(DsR.string.cs_check_in_manual, "08:35"),
+            ClassSessionText.checkIn(SessionAttendanceDto(checkInMethod = SessionCheckInMethod.MANUAL_TEACHER, checkedInAt = "08:35"))
+        )
+        assertEquals(UiText.Res(DsR.string.cs_not_checked_in), ClassSessionText.checkIn(SessionAttendanceDto(checkInMethod = SessionCheckInMethod.AUTO_ALPHA)))
+        assertEquals(UiText.Res(DsR.string.cs_not_checked_in), ClassSessionText.checkIn(SessionAttendanceDto()))
     }
 
     // ── 77.6 override (cases 13–15) ─────────────────────────────────────
@@ -282,100 +295,116 @@ class ClassSessionRulesTest {
 
     @Test
     fun auditTrailIsReadable() {
-        assertEquals("8 Okt 2026, 07:10", ClassSessionRules.formatDateId("2026-10-08T07:10:00+07:00"))
-        assertEquals("7 Okt 2026", ClassSessionRules.formatDateId("2026-10-07"))
-        assertNull(ClassSessionRules.formatDateId("kemarin"))
-        assertNull(ClassSessionRules.formatDateId("2026-13-01"))
+        val id = Locale.forLanguageTag("id")
+        assertEquals("8 Okt 2026, 07:10", ClassSessionText.date("2026-10-08T07:10:00+07:00", id))
+        assertEquals("8 Oct 2026, 07:10", ClassSessionText.date("2026-10-08T07:10:00+07:00", Locale.ENGLISH))
+        assertEquals("7 Okt 2026", ClassSessionText.date("2026-10-07", id))
+        assertNull(ClassSessionText.date("kemarin", id))
+        assertNull(ClassSessionText.date("2026-13-01", id))
         assertEquals(
-            "Dikoreksi oleh Bu Ani pada 8 Okt 2026, 07:10",
-            ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true, overrideBy = "Bu Ani", overrideAt = "2026-10-08T07:10:00+07:00"))
+            UiText.Res(DsR.string.cs_override_by_at, "Bu Ani", "8 Okt 2026, 07:10"),
+            ClassSessionText.overrideAudit(SessionAttendanceDto(isOverride = true, overrideBy = "Bu Ani", overrideAt = "2026-10-08T07:10:00+07:00"), id)
         )
-        assertEquals("Dikoreksi oleh admin", ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = true)))
-        assertNull(ClassSessionRules.overrideAuditLabel(SessionAttendanceDto(isOverride = false, overrideBy = "x")))
+        assertEquals(
+            UiText.Res(DsR.string.cs_override_by, UiText.Res(DsR.string.cs_admin)),
+            ClassSessionText.overrideAudit(SessionAttendanceDto(isOverride = true), id)
+        )
+        assertNull(ClassSessionText.overrideAudit(SessionAttendanceDto(isOverride = false, overrideBy = "x"), id))
     }
 
     // ── error wording (cases 2, 3, 6–8) ─────────────────────────────────
 
-    private fun err(kind: ClassSessionErrorKind, code: Int = 0, message: String = "", checkedInAt: String? = null) =
-        ClassSessionError(
-            kind = kind,
-            message = message,
-            httpCode = code,
-            rejection = ClassSessionRules.rejectionOf(code, message),
-            checkedInAt = checkedInAt
-        )
+    private fun err(
+        kind: ClassSessionErrorKind,
+        code: Int = 0,
+        message: String = "",
+        errorCode: String? = null,
+        checkedInAt: String? = null
+    ) = ClassSessionError(
+        kind = kind,
+        message = message,
+        httpCode = code,
+        rejection = ClassSessionRules.rejectionOf(errorCode),
+        checkedInAt = checkedInAt
+    )
 
     @Test
-    fun backendMessagesAreRecognised() {
-        // Every message ClassSessionService throws that the app reacts to.
+    fun refusalsAreRecognisedByTheirCodeNotTheirWords() {
+        // sistem-terpadu docs/modules/class_sessions.md §4. The message is in the
+        // user's language, so only error_code decides.
         val cases = mapOf(
-            (422 to "QR token sudah kedaluwarsa") to ClassSessionRejection.QR_EXPIRED,
-            (422 to "QR tidak valid. Pastikan Anda memindai QR sesi kelas dari layar guru.") to ClassSessionRejection.QR_INVALID,
-            (403 to "Anda tidak terdaftar di kelas ini") to ClassSessionRejection.NOT_ENROLLED,
-            (409 to "Anda sudah tercatat hadir di sesi ini") to ClassSessionRejection.ALREADY_CHECKED_IN,
-            (409 to "Sesi kelas sudah berakhir") to ClassSessionRejection.SESSION_ENDED,
-            (409 to "Sesi kelas sudah berakhir.") to ClassSessionRejection.SESSION_ENDED,
-            (409 to "Sesi kelas belum dimulai") to ClassSessionRejection.SESSION_NOT_STARTED,
-            (409 to "Sesi kelas ini sudah dimulai.") to ClassSessionRejection.SESSION_ALREADY_STARTED,
-            (409 to "Sesi kelas ini sudah berakhir hari ini.") to ClassSessionRejection.SESSION_ALREADY_ENDED,
-            (409 to "QR hanya tersedia saat sesi kelas aktif.") to ClassSessionRejection.QR_NOT_ACTIVE,
-            (409 to "Absensi manual hanya bisa dilakukan saat sesi kelas aktif. Untuk koreksi …") to ClassSessionRejection.MANUAL_NOT_ACTIVE,
-            (422 to "Kelas baru bisa dimulai pukul 06:50.") to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
-            (422 to "Waktu jadwal kelas ini sudah lewat.") to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
-            (422 to "Jadwal ini untuk hari Senin, bukan hari ini.") to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
-            (403 to "Anda tidak dijadwalkan mengajar pada jadwal ini.") to ClassSessionRejection.NOT_YOUR_SCHEDULE,
-            (403 to "Anda bukan guru pengampu sesi kelas ini.") to ClassSessionRejection.NOT_YOUR_SCHEDULE,
-            (422 to "Presensi berstatus 'hadir' tidak dapat dikoreksi. Kehadiran yang sudah tercatat tidak boleh dihapus.") to ClassSessionRejection.TRANSITION_NOT_ALLOWED,
-            (422 to "Koreksi dari 'sakit' hanya boleh ke: hadir.") to ClassSessionRejection.TRANSITION_NOT_ALLOWED
+            "qr_expired" to ClassSessionRejection.QR_EXPIRED,
+            "qr_invalid" to ClassSessionRejection.QR_INVALID,
+            "not_enrolled" to ClassSessionRejection.NOT_ENROLLED,
+            "already_checked_in" to ClassSessionRejection.ALREADY_CHECKED_IN,
+            "session_ended" to ClassSessionRejection.SESSION_ENDED,
+            "session_not_started" to ClassSessionRejection.SESSION_NOT_STARTED,
+            "session_already_started" to ClassSessionRejection.SESSION_ALREADY_STARTED,
+            "session_already_ended" to ClassSessionRejection.SESSION_ALREADY_ENDED,
+            "qr_not_active" to ClassSessionRejection.QR_NOT_ACTIVE,
+            "manual_not_active" to ClassSessionRejection.MANUAL_NOT_ACTIVE,
+            "outside_schedule_window" to ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW,
+            "not_your_schedule" to ClassSessionRejection.NOT_YOUR_SCHEDULE,
+            "transition_not_allowed" to ClassSessionRejection.TRANSITION_NOT_ALLOWED
         )
-        for ((input, expected) in cases) {
-            assertEquals(input.second, expected, ClassSessionRules.rejectionOf(input.first, input.second))
+        for ((code, expected) in cases) {
+            assertEquals(code, expected, ClassSessionRules.rejectionOf(code))
         }
-        assertNull(ClassSessionRules.rejectionOf(500, "Server Error"))
-        assertNull(ClassSessionRules.rejectionOf(422, "The reason field is required."))
+        assertNull(ClassSessionRules.rejectionOf(null))
+        assertNull(ClassSessionRules.rejectionOf("session_not_found"))
+        // An Indonesian, English or Arabic sentence alone is never read.
+        assertNull(err(ClassSessionErrorKind.VALIDATION, 422, "QR token sudah kedaluwarsa").rejection)
+        assertNull(err(ClassSessionErrorKind.VALIDATION, 422, "The QR code has expired").rejection)
     }
 
     @Test
     fun scanErrorsAreExplainedAndSayWhetherToKeepScanning() {
-        val expired = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.VALIDATION, 422, "QR token sudah kedaluwarsa"))
+        val expired = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.VALIDATION, 422, errorCode = "qr_expired"))
         assertTrue(expired is ScanOutcome.Retry && expired.keepScanning)
-        assertTrue(expired.message.contains("QR sudah berganti"))
+        assertEquals(UiText.Res(DsR.string.cs_scan_expired), ClassSessionText.scan(expired))
 
-        val notMine = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.FORBIDDEN, 403, "Anda tidak terdaftar di kelas ini"))
+        val notMine = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.FORBIDDEN, 403, errorCode = "not_enrolled"))
         assertTrue(notMine is ScanOutcome.Blocked && !notMine.keepScanning)
-        assertTrue(notMine.message.contains("bukan siswa kelas ini"))
+        assertEquals(UiText.Res(DsR.string.cs_scan_not_enrolled), ClassSessionText.scan(notMine))
 
         val twice = ClassSessionRules.scanOutcome(
-            err(ClassSessionErrorKind.CONFLICT, 409, "Anda sudah tercatat hadir di sesi ini", "2026-10-07T08:03:00+07:00")
+            err(ClassSessionErrorKind.CONFLICT, 409, errorCode = "already_checked_in", checkedInAt = "2026-10-07T08:03:00+07:00")
         )
         assertTrue(twice is ScanOutcome.AlreadyRecorded)
-        assertEquals("Anda sudah tercatat hadir pukul 08:03 WIB.", twice.message)
+        assertEquals(UiText.Res(DsR.string.cs_scan_already_at, "08:03"), ClassSessionText.scan(twice))
 
-        val closed = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, 409, "Sesi kelas sudah berakhir"))
-        assertTrue(closed is ScanOutcome.Blocked && closed.message.contains("Waka Kurikulum/TU"))
+        val closed = ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, 409, errorCode = "session_ended"))
+        assertTrue(closed is ScanOutcome.Blocked)
+        assertEquals(UiText.Res(DsR.string.cs_scan_ended), ClassSessionText.scan(closed))
 
-        assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, 409, "Sesi kelas belum dimulai")) is ScanOutcome.Retry)
+        assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.CONFLICT, 409, errorCode = "session_not_started")) is ScanOutcome.Retry)
         assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NETWORK)) is ScanOutcome.Retry)
         assertTrue(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.RATE_LIMITED, 429)) is ScanOutcome.Retry)
     }
 
     @Test
     fun startRefusalsUseTheServersWords() {
+        // The server's message is already in the teacher's language.
         assertEquals(
-            "Kelas baru bisa dimulai pukul 06:50.",
-            ClassSessionRules.startFailureMessage(err(ClassSessionErrorKind.VALIDATION, 422, "Kelas baru bisa dimulai pukul 06:50."))
+            UiText.Raw("The class can start from 06:50."),
+            ClassSessionText.startFailure(err(ClassSessionErrorKind.VALIDATION, 422, "The class can start from 06:50.", "outside_schedule_window"))
         )
         assertEquals(
-            "Anda tidak dijadwalkan mengajar pada jadwal ini.",
-            ClassSessionRules.startFailureMessage(err(ClassSessionErrorKind.FORBIDDEN, 403, "Anda tidak dijadwalkan mengajar pada jadwal ini."))
+            UiText.Raw("Anda tidak dijadwalkan mengajar pada jadwal ini."),
+            ClassSessionText.startFailure(err(ClassSessionErrorKind.FORBIDDEN, 403, "Anda tidak dijadwalkan mengajar pada jadwal ini.", "not_your_schedule"))
+        )
+        // Without a message, the app explains the rule itself.
+        assertEquals(
+            UiText.Res(DsR.string.cs_start_window, ClassSessionRules.START_EARLY_MINUTES),
+            ClassSessionText.startFailure(err(ClassSessionErrorKind.VALIDATION, 422, errorCode = "outside_schedule_window"))
         )
     }
 
     @Test
     fun missingBackendIsSaidPlainly() {
-        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.genericMessage(err(ClassSessionErrorKind.NOT_DEPLOYED, 404, "The route … could not be found.")))
-        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NOT_DEPLOYED, 404)).message)
-        assertEquals("Validasi gagal.", ClassSessionRules.genericMessage(err(ClassSessionErrorKind.VALIDATION, 422, "Validasi gagal.")))
+        assertEquals(ClassSessionText.notDeployed, ClassSessionText.generic(err(ClassSessionErrorKind.NOT_DEPLOYED, 404, "The route … could not be found.")))
+        assertEquals(ClassSessionText.notDeployed, ClassSessionText.scan(ClassSessionRules.scanOutcome(err(ClassSessionErrorKind.NOT_DEPLOYED, 404))))
+        assertEquals(UiText.Raw("Validasi gagal."), ClassSessionText.generic(err(ClassSessionErrorKind.VALIDATION, 422, "Validasi gagal.")))
     }
 
     @Test

@@ -199,7 +199,7 @@ class ClassSessionRepository(
             kind = kind,
             message = message,
             httpCode = httpCode,
-            rejection = ClassSessionRules.rejectionOf(httpCode, message),
+            rejection = ClassSessionRules.rejectionOf(json?.get("error_code")?.takeIf { it.isJsonPrimitive }?.asString),
             checkedInAt = data?.checkedInAt,
             existingSessionId = data?.sessionId
         )

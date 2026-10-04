@@ -23,6 +23,10 @@ import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.core.designsystem.R as DsR
+import java.util.Locale
 
 /**
  * FASE 77 ↔ backend FASE 117 as merged in sistem-terpadu, through the real
@@ -105,16 +109,16 @@ class ClassSessionContractTest {
 
     @Test
     fun startRefusalsCarryTheServersWords() = runBlocking {
-        respond(422, """{"success":false,"message":"Kelas baru bisa dimulai pukul 09:50.","data":null}""")
+        respond(422, """{"success":false,"message":"Kelas baru bisa dimulai pukul 09:50.","error_code":"outside_schedule_window","data":null}""")
         val early = repo.startSession(13, "  Gerak Lurus  ").error()
         val request = server.takeRequest(1, TimeUnit.SECONDS)!!
         assertEquals("POST", request.method)
         assertEquals("/api/v1/teacher/class-sessions/13/start", request.path)
         assertEquals("Gerak Lurus", JsonParser.parseString(request.body.readUtf8()).asJsonObject["topic"].asString)
         assertEquals(ClassSessionRejection.OUTSIDE_SCHEDULE_WINDOW, early.rejection)
-        assertEquals("Kelas baru bisa dimulai pukul 09:50.", ClassSessionRules.startFailureMessage(early))
+        assertEquals(UiText.Raw("Kelas baru bisa dimulai pukul 09:50."), ClassSessionText.startFailure(early))
 
-        respond(403, """{"success":false,"message":"Anda tidak dijadwalkan mengajar pada jadwal ini.","data":null}""")
+        respond(403, """{"success":false,"message":"Anda tidak dijadwalkan mengajar pada jadwal ini.","error_code":"not_your_schedule","data":null}""")
         val other = repo.startSession(13, null).error()
         assertEquals(ClassSessionRejection.NOT_YOUR_SCHEDULE, other.rejection)
         assertEquals(ClassSessionErrorKind.FORBIDDEN, other.kind)
@@ -122,7 +126,7 @@ class ClassSessionContractTest {
 
     @Test
     fun startingTwiceHandsBackTheExistingSessionId() = runBlocking {
-        respond(409, """{"success":false,"message":"Sesi kelas ini sudah dimulai.","data":{"session_id":45}}""")
+        respond(409, """{"success":false,"message":"Sesi kelas ini sudah dimulai.","error_code":"session_already_started","data":{"session_id":45}}""")
         val e = repo.startSession(12, null).error()
         assertEquals(ClassSessionRejection.SESSION_ALREADY_STARTED, e.rejection)
         assertEquals(45L, e.existingSessionId)
@@ -161,7 +165,7 @@ class ClassSessionContractTest {
         assertTrue("the student's scanner must accept what the teacher shows", ClassSessionRules.isClassSessionQr(qr.qrToken))
         assertEquals(12, qr.remainingSeconds)
 
-        respond(409, """{"success":false,"message":"QR hanya tersedia saat sesi kelas aktif.","data":null}""")
+        respond(409, """{"success":false,"message":"QR hanya tersedia saat sesi kelas aktif.","error_code":"qr_not_active","data":null}""")
         assertEquals(ClassSessionRejection.QR_NOT_ACTIVE, repo.getActiveQr(45).error().rejection)
     }
 
@@ -178,8 +182,11 @@ class ClassSessionContractTest {
         val rows = repo.getSessionStudents(45).data()
         assertEquals(SessionAttendanceStatus.TELAT, rows[0].effectiveStatus)
         assertEquals(SessionCheckInMethod.QR_SCAN, rows[0].checkInMethod)
-        assertEquals("Scan QR 07:16", ClassSessionRules.checkInLabel(rows[0]))
-        assertEquals("Dikoreksi oleh Bu Ani pada 6 Okt 2026, 07:10", ClassSessionRules.overrideAuditLabel(rows[1]))
+        assertEquals(UiText.Res(DsR.string.cs_check_in_qr, "07:16"), ClassSessionText.checkIn(rows[0]))
+        assertEquals(
+            UiText.Res(DsR.string.cs_override_by_at, "Bu Ani", "6 Okt 2026, 07:10"),
+            ClassSessionText.overrideAudit(rows[1], Locale.forLanguageTag("id"))
+        )
         val counts = ClassSessionRules.countsOf(rows)
         assertEquals(1, counts.present)
         assertEquals(1, counts.breakdown!!.izin)
@@ -200,7 +207,7 @@ class ClassSessionContractTest {
         assertEquals("hadir", rows[0].asJsonObject["status"].asString)
         assertEquals("sakit", rows[1].asJsonObject["status"].asString)
 
-        respond(409, """{"success":false,"message":"Absensi manual hanya bisa dilakukan saat sesi kelas aktif. Untuk koreksi setelah sesi berakhir, hubungi Waka Kurikulum/TU.","data":null}""")
+        respond(409, """{"success":false,"message":"Absensi manual hanya bisa dilakukan saat sesi kelas aktif. Untuk koreksi setelah sesi berakhir, hubungi Waka Kurikulum/TU.","error_code":"manual_not_active","data":null}""")
         assertEquals(ClassSessionRejection.MANUAL_NOT_ACTIVE, repo.markAttendance(45, mapOf(301L to SessionAttendanceStatus.HADIR)).error().rejection)
     }
 
@@ -234,22 +241,22 @@ class ClassSessionContractTest {
         assertEquals("X-1 (IPA)", ok.classroomName)
         assertEquals("07:05", ClassSessionRules.clockOf(ok.checkedInAt))
 
-        respond(422, """{"success":false,"message":"QR token sudah kedaluwarsa","data":null}""")
+        respond(422, """{"success":false,"message":"QR token sudah kedaluwarsa","error_code":"qr_expired","data":null}""")
         assertTrue(ClassSessionRules.scanOutcome(repo.scanQr(token).error()) is ClassSessionRules.ScanOutcome.Retry)
 
-        respond(422, """{"success":false,"message":"QR tidak valid. Pastikan Anda memindai QR sesi kelas dari layar guru.","data":null}""")
+        respond(422, """{"success":false,"message":"QR tidak valid. Pastikan Anda memindai QR sesi kelas dari layar guru.","error_code":"qr_invalid","data":null}""")
         assertEquals(ClassSessionRejection.QR_INVALID, repo.scanQr(token).error().rejection)
 
-        respond(403, """{"success":false,"message":"Anda tidak terdaftar di kelas ini","data":null}""")
-        assertTrue(ClassSessionRules.scanOutcome(repo.scanQr(token).error()).message.contains("bukan siswa kelas ini"))
+        respond(403, """{"success":false,"message":"Anda tidak terdaftar di kelas ini","error_code":"not_enrolled","data":null}""")
+        assertEquals(UiText.Res(DsR.string.cs_scan_not_enrolled), ClassSessionText.scan(ClassSessionRules.scanOutcome(repo.scanQr(token).error())))
 
-        respond(409, """{"success":false,"message":"Anda sudah tercatat hadir di sesi ini","data":{"status":"hadir","checked_in_at":"2026-10-05T07:03:00+07:00"}}""")
-        assertEquals("Anda sudah tercatat hadir pukul 07:03 WIB.", ClassSessionRules.scanOutcome(repo.scanQr(token).error()).message)
+        respond(409, """{"success":false,"message":"Anda sudah tercatat hadir di sesi ini","error_code":"already_checked_in","data":{"status":"hadir","checked_in_at":"2026-10-05T07:03:00+07:00"}}""")
+        assertEquals(UiText.Res(DsR.string.cs_scan_already_at, "07:03"), ClassSessionText.scan(ClassSessionRules.scanOutcome(repo.scanQr(token).error())))
 
-        respond(409, """{"success":false,"message":"Sesi kelas sudah berakhir","data":null}""")
-        assertTrue(ClassSessionRules.scanOutcome(repo.scanQr(token).error()).message.contains("sudah selesai"))
+        respond(409, """{"success":false,"message":"Sesi kelas sudah berakhir.","error_code":"session_ended","data":null}""")
+        assertEquals(UiText.Res(DsR.string.cs_scan_ended), ClassSessionText.scan(ClassSessionRules.scanOutcome(repo.scanQr(token).error())))
 
-        respond(409, """{"success":false,"message":"Sesi kelas belum dimulai","data":null}""")
+        respond(409, """{"success":false,"message":"Sesi kelas belum dimulai.","error_code":"session_not_started","data":null}""")
         assertTrue(ClassSessionRules.scanOutcome(repo.scanQr(token).error()) is ClassSessionRules.ScanOutcome.Retry)
 
         // throttle:20,1
@@ -271,15 +278,16 @@ class ClassSessionContractTest {
         assertEquals("hadir", body["status"].asString)
         assertEquals("pendek", body["reason"].asString)
         assertEquals(ClassSessionErrorKind.VALIDATION, e.kind)
-        assertEquals("The reason field must be at least 10 characters.", ClassSessionRules.overrideFailureMessage(e))
+        assertEquals(UiText.Raw("The reason field must be at least 10 characters."), ClassSessionText.overrideFailure(e))
     }
 
     @Test
     fun overrideRefusedByTheServer() = runBlocking {
-        respond(422, """{"success":false,"message":"Presensi berstatus 'hadir' tidak dapat dikoreksi. Kehadiran yang sudah tercatat tidak boleh dihapus.","data":null}""")
+        respond(422, """{"success":false,"message":"Presensi berstatus Hadir tidak dapat dikoreksi. Kehadiran yang sudah tercatat tidak boleh dihapus.","error_code":"transition_not_allowed","data":null}""")
         val e = repo.overrideAttendance(9001, SessionAttendanceStatus.SAKIT, "Alasan yang cukup panjang").error()
         assertEquals(ClassSessionRejection.TRANSITION_NOT_ALLOWED, e.rejection)
-        assertTrue(ClassSessionRules.overrideFailureMessage(e).contains("tidak dapat dikoreksi"))
+        // The server explained it, in the admin's language.
+        assertEquals(UiText.Raw("Presensi berstatus Hadir tidak dapat dikoreksi. Kehadiran yang sudah tercatat tidak boleh dihapus."), ClassSessionText.overrideFailure(e))
     }
 
     @Test
@@ -323,12 +331,12 @@ class ClassSessionContractTest {
         respond(404, """{"message":"The route api/v1/teacher/class-sessions/today could not be found."}""")
         val missing = repo.getTodaySessions().error()
         assertEquals(ClassSessionErrorKind.NOT_DEPLOYED, missing.kind)
-        assertEquals(ClassSessionRules.NOT_DEPLOYED_MESSAGE, ClassSessionRules.genericMessage(missing))
+        assertEquals(ClassSessionText.notDeployed, ClassSessionText.generic(missing))
 
-        respond(404, """{"success":false,"message":"Sesi kelas tidak ditemukan.","data":null}""")
+        respond(404, """{"success":false,"message":"Sesi kelas tidak ditemukan.","error_code":"session_not_found","data":null}""")
         val gone = repo.getSessionAttendances(99).error()
         assertEquals(ClassSessionErrorKind.NOT_FOUND, gone.kind)
-        assertEquals("Sesi kelas tidak ditemukan.", ClassSessionRules.genericMessage(gone))
+        assertEquals(UiText.Raw("Sesi kelas tidak ditemukan."), ClassSessionText.generic(gone))
     }
 
     @Test

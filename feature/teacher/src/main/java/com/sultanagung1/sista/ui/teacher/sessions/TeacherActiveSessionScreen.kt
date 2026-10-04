@@ -68,6 +68,10 @@ import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionRules.QrFreshness
 import com.sultanagung1.sista.data.model.ClassSessionRules.TimerTone
 import com.sultanagung1.sista.data.model.ClassSessionStatus
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.sultanagung1.sista.feature.teacher.R
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
 
 /**
  * FASE 77.3: the running class — rotating QR from the server, session timer,
@@ -83,6 +87,7 @@ fun TeacherActiveSessionScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LifecycleStartStopEffect(
         onStart = { viewModel.onEvent(TeacherActiveSessionEvent.ScreenStarted) },
@@ -93,7 +98,7 @@ fun TeacherActiveSessionScreen(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is TeacherActiveSessionEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is TeacherActiveSessionEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolve(context))
             }
         }
     }
@@ -126,7 +131,7 @@ fun TeacherActiveSessionContent(
     qrContent: @Composable (payload: String, dimmed: Boolean) -> Unit = { payload, dimmed ->
         SulaoneQrCode(
             payload = payload,
-            contentDescription = "Kode QR presensi sesi kelas. Siswa memindai dari layar ini.",
+            contentDescription = stringResource(R.string.ta_qr_cd),
             dimmed = dimmed,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -139,7 +144,7 @@ fun TeacherActiveSessionContent(
         Scaffold(
             topBar = {
                 SistaTopBar(
-                    title = if (state.status?.isFinished == true) "Ringkasan Sesi Kelas" else "Sesi Kelas Aktif",
+                    title = stringResource(if (state.status?.isFinished == true) R.string.ta_title_summary else R.string.ta_title_active),
                     subtitle = session?.let { listOfNotNull(it.subjectName, it.classroomName).joinToString(" · ") },
                     onBack = onNavigateBack,
                 )
@@ -158,8 +163,8 @@ fun TeacherActiveSessionContent(
             ) {
                 when {
                     state.isLoading && session == null -> SkeletonList(rows = 3)
-                    state.notDeployed -> SessionsUnavailable(state.errorMessage ?: ClassSessionRules.NOT_DEPLOYED_MESSAGE, onRetry)
-                    session == null -> ErrorState(title = "Sesi tidak ditemukan", body = state.errorMessage, onRetry = onRetry)
+                    state.notDeployed -> SessionsUnavailable((state.errorMessage ?: ClassSessionText.notDeployed).asString(), onRetry)
+                    session == null -> ErrorState(title = stringResource(R.string.ta_not_found), body = state.errorMessage?.asString(), onRetry = onRetry)
                     state.isLive -> LiveSession(state, session, qrContent, onOpenAttendanceList) { showEndDialog = true }
                     else -> FinishedSession(state, session, onOpenAttendanceList, onOpenTeachingJournal, onNavigateBack)
                 }
@@ -169,21 +174,18 @@ fun TeacherActiveSessionContent(
         if (state.showTimeUpDialog && !showEndDialog) {
             AlertDialog(
                 onDismissRequest = onDismissTimeUp,
-                title = { Text("Waktu sesi telah habis") },
+                title = { Text(stringResource(R.string.ta_time_up_title)) },
                 text = {
                     val autoCloseAt = ClassSessionRules.clockOf(session?.autoCloseAt)
-                    Text(
-                        "Akhiri kelas sekarang? Jika dilanjutkan, sistem menutup sesi otomatis " +
-                            (autoCloseAt?.let { "pukul $it." } ?: "5 menit setelah jadwal berakhir."),
-                    )
+                    Text(autoCloseAt?.let { stringResource(R.string.ta_time_up_body_at, it) } ?: stringResource(R.string.ta_time_up_body))
                 },
                 confirmButton = {
-                    SistaButton("Akhiri kelas", {
+                    SistaButton(stringResource(R.string.ta_end), {
                         onDismissTimeUp()
                         showEndDialog = true
                     }, variant = ButtonVariant.Text)
                 },
-                dismissButton = { SistaButton("Lanjutkan 5 menit", onContinueAfterTimeUp, variant = ButtonVariant.Text) },
+                dismissButton = { SistaButton(stringResource(R.string.ta_continue), onContinueAfterTimeUp, variant = ButtonVariant.Text) },
             )
         }
 
@@ -213,10 +215,10 @@ private fun LiveSession(
     TimerCard(state, session)
     SistaCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-            Text("Kehadiran saat ini", style = SistaTheme.typography.titleMedium)
+            Text(stringResource(R.string.ta_attendance_now), style = SistaTheme.typography.titleMedium)
             AttendanceSummary(state.counts)
             SistaButton(
-                "Lihat & absen manual",
+                stringResource(R.string.ta_view_mark),
                 onOpenAttendanceList,
                 variant = ButtonVariant.Outlined,
                 leadingIcon = Icons.AutoMirrored.Outlined.ArrowForward,
@@ -225,7 +227,7 @@ private fun LiveSession(
         }
     }
     SistaButton(
-        "Akhiri kelas",
+        stringResource(R.string.ta_end),
         onEnd,
         variant = ButtonVariant.Danger,
         size = ButtonSize.Large,
@@ -262,7 +264,7 @@ private fun QrPanel(state: TeacherActiveSessionState, qrContent: @Composable (St
                     ) {
                         IconBadge(Icons.Outlined.WifiOff, tone = StatusTone.Danger, size = 56.dp)
                         Text(
-                            "Tidak bisa memperbarui QR — periksa koneksi internet.",
+                            stringResource(R.string.ta_qr_offline),
                             textAlign = TextAlign.Center,
                             style = SistaTheme.typography.bodyMedium,
                         )
@@ -272,10 +274,10 @@ private fun QrPanel(state: TeacherActiveSessionState, qrContent: @Composable (St
             }
             Text(
                 when (freshness) {
-                    QrFreshness.FRESH -> "QR diperbarui dalam ${state.qrSecondsLeft} dtk"
-                    QrFreshness.STALE -> "Mungkin kedaluwarsa — sedang memperbarui…"
-                    QrFreshness.UNAVAILABLE -> "Siswa bisa diabsen manual dari daftar hadir."
-                    QrFreshness.LOADING -> "Menyiapkan QR…"
+                    QrFreshness.FRESH -> stringResource(R.string.ta_qr_fresh, state.qrSecondsLeft)
+                    QrFreshness.STALE -> stringResource(R.string.ta_qr_stale)
+                    QrFreshness.UNAVAILABLE -> stringResource(R.string.ta_qr_unavailable)
+                    QrFreshness.LOADING -> stringResource(R.string.ta_qr_loading)
                 },
                 style = SistaTheme.typography.labelLarge,
                 color = if (freshness == QrFreshness.FRESH) SistaTheme.colors.onSurfaceVariant else StatusTone.Warning.colors().content,
@@ -292,7 +294,7 @@ private fun QrPanel(state: TeacherActiveSessionState, qrContent: @Composable (St
                 )
             }
             Text(
-                "QR berganti tiap ${state.qrRotationSeconds} detik — siswa memindai langsung dari layar ini.",
+                stringResource(R.string.ta_qr_rotation, state.qrRotationSeconds),
                 style = SistaTheme.typography.bodySmall,
                 color = SistaTheme.colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -316,9 +318,9 @@ private fun TimerCard(state: TeacherActiveSessionState, session: ClassSessionDto
             Column {
                 Text(
                     when {
-                        remaining == null -> "Sisa waktu sesi: —"
-                        state.timerTone == TimerTone.OVERTIME -> "Lewat jadwal ${ClassSessionRules.formatCountdown(-remaining)}"
-                        else -> "Sisa waktu ${ClassSessionRules.formatCountdown(remaining)}"
+                        remaining == null -> stringResource(R.string.ta_remaining_none)
+                        state.timerTone == TimerTone.OVERTIME -> stringResource(R.string.ta_overtime, ClassSessionRules.formatCountdown(-remaining))
+                        else -> stringResource(R.string.ta_remaining, ClassSessionRules.formatCountdown(remaining))
                     },
                     style = SistaTheme.typography.titleMedium,
                     color = if (state.timerTone == TimerTone.NORMAL) SistaTheme.colors.onSurface else tone.colors().content,
@@ -326,7 +328,10 @@ private fun TimerCard(state: TeacherActiveSessionState, session: ClassSessionDto
                     modifier = Modifier.semantics { if (state.timerTone != TimerTone.NORMAL) liveRegion = LiveRegionMode.Polite },
                 )
                 Text(
-                    ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd) + (session.jamKe?.let { " · Jam ke-$it" } ?: ""),
+                    listOfNotNull(
+                        ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd),
+                        session.jamKe?.let { stringResource(R.string.ts_period, it) },
+                    ).joinToString(" · "),
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                 )
@@ -347,43 +352,45 @@ private fun FinishedSession(
     SistaCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             SessionStatusPill(status)
-            Text(session.subjectName ?: "Sesi kelas", style = SistaTheme.typography.titleLarge)
+            Text(session.subjectName ?: stringResource(R.string.ta_session_fallback), style = SistaTheme.typography.titleLarge)
             Text(
-                "Jadwal ${ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd)}" +
-                    (session.actualStart?.let { " · Berlangsung ${ClassSessionRules.timeRange(it, session.actualEnd)}" } ?: ""),
+                listOfNotNull(
+                    stringResource(R.string.ta_scheduled, ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd)),
+                    session.actualStart?.let { stringResource(R.string.ts_held, ClassSessionRules.timeRange(it, session.actualEnd)) },
+                ).joinToString(" · "),
                 style = SistaTheme.typography.bodyMedium,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
             val counts = if (state.counts.total > 0) state.counts else ClassSessionRules.countsOf(session)
             AttendanceSummary(counts)
-            session.topic?.takeIf { it.isNotBlank() }?.let { Text("Topik: $it", style = SistaTheme.typography.bodyMedium) }
-            session.notes?.takeIf { it.isNotBlank() }?.let { Text("Catatan: $it", style = SistaTheme.typography.bodyMedium) }
+            session.topic?.takeIf { it.isNotBlank() }?.let { Text(stringResource(R.string.ta_topic, it), style = SistaTheme.typography.bodyMedium) }
+            session.notes?.takeIf { it.isNotBlank() }?.let { Text(stringResource(R.string.ta_notes, it), style = SistaTheme.typography.bodyMedium) }
         }
     }
     if (status == ClassSessionStatus.AUTO_CLOSED) {
         InlineBanner(
-            message = "Sesi ditutup otomatis oleh sistem karena tidak diakhiri hingga 5 menit setelah jadwal.",
+            message = stringResource(R.string.ta_auto_closed),
             tone = StatusTone.Warning,
         )
     }
     // The server creates a teaching-journal draft when a session ends with a topic.
     if (session.teachingJournalId != null) {
         InlineBanner(
-            title = "Draf jurnal mengajar sudah dibuat",
-            message = "Dibuat dari topik sesi ini. Lengkapi kegiatan dan metode pembelajarannya.",
+            title = stringResource(R.string.ta_journal_draft),
+            message = stringResource(R.string.ta_journal_draft_body),
             tone = StatusTone.Info,
-            actionLabel = "Buka Jurnal KBM",
+            actionLabel = stringResource(R.string.ta_open_journal),
             onAction = onOpenTeachingJournal,
         )
     }
     Text(
-        "Setelah sesi selesai, koreksi kehadiran dilakukan oleh Waka Kurikulum/TU.",
+        stringResource(R.string.ta_after_end),
         style = SistaTheme.typography.bodySmall,
         color = SistaTheme.colors.onSurfaceVariant,
         textAlign = TextAlign.Center,
     )
-    SistaButton("Lihat daftar hadir", onOpenAttendanceList, variant = ButtonVariant.Outlined, fullWidth = true)
-    SistaButton("Kembali ke daftar sesi", onBack, fullWidth = true)
+    SistaButton(stringResource(R.string.ta_view_list), onOpenAttendanceList, variant = ButtonVariant.Outlined, fullWidth = true)
+    SistaButton(stringResource(R.string.ta_back_to_list), onBack, fullWidth = true)
 }
 
 @Composable
@@ -398,29 +405,32 @@ private fun EndSessionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Outlined.EditNote, contentDescription = null) },
-        title = { Text("Akhiri sesi kelas?") },
+        title = { Text(stringResource(R.string.ta_end_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Text(
-                    "Akhiri ${session.subjectName.orEmpty()} ${session.classroomName.orEmpty()}? " +
-                        if (alphaCount > 0) "$alphaCount siswa yang belum terabsen akan tercatat ALPHA." else "Semua siswa sudah terabsen.",
+                    if (alphaCount > 0) {
+                        stringResource(R.string.ta_end_body_alpha, session.subjectName.orEmpty(), session.classroomName.orEmpty(), alphaCount)
+                    } else {
+                        stringResource(R.string.ta_end_body_all, session.subjectName.orEmpty(), session.classroomName.orEmpty())
+                    },
                     style = SistaTheme.typography.bodyMedium,
                 )
                 SistaTextField(
                     value = topic,
                     onValueChange = { topic = it.take(ClassSessionRules.TOPIC_MAX_CHARS) },
-                    label = "Topik/materi (opsional)",
-                    helperText = "Dengan topik, draf jurnal mengajar dibuat otomatis.",
+                    label = stringResource(R.string.ts_topic_optional),
+                    helperText = stringResource(R.string.ta_topic_helper),
                 )
                 SistaTextField(
                     value = notes,
                     onValueChange = { notes = it.take(ClassSessionRules.END_NOTES_MAX_CHARS) },
-                    label = "Catatan KBM (opsional)",
+                    label = stringResource(R.string.ta_notes_optional),
                     singleLine = false,
                 )
             }
         },
-        confirmButton = { SistaButton("Akhiri kelas", { onConfirm(notes.ifBlank { null }, topic.ifBlank { null }) }, variant = ButtonVariant.Danger) },
-        dismissButton = { SistaButton("Batal", onDismiss, variant = ButtonVariant.Text) },
+        confirmButton = { SistaButton(stringResource(R.string.ta_end), { onConfirm(notes.ifBlank { null }, topic.ifBlank { null }) }, variant = ButtonVariant.Danger) },
+        dismissButton = { SistaButton(stringResource(R.string.ts_cancel), onDismiss, variant = ButtonVariant.Text) },
     )
 }

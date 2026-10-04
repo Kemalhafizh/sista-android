@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Sesi kelas (admin) -->
+    <string name="as_title">Class session management</string>
+    <string name="as_subtitle_correct">Monitor and correct attendance per subject</string>
+    <string name="as_subtitle_view">Monitor attendance per subject (view only)</string>
+    <string name="as_empty_title">No class sessions</string>
+    <string name="as_empty_on">No class sessions recorded on %1$s.</string>
+    <string name="as_empty_on_status">No class sessions recorded on %1$s with status %2$s.</string>
+    <string name="as_count">%1$d sessions on %2$s</string>
+    <string name="as_pick_date">Choose session date</string>
+    <string name="as_date">Date: %1$s</string>
+    <string name="as_all">All</string>
+    <string name="as_period">Period %1$s</string>
+    <string name="as_presence">%1$d%% present • %2$d absent</string>
+    <string name="as_detail_correct">Details &amp; correction</string>
+    <string name="as_detail">Details</string>
+    <string name="as_reports">Reports</string>
+    <string name="as_report_week">Last 7 days summary</string>
+    <string name="as_report_month">Last 30 days summary</string>
+    <string name="as_report_empty">No class sessions in this period.</string>
+    <string name="as_report_total">%1$d sessions • average %2$d%% present</string>
+    <string name="as_report_breakdown">Present %1$d • Late %2$d • Sick %3$d • Excused %4$d • Absent %5$d</string>
+    <string name="as_per_class">Per class</string>
+    <string name="as_row_presence">%1$d%% • %2$d absent</string>
+    <string name="ao_title_correct">Correct attendance</string>
+    <string name="ao_title_view">Session attendance</string>
+    <string name="ao_teacher">Teacher: %1$s</string>
+    <string name="ao_empty_title">No attendance data</string>
+    <string name="ao_empty_body">This session has no student list yet.</string>
+    <string name="ao_mode_correct">You are in correction mode. Every change is logged for audit and needs a reason.</string>
+    <string name="ao_mode_view">You can view this session\'s attendance. Corrections are made by an administrator, the vice principal for curriculum or the school office.</string>
+    <string name="ao_student">Student</string>
+    <string name="ao_nis">NIS: %1$s</string>
+    <string name="ao_reason">Reason: %1$s</string>
+    <string name="ao_no_correction">— No correction needed —</string>
+    <string name="ao_change_to">Change to:</string>
+    <string name="ao_reason_label">Reason for the correction (required)</string>
+    <string name="ao_reason_short">At least %1$d characters.</string>
+    <string name="ao_reason_hint">Example: late because of the scout ceremony, confirmed by the supervisor.</string>
+    <string name="ao_cancel">Cancel</string>
+    <string name="ao_save">Save correction</string>
+    <string name="ao_corrected">%1$s\'s attendance was corrected to %2$s.</string>
+</resources>

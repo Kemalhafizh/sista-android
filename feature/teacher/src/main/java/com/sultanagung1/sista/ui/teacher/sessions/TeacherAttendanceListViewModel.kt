@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.teacher.sessions
 
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.teacher.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.mvi.MviViewModel
@@ -32,7 +35,7 @@ data class TeacherAttendanceListState(
     val query: String = "",
     val filter: SessionAttendanceStatus? = null,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val notDeployed: Boolean = false,
     val isSaving: Boolean = false
 ) : UiState {
@@ -64,7 +67,7 @@ sealed interface TeacherAttendanceListEvent : UiEvent {
 }
 
 sealed interface TeacherAttendanceListEffect : UiEffect {
-    data class ShowMessage(val message: String) : TeacherAttendanceListEffect
+    data class ShowMessage(val message: UiText) : TeacherAttendanceListEffect
 }
 
 /**
@@ -124,7 +127,7 @@ class TeacherAttendanceListViewModel @Inject constructor(
                 setState { copy(session = found) }
             }
             is ClassSessionResult.Failure -> if (result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED) {
-                setState { copy(isLoading = false, notDeployed = true, errorMessage = ClassSessionRules.genericMessage(result.error)) }
+                setState { copy(isLoading = false, notDeployed = true, errorMessage = ClassSessionText.generic(result.error)) }
                 return false
             }
         }
@@ -139,7 +142,7 @@ class TeacherAttendanceListViewModel @Inject constructor(
             is ClassSessionResult.Failure -> setState {
                 copy(
                     isLoading = false,
-                    errorMessage = ClassSessionRules.genericMessage(result.error),
+                    errorMessage = ClassSessionText.generic(result.error),
                     notDeployed = notDeployed || result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED
                 )
             }
@@ -158,10 +161,11 @@ class TeacherAttendanceListViewModel @Inject constructor(
                     refreshRows()
                     emitEffect {
                         TeacherAttendanceListEffect.ShowMessage(
-                            if (r.failed > 0) {
-                                "${r.updated} tersimpan, ${r.failed} gagal" + (r.errors?.firstOrNull()?.let { ": $it" } ?: ".")
-                            } else {
-                                "${r.updated} perubahan kehadiran tersimpan."
+                            when {
+                                r.failed > 0 -> r.errors?.firstOrNull()
+                                    ?.let { UiText.Res(R.string.tl_saved_partial_why, r.updated, r.failed, it) }
+                                    ?: UiText.Res(R.string.tl_saved_partial, r.updated, r.failed)
+                                else -> UiText.Res(R.string.tl_saved, r.updated)
                             }
                         )
                     }
@@ -171,11 +175,11 @@ class TeacherAttendanceListViewModel @Inject constructor(
                     if (result.error.rejection == ClassSessionRejection.MANUAL_NOT_ACTIVE) {
                         refreshSession()
                         emitEffect {
-                            TeacherAttendanceListEffect.ShowMessage("Sesi sudah berakhir; perubahan tidak tersimpan. Koreksi lewat Waka Kurikulum/TU.")
+                            TeacherAttendanceListEffect.ShowMessage(UiText.Res(R.string.tl_ended_unsaved))
                         }
                     } else {
                         // Edits stay on screen so the teacher can retry.
-                        emitEffect { TeacherAttendanceListEffect.ShowMessage(ClassSessionRules.genericMessage(result.error)) }
+                        emitEffect { TeacherAttendanceListEffect.ShowMessage(ClassSessionText.generic(result.error)) }
                     }
                 }
             }

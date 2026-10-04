@@ -59,7 +59,7 @@ object AppLocale {
         _changes.value = language
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.getSystemService(LocaleManager::class.java)?.applicationLocales =
-                LocaleList.forLanguageTags(language.code)
+                LocaleList.forLanguageTags(localeOf(language).toLanguageTag())
             return false
         }
         return changed
@@ -95,7 +95,13 @@ object AppLocale {
 
     fun fromTag(tag: String): AppLanguage = AppLanguage.fromCode(tag.substringBefore('-').substringBefore('_').let { if (it == "in") "id" else it })
 
-    fun localeOf(language: AppLanguage): Locale = Locale.forLanguageTag(language.code)
+    /**
+     * The locale the app runs in. Arabic keeps Latin digits ("ar-u-nu-latn"),
+     * like the web, so every formatted number ("%d", dates) reads 18, not ١٨.
+     * Resources still resolve from values-ar.
+     */
+    fun localeOf(language: AppLanguage): Locale =
+        if (language == AppLanguage.ARABIC) Locale.forLanguageTag("ar-u-nu-latn") else Locale.forLanguageTag(language.code)
 
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

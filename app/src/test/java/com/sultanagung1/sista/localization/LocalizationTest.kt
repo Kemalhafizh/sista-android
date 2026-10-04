@@ -89,6 +89,14 @@ class LocalizationTest {
     }
 
     @Test
+    fun arabicKeepsLatinDigitsLikeTheWeb() {
+        val ar = AppLocale.localeOf(AppLanguage.ARABIC)
+        assertEquals("ar", ar.language)
+        assertEquals("18 / 32", String.format(ar, "%d / %d", 18, 32))
+        assertEquals("ar", AppLocale.fromTag(ar.toLanguageTag()).code)
+    }
+
+    @Test
     fun everyLanguageNamesItselfInItsOwnScript() {
         assertEquals("Bahasa Indonesia", AppLanguage.INDONESIAN.nativeName)
         assertEquals("English", AppLanguage.ENGLISH.nativeName)

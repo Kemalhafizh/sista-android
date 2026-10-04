@@ -22,10 +22,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
+import androidx.annotation.StringRes
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.feature.admin.R
 
-enum class ReportRange(val label: String, val days: Int) {
-    WEEK("Rekap 7 Hari Terakhir", 7),
-    MONTH("Rekap 30 Hari Terakhir", 30)
+enum class ReportRange(@StringRes val label: Int, val days: Int) {
+    WEEK(R.string.as_report_week, 7),
+    MONTH(R.string.as_report_month, 30)
 }
 
 data class AdminSessionManagementState(
@@ -38,16 +42,17 @@ data class AdminSessionManagementState(
     val total: Int = 0,
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val notDeployed: Boolean = false,
     val canCorrect: Boolean = false,
     val reportRange: ReportRange? = null,
     val report: AttendanceReportDto? = null,
     val isReportLoading: Boolean = false,
-    val reportError: String? = null
+    val reportError: UiText? = null
 ) : UiState {
     val hasMore: Boolean get() = page in 1 until lastPage
-    val dateLabel: String get() = ClassSessionRules.formatDateId(date) ?: date
+    /** In the app's language ("8 Okt 2026" / "8 Oct 2026"). */
+    val dateLabel: String get() = ClassSessionText.date(date) ?: date
 }
 
 sealed interface AdminSessionManagementEvent : UiEvent {
@@ -142,7 +147,7 @@ class AdminSessionManagementViewModel @Inject constructor(
                     copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        errorMessage = ClassSessionRules.genericMessage(result.error),
+                        errorMessage = ClassSessionText.generic(result.error),
                         notDeployed = result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED
                     )
                 }
@@ -158,7 +163,7 @@ class AdminSessionManagementViewModel @Inject constructor(
             when (val result = repository.getAttendanceReport(start, end, groupBy = "class")) {
                 is ClassSessionResult.Success -> setState { copy(report = result.data, isReportLoading = false) }
                 is ClassSessionResult.Failure -> setState {
-                    copy(isReportLoading = false, reportError = ClassSessionRules.genericMessage(result.error))
+                    copy(isReportLoading = false, reportError = ClassSessionText.generic(result.error))
                 }
             }
         }

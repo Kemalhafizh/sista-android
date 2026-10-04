@@ -29,7 +29,6 @@ class HardcodedUiTextTest {
         "core/common/src/main/java/com/sultanagung1/sista/core/telemetry/AppStartupTracker.kt" to 1,
         "core/common/src/main/java/com/sultanagung1/sista/core/telemetry/NetworkPerformanceInterceptor.kt" to 1,
         "core/common/src/main/java/com/sultanagung1/sista/core/telemetry/SulaoneTelemetryHub.kt" to 5,
-        "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/ClassSessionUi.kt" to 4,
         "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SulaoneComponents.kt" to 2,
         "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SulaoneDatePicker.kt" to 2,
         "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SulaoneDropdown.kt" to 2,
@@ -60,7 +59,6 @@ class HardcodedUiTextTest {
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/attendance/DynamicQrScreen.kt" to 8,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/attendance/FaceEnrollmentScreen.kt" to 14,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/attendance/GeofenceAttendanceScreen.kt" to 7,
-        "feature/academic/src/main/java/com/sultanagung1/sista/ui/attendance/StudentSessionQrScanScreen.kt" to 11,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/calendar/AcademicCalendarScreen.kt" to 10,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/calendar/EventDetailScreen.kt" to 11,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/counseling/AntiBullyingSosScreen.kt" to 11,
@@ -90,8 +88,6 @@ class HardcodedUiTextTest {
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/utbk/UtbkTryOutScreen.kt" to 14,
         "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/AdminDashboardScreen.kt" to 17,
         "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/AdminUi.kt" to 9,
-        "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/sessions/AdminAttendanceOverrideScreen.kt" to 7,
-        "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/sessions/AdminSessionManagementScreen.kt" to 9,
         "feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtExamListScreen.kt" to 7,
         "feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtExamRoomScreen.kt" to 21,
         "feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtTokenEntryScreen.kt" to 11,
@@ -124,11 +120,6 @@ class HardcodedUiTextTest {
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherProctorDashboardScreen.kt" to 11,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherProctorExamsScreen.kt" to 6,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeachingJournalMobileScreen.kt" to 6,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/sessions/SessionUi.kt" to 3,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/sessions/TeacherActiveSessionScreen.kt" to 13,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/sessions/TeacherAttendanceListScreen.kt" to 6,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/sessions/TeacherClassSessionCard.kt" to 4,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/sessions/TeacherTodaySessionsScreen.kt" to 11,
     )
 
     private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"([^"\\]*+(?:\\.[^"\\]*+)*+)"""")

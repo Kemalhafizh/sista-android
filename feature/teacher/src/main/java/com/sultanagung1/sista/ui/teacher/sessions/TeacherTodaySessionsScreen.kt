@@ -51,6 +51,14 @@ import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionRules.StartAction
 import com.sultanagung1.sista.data.model.ClassSessionStatus
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import java.time.format.DateTimeFormatter
+import com.sultanagung1.sista.core.ui.text.displayLocale
+import com.sultanagung1.sista.feature.teacher.R
+import com.sultanagung1.sista.core.ui.R as CoreUiR
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
 
 /**
  * FASE 77.2: "Sesi Kelas Hari Ini" — the teacher's teaching slots of today
@@ -66,6 +74,7 @@ fun TeacherTodaySessionsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LifecycleStartStopEffect(
         onStart = { viewModel.onEvent(TeacherTodaySessionsEvent.ScreenStarted) },
@@ -75,7 +84,7 @@ fun TeacherTodaySessionsScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is TeacherTodaySessionsEffect.OpenActiveSession -> onOpenActiveSession(effect.sessionId)
-                is TeacherTodaySessionsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is TeacherTodaySessionsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.resolve(context))
             }
         }
     }
@@ -110,8 +119,8 @@ fun TeacherTodaySessionsContent(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 SistaTopBar(
-                    title = "Sesi Kelas Hari Ini",
-                    subtitle = state.todayLabel.ifBlank { null },
+                    title = stringResource(R.string.ts_title),
+                    subtitle = state.today?.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", displayLocale(LocalConfiguration.current.locales[0]))),
                     onBack = onNavigateBack,
                     scrollBehavior = scrollBehavior,
                 )
@@ -136,17 +145,17 @@ fun TeacherTodaySessionsContent(
                     when {
                         state.isLoading && state.sessions.isEmpty() -> item(key = "loading") { SkeletonList(rows = 3) }
                         state.notDeployed -> item(key = "unavailable") {
-                            SessionsUnavailable(state.errorMessage ?: ClassSessionRules.NOT_DEPLOYED_MESSAGE, onRetry = onRefresh)
+                            SessionsUnavailable((state.errorMessage ?: ClassSessionText.notDeployed).asString(), onRetry = onRefresh)
                         }
                         state.sessions.isEmpty() && state.errorMessage != null -> item(key = "error") {
-                            ErrorState(title = "Sesi kelas belum bisa dimuat", body = state.errorMessage, onRetry = onRefresh)
+                            ErrorState(title = stringResource(R.string.ts_load_error), body = state.errorMessage.asString(), onRetry = onRefresh)
                         }
                         state.sessions.isEmpty() -> item(key = "empty") {
                             EmptyState(
-                                title = "Tidak ada jadwal mengajar hari ini",
-                                body = "Jadwal mengajar Anda untuk hari ini kosong.",
+                                title = stringResource(R.string.ts_no_lessons),
+                                body = stringResource(R.string.ts_no_lessons_body),
                                 icon = Icons.Outlined.EventBusy,
-                                actionLabel = "Lihat jadwal minggu ini",
+                                actionLabel = stringResource(R.string.ts_week_schedule),
                                 onAction = onOpenWeeklySchedule,
                             )
                         }
@@ -155,9 +164,9 @@ fun TeacherTodaySessionsContent(
                             state.errorMessage?.let { message ->
                                 item(key = "stale") {
                                     InlineBanner(
-                                        message = "Gagal memperbarui: $message",
+                                        message = stringResource(R.string.ts_refresh_failed, message.asString()),
                                         tone = StatusTone.Warning,
-                                        actionLabel = "Muat ulang",
+                                        actionLabel = stringResource(CoreUiR.string.core_reload),
                                         onAction = onRefresh,
                                     )
                                 }
@@ -210,20 +219,20 @@ private fun SessionCard(
                 SessionStatusPill(status)
                 Spacer(Modifier.weight(1f))
                 session.jamKe?.let {
-                    Text("Jam ke-$it", style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
+                    Text(stringResource(R.string.ts_period, it), style = SistaTheme.typography.labelMedium, color = SistaTheme.colors.onSurfaceVariant)
                 }
             }
             Column {
-                Text(session.subjectName ?: "Mata pelajaran", style = SistaTheme.typography.titleLarge)
+                Text(session.subjectName ?: stringResource(R.string.ts_subject_fallback), style = SistaTheme.typography.titleLarge)
                 Text(
-                    listOfNotNull(session.classroomName?.let { "Kelas $it" }, ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd))
+                    listOfNotNull(session.classroomName?.let { stringResource(R.string.ts_class, it) }, ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd))
                         .joinToString(" · "),
                     style = SistaTheme.typography.bodyMedium,
                     color = SistaTheme.colors.onSurfaceVariant,
                 )
                 if (status.isFinished && session.actualStart != null) {
                     Text(
-                        "Berlangsung ${ClassSessionRules.timeRange(session.actualStart, session.actualEnd)}",
+                        stringResource(R.string.ts_held, ClassSessionRules.timeRange(session.actualStart, session.actualEnd)),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
@@ -234,20 +243,20 @@ private fun SessionCard(
             }
             when {
                 status == ClassSessionStatus.ACTIVE && sessionId != null -> SistaButton(
-                    "Buka sesi kelas",
+                    stringResource(R.string.ts_open_session),
                     { onOpen(sessionId) },
                     leadingIcon = Icons.AutoMirrored.Outlined.ArrowForward,
                     fullWidth = true,
                 )
                 status.isFinished && sessionId != null -> SistaButton(
-                    "Lihat detail",
+                    stringResource(R.string.ts_view_detail),
                     { onOpen(sessionId) },
                     variant = ButtonVariant.Outlined,
                     fullWidth = true,
                 )
                 else -> when (startAction) {
                     StartAction.Available -> SistaButton(
-                        "Mulai kelas",
+                        stringResource(R.string.ts_start),
                         onStart,
                         leadingIcon = Icons.Outlined.PlayArrow,
                         loading = isStarting,
@@ -256,15 +265,15 @@ private fun SessionCard(
                         modifier = Modifier.testTag("start_session_${session.scheduleId}"),
                     )
                     is StartAction.NotYet -> {
-                        SistaButton("Mulai kelas", {}, enabled = false, fullWidth = true)
+                        SistaButton(stringResource(R.string.ts_start), {}, enabled = false, fullWidth = true)
                         Text(
-                            "Bisa dimulai pukul ${startAction.opensAt}",
+                            stringResource(R.string.ts_opens_at, startAction.opensAt),
                             style = SistaTheme.typography.bodySmall,
                             color = SistaTheme.colors.onSurfaceVariant,
                         )
                     }
                     StartAction.Missed -> InlineBanner(
-                        message = "Jam pelajaran sudah lewat dan kelas tidak dimulai. Hubungi Waka Kurikulum bila perlu dicatat.",
+                        message = stringResource(R.string.ts_missed),
                         tone = StatusTone.Warning,
                     )
                     StartAction.Hidden -> Unit
@@ -279,23 +288,26 @@ private fun StartSessionDialog(session: ClassSessionDto, onDismiss: () -> Unit, 
     var topic by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Mulai ${session.subjectName ?: "kelas"}?") },
+        title = { Text(stringResource(R.string.ts_start_dialog_title, session.subjectName ?: stringResource(R.string.ts_class_fallback))) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Text(
-                    "Kelas ${session.classroomName.orEmpty()} · ${ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd)}. " +
-                        "Semua siswa tercatat alpha sampai memindai QR atau Anda absen manual.",
+                    stringResource(
+                        R.string.ts_start_dialog_body,
+                        session.classroomName.orEmpty(),
+                        ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd),
+                    ),
                     style = SistaTheme.typography.bodyMedium,
                 )
                 SistaTextField(
                     value = topic,
                     onValueChange = { topic = it.take(ClassSessionRules.TOPIC_MAX_CHARS) },
-                    label = "Topik/materi (opsional)",
-                    helperText = "${topic.length}/${ClassSessionRules.TOPIC_MAX_CHARS}",
+                    label = stringResource(R.string.ts_topic_optional),
+                    helperText = stringResource(R.string.ts_topic_count, topic.length, ClassSessionRules.TOPIC_MAX_CHARS),
                 )
             }
         },
-        confirmButton = { SistaButton("Mulai", { onConfirm(topic.ifBlank { null }) }, variant = ButtonVariant.Text) },
-        dismissButton = { SistaButton("Batal", onDismiss, variant = ButtonVariant.Text) },
+        confirmButton = { SistaButton(stringResource(R.string.ts_start_confirm), { onConfirm(topic.ifBlank { null }) }, variant = ButtonVariant.Text) },
+        dismissButton = { SistaButton(stringResource(R.string.ts_cancel), onDismiss, variant = ButtonVariant.Text) },
     )
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionStatus
 import com.sultanagung1.sista.data.model.SessionAttendanceStatus
@@ -56,28 +57,30 @@ fun classSessionStatusColor(status: ClassSessionStatus): Color = when (status) {
 @Composable
 fun SessionAttendanceChip(status: SessionAttendanceStatus, modifier: Modifier = Modifier) {
     val color = sessionAttendanceColor(status)
+    val label = stringResource(ClassSessionText.label(status))
     SulaoneBadge(
-        text = ClassSessionRules.label(status),
+        text = label,
         containerColor = color.copy(alpha = 0.14f),
         contentColor = color,
         modifier = modifier,
-        stateDescription = "Status kehadiran: ${ClassSessionRules.label(status)}"
+        stateDescription = stringResource(R.string.cs_attendance_state, label)
     )
 }
 
 @Composable
 fun ClassSessionStatusChip(status: ClassSessionStatus, modifier: Modifier = Modifier) {
     if (status == ClassSessionStatus.ACTIVE) {
-        LiveStatusChip(text = "LIVE", modifier = modifier)
+        LiveStatusChip(text = stringResource(R.string.cs_live), modifier = modifier)
         return
     }
     val color = classSessionStatusColor(status)
+    val label = stringResource(ClassSessionText.label(status))
     SulaoneBadge(
-        text = ClassSessionRules.label(status),
+        text = label,
         containerColor = color.copy(alpha = 0.14f),
         contentColor = color,
         modifier = modifier,
-        stateDescription = "Status sesi: ${ClassSessionRules.label(status)}"
+        stateDescription = stringResource(R.string.cs_session_state, label)
     )
 }
 
@@ -98,13 +101,14 @@ fun SessionAttendanceSummary(counts: ClassSessionRules.Counts, modifier: Modifie
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             Spacer(modifier = Modifier.width(12.dp))
+            val spoken = stringResource(R.string.cs_present_of_cd, counts.present, counts.total)
             Text(
-                text = "${counts.present} / ${counts.total} hadir",
+                text = stringResource(R.string.cs_present_of, counts.present, counts.total),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.semantics {
-                    contentDescription = "${counts.present} dari ${counts.total} siswa hadir"
+                    contentDescription = spoken
                 }
             )
         }
@@ -112,16 +116,16 @@ fun SessionAttendanceSummary(counts: ClassSessionRules.Counts, modifier: Modifie
             val b = counts.breakdown
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (b != null) {
-                    BreakdownItem(SessionAttendanceStatus.HADIR, "Hadir", b.hadir)
-                    BreakdownItem(SessionAttendanceStatus.TELAT, "Telat", b.telat)
-                    BreakdownItem(SessionAttendanceStatus.SAKIT, "Sakit", b.sakit)
-                    BreakdownItem(SessionAttendanceStatus.IZIN, "Izin", b.izin)
+                    BreakdownItem(SessionAttendanceStatus.HADIR, stringResource(R.string.cs_status_hadir), b.hadir)
+                    BreakdownItem(SessionAttendanceStatus.TELAT, stringResource(R.string.cs_status_telat), b.telat)
+                    BreakdownItem(SessionAttendanceStatus.SAKIT, stringResource(R.string.cs_status_sakit), b.sakit)
+                    BreakdownItem(SessionAttendanceStatus.IZIN, stringResource(R.string.cs_status_izin), b.izin)
                 } else {
                     // A session summary only knows present (incl. late), alpha and the rest.
-                    BreakdownItem(SessionAttendanceStatus.HADIR, "Hadir/Telat", counts.present)
-                    BreakdownItem(SessionAttendanceStatus.SAKIT, "Sakit/Izin", counts.excused)
+                    BreakdownItem(SessionAttendanceStatus.HADIR, stringResource(R.string.cs_present_or_late), counts.present)
+                    BreakdownItem(SessionAttendanceStatus.SAKIT, stringResource(R.string.cs_sick_or_excused), counts.excused)
                 }
-                BreakdownItem(SessionAttendanceStatus.ALPHA, "Alpha", counts.alpha)
+                BreakdownItem(SessionAttendanceStatus.ALPHA, stringResource(R.string.cs_status_alpha), counts.alpha)
             }
         }
     }
@@ -138,7 +142,7 @@ private fun BreakdownItem(status: SessionAttendanceStatus, label: String, count:
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = "$label $count",
+            text = stringResource(R.string.cs_breakdown, label, count),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -152,11 +156,11 @@ private fun BreakdownItem(status: SessionAttendanceStatus, label: String, count:
 @Composable
 fun ClassSessionUnavailableState(message: String, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
     SulaoneEmptyState(
-        title = "Sesi Kelas Belum Tersedia",
+        title = stringResource(R.string.cs_unavailable_title),
         description = message,
         icon = Icons.Default.CloudOff,
         modifier = modifier.padding(top = 32.dp),
-        ctaLabel = if (onRetry != null) "Coba Lagi" else null,
+        ctaLabel = if (onRetry != null) stringResource(R.string.cs_retry) else null,
         onCtaClick = onRetry
     )
 }

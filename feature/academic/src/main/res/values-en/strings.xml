@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Presensi sesi kelas (siswa) -->
+    <string name="sq_title">Class attendance</string>
+    <string name="sq_success">Attendance recorded!</string>
+    <string name="sq_class">Class %1$s</string>
+    <string name="sq_recorded_at">Recorded at %1$s WIB</string>
+    <string name="sq_home">Back to Home</string>
+    <string name="sq_already">Already recorded</string>
+    <string name="sq_failed">Attendance not recorded</string>
+    <string name="sq_scan_again">Scan again</string>
+    <string name="sq_back">Back</string>
+    <string name="sq_no_active">There\'s no class running for your class yet. If the teacher is already showing the QR, you can still scan it.</string>
+    <string name="sq_camera_needed">Camera permission is needed to scan the class QR code.</string>
+    <string name="sq_allow_camera">Allow camera</string>
+    <string name="sq_recording">Recording attendance…</string>
+    <string name="sq_aim">Point the camera at the QR on your teacher\'s screen.</string>
+    <string name="sq_rotation">The QR changes every 30 seconds. Scan it straight from the teacher\'s screen, not a screenshot.</string>
+    <string name="sq_manual">Can\'t scan? Ask your teacher to mark you manually on their device.</string>
+    <string name="sq_camera_cd">Class QR scanner camera</string>
+    <string name="sq_already_status">You\'re already recorded as %1$s for this session.</string>
+</resources>

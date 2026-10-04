@@ -39,6 +39,7 @@ What each role may open is decided by the server.
 The app is offered in Indonesian, English and Arabic, like the web (`users.preferred_locale` is shared).
 - Text on screen comes from `res/values/strings.xml` (Indonesian) with the same keys in `values-en` and `values-ar`: `stringResource(...)` in Compose, `UiText` (`:core:ui`) from ViewModels and formatting functions. Never a literal.
 - Server data (names, classes, the server's own messages) is shown as sent; the server already answers in the user's language.
+- Never read meaning out of a server message or title: it is translated. Act on the stable code beside it (`error_code`, `code`, `category_code`); ask for one in sistem-terpadu if it is missing.
 - Arabic is right-to-left: use `start`/`end`, never `left`/`right`. Screenshot tests run in Indonesian (`in-` qualifier); add `en-`/`ar-ldrtl-` screenshots for new screens.
 - **CI guards:** `LocalizationTest` fails when a key is missing in one language or placeholders differ; `HardcodedUiTextTest` fails on new on-screen literals. Its `debt` list only shrinks: translate a file, then lower or remove its entry.
 - Language is applied by `AppLocale` and kept in sync with the account by `LocaleSync` (`PUT me/locale`).

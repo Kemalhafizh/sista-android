@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Sesi kelas: label dan pesan bersama guru, siswa, admin -->
+    <string name="cs_status_hadir">Hadir</string>
+    <string name="cs_status_telat">Telat</string>
+    <string name="cs_status_sakit">Sakit</string>
+    <string name="cs_status_izin">Izin</string>
+    <string name="cs_status_alpha">Alpha</string>
+    <string name="cs_session_scheduled">Terjadwal</string>
+    <string name="cs_session_active">Sedang Berlangsung</string>
+    <string name="cs_session_completed">Selesai</string>
+    <string name="cs_session_cancelled">Dibatalkan</string>
+    <string name="cs_session_auto_closed">Ditutup Otomatis</string>
+    <string name="cs_live">LIVE</string>
+    <string name="cs_attendance_state">Status kehadiran: %1$s</string>
+    <string name="cs_session_state">Status sesi: %1$s</string>
+    <string name="cs_present_of">%1$d / %2$d hadir</string>
+    <string name="cs_present_of_cd">%1$d dari %2$d siswa hadir</string>
+    <string name="cs_present_or_late">Hadir/Telat</string>
+    <string name="cs_sick_or_excused">Sakit/Izin</string>
+    <string name="cs_breakdown">%1$s %2$d</string>
+    <string name="cs_unavailable_title">Sesi Kelas Belum Tersedia</string>
+    <string name="cs_retry">Coba Lagi</string>
+    <string name="cs_check_in_qr">Scan QR %1$s</string>
+    <string name="cs_check_in_qr_bare">Scan QR</string>
+    <string name="cs_check_in_manual">Manual %1$s</string>
+    <string name="cs_check_in_manual_bare">Manual guru</string>
+    <string name="cs_not_checked_in">Belum absen</string>
+    <string name="cs_override_by_at">Dikoreksi oleh %1$s pada %2$s</string>
+    <string name="cs_override_by">Dikoreksi oleh %1$s</string>
+    <string name="cs_admin">admin</string>
+    <string name="cs_not_deployed">Fitur Sesi Kelas belum aktif di server sekolah. Hubungi admin/TU untuk mengaktifkannya.</string>
+    <string name="cs_not_class_qr">Ini bukan QR sesi kelas. Pindai QR yang tampil di layar guru saat kelas berlangsung.</string>
+    <string name="cs_err_network">Tidak ada koneksi ke server. Periksa internet lalu coba lagi.</string>
+    <string name="cs_err_unauthorized">Sesi login berakhir. Silakan masuk ulang.</string>
+    <string name="cs_err_rate_limited">Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.</string>
+    <string name="cs_err_forbidden">Akun Anda tidak punya akses ke fitur ini.</string>
+    <string name="cs_err_generic">Terjadi kesalahan. Coba lagi.</string>
+    <string name="cs_start_window">Kelas hanya bisa dimulai mulai %1$d menit sebelum jadwal hingga jam pelajaran berakhir.</string>
+    <string name="cs_start_not_yours">Jadwal ini bukan milik Anda.</string>
+    <string name="cs_scan_expired">QR sudah berganti. Scan ulang QR yang sedang tampil di layar guru.</string>
+    <string name="cs_scan_invalid">QR tidak dikenali. Pastikan Anda memindai QR sesi kelas dari layar guru.</string>
+    <string name="cs_scan_not_enrolled">Anda bukan siswa kelas ini. Hubungi guru pengampu.</string>
+    <string name="cs_scan_already_at">Anda sudah tercatat hadir pukul %1$s WIB.</string>
+    <string name="cs_scan_already">Anda sudah tercatat hadir di sesi ini.</string>
+    <string name="cs_scan_ended">Sesi kelas sudah selesai. Minta koreksi ke Waka Kurikulum/TU.</string>
+    <string name="cs_scan_not_started">Sesi kelas ini belum dimulai guru. Coba lagi setelah guru memulai kelas.</string>
+    <string name="cs_override_not_allowed">Perubahan status ini tidak diizinkan. Kehadiran yang sudah tercatat tidak bisa diubah menjadi alpha.</string>
+</resources>

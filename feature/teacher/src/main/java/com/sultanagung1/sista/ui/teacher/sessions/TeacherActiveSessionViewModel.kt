@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.teacher.sessions
 
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.teacher.R
 import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -37,7 +40,7 @@ data class TeacherActiveSessionState(
     val remainingSeconds: Long? = null,
     val counts: ClassSessionRules.Counts = ClassSessionRules.Counts(),
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val notDeployed: Boolean = false,
     val isEnding: Boolean = false,
     val showTimeUpDialog: Boolean = false
@@ -62,7 +65,7 @@ sealed interface TeacherActiveSessionEvent : UiEvent {
 }
 
 sealed interface TeacherActiveSessionEffect : UiEffect {
-    data class ShowMessage(val message: String) : TeacherActiveSessionEffect
+    data class ShowMessage(val message: UiText) : TeacherActiveSessionEffect
 }
 
 /**
@@ -99,9 +102,7 @@ class TeacherActiveSessionViewModel @Inject constructor(
                 setState { copy(showTimeUpDialog = false) }
                 viewModelScope.launch {
                     emitEffect {
-                        TeacherActiveSessionEffect.ShowMessage(
-                            "Sesi dilanjutkan. Sistem menutup sesi otomatis 5 menit setelah jadwal berakhir."
-                        )
+                        TeacherActiveSessionEffect.ShowMessage(UiText.Res(R.string.ta_continued))
                     }
                 }
             }
@@ -141,19 +142,19 @@ class TeacherActiveSessionViewModel @Inject constructor(
                 if (found == null) {
                     // Keep a session we already know (e.g. the list rolled over at midnight).
                     setState {
-                        copy(isLoading = false, errorMessage = if (session != null) null else "Sesi ini tidak ada di jadwal hari ini.")
+                        copy(isLoading = false, errorMessage = if (session != null) null else UiText.Res(R.string.ta_not_today))
                     }
                 } else {
                     val before = currentState.status
                     setState { copy(session = found, isLoading = false, errorMessage = null, notDeployed = false) }
                     if (before == ClassSessionStatus.ACTIVE && found.effectiveStatus == ClassSessionStatus.AUTO_CLOSED) {
-                        emitEffect { TeacherActiveSessionEffect.ShowMessage("Sesi ditutup otomatis oleh sistem.") }
+                        emitEffect { TeacherActiveSessionEffect.ShowMessage(UiText.Res(R.string.ta_auto_closed_short)) }
                     }
                 }
             }
             is ClassSessionResult.Failure -> {
                 val notDeployed = result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED
-                setState { copy(isLoading = false, errorMessage = ClassSessionRules.genericMessage(result.error), notDeployed = notDeployed) }
+                setState { copy(isLoading = false, errorMessage = ClassSessionText.generic(result.error), notDeployed = notDeployed) }
                 if (notDeployed) return false
             }
         }
@@ -178,9 +179,7 @@ class TeacherActiveSessionViewModel @Inject constructor(
                 if (!warnedBeforeEnd && remaining in 1..ClassSessionRules.WARNING_SECONDS) {
                     warnedBeforeEnd = true
                     emitEffect {
-                        TeacherActiveSessionEffect.ShowMessage(
-                            "Jam pelajaran berakhir dalam ${(remaining + 59) / 60} menit. Siswa yang belum absen akan tercatat alpha."
-                        )
+                        TeacherActiveSessionEffect.ShowMessage(UiText.Res(R.string.ta_ending_soon, ((remaining + 59) / 60).toInt()))
                     }
                 }
                 if (!timeUpShown && remaining <= 0) {
@@ -248,16 +247,16 @@ class TeacherActiveSessionViewModel @Inject constructor(
                 is ClassSessionResult.Success -> {
                     setState { copy(session = result.data, isEnding = false, qrToken = null, qrExpiresAtMs = null) }
                     refreshAttendance()
-                    emitEffect { TeacherActiveSessionEffect.ShowMessage("Kelas diakhiri. Siswa yang belum absen tercatat alpha.") }
+                    emitEffect { TeacherActiveSessionEffect.ShowMessage(UiText.Res(R.string.ta_ended)) }
                 }
                 is ClassSessionResult.Failure -> {
                     setState { copy(isEnding = false) }
                     val rejection = result.error.rejection
                     if (rejection == ClassSessionRejection.SESSION_ENDED || rejection == ClassSessionRejection.SESSION_NOT_STARTED) {
                         refreshSession()
-                        emitEffect { TeacherActiveSessionEffect.ShowMessage("Sesi ini sudah tidak aktif.") }
+                        emitEffect { TeacherActiveSessionEffect.ShowMessage(UiText.Res(R.string.ta_not_active)) }
                     } else {
-                        emitEffect { TeacherActiveSessionEffect.ShowMessage(ClassSessionRules.genericMessage(result.error)) }
+                        emitEffect { TeacherActiveSessionEffect.ShowMessage(ClassSessionText.generic(result.error)) }
                     }
                 }
             }

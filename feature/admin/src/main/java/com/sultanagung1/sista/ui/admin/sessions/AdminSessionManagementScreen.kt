@@ -55,6 +55,9 @@ import com.sultanagung1.sista.core.designsystem.SulaoneTopBar
 import com.sultanagung1.sista.data.model.ClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionStatus
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.designsystem.ClassSessionText
+import com.sultanagung1.sista.feature.admin.R
 
 /**
  * FASE 77.6.1: "Manajemen Sesi Kelas" for admin, principal, Waka Kurikulum and TU.
@@ -76,8 +79,8 @@ fun AdminSessionManagementScreen(
     Scaffold(
         topBar = {
             SulaoneTopBar(
-                title = "Manajemen Sesi Kelas",
-                subtitle = if (state.canCorrect) "Pantau & koreksi kehadiran per mapel" else "Pantau kehadiran per mapel (lihat saja)",
+                title = stringResource(R.string.as_title),
+                subtitle = stringResource(if (state.canCorrect) R.string.as_subtitle_correct else R.string.as_subtitle_view),
                 onNavigateBack = onNavigateBack
             )
         }
@@ -105,7 +108,7 @@ fun AdminSessionManagementScreen(
                 when {
                     state.notDeployed -> item(key = "unavailable") {
                         ClassSessionUnavailableState(
-                            message = state.errorMessage ?: ClassSessionRules.NOT_DEPLOYED_MESSAGE,
+                            message = (state.errorMessage ?: ClassSessionText.notDeployed).asString(),
                             onRetry = { viewModel.onEvent(AdminSessionManagementEvent.Refresh) }
                         )
                     }
@@ -114,22 +117,23 @@ fun AdminSessionManagementScreen(
                     }
                     state.sessions.isEmpty() && state.errorMessage != null -> item(key = "error") {
                         SulaoneErrorBanner(
-                            message = state.errorMessage.orEmpty(),
+                            message = state.errorMessage?.asString().orEmpty(),
                             onRetry = { viewModel.onEvent(AdminSessionManagementEvent.Refresh) }
                         )
                     }
                     state.sessions.isEmpty() -> item(key = "empty") {
                         SulaoneEmptyState(
-                            title = "Tidak Ada Sesi Kelas",
-                            description = "Belum ada sesi kelas tercatat pada ${state.dateLabel}" +
-                                (state.statusFilter?.let { " dengan status ${ClassSessionRules.label(it)}" } ?: "") + ".",
+                            title = stringResource(R.string.as_empty_title),
+                            description = state.statusFilter
+                                ?.let { stringResource(R.string.as_empty_on_status, state.dateLabel, stringResource(ClassSessionText.label(it))) }
+                                ?: stringResource(R.string.as_empty_on, state.dateLabel),
                             icon = Icons.Default.EventBusy
                         )
                     }
                     else -> {
                         item(key = "count") {
                             Text(
-                                "${state.total} sesi pada ${state.dateLabel}",
+                                stringResource(R.string.as_count, state.total, state.dateLabel),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -161,13 +165,13 @@ fun AdminSessionManagementScreen(
             showDatePicker = false
             millis?.let { viewModel.onEvent(AdminSessionManagementEvent.DateSelected(it)) }
         },
-        title = "Pilih Tanggal Sesi"
+        title = stringResource(R.string.as_pick_date)
     )
 
     SulaoneModalBottomSheet(
         isVisible = state.reportRange != null,
         onDismiss = { viewModel.onEvent(AdminSessionManagementEvent.CloseReport) },
-        title = state.reportRange?.label
+        title = state.reportRange?.let { stringResource(it.label) }
     ) {
         ReportSheet(state)
     }
@@ -183,19 +187,19 @@ private fun Filters(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         AssistChip(
             onClick = onPickDate,
-            label = { Text("Tanggal: $dateLabel") },
+            label = { Text(stringResource(R.string.as_date, dateLabel)) },
             leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) }
         )
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterChip(selected = status == null, onClick = { onStatus(null) }, label = { Text("Semua") })
+            FilterChip(selected = status == null, onClick = { onStatus(null) }, label = { Text(stringResource(R.string.as_all)) })
             listOf(ClassSessionStatus.ACTIVE, ClassSessionStatus.COMPLETED, ClassSessionStatus.AUTO_CLOSED, ClassSessionStatus.CANCELLED).forEach { s ->
                 FilterChip(
                     selected = status == s,
                     onClick = { onStatus(if (status == s) null else s) },
-                    label = { Text(ClassSessionRules.label(s)) }
+                    label = { Text(stringResource(ClassSessionText.label(s))) }
                 )
             }
         }
@@ -223,7 +227,7 @@ private fun AdminSessionCard(session: ClassSessionDto, canCorrect: Boolean, onOp
             Text(
                 listOfNotNull(
                     session.teacherName,
-                    session.jamKe?.let { "Jam $it" },
+                    session.jamKe?.let { stringResource(R.string.as_period, it) },
                     ClassSessionRules.timeRange(session.scheduledStart, session.scheduledEnd)
                 ).joinToString(" • "),
                 style = MaterialTheme.typography.bodySmall,
@@ -231,7 +235,7 @@ private fun AdminSessionCard(session: ClassSessionDto, canCorrect: Boolean, onOp
             )
             SessionAttendanceSummary(counts, showBreakdown = false)
             Text(
-                "${ClassSessionRules.presencePercent(counts.presenceRate)}% hadir • ${counts.alpha} alpha",
+                stringResource(R.string.as_presence, ClassSessionRules.presencePercent(counts.presenceRate), counts.alpha),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -239,7 +243,7 @@ private fun AdminSessionCard(session: ClassSessionDto, canCorrect: Boolean, onOp
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        if (canCorrect) "Detail & Koreksi" else "Detail",
+                        stringResource(if (canCorrect) R.string.as_detail_correct else R.string.as_detail),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -255,10 +259,10 @@ private fun AdminSessionCard(session: ClassSessionDto, canCorrect: Boolean, onOp
 private fun ReportsSection(onOpen: (ReportRange) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
         HorizontalDivider()
-        Text("Laporan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.as_reports), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         ReportRange.values().forEach { range ->
             SulaoneButton(
-                text = range.label,
+                text = stringResource(range.label),
                 onClick = { onOpen(range) },
                 icon = Icons.Default.Assessment,
                 variant = SulaoneButtonVariant.SecondaryOutlined,
@@ -278,31 +282,31 @@ private fun ReportSheet(state: AdminSessionManagementState) {
     ) {
         when {
             state.isReportLoading -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { CircularProgressIndicator() }
-            state.reportError != null -> SulaoneErrorBanner(message = state.reportError)
+            state.reportError != null -> SulaoneErrorBanner(message = state.reportError.asString())
             else -> {
                 val summary = state.report?.summary
                 if (summary == null || summary.totalSessions == 0) {
-                    Text("Belum ada sesi kelas pada rentang ini.", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.as_report_empty), style = MaterialTheme.typography.bodyMedium)
                 } else {
                     Text(
-                        "${summary.totalSessions} sesi • rata-rata ${ClassSessionRules.presencePercent(summary.averagePresenceRate)}% hadir",
+                        stringResource(R.string.as_report_total, summary.totalSessions, ClassSessionRules.presencePercent(summary.averagePresenceRate)),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "Hadir ${summary.totalHadir} • Telat ${summary.totalTelat} • Sakit ${summary.totalSakit} • Izin ${summary.totalIzin} • Alpha ${summary.totalAlpha}",
+                        stringResource(R.string.as_report_breakdown, summary.totalHadir, summary.totalTelat, summary.totalSakit, summary.totalIzin, summary.totalAlpha),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     HorizontalDivider()
-                    Text("Per kelas", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.as_per_class), style = MaterialTheme.typography.labelLarge)
                     state.report?.details.orEmpty()
                         .sortedBy { it.presenceRate }
                         .forEach { row ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(ClassSessionRules.reportLabel(row), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                                 Text(
-                                    "${ClassSessionRules.presencePercent(row.presenceRate)}% • ${row.alpha} alpha",
+                                    stringResource(R.string.as_row_presence, ClassSessionRules.presencePercent(row.presenceRate), row.alpha),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
