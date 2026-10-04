@@ -138,7 +138,7 @@ class HardcodedUiTextTest {
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/sessions/TeacherTodaySessionsScreen.kt" to 11,
     )
 
-    private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"((?:\\.|[^"\\])*)"""")
+    private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"([^"\\]*+(?:\\.[^"\\]*+)*+)"""")
 
     private val root: File = generateSequence(File("").absoluteFile) { it.parentFile }
         .first { File(it, "settings.gradle").exists() || File(it, "settings.gradle.kts").exists() }
