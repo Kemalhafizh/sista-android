@@ -398,7 +398,6 @@ fun AppNavigation(
                         navController = navController,
                         sessionManager = sessionManager,
                         themeManager = themeManager,
-                        userRole = userRole,
                         navigateToRoleHome = navigateToRoleHome,
                         audioRecorderManager = audioRecorderManager,
                         downloadManager = downloadManager,
