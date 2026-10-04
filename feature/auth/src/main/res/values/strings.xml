@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Masuk -->
+    <string name="login_app_name">Sulaone</string>
+    <string name="login_school_name">SMA Islam Sultan Agung 1 Semarang</string>
+    <string name="login_school_logo">Logo SMA Islam Sultan Agung 1</string>
+    <string name="login_title">Masuk ke akun Anda</string>
+    <string name="login_intro">Satu akun untuk siswa, guru, orang tua, dan staf sekolah. Menu akan menyesuaikan peran akun Anda.</string>
+    <string name="login_error_title">Belum bisa masuk</string>
+    <string name="login_identifier_label">NISN, NIP, atau email</string>
+    <string name="login_password_label">Kata sandi</string>
+    <string name="login_submit">Masuk</string>
+    <string name="login_or">atau</string>
+    <string name="login_with_fingerprint">Masuk dengan sidik jari</string>
+    <string name="login_fingerprint_hint">Sentuh sensor sidik jari untuk masuk</string>
+    <string name="login_use_password">Pakai kata sandi</string>
+    <string name="login_forgot_password">Lupa kata sandi? Hubungi tata usaha atau admin sekolah untuk mengatur ulang.</string>
+    <string name="login_error_missing_fields">Mohon masukkan NISN/NIP dan kata sandi.</string>
+    <string name="login_error_no_device_session">Sesi perangkat tidak tersedia.</string>
+    <string name="login_error_biometric_first">Silakan masuk dengan kata sandi minimal sekali sebelum menggunakan login biometrik.</string>
+</resources>

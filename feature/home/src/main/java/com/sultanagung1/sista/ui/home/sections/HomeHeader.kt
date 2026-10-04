@@ -2,8 +2,10 @@ package com.sultanagung1.sista.ui.home.sections
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.sultanagung1.sista.core.motion.sulaoneSharedBounds
 import com.sultanagung1.sista.core.ui.component.GreetingHeader
+import com.sultanagung1.sista.feature.home.R
 
 /**
  * The student's header: the shared [GreetingHeader] with class and NIS from
@@ -23,8 +25,8 @@ fun HomeHeader(
         greeting = greeting,
         name = name,
         details = listOfNotNull(
-            classroom?.takeIf { it.isNotBlank() && it != "—" }?.let { "Kelas $it" },
-            identifier?.takeIf { it.isNotBlank() && it != "—" }?.let { "NIS $it" },
+            classroom?.takeIf { it.isNotBlank() && it != "—" }?.let { stringResource(R.string.home_detail_class, it) },
+            identifier?.takeIf { it.isNotBlank() && it != "—" }?.let { stringResource(R.string.home_detail_nis, it) },
         ),
         unreadCount = unreadCount,
         onOpenNotifications = onOpenNotifications,

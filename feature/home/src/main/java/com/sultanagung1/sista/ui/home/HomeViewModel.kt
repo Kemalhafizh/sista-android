@@ -29,10 +29,11 @@ import java.util.Locale
 
 data class HomeUiState(
     val isLoading: Boolean = false,
-    val userName: String = "Siswa Sultan Agung",
-    val userRole: String = "student",
-    val userIdentifier: String = "—",
-    val studentClass: String = "—",
+    /** From the signed-in account; null until the session is read, never a made-up name. */
+    val userName: String? = null,
+    val userRole: String? = null,
+    val userIdentifier: String? = null,
+    val studentClass: String? = null,
     val todaySchedules: List<ScheduleItem> = emptyList(),
     val contextualPayload: com.sultanagung1.sista.data.model.ContextualHomePayload? = null,
     /** Null until a real prayer-time source is wired — sistem-terpadu has no JSON API for this yet. */

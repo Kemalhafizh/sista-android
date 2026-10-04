@@ -16,6 +16,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import com.sultanagung1.sista.core.designsystem.LifecycleStartStopEffect
 import com.sultanagung1.sista.core.designsystem.SulaonePullToRefreshBox
 import com.sultanagung1.sista.core.sync.SyncManager
@@ -25,6 +26,8 @@ import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.core.util.DateUtils
+import com.sultanagung1.sista.feature.home.R
+import com.sultanagung1.sista.core.ui.R as CoreUiR
 import com.sultanagung1.sista.data.model.ActiveClassSessionDto
 import com.sultanagung1.sista.data.model.ScheduleItem
 import com.sultanagung1.sista.ui.common.SyncStatusHeader
@@ -70,7 +73,7 @@ fun HomeScreen(
 
     HomeContent(
         greeting = greetingFor(now.get(Calendar.HOUR_OF_DAY)),
-        name = uiState.userName,
+        name = uiState.userName.orEmpty(),
         classroom = uiState.studentClass,
         identifier = uiState.userIdentifier,
         unreadCount = uiState.unreadNotificationsCount,
@@ -153,9 +156,9 @@ fun HomeContent(
                     if (errorMessage != null && todaySchedules.isNotEmpty()) {
                         item(key = "stale") {
                             InlineBanner(
-                                message = "Menampilkan data tersimpan. $errorMessage",
+                                message = stringResource(R.string.home_stale_data, errorMessage),
                                 tone = StatusTone.Warning,
-                                actionLabel = "Muat ulang",
+                                actionLabel = stringResource(CoreUiR.string.core_reload),
                                 onAction = onRefresh,
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                             )
@@ -188,20 +191,21 @@ fun HomeContent(
 
 @Composable
 private fun ActiveClassBanner(session: ActiveClassSessionDto, canScan: Boolean, onScan: () -> Unit) {
-    val subject = session.subjectName?.takeIf { it.isNotBlank() } ?: "Kelas"
+    val subject = session.subjectName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.home_class_fallback)
+    val title = stringResource(R.string.home_class_ongoing, subject)
     if (session.alreadyCheckedIn) {
         InlineBanner(
-            title = "$subject sedang berlangsung",
-            message = "Presensi kelas Anda sudah tercatat.",
+            title = title,
+            message = stringResource(R.string.home_class_checked_in),
             tone = StatusTone.Success,
             modifier = Modifier.padding(horizontal = Spacing.screen),
         )
     } else {
         InlineBanner(
-            title = "$subject sedang berlangsung",
-            message = "Pindai QR dari guru untuk presensi kelas.",
+            title = title,
+            message = stringResource(R.string.home_class_scan_hint),
             tone = StatusTone.Info,
-            actionLabel = if (canScan) "Pindai QR" else null,
+            actionLabel = if (canScan) stringResource(R.string.home_scan_qr) else null,
             onAction = if (canScan) onScan else null,
             modifier = Modifier
                 .padding(horizontal = Spacing.screen)

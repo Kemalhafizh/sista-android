@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Pesan saat server tidak menjelaskan -->
+    <string name="error_offline">Tidak bisa terhubung ke server. Periksa koneksi internet Anda.</string>
+    <string name="error_timeout">Server terlalu lama menjawab. Coba lagi sebentar lagi.</string>
+    <string name="login_failed">Belum bisa masuk (kode %1$d).</string>
+    <string name="login_incomplete_response">Jawaban server untuk login tidak lengkap. Coba lagi.</string>
+    <string name="biometric_challenge_failed">Server belum bisa memulai login sidik jari (kode %1$d).</string>
+    <string name="biometric_verify_failed">Verifikasi sidik jari gagal (kode %1$d).</string>
+    <string name="biometric_register_failed">Sidik jari belum bisa didaftarkan (kode %1$d).</string>
+    <string name="schedule_load_failed">Jadwal pelajaran belum bisa dimuat (kode %1$d).</string>
+    <string name="notifications_load_failed">Notifikasi belum bisa dimuat (kode %1$d).</string>
+    <string name="home_context_load_failed">Info beranda belum bisa dimuat (kode %1$d).</string>
+</resources>

@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.core.security.KeystoreManager
 import com.sultanagung1.sista.core.storage.SessionManager
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.auth.R
 import com.sultanagung1.sista.data.model.UserProfile
 import com.sultanagung1.sista.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,8 @@ import kotlinx.coroutines.launch
 data class LoginUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null,
+    /** The server's own message ([UiText.Raw]) or a check made on this phone. */
+    val errorMessage: UiText? = null,
     val userProfile: UserProfile? = null,
     val isBiometricEnabled: Boolean = false,
     val rememberedIdentifier: String? = null,
@@ -57,7 +60,7 @@ class LoginViewModel @Inject constructor(
 
     fun login(identifier: String, pass: String) {
         if (identifier.isBlank() || pass.isBlank()) {
-            _uiState.value = _uiState.value.copy(errorMessage = "Mohon masukkan NISN/NIP dan Kata Sandi.")
+            _uiState.value = _uiState.value.copy(errorMessage = UiText.Res(R.string.login_error_missing_fields))
             return
         }
 
@@ -77,7 +80,7 @@ class LoginViewModel @Inject constructor(
                     is NetworkResult.Error -> {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            errorMessage = result.message
+                            errorMessage = UiText.Raw(result.message)
                         )
                     }
                 }
@@ -94,13 +97,13 @@ class LoginViewModel @Inject constructor(
     fun loginWithBiometric() {
         val sm = sessionManager
         if (sm == null) {
-            _uiState.value = _uiState.value.copy(errorMessage = "Sesi perangkat tidak tersedia.")
+            _uiState.value = _uiState.value.copy(errorMessage = UiText.Res(R.string.login_error_no_device_session))
             return
         }
         val userId = _uiState.value.rememberedUserId
         if (userId.isNullOrBlank()) {
             _uiState.value = _uiState.value.copy(
-                errorMessage = "Silakan masuk dengan kata sandi minimal sekali sebelum menggunakan login biometrik."
+                errorMessage = UiText.Res(R.string.login_error_biometric_first)
             )
             return
         }
@@ -113,7 +116,7 @@ class LoginViewModel @Inject constructor(
                 when (challengeResult) {
                     is NetworkResult.Loading -> Unit
                     is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = challengeResult.message)
+                        _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = UiText.Raw(challengeResult.message))
                     }
                     is NetworkResult.Success -> {
                         val signature = keystoreManager.signChallenge(challengeResult.data)
@@ -132,7 +135,7 @@ class LoginViewModel @Inject constructor(
                                 is NetworkResult.Error -> {
                                     _uiState.value = _uiState.value.copy(
                                         isLoading = false,
-                                        errorMessage = result.message
+                                        errorMessage = UiText.Raw(result.message)
                                     )
                                 }
                             }

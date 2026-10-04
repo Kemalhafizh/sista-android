@@ -93,6 +93,17 @@ class ScheduleRulesTest {
     }
 
     @Test
+    fun `times keep Latin digits when the app is in Arabic`() {
+        val before = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("ar"))
+            assertEquals("07:05", ScheduleRules.displayTime("07:05:00"))
+        } finally {
+            java.util.Locale.setDefault(before)
+        }
+    }
+
+    @Test
     fun `location prefers the room and the badge is the class all lessons share`() {
         assertEquals("Lab Fisika", ScheduleRules.locationOf(lesson(1, "Senin", "07:00", "08:00", room = "Lab Fisika")))
         assertEquals("XI MIPA 2", ScheduleRules.locationOf(lesson(1, "Senin", "07:00", "08:00", room = null)))

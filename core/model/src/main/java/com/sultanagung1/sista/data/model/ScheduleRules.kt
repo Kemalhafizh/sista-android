@@ -1,6 +1,7 @@
 package com.sultanagung1.sista.data.model
 
 import java.util.Calendar
+import java.util.Locale
 
 /**
  * Pure rules behind the student's timetable (ScheduleScreen), so the screen
@@ -58,7 +59,8 @@ object ScheduleRules {
     /** "07:00:00" → "07:00" for display. */
     fun displayTime(time: String?): String {
         val minutes = minutesOf(time) ?: return time.orEmpty()
-        return "%02d:%02d".format(minutes / 60, minutes % 60)
+        // Latin digits in every language, as on the web ("07:05", not "٠٧:٠٥" in Arabic).
+        return String.format(Locale.ROOT, "%02d:%02d", minutes / 60, minutes % 60)
     }
 
     /**

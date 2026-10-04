@@ -60,7 +60,7 @@ class MinimalistUxOverhaulTest {
     fun testHomeShortcutsFollowTheAccountsFeatures() {
         val quick = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/sections/HomeQuickAccess.kt").readText()
         assertTrue("Shortcuts are a short list", quick.contains("QUICK_ACCESS_LIMIT = 6"))
-        assertTrue("Everything else lives in Layanan", quick.contains("\"Semua layanan\""))
+        assertTrue("Everything else lives in Layanan", quick.contains("R.string.home_all_services"))
 
         val home = findSourceFile("src/main/java/com/sultanagung1/sista/ui/home/HomeScreen.kt").readText()
         // Only shortcuts this account may open, from the server's capability list.

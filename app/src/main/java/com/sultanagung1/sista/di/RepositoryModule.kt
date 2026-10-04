@@ -23,8 +23,14 @@ object RepositoryModule {
         apiClient: ApiClient,
         sessionManager: SessionManager,
         widgetSnapshots: WidgetSnapshotStore,
-        localeSync: LocaleSync
-    ): AuthRepository = AuthRepository(apiClient, sessionManager, widgetSnapshots = widgetSnapshots, localeSync = localeSync)
+        localeSync: LocaleSync,
+        messages: FallbackMessages
+    ): AuthRepository = AuthRepository(apiClient, sessionManager, widgetSnapshots = widgetSnapshots, localeSync = localeSync, messages = messages)
+
+    @Provides
+    @Singleton
+    fun provideFallbackMessages(@dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context): FallbackMessages =
+        FallbackMessages(context)
 
     @Provides
     @Singleton
@@ -50,8 +56,9 @@ object RepositoryModule {
     fun provideStudentRepository(
         apiClient: ApiClient,
         localStore: SulaoneLocalStore,
-        widgetSnapshots: WidgetSnapshotStore
-    ): StudentRepository = StudentRepository(apiClient, localStore, widgetSnapshots)
+        widgetSnapshots: WidgetSnapshotStore,
+        messages: FallbackMessages
+    ): StudentRepository = StudentRepository(apiClient, localStore, widgetSnapshots, messages)
 
     @Provides
     @Singleton

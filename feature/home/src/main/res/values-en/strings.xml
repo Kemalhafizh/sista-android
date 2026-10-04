@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Beranda siswa -->
+    <string name="home_stale_data">Showing saved data. %1$s</string>
+    <string name="home_class_fallback">Class</string>
+    <string name="home_class_ongoing">%1$s is in progress</string>
+    <string name="home_class_checked_in">Your class attendance has been recorded.</string>
+    <string name="home_class_scan_hint">Scan your teacher\'s QR code to record class attendance.</string>
+    <string name="home_scan_qr">Scan QR</string>
+    <string name="home_detail_class">Class %1$s</string>
+    <string name="home_detail_nis">NIS %1$s</string>
+    <string name="quick_gps_attendance">GPS attendance</string>
+    <string name="quick_class_qr">Scan class QR</string>
+    <string name="quick_grades">Grades</string>
+    <string name="quick_cbt">CBT exams</string>
+    <string name="quick_billing">Bills</string>
+    <string name="quick_elearning">Online classes</string>
+    <string name="quick_mutabaah">Mutaba\'ah</string>
+    <string name="quick_rapor">Report card</string>
+    <string name="home_frequent">Used often</string>
+    <string name="home_quick_access">Quick access</string>
+    <string name="home_all_services">All services</string>
+    <string name="home_usage_note">Ordered by what you open most on this phone.</string>
+    <string name="home_usage_reset">Reset</string>
+    <string name="home_today">Today</string>
+    <string name="home_full_schedule">Full timetable</string>
+    <string name="home_schedule_error">The timetable couldn\'t be loaded</string>
+    <string name="home_no_lessons">No lessons today</string>
+    <string name="home_no_lessons_body">This week\'s timetable is still under Full timetable.</string>
+    <string name="home_lesson_cd">%1$s, %2$s to %3$s</string>
+    <string name="home_lesson_cd_status">%1$s, %2$s</string>
+    <string name="lesson_ongoing">In progress</string>
+    <string name="lesson_next">Next</string>
+    <string name="lesson_done">Done</string>
+</resources>

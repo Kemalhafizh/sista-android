@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Masuk -->
+    <string name="login_app_name">Sulaone</string>
+    <string name="login_school_name">مدرسة سلطان أجونج ١ الإسلامية الثانوية بسيمارانج</string>
+    <string name="login_school_logo">شعار مدرسة سلطان أجونج ١ الإسلامية الثانوية</string>
+    <string name="login_title">سجّل الدخول إلى حسابك</string>
+    <string name="login_intro">حساب واحد للطلاب والمعلمين وأولياء الأمور وموظفي المدرسة. تتكيّف القائمة مع دور حسابك.</string>
+    <string name="login_error_title">تعذّر تسجيل الدخول</string>
+    <string name="login_identifier_label">NISN أو NIP أو البريد الإلكتروني</string>
+    <string name="login_password_label">كلمة المرور</string>
+    <string name="login_submit">دخول</string>
+    <string name="login_or">أو</string>
+    <string name="login_with_fingerprint">الدخول ببصمة الإصبع</string>
+    <string name="login_fingerprint_hint">المس مستشعر البصمة لتسجيل الدخول</string>
+    <string name="login_use_password">استخدم كلمة المرور</string>
+    <string name="login_forgot_password">نسيت كلمة المرور؟ تواصل مع الإدارة المدرسية أو مسؤول النظام لإعادة تعيينها.</string>
+    <string name="login_error_missing_fields">يرجى إدخال NISN/NIP وكلمة المرور.</string>
+    <string name="login_error_no_device_session">جلسة هذا الجهاز غير متاحة.</string>
+    <string name="login_error_biometric_first">سجّل الدخول بكلمة المرور مرة واحدة على الأقل قبل استخدام الدخول بالبصمة.</string>
+</resources>

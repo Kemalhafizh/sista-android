@@ -16,4 +16,8 @@
     <string name="greeting_noon">Good afternoon</string>
     <string name="greeting_afternoon">Good afternoon</string>
     <string name="greeting_night">Good evening</string>
+
+    <!-- Header beranda -->
+    <string name="core_notifications">Notifications</string>
+    <string name="core_notifications_unread">Notifications, %1$d unread</string>
 </resources>

@@ -74,7 +74,8 @@ fun GreetingHeader(
             val shown = details.filter { it.isNotBlank() }
             if (shown.isNotEmpty()) {
                 Text(
-                    shown.joinToString(" · "),
+                    // Each detail is isolated so "Kelas XI MIPA 2" stays one piece in Arabic.
+                    shown.joinToString(" · ") { "\u2068$it\u2069" },
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                     maxLines = 1,
@@ -83,7 +84,7 @@ fun GreetingHeader(
             }
         }
         IconButton(onClick = onOpenNotifications) {
-            val label = if (unreadCount > 0) "Notifikasi, $unreadCount belum dibaca" else "Notifikasi"
+            val label = if (unreadCount > 0) stringResource(R.string.core_notifications_unread, unreadCount) else stringResource(R.string.core_notifications)
             BadgedBox(badge = { if (unreadCount > 0) Badge { Text(if (unreadCount > 99) "99+" else "$unreadCount") } }) {
                 Icon(Icons.Outlined.Notifications, contentDescription = label)
             }

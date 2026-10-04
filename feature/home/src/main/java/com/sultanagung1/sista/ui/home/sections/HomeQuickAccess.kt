@@ -21,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.sultanagung1.sista.core.ui.component.ButtonVariant
 import com.sultanagung1.sista.core.ui.component.FeatureTile
@@ -29,13 +31,14 @@ import com.sultanagung1.sista.core.ui.component.SistaButton
 import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.data.repository.UsageRanking
+import com.sultanagung1.sista.feature.home.R
 import com.sultanagung1.sista.ui.navigation.Screen
 
 /** A shortcut on Home. [key] is the server feature it opens, also the usage-counter key. */
 @Immutable
 data class QuickItem(
     val key: String,
-    val title: String,
+    @StringRes val title: Int,
     val icon: ImageVector,
     val route: String,
     val hints: List<ImageVector> = emptyList(),
@@ -43,14 +46,14 @@ data class QuickItem(
 
 /** A student's everyday shortcuts, in their default order. Each is shown only when the account has it. */
 val STUDENT_QUICK_ITEMS = listOf(
-    QuickItem("attendance.gps", "Presensi GPS", Icons.Outlined.LocationOn, Screen.GeofenceAttendance.route, listOf(Icons.Outlined.LocationOn)),
-    QuickItem("attendance.class_scan", "Scan QR Kelas", Icons.Outlined.QrCodeScanner, Screen.StudentSessionQrScan.route, listOf(Icons.Outlined.CameraAlt)),
-    QuickItem("student.grades", "Nilai", Icons.Outlined.Grade, Screen.Grades.route),
-    QuickItem("student.cbt", "Ujian CBT", Icons.Outlined.Quiz, Screen.CbtList.route),
-    QuickItem("student.billing", "Tagihan", Icons.Outlined.AccountBalanceWallet, Screen.Billing.route),
-    QuickItem("student.elearning", "Kelas Online", Icons.Outlined.Class, Screen.ElearningClassList.route),
-    QuickItem("student.mutabaah", "Mutaba'ah", Icons.Outlined.SelfImprovement, Screen.Mutabaah.route),
-    QuickItem("student.rapor", "E-Rapor", Icons.Outlined.Assignment, Screen.RaporDetail.route),
+    QuickItem("attendance.gps", R.string.quick_gps_attendance, Icons.Outlined.LocationOn, Screen.GeofenceAttendance.route, listOf(Icons.Outlined.LocationOn)),
+    QuickItem("attendance.class_scan", R.string.quick_class_qr, Icons.Outlined.QrCodeScanner, Screen.StudentSessionQrScan.route, listOf(Icons.Outlined.CameraAlt)),
+    QuickItem("student.grades", R.string.quick_grades, Icons.Outlined.Grade, Screen.Grades.route),
+    QuickItem("student.cbt", R.string.quick_cbt, Icons.Outlined.Quiz, Screen.CbtList.route),
+    QuickItem("student.billing", R.string.quick_billing, Icons.Outlined.AccountBalanceWallet, Screen.Billing.route),
+    QuickItem("student.elearning", R.string.quick_elearning, Icons.Outlined.Class, Screen.ElearningClassList.route),
+    QuickItem("student.mutabaah", R.string.quick_mutabaah, Icons.Outlined.SelfImprovement, Screen.Mutabaah.route),
+    QuickItem("student.rapor", R.string.quick_rapor, Icons.Outlined.Assignment, Screen.RaporDetail.route),
 )
 
 /** How many shortcuts Home shows; everything else lives in Layanan. */
@@ -77,15 +80,15 @@ fun HomeQuickAccess(
 
     Column(modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         SectionHeader(
-            title = if (personalised) "Sering Dipakai" else "Akses cepat",
-            actionLabel = "Semua layanan",
+            title = stringResource(if (personalised) R.string.home_frequent else R.string.home_quick_access),
+            actionLabel = stringResource(R.string.home_all_services),
             onAction = onOpenAllServices,
         )
         shown.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 row.forEach { item ->
                     FeatureTile(
-                        title = item.title,
+                        title = stringResource(item.title),
                         icon = item.icon,
                         hints = item.hints,
                         onClick = { onOpen(item) },
@@ -98,12 +101,12 @@ fun HomeQuickAccess(
         if (personalised) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Urutan mengikuti yang paling sering Anda buka di HP ini.",
+                    stringResource(R.string.home_usage_note),
                     style = SistaTheme.typography.bodySmall,
                     color = SistaTheme.colors.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                SistaButton("Atur ulang", onResetUsage, variant = ButtonVariant.Text)
+                SistaButton(stringResource(R.string.home_usage_reset), onResetUsage, variant = ButtonVariant.Text)
             }
         }
     }
