@@ -22,8 +22,14 @@ object RepositoryModule {
     fun provideAuthRepository(
         apiClient: ApiClient,
         sessionManager: SessionManager,
-        widgetSnapshots: WidgetSnapshotStore
-    ): AuthRepository = AuthRepository(apiClient, sessionManager, widgetSnapshots = widgetSnapshots)
+        widgetSnapshots: WidgetSnapshotStore,
+        localeSync: LocaleSync
+    ): AuthRepository = AuthRepository(apiClient, sessionManager, widgetSnapshots = widgetSnapshots, localeSync = localeSync)
+
+    @Provides
+    @Singleton
+    fun provideLocaleSync(apiClient: ApiClient, @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context): LocaleSync =
+        LocaleSync(apiClient, context)
 
     @Provides
     @Singleton

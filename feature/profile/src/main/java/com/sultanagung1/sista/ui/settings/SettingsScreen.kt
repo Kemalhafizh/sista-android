@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.settings
 
+import com.sultanagung1.sista.feature.profile.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -79,12 +82,13 @@ internal val SETTINGS_THEMES = listOf(
     AppThemeMode.SYSTEM, AppThemeMode.LIGHT, AppThemeMode.DARK, AppThemeMode.AMOLED_BLACK, AppThemeMode.HIGH_CONTRAST,
 )
 
-internal fun themeHint(mode: AppThemeMode): String = when (mode) {
-    AppThemeMode.SYSTEM -> "Terang atau gelap mengikuti setelan HP"
-    AppThemeMode.LIGHT -> "Latar terang"
-    AppThemeMode.DARK -> "Latar gelap, nyaman di malam hari"
-    AppThemeMode.AMOLED_BLACK -> "Hitam murni; hemat baterai di layar OLED/AMOLED, tidak di LCD"
-    AppThemeMode.HIGH_CONTRAST -> "Teks dan garis lebih tegas"
+@StringRes
+internal fun themeHint(mode: AppThemeMode): Int = when (mode) {
+    AppThemeMode.SYSTEM -> R.string.theme_hint_system
+    AppThemeMode.LIGHT -> R.string.theme_hint_light
+    AppThemeMode.DARK -> R.string.theme_hint_dark
+    AppThemeMode.AMOLED_BLACK -> R.string.theme_hint_amoled
+    AppThemeMode.HIGH_CONTRAST -> R.string.theme_hint_high_contrast
 }
 
 /** The settings page without a ViewModel, for previews and screenshots. */
@@ -104,7 +108,7 @@ fun SettingsContent(
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = { SistaTopBar(title = "Pengaturan", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            topBar = { SistaTopBar(title = stringResource(R.string.settings_title), onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             LazyColumn(
@@ -115,7 +119,7 @@ fun SettingsContent(
                 contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                item(key = "theme_header") { SectionHeader("Tema") }
+                item(key = "theme_header") { SectionHeader(stringResource(R.string.settings_theme)) }
                 item(key = "theme") {
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
                         SETTINGS_THEMES.forEach { mode ->
@@ -129,34 +133,34 @@ fun SettingsContent(
                                 RadioButton(selected = mode == theme, onClick = null)
                                 Spacer(Modifier.width(Spacing.md))
                                 Column(Modifier.weight(1f)) {
-                                    Text(themeLabel(mode), style = SistaTheme.typography.bodyLarge)
-                                    Text(themeHint(mode), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                                    Text(stringResource(themeLabel(mode)), style = SistaTheme.typography.bodyLarge)
+                                    Text(stringResource(themeHint(mode)), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                                 }
                             }
                         }
                     }
                 }
 
-                item(key = "general_header") { SectionHeader("Bahasa & aksesibilitas", Modifier.padding(top = Spacing.md)) }
+                item(key = "general_header") { SectionHeader(stringResource(R.string.settings_language_accessibility), Modifier.padding(top = Spacing.md)) }
                 item(key = "general") {
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
-                        SettingsRow(Icons.Outlined.Translate, "Bahasa", language.title, onLanguage)
+                        SettingsRow(Icons.Outlined.Translate, stringResource(R.string.settings_language), language.nativeName, onLanguage)
                         HorizontalDivider(color = SistaTheme.colors.outlineVariant)
-                        SettingsRow(Icons.Outlined.AccessibilityNew, "Aksesibilitas", "Ukuran teks, ramah disleksia, kontras tinggi", onAccessibility)
+                        SettingsRow(Icons.Outlined.AccessibilityNew, stringResource(R.string.settings_accessibility), stringResource(R.string.settings_accessibility_hint), onAccessibility)
                     }
                 }
 
                 val security = listOfNotNull(
-                    Triple(Icons.Outlined.Fingerprint, "Kunci biometrik", onBiometrics).takeIf { canOpen(Screen.FaceEnrollment.route) },
-                    Triple(Icons.Outlined.Security, "Keamanan perangkat", onSecurity).takeIf { canOpen(Screen.SecuritySettings.route) },
+                    Triple(Icons.Outlined.Fingerprint, R.string.sec_biometric, onBiometrics).takeIf { canOpen(Screen.FaceEnrollment.route) },
+                    Triple(Icons.Outlined.Security, R.string.sec_title, onSecurity).takeIf { canOpen(Screen.SecuritySettings.route) },
                 )
                 if (security.isNotEmpty()) {
-                    item(key = "security_header") { SectionHeader("Keamanan", Modifier.padding(top = Spacing.md)) }
+                    item(key = "security_header") { SectionHeader(stringResource(R.string.settings_security), Modifier.padding(top = Spacing.md)) }
                     item(key = "security") {
                         SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
                             security.forEachIndexed { index, (icon, title, onClick) ->
                                 if (index > 0) HorizontalDivider(color = SistaTheme.colors.outlineVariant)
-                                SettingsRow(icon, title, null, onClick)
+                                SettingsRow(icon, stringResource(title), null, onClick)
                             }
                         }
                     }

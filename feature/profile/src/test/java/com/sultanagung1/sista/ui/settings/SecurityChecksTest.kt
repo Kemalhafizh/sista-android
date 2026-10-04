@@ -2,6 +2,7 @@ package com.sultanagung1.sista.ui.settings
 
 import com.sultanagung1.sista.core.security.DeviceIntegrityReport
 import com.sultanagung1.sista.core.ui.theme.StatusTone
+import com.sultanagung1.sista.feature.profile.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -15,25 +16,24 @@ class SecurityChecksTest {
     @Test
     fun onlyChecksThePhoneRuns() {
         val titles = securityChecks(report()).map { it.title }
-        assertEquals(listOf("Akses root", "Emulator", "USB debugging"), titles)
-        // The app pins no certificate, so it must not claim to.
-        assertFalse(titles.any { it.contains("Pinning", ignoreCase = true) || it.contains("TLS") })
+        // Root, emulator, USB debugging only: the app pins no certificate, so it must not claim to.
+        assertEquals(listOf(R.string.sec_root, R.string.sec_emulator, R.string.sec_usb), titles)
     }
 
     @Test
     fun verdict() {
-        assertEquals("Aman" to StatusTone.Success, securityVerdict(report()))
-        assertEquals("Aman, ada catatan" to StatusTone.Warning, securityVerdict(report(adb = true)))
-        assertEquals("Perlu perhatian" to StatusTone.Danger, securityVerdict(report(rooted = true)))
-        assertEquals("Perlu perhatian" to StatusTone.Danger, securityVerdict(report(emulator = true)))
+        assertEquals(R.string.sec_verdict_safe to StatusTone.Success, securityVerdict(report()))
+        assertEquals(R.string.sec_verdict_note to StatusTone.Warning, securityVerdict(report(adb = true)))
+        assertEquals(R.string.sec_verdict_attention to StatusTone.Danger, securityVerdict(report(rooted = true)))
+        assertEquals(R.string.sec_verdict_attention to StatusTone.Danger, securityVerdict(report(emulator = true)))
     }
 
     @Test
     fun failedChecksAreMarked() {
         val checks = securityChecks(report(rooted = true, adb = true)).associateBy { it.title }
-        assertEquals(StatusTone.Danger, checks.getValue("Akses root").tone)
-        assertEquals(StatusTone.Success, checks.getValue("Emulator").tone)
-        assertEquals(StatusTone.Warning, checks.getValue("USB debugging").tone)
+        assertEquals(StatusTone.Danger, checks.getValue(R.string.sec_root).tone)
+        assertEquals(StatusTone.Success, checks.getValue(R.string.sec_emulator).tone)
+        assertEquals(StatusTone.Warning, checks.getValue(R.string.sec_usb).tone)
     }
 
     @Test

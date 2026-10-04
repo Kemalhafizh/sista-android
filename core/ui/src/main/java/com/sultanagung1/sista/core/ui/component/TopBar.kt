@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -35,7 +37,7 @@ fun SistaTopBar(
     val navIcon: @Composable () -> Unit = {
         if (onBack != null) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali")
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.core_back))
             }
         }
     }

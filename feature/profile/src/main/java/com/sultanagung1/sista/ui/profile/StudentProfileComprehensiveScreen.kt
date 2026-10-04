@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.ui.profile
 
 import androidx.compose.foundation.layout.Arrangement
+import com.sultanagung1.sista.feature.profile.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -67,7 +69,7 @@ fun StudentProfileContent(
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = { SistaTopBar(title = "Profil lengkap", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            topBar = { SistaTopBar(title = stringResource(R.string.p360_title), onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             val profile = state.profile
@@ -81,17 +83,18 @@ fun StudentProfileContent(
             ) {
                 when {
                     profile == null && state.errorMessage != null -> item(key = "error") {
-                        ErrorState(title = "Profil belum bisa dimuat", body = state.errorMessage, onRetry = onRetry, icon = Icons.Outlined.PersonOff)
+                        ErrorState(title = stringResource(R.string.p360_load_failed), body = state.errorMessage, onRetry = onRetry, icon = Icons.Outlined.PersonOff)
                     }
                     profile == null -> item(key = "loading") { SkeletonList(rows = 6, modifier = Modifier.padding(top = Spacing.sm)) }
                     else -> {
                         item(key = "header") { Header(profile) }
                         item(key = "tabs") {
+                            val tabLabels = ProfileTab.entries.associateWith { stringResource(it.label) }
                             FilterChipRow(
                                 options = ProfileTab.entries,
                                 selected = state.tab,
                                 onSelect = onTab,
-                                label = { it.label },
+                                label = { tabLabels.getValue(it) },
                                 contentPadding = PaddingValues(vertical = Spacing.sm),
                             )
                         }
@@ -120,7 +123,7 @@ private fun Header(profile: StudentProfile360Data) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
                 Text(name ?: MISSING, style = SistaTheme.typography.titleLarge)
                 Text(
-                    listOf("Kelas ${bio.className ?: MISSING}", "NISN ${bio.nisn ?: MISSING}").joinToString(" · "),
+                    listOf(stringResource(R.string.p360_class, bio.className ?: MISSING), stringResource(R.string.p360_nisn, bio.nisn ?: MISSING)).joinToString(" · "),
                     style = SistaTheme.typography.bodyMedium,
                     color = SistaTheme.colors.onSurfaceVariant,
                 )
@@ -156,15 +159,15 @@ private fun LazyListScope.academic(profile: StudentProfile360Data) {
     val a = profile.academicSummary
     item(key = "academic_tiles") {
         TileRow(
-            Triple("Rata-rata nilai", idNumber(a.averageScore), "Tahun ajaran ini, skala 100"),
-            Triple("Peringkat kelas", rankLabel(a.rankInClass, null), a.totalClassStudents?.takeIf { a.rankInClass != null }?.let { "dari $it siswa" }),
+            Triple(stringResource(R.string.p360_average), idNumber(a.averageScore), stringResource(R.string.p360_average_hint)),
+            Triple(stringResource(R.string.p360_rank), rankLabel(a.rankInClass, null).asString(), a.totalClassStudents?.takeIf { a.rankInClass != null }?.let { stringResource(R.string.p360_rank_of, it) }),
         )
     }
     item(key = "academic_subjects") {
         FactCard(
-            "Paling unggul" to (a.strongestSubject ?: MISSING),
-            "Perlu ditingkatkan" to (a.improvementNeeded ?: MISSING),
-            "Rata-rata rapor" to (a.trend.takeIf { it.isNotEmpty() }?.joinToString(" → ") { idNumber(it) } ?: MISSING),
+            stringResource(R.string.p360_strongest) to (a.strongestSubject ?: MISSING),
+            stringResource(R.string.p360_weakest) to (a.improvementNeeded ?: MISSING),
+            stringResource(R.string.p360_report_trend) to (a.trend.takeIf { it.isNotEmpty() }?.joinToString(" → ") { idNumber(it) } ?: MISSING),
         )
     }
 }
@@ -173,23 +176,23 @@ private fun LazyListScope.ibadah(profile: StudentProfile360Data) {
     val i = profile.ibadahSummary
     item(key = "tahfidz") {
         SistaCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Tahfidz", style = SistaTheme.typography.titleMedium)
+            Text(stringResource(R.string.p360_tahfidz), style = SistaTheme.typography.titleMedium)
             val juz = juzLabel(i.tahfidzJuzCompleted, i.targetJuz)
             if (juz == null) {
                 Text(
-                    "Belum ada target hafalan untuk tahun ajaran ini.",
+                    stringResource(R.string.p360_no_target),
                     style = SistaTheme.typography.bodyMedium,
                     color = SistaTheme.colors.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.xs),
                 )
             } else {
-                Text(juz, style = SistaTheme.typography.headlineSmall, color = SistaTheme.colors.primary, modifier = Modifier.padding(top = Spacing.xs))
+                Text(juz.asString(), style = SistaTheme.typography.headlineSmall, color = SistaTheme.colors.primary, modifier = Modifier.padding(top = Spacing.xs))
                 i.tahfidzProgressPercent?.let {
                     LinearProgressIndicator(progress = { it / 100f }, modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm))
                 }
             }
             Text(
-                "Setoran terakhir: ${i.currentSurah ?: MISSING}",
+                stringResource(R.string.p360_last_recital, i.currentSurah ?: MISSING),
                 style = SistaTheme.typography.bodySmall,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
@@ -197,8 +200,8 @@ private fun LazyListScope.ibadah(profile: StudentProfile360Data) {
     }
     item(key = "ibadah_tiles") {
         TileRow(
-            Triple("Sholat berjamaah", percentLabel(i.sholatJamaahPercent), "Dari sholat yang tercatat, 30 hari"),
-            Triple("Mutaba'ah beruntun", streakLabel(i.mutabaahStreakDays), "Hari berturut-turut"),
+            Triple(stringResource(R.string.p360_jamaah), percentLabel(i.sholatJamaahPercent), stringResource(R.string.p360_jamaah_hint)),
+            Triple(stringResource(R.string.p360_streak), streakLabel(i.mutabaahStreakDays).asString(), stringResource(R.string.p360_streak_hint)),
         )
     }
 }
@@ -208,11 +211,11 @@ private fun LazyListScope.discipline(profile: StudentProfile360Data) {
     item(key = "discipline_status") {
         SistaCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Status", style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                d.category?.let { StatusPill(it, if (it == "Aman") StatusTone.Success else StatusTone.Warning) } ?: Text(MISSING)
+                Text(stringResource(R.string.p360_status), style = SistaTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                d.category?.let { StatusPill(it, disciplineTone(d.categoryCode)) } ?: Text(MISSING)
             }
             Text(
-                "Sanksi aktif: ${d.activeSanctions ?: MISSING}",
+                stringResource(R.string.p360_sanctions, d.activeSanctions?.toString() ?: MISSING),
                 style = SistaTheme.typography.bodyMedium,
                 color = SistaTheme.colors.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.sm),
@@ -221,16 +224,16 @@ private fun LazyListScope.discipline(profile: StudentProfile360Data) {
     }
     item(key = "discipline_tiles") {
         TileRow(
-            Triple("Poin prestasi", signedPoints(d.totalPositivePoints, "+"), null),
-            Triple("Poin pelanggaran", signedPoints(d.totalViolationPoints, "−"), null),
+            Triple(stringResource(R.string.p360_positive_points), signedPoints(d.totalPositivePoints, "+"), null),
+            Triple(stringResource(R.string.p360_violation_points), signedPoints(d.totalViolationPoints, "−"), null),
         )
     }
 }
 
 private fun LazyListScope.activities(profile: StudentProfile360Data) {
-    item(key = "achievements_title") { Text("Prestasi", style = SistaTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm)) }
+    item(key = "achievements_title") { Text(stringResource(R.string.p360_achievements), style = SistaTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm)) }
     if (profile.achievementList.isEmpty()) {
-        item(key = "achievements_empty") { EmptyState(title = "Belum ada prestasi tervalidasi", icon = Icons.Outlined.EmojiEvents) }
+        item(key = "achievements_empty") { EmptyState(title = stringResource(R.string.p360_no_achievements), icon = Icons.Outlined.EmojiEvents) }
     }
     items(profile.achievementList, key = { "ach_${it.title}_${it.year}" }) { a ->
         SistaCard(modifier = Modifier.fillMaxWidth()) {
@@ -240,7 +243,7 @@ private fun LazyListScope.activities(profile: StudentProfile360Data) {
                 Column(Modifier.weight(1f)) {
                     Text(a.title, style = SistaTheme.typography.titleSmall)
                     Text(
-                        listOfNotNull(a.level?.let { "Tingkat $it" }, a.category, a.year?.toString()).joinToString(" · ").ifEmpty { MISSING },
+                        listOfNotNull(a.level?.let { stringResource(R.string.p360_level, it) }, a.category, a.year?.toString()).joinToString(" · ").ifEmpty { MISSING },
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
@@ -248,15 +251,15 @@ private fun LazyListScope.activities(profile: StudentProfile360Data) {
             }
         }
     }
-    item(key = "ekskul_title") { Text("Ekstrakurikuler", style = SistaTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.md)) }
+    item(key = "ekskul_title") { Text(stringResource(R.string.p360_clubs), style = SistaTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.md)) }
     if (profile.extracurricularList.isEmpty()) {
-        item(key = "ekskul_empty") { EmptyState(title = "Belum terdaftar di ekstrakurikuler", icon = Icons.Outlined.Groups) }
+        item(key = "ekskul_empty") { EmptyState(title = stringResource(R.string.p360_no_clubs), icon = Icons.Outlined.Groups) }
     }
     items(profile.extracurricularList, key = { "eks_${it.name}" }) { e ->
         SistaCard(modifier = Modifier.fillMaxWidth()) {
             Text(e.name, style = SistaTheme.typography.titleSmall)
             Text(
-                listOfNotNull(e.role, e.joinedYear?.let { "sejak $it" }).joinToString(" · ").ifEmpty { MISSING },
+                listOfNotNull(e.role, e.joinedYear?.let { stringResource(R.string.p360_since, it) }).joinToString(" · ").ifEmpty { MISSING },
                 style = SistaTheme.typography.bodySmall,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
@@ -268,11 +271,19 @@ private fun LazyListScope.health(profile: StudentProfile360Data) {
     val h = profile.healthSummary
     item(key = "health") {
         FactCard(
-            "Golongan darah" to (h.bloodType ?: MISSING),
-            "Tinggi · berat" to bodyLabel(h.heightCm, h.weightKg),
-            "Alergi" to (h.allergies.filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "Tidak ada yang tercatat"),
-            "Kunjungan UKS" to (h.totalUksVisits?.let { "$it kali" } ?: MISSING),
-            "Kunjungan terakhir" to dateLabel(h.lastVisitDate),
+            stringResource(R.string.p360_blood_type) to (h.bloodType ?: MISSING),
+            stringResource(R.string.p360_height_weight) to bodyLabel(h.heightCm, h.weightKg).map { it.asString() }.joinToString(" · "),
+            stringResource(R.string.p360_allergies) to (h.allergies.filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: stringResource(R.string.p360_no_allergies)),
+            stringResource(R.string.p360_uks_visits) to (h.totalUksVisits?.let { stringResource(R.string.p360_times, it) } ?: MISSING),
+            stringResource(R.string.p360_last_visit) to dateLabel(h.lastVisitDate),
         )
     }
+}
+
+/** Colour of the discipline status, from the server's code (its label is translated). */
+internal fun disciplineTone(code: String?): StatusTone = when (code) {
+    "aman" -> StatusTone.Success
+    "sp2", "sp3" -> StatusTone.Danger
+    null -> StatusTone.Neutral
+    else -> StatusTone.Warning
 }

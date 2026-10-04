@@ -8,7 +8,9 @@ import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
+import com.sultanagung1.sista.core.common.R
 import com.sultanagung1.sista.data.model.NotificationChannelType
 
 class NotificationChannelManager(private val context: Context) {
@@ -26,12 +28,14 @@ class NotificationChannelManager(private val context: Context) {
                     else -> NotificationManager.IMPORTANCE_LOW
                 }
 
+                // Named in the app's language; creating it again renames it, so
+                // Android's settings follow a language change on the next start.
                 val channel = NotificationChannel(
                     channelType.channelId,
-                    channelType.channelName,
+                    context.getString(channelType.labelRes()),
                     importance
                 ).apply {
-                    description = channelType.channelDesc
+                    description = context.getString(channelType.descriptionRes())
                     enableVibration(channelType.importance >= 4)
                     enableLights(true)
                 }
@@ -89,4 +93,23 @@ class NotificationChannelManager(private val context: Context) {
 
         notificationManager.notify(notificationId, builder.build())
     }
+}
+
+/** The channel's name and description in the app's language (res/values*, channel_*). */
+@StringRes
+fun NotificationChannelType.labelRes(): Int = when (this) {
+    NotificationChannelType.ATTENDANCE -> R.string.channel_attendance
+    NotificationChannelType.ACADEMIC -> R.string.channel_academic
+    NotificationChannelType.FINANCE -> R.string.channel_finance
+    NotificationChannelType.EMERGENCY -> R.string.channel_emergency
+    NotificationChannelType.GENERAL -> R.string.channel_general
+}
+
+@StringRes
+fun NotificationChannelType.descriptionRes(): Int = when (this) {
+    NotificationChannelType.ATTENDANCE -> R.string.channel_attendance_desc
+    NotificationChannelType.ACADEMIC -> R.string.channel_academic_desc
+    NotificationChannelType.FINANCE -> R.string.channel_finance_desc
+    NotificationChannelType.EMERGENCY -> R.string.channel_emergency_desc
+    NotificationChannelType.GENERAL -> R.string.channel_general_desc
 }

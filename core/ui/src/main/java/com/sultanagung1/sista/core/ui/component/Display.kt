@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -264,7 +266,7 @@ fun InlineBanner(
             }
             if (onDismiss != null) {
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Outlined.Close, contentDescription = "Tutup")
+                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.core_close))
                 }
             }
         }

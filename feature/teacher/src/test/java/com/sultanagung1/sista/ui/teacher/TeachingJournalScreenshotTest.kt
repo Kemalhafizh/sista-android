@@ -17,7 +17,7 @@ import org.robolectric.annotation.GraphicsMode
 /** Jurnal mengajar: the list per period and the form. The data exists only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1400dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1400dp-xhdpi")
 class TeachingJournalScreenshotTest {
 
     @get:Rule

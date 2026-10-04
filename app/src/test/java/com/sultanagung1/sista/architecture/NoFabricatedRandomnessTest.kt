@@ -27,7 +27,9 @@ class NoFabricatedRandomnessTest {
     /** Comments and string literals never count. */
     private fun code(source: String): String = source
         .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
-        .replace(Regex(""""(?:\\.|[^"\\])*""""), "\"\"")
+        // Unrolled and possessive: `(?:a|b)*` recurses once per character and overflows
+        // the smaller stack of the CI runner on long spans between quotes.
+        .replace(Regex(""""[^"\\]*+(?:\\.[^"\\]*+)*+""""), "\"\"")
         .lines().joinToString("\n") { it.substringBefore("//") }
 
     private val root: File = generateSequence(File("").absoluteFile) { it.parentFile }

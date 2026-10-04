@@ -214,7 +214,6 @@ fun SulaoneTheme(
     dynamicColor: Boolean = false,
     fontScale: Float = 1.0f,
     isDyslexicFriendly: Boolean = false,
-    language: AppLanguage = AppLanguage.INDONESIAN,
     content: @Composable () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -315,13 +314,10 @@ fun SulaoneTheme(
         density = density.density,
         fontScale = FontScaleManager.calculateEffectiveFontScale(density.fontScale, fontScale)
     )
-    val appStrings = getAppStrings(language)
     val typography = if (isDyslexicFriendly) DyslexicTypography else SulaoneTypography
 
     CompositionLocalProvider(
         LocalDensity provides customDensity,
-        LocalLayoutDirection provides language.layoutDirection,
-        LocalAppStrings provides appStrings,
         LocalSulaoneColors provides extendedColors
     ) {
         MaterialTheme(

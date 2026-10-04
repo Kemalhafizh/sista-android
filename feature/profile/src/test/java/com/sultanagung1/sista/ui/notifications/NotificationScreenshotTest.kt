@@ -20,7 +20,7 @@ import java.time.LocalDate
 /** The notification center and settings in their states. The data exists only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1300dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1300dp-xhdpi")
 class NotificationScreenshotTest {
 
     @get:Rule

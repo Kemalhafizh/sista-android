@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Komponen bersama -->
+    <string name="core_back">Back</string>
+    <string name="core_close">Close</string>
+    <string name="core_retry">Try again</string>
+    <string name="core_reload">Reload</string>
+    <string name="core_loading">Loading</string>
+    <string name="core_processing">Processing</string>
+    <string name="core_load_failed">Couldn\'t load</string>
+    <string name="core_password_show">Show password</string>
+    <string name="core_password_hide">Hide password</string>
+    <string name="core_unread_count">%1$s unread</string>
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_noon">Good afternoon</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_night">Good evening</string>
+</resources>

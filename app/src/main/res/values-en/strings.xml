@@ -137,4 +137,8 @@
     <string name="widget_prayer_unavailable">Prayer times not available yet</string>
     <string name="widget_prayer_no_source">The app has no official prayer-time source yet</string>
     <string name="widget_prayer_tap">Tap to open Mutaba\'ah ➔</string>
+
+    <!-- Tab utama -->
+    <string name="nav_services">Services</string>
+    <string name="nav_notifications">Notifications</string>
 </resources>

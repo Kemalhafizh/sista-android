@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Komponen bersama -->
+    <string name="core_back">رجوع</string>
+    <string name="core_close">إغلاق</string>
+    <string name="core_retry">حاول مرة أخرى</string>
+    <string name="core_reload">إعادة التحميل</string>
+    <string name="core_loading">جارٍ التحميل</string>
+    <string name="core_processing">جارٍ المعالجة</string>
+    <string name="core_load_failed">تعذّر التحميل</string>
+    <string name="core_password_show">إظهار كلمة المرور</string>
+    <string name="core_password_hide">إخفاء كلمة المرور</string>
+    <string name="core_unread_count">%1$s غير مقروءة</string>
+    <string name="greeting_morning">صباح الخير</string>
+    <string name="greeting_noon">طاب نهارك</string>
+    <string name="greeting_afternoon">مساء الخير</string>
+    <string name="greeting_night">مساء الخير</string>
+</resources>

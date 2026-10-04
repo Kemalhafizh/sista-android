@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.component
 
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -61,7 +63,7 @@ fun ErrorState(
     body: String? = null,
     icon: ImageVector = Icons.Outlined.CloudOff,
 ) {
-    MessageState(icon, title, body, "Coba lagi", onRetry, ButtonVariant.Primary, modifier)
+    MessageState(icon, title, body, stringResource(R.string.core_retry), onRetry, ButtonVariant.Primary, modifier)
 }
 
 @Composable
@@ -138,8 +140,9 @@ fun SkeletonList(
     modifier: Modifier = Modifier,
     rows: Int = 5,
 ) {
+    val loadingLabel = stringResource(R.string.core_loading)
     Column(
-        modifier.semantics { contentDescription = "Memuat" },
+        modifier.semantics { contentDescription = loadingLabel },
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         repeat(rows) {

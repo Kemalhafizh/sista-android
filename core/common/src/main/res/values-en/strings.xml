@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Kategori notifikasi (juga tampil di pengaturan Android) -->
+    <string name="channel_attendance">Attendance</string>
+    <string name="channel_attendance_desc">When a student arrives at the school gate</string>
+    <string name="channel_academic">Academics &amp; report cards</string>
+    <string name="channel_academic_desc">Report card grades, assessment dates and assignments</string>
+    <string name="channel_finance">Finance &amp; tuition</string>
+    <string name="channel_finance_desc">Tuition bill reminders and payment status</string>
+    <string name="channel_emergency">Emergencies</string>
+    <string name="channel_emergency_desc">Emergency and campus safety broadcasts</string>
+    <string name="channel_general">General information</string>
+    <string name="channel_general_desc">Foundation activities and school news</string>
+</resources>

@@ -1,5 +1,8 @@
 package com.sultanagung1.sista.ui.notifications
 
+import com.sultanagung1.sista.feature.profile.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
@@ -114,7 +117,7 @@ fun NotificationSettingsContent(
 ) {
     ShellTheme {
         Scaffold(
-            topBar = { SistaTopBar(title = "Pengaturan notifikasi", onBack = onNavigateBack) },
+            topBar = { SistaTopBar(title = stringResource(R.string.notif_settings), onBack = onNavigateBack) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             LazyColumn(
@@ -132,7 +135,7 @@ fun NotificationSettingsContent(
                 }
                 item(key = "note") {
                     Text(
-                        "Mematikan kategori hanya menyembunyikan pemberitahuan di layar ponsel. Semua notifikasi tetap tersimpan di halaman Notifikasi.",
+                        stringResource(R.string.notif_settings_note),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
@@ -149,9 +152,9 @@ private fun AppStatus(state: NotificationSystemState, onAllow: () -> Unit, onOpe
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 IconBadge(icon = Icons.Outlined.NotificationsActive, tone = StatusTone.Success)
                 Column(Modifier.weight(1f)) {
-                    Text("Notifikasi aktif", style = SistaTheme.typography.titleSmall)
+                    Text(stringResource(R.string.notif_active), style = SistaTheme.typography.titleSmall)
                     Text(
-                        "${state.channels.count { it.enabled }} dari ${state.channels.size} kategori menyala",
+                        stringResource(R.string.notif_channels_on, state.channels.count { it.enabled }, state.channels.size),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
@@ -161,12 +164,12 @@ private fun AppStatus(state: NotificationSystemState, onAllow: () -> Unit, onOpe
         }
     } else {
         InlineBanner(
-            title = "Notifikasi SISTA dimatikan",
-            message = "Kabar presensi, tagihan, dan siaran darurat tidak akan muncul di layar ponsel.",
+            title = stringResource(R.string.notif_blocked_title),
+            message = stringResource(R.string.notif_blocked_body),
             tone = StatusTone.Danger,
         )
         SistaButton(
-            text = if (state.canAskPermission) "Izinkan notifikasi" else "Buka pengaturan Android",
+            text = stringResource(if (state.canAskPermission) R.string.notif_allow else R.string.notif_open_android_settings),
             onClick = onAllow,
             leadingIcon = Icons.Outlined.NotificationsActive,
             fullWidth = true,
@@ -182,10 +185,10 @@ private fun ChannelRow(channel: ChannelStatus, appEnabled: Boolean, onClick: () 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
             IconBadge(icon = channel.type.icon(), tone = if (on) channel.type.tone() else StatusTone.Neutral)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(channel.type.label, style = SistaTheme.typography.titleSmall)
-                Text(channel.type.channelDesc, style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                Text(stringResource(channel.type.label), style = SistaTheme.typography.titleSmall)
+                Text(stringResource(channel.type.description), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
             }
-            StatusPill(text = if (on) "Aktif" else "Mati", tone = if (on) StatusTone.Success else StatusTone.Neutral)
+            StatusPill(text = stringResource(if (on) R.string.notif_on else R.string.notif_off), tone = if (on) StatusTone.Success else StatusTone.Neutral)
         }
     }
 }

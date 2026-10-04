@@ -7,6 +7,8 @@ import com.sultanagung1.sista.data.model.MeEmployeeData
 import com.sultanagung1.sista.data.model.MeProfile
 import com.sultanagung1.sista.data.model.MeStudentData
 import com.sultanagung1.sista.data.model.SchoolIdentity
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.profile.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -19,7 +21,7 @@ class ProfileFormatTest {
     fun studentRowsComeFromTheirRecordAndMissingFieldsReadDash() {
         val rows = identityRows(MeProfile(studentData = MeStudentData(nis = "12345", nisn = null, classroom = " ")))
         assertEquals(
-            listOf(InfoRow("NIS", "12345"), InfoRow("NISN", MISSING), InfoRow("Kelas", MISSING)),
+            listOf(InfoRow(R.string.info_nis, "12345"), InfoRow(R.string.info_nisn, MISSING), InfoRow(R.string.info_class, MISSING)),
             rows,
         )
     }
@@ -34,9 +36,9 @@ class ProfileFormatTest {
         )
         assertEquals(
             listOf(
-                InfoRow("NIP / No. pegawai", "198001012005011001"),
-                InfoRow("Jabatan", "Guru Fisika"),
-                InfoRow("Wali kelas", "XI MIPA 2, XII IPS 1"),
+                InfoRow(R.string.info_nip, "198001012005011001"),
+                InfoRow(R.string.info_position, "Guru Fisika"),
+                InfoRow(R.string.info_homeroom, "XI MIPA 2, XII IPS 1"),
             ),
             rows,
         )
@@ -50,7 +52,7 @@ class ProfileFormatTest {
     @Test
     fun aParentSeesEachChildAndIsToldWhenNoneIsLinked() {
         val parent = MeProfile(children = listOf(MeChild("u1", "Nadia Putri", "X IPS 1"), MeChild("u2", "Raka", null)))
-        assertEquals(listOf(InfoRow("Anak", "Nadia Putri · X IPS 1"), InfoRow("Anak", "Raka")), identityRows(parent))
+        assertEquals(listOf(InfoRow(R.string.info_child, "Nadia Putri · X IPS 1"), InfoRow(R.string.info_child, "Raka")), identityRows(parent))
         assertFalse(hasNoLinkedChildren(parent))
         assertTrue(hasNoLinkedChildren(MeProfile(children = emptyList())))
         // Not a parent at all: no children list, so nothing to say about it.
@@ -60,15 +62,21 @@ class ProfileFormatTest {
     @Test
     fun contactRowsOnlyWhenSent() {
         assertEquals(
-            listOf(InfoRow("Email", "a@sekolah.id")),
+            listOf(InfoRow(R.string.info_email, "a@sekolah.id")),
             identityRows(MeProfile(email = "a@sekolah.id", phoneNumber = "")),
         )
     }
 
     @Test
     fun academicYear() {
-        assertEquals("Tahun ajaran 2026/2027 · Ganjil", academicYearLabel(MeAcademicYear(1, "2026/2027", "Ganjil")))
-        assertEquals("Tahun ajaran 2026/2027", academicYearLabel(MeAcademicYear(1, "2026/2027", null)))
+        // The school records semesters in Indonesian; the label is translated.
+        assertEquals(
+            UiText.Res(R.string.academic_year_semester, "2026/2027", UiText.Res(R.string.semester_odd)),
+            academicYearLabel(MeAcademicYear(1, "2026/2027", "Ganjil")),
+        )
+        assertEquals(UiText.Res(R.string.academic_year, "2026/2027"), academicYearLabel(MeAcademicYear(1, "2026/2027", null)))
+        assertEquals(UiText.Res(R.string.semester_even), semesterLabel("genap"))
+        assertEquals(UiText.Raw("Pendek"), semesterLabel("Pendek"))
         assertNull(academicYearLabel(null))
         assertNull(academicYearLabel(MeAcademicYear(1, "", "Ganjil")))
     }
@@ -76,15 +84,15 @@ class ProfileFormatTest {
     @Test
     fun schoolRowsSkipWhatIsNotFilledIn() {
         val rows = schoolRows(SchoolIdentity(name = "SMA X", npsn = "20328918", accreditation = null, website = "https://sma.sch.id/"))
-        assertEquals(listOf(InfoRow("NPSN", "20328918"), InfoRow("Situs web", "sma.sch.id")), rows)
+        assertEquals(listOf(InfoRow(R.string.info_npsn, "20328918"), InfoRow(R.string.info_website, "sma.sch.id")), rows)
         assertTrue(schoolRows(null).isEmpty())
     }
 
     @Test
     fun appVersion() {
-        assertEquals("1.4.0 (build 140)", appVersionLabel("1.4.0", 140))
-        assertEquals("1.4.0", appVersionLabel("1.4.0", null))
-        assertEquals("build 140", appVersionLabel(null, 140))
+        assertEquals(UiText.Res(R.string.profile_version_build, "1.4.0", "140"), appVersionLabel("1.4.0", 140))
+        assertEquals(UiText.Raw("1.4.0"), appVersionLabel("1.4.0", null))
+        assertEquals(UiText.Res(R.string.profile_build_only, "140"), appVersionLabel(null, 140))
         assertNull(appVersionLabel("", null))
     }
 }

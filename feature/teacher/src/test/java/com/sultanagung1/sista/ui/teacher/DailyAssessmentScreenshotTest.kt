@@ -22,7 +22,7 @@ import org.robolectric.annotation.GraphicsMode
 /** Daily assessments: the list and the score sheet. The data exists only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1300dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1300dp-xhdpi")
 class DailyAssessmentScreenshotTest {
 
     @get:Rule

@@ -1,6 +1,10 @@
 package com.sultanagung1.sista.ui.profile
 
 import android.app.Activity
+import com.sultanagung1.sista.feature.profile.R
+import com.sultanagung1.sista.core.ui.text.UiText
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -83,8 +87,7 @@ import com.sultanagung1.sista.ui.navigation.canOpen
  * FASE 76.6: why true black helps, without overselling. OLED pixels showing
  * #000000 are switched off; an LCD backlight stays on whatever the colour.
  */
-internal const val AMOLED_BATTERY_NOTE =
-    "Hitam pekat mematikan piksel di layar OLED/AMOLED, jadi lebih hemat baterai. Di layar LCD tampilannya saja yang berubah."
+internal val AMOLED_BATTERY_NOTE = R.string.profile_amoled_note
 
 /** The refresh-rate row: what this phone's screen can do and what is chosen. */
 data class DisplayChoice(val capabilities: DisplayCapabilities, val mode: RefreshRateMode)
@@ -142,7 +145,7 @@ fun ProfileContent(
     sessionName: String?,
     themeMode: AppThemeMode,
     display: DisplayChoice?,
-    appVersion: String?,
+    appVersion: UiText?,
     canOpen: (String) -> Boolean,
     onRetry: () -> Unit,
     onNavigate: (String) -> Unit,
@@ -156,7 +159,7 @@ fun ProfileContent(
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = { SistaTopBar(title = "Profil", onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
+            topBar = { SistaTopBar(title = stringResource(R.string.profile_title), onBack = onNavigateBack, scrollBehavior = scrollBehavior) },
             containerColor = SistaTheme.colors.background,
         ) { padding ->
             LazyColumn(
@@ -170,20 +173,20 @@ fun ProfileContent(
                 item(key = "identity") { IdentityCard(state, sessionName, onRetry) }
 
                 val account = listOfNotNull(
-                    MenuEntry(Icons.Outlined.AccountCircle, "Profil lengkap", "Akademik, ibadah, kedisiplinan, dan kesehatan", Screen.StudentProfileComprehensive.createRoute())
+                    MenuEntry(Icons.Outlined.AccountCircle, R.string.profile_full, R.string.profile_full_hint, Screen.StudentProfileComprehensive.createRoute())
                         .takeIf { state.profile?.studentData != null },
-                    MenuEntry(Icons.Outlined.Notifications, "Notifikasi", "Kabar untuk akun ini", Screen.NotificationCenter.route),
-                    MenuEntry(Icons.Outlined.Campaign, "Pengumuman", "Pengumuman sekolah", Screen.AnnouncementFeed.route),
+                    MenuEntry(Icons.Outlined.Notifications, R.string.profile_notifications, R.string.profile_notifications_hint, Screen.NotificationCenter.route),
+                    MenuEntry(Icons.Outlined.Campaign, R.string.profile_announcements, R.string.profile_announcements_hint, Screen.AnnouncementFeed.route),
                 ).filter { canOpen(it.route) }
-                menuSection("account", "Akun", account, onNavigate)
+                menuSection("account", R.string.profile_section_account, account, onNavigate)
 
                 val security = listOf(
-                    MenuEntry(Icons.Outlined.Fingerprint, "Kunci biometrik", "Masuk dengan sidik jari atau wajah di HP ini", Screen.FaceEnrollment.route),
-                    MenuEntry(Icons.Outlined.Security, "Keamanan perangkat", "Pemeriksaan root, emulator, dan debugging", Screen.SecuritySettings.route),
+                    MenuEntry(Icons.Outlined.Fingerprint, R.string.profile_biometric, R.string.profile_biometric_hint, Screen.FaceEnrollment.route),
+                    MenuEntry(Icons.Outlined.Security, R.string.profile_device_security, R.string.profile_device_security_hint, Screen.SecuritySettings.route),
                 ).filter { canOpen(it.route) }
-                menuSection("security", "Keamanan", security, onNavigate)
+                menuSection("security", R.string.profile_section_security, security, onNavigate)
 
-                item(key = "display_header") { SectionHeader("Tampilan", Modifier.padding(top = Spacing.md)) }
+                item(key = "display_header") { SectionHeader(stringResource(R.string.profile_section_display), Modifier.padding(top = Spacing.md)) }
                 item(key = "display") {
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.sm)) {
                         Row(
@@ -192,19 +195,21 @@ fun ProfileContent(
                         ) {
                             IconBadge(Icons.Outlined.Palette, tone = StatusTone.Brand)
                             Spacer(Modifier.width(Spacing.lg))
-                            Text("Tema", style = SistaTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.profile_theme), style = SistaTheme.typography.bodyLarge)
                         }
                         // High contrast is set under Aksesibilitas; show it as chosen there.
+                        val themeOptions = if (themeMode in PROFILE_THEMES) PROFILE_THEMES else PROFILE_THEMES + themeMode
+                        val themeNames = themeOptions.associateWith { stringResource(themeLabel(it)) }
                         FilterChipRow(
-                            options = if (themeMode in PROFILE_THEMES) PROFILE_THEMES else PROFILE_THEMES + themeMode,
+                            options = themeOptions,
                             selected = themeMode,
                             onSelect = onThemeMode,
-                            label = ::themeLabel,
+                            label = { themeNames.getValue(it) },
                             contentPadding = PaddingValues(horizontal = Spacing.lg),
                         )
                         if (themeMode == AppThemeMode.AMOLED_BLACK) {
                             Text(
-                                AMOLED_BATTERY_NOTE,
+                                stringResource(AMOLED_BATTERY_NOTE),
                                 style = SistaTheme.typography.bodySmall,
                                 color = SistaTheme.colors.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
@@ -213,14 +218,14 @@ fun ProfileContent(
                         if (display != null) {
                             HorizontalDivider(Modifier.padding(top = Spacing.sm), color = SistaTheme.colors.outlineVariant)
                             MenuRow(
-                                MenuEntry(Icons.Outlined.Speed, "Laju penyegaran layar", "${display.capabilities.summaryText} · ${refreshModeLabel(display.mode)}", ""),
+                                MenuEntry(Icons.Outlined.Speed, R.string.profile_refresh_rate, null, "", subtitleText = UiText.Raw("${display.capabilities.maxSupportedRefreshRate.toInt()} Hz · ${stringResource(refreshModeLabel(display.mode))}")),
                                 onClick = { dialog = ProfileDialog.RefreshRate },
                             )
                         }
                         if (canOpen(Screen.Settings.route)) {
                             HorizontalDivider(color = SistaTheme.colors.outlineVariant)
                             MenuRow(
-                                MenuEntry(Icons.Outlined.Tune, "Bahasa & ukuran teks", "Bahasa, aksesibilitas, kontras tinggi", Screen.Settings.route),
+                                MenuEntry(Icons.Outlined.Tune, R.string.profile_language_text, R.string.profile_language_text_hint, Screen.Settings.route),
                                 onClick = { onNavigate(Screen.Settings.route) },
                             )
                         }
@@ -228,10 +233,10 @@ fun ProfileContent(
                 }
 
                 val help = listOf(
-                    MenuEntry(Icons.Outlined.SystemUpdate, "Pembaruan aplikasi", appVersion?.let { "Terpasang $it" } ?: "Periksa versi terbaru", Screen.InAppUpdate.route),
-                    MenuEntry(Icons.Outlined.BugReport, "Diagnostik & laporan kendala", "Catatan galat di HP ini untuk dikirim ke IT sekolah", Screen.DiagnosticReport.route),
+                    MenuEntry(Icons.Outlined.SystemUpdate, R.string.profile_update, R.string.profile_update_check, Screen.InAppUpdate.route, subtitleText = appVersion?.let { UiText.Res(R.string.profile_update_installed, it) }),
+                    MenuEntry(Icons.Outlined.BugReport, R.string.profile_diagnostics, R.string.profile_diagnostics_hint, Screen.DiagnosticReport.route),
                 ).filter { canOpen(it.route) }
-                item(key = "help_header") { SectionHeader("Bantuan", Modifier.padding(top = Spacing.md)) }
+                item(key = "help_header") { SectionHeader(stringResource(R.string.profile_section_help), Modifier.padding(top = Spacing.md)) }
                 item(key = "help") {
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
                         help.forEach { entry ->
@@ -239,7 +244,7 @@ fun ProfileContent(
                             HorizontalDivider(color = SistaTheme.colors.outlineVariant)
                         }
                         MenuRow(
-                            MenuEntry(Icons.Outlined.Info, "Tentang", state.school?.name ?: "Sekolah dan versi aplikasi", ""),
+                            MenuEntry(Icons.Outlined.Info, R.string.profile_about, R.string.profile_about_hint, "", subtitleText = state.school?.name?.let { UiText.Raw(it) }),
                             onClick = { dialog = ProfileDialog.About },
                         )
                     }
@@ -247,7 +252,7 @@ fun ProfileContent(
 
                 item(key = "logout") {
                     SistaButton(
-                        text = "Keluar",
+                        text = stringResource(R.string.profile_logout),
                         onClick = { dialog = ProfileDialog.Logout },
                         variant = ButtonVariant.Outlined,
                         leadingIcon = Icons.AutoMirrored.Outlined.Logout,
@@ -271,16 +276,23 @@ fun ProfileContent(
 
 private enum class ProfileDialog { Logout, About, RefreshRate }
 
-private data class MenuEntry(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val subtitle: String, val route: String)
+private data class MenuEntry(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    @StringRes val title: Int,
+    @StringRes val subtitle: Int?,
+    val route: String,
+    /** Overrides [subtitle] with live data (installed version, school name, screen rate). */
+    val subtitleText: UiText? = null,
+)
 
 private fun androidx.compose.foundation.lazy.LazyListScope.menuSection(
     key: String,
-    title: String,
+    @StringRes title: Int,
     entries: List<MenuEntry>,
     onNavigate: (String) -> Unit,
 ) {
     if (entries.isEmpty()) return
-    item(key = "${key}_header") { SectionHeader(title, Modifier.padding(top = Spacing.md)) }
+    item(key = "${key}_header") { SectionHeader(stringResource(title), Modifier.padding(top = Spacing.md)) }
     item(key = key) {
         SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
             entries.forEachIndexed { index, entry ->
@@ -294,8 +306,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.menuSection(
 @Composable
 private fun MenuRow(entry: MenuEntry, onClick: () -> Unit) {
     SistaListItem(
-        headline = entry.title,
-        supporting = entry.subtitle,
+        headline = stringResource(entry.title),
+        supporting = entry.subtitleText?.asString() ?: entry.subtitle?.let { stringResource(it) },
         leading = { IconBadge(entry.icon, tone = StatusTone.Neutral) },
         trailing = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant) },
         onClick = onClick,
@@ -326,17 +338,17 @@ private fun IdentityCard(state: ProfileUiState, sessionName: String?, onRetry: (
                     state.isLoading -> SkeletonBlock(width = 80.dp, height = 20.dp)
                 }
                 academicYearLabel(profile?.academicYear)?.let {
-                    Text(it, style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                    Text(it.asString(), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                 }
             }
         }
         when {
             profile != null -> IdentityDetails(profile)
             state.errorMessage != null -> InlineBanner(
-                title = "Data akun belum bisa dimuat",
+                title = stringResource(R.string.profile_load_failed),
                 message = state.errorMessage,
                 tone = StatusTone.Warning,
-                actionLabel = "Coba lagi",
+                actionLabel = stringResource(com.sultanagung1.sista.core.ui.R.string.core_retry),
                 onAction = onRetry,
                 modifier = Modifier.padding(top = Spacing.lg),
             )
@@ -356,7 +368,7 @@ private fun IdentityDetails(profile: MeProfile) {
         rows.forEach { InfoLine(it) }
         if (hasNoLinkedChildren(profile)) {
             Text(
-                "Belum ada siswa yang ditautkan ke akun ini. Hubungi tata usaha sekolah.",
+                stringResource(R.string.profile_no_children),
                 style = SistaTheme.typography.bodyMedium,
                 color = SistaTheme.colors.onSurfaceVariant,
             )
@@ -368,7 +380,7 @@ private fun IdentityDetails(profile: MeProfile) {
 private fun InfoLine(row: InfoRow) {
     Row(Modifier.fillMaxWidth()) {
         Text(
-            row.label,
+            stringResource(row.label),
             style = SistaTheme.typography.bodyMedium,
             color = SistaTheme.colors.onSurfaceVariant,
             modifier = Modifier.width(112.dp),
@@ -382,38 +394,38 @@ private fun LogoutDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
-        title = { Text("Keluar dari akun?") },
-        text = { Text("Sesi di HP ini diakhiri. Masuk lagi dengan email, NIS, atau NIP dan kata sandi.") },
-        confirmButton = { SistaButton("Keluar", onConfirm, variant = ButtonVariant.Danger) },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } },
+        title = { Text(stringResource(R.string.profile_logout_title)) },
+        text = { Text(stringResource(R.string.profile_logout_body)) },
+        confirmButton = { SistaButton(stringResource(R.string.profile_logout), onConfirm, variant = ButtonVariant.Danger) },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.profile_cancel)) } },
     )
 }
 
 /** The school as the server records it, and the installed app's real version. */
 @Composable
-private fun AboutDialog(school: SchoolIdentity?, appVersion: String?, onDismiss: () -> Unit) {
+private fun AboutDialog(school: SchoolIdentity?, appVersion: UiText?, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(school?.name ?: "SISTA") },
+        title = { Text(school?.name ?: stringResource(R.string.profile_about)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text(
-                    "Aplikasi layanan sekolah untuk siswa, wali murid, guru, dan staf.",
+                    stringResource(R.string.profile_about_app),
                     style = SistaTheme.typography.bodyMedium,
                 )
                 schoolRows(school).forEach { InfoLine(it) }
                 if (school == null) {
                     Text(
-                        "Data sekolah belum bisa dimuat dari server.",
+                        stringResource(R.string.profile_school_unavailable),
                         style = SistaTheme.typography.bodySmall,
                         color = SistaTheme.colors.onSurfaceVariant,
                     )
                 }
                 Spacer(Modifier.height(Spacing.xs))
-                InfoLine(InfoRow("Versi aplikasi", appVersion ?: MISSING))
+                InfoLine(InfoRow(R.string.profile_app_version, appVersion?.asString() ?: MISSING))
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.profile_close)) } },
     )
 }
 
@@ -421,11 +433,11 @@ private fun AboutDialog(school: SchoolIdentity?, appVersion: String?, onDismiss:
 private fun RefreshRateDialog(display: DisplayChoice, onSelect: (RefreshRateMode) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Laju penyegaran layar") },
+        title = { Text(stringResource(R.string.profile_refresh_rate)) },
         text = {
             Column {
                 Text(
-                    "Layar HP ini: ${display.capabilities.supportedRefreshRates.joinToString(", ") { "${it.toInt()} Hz" }}",
+                    stringResource(R.string.profile_screen_rates, display.capabilities.supportedRefreshRates.joinToString(", ") { "${it.toInt()} Hz" }),
                     style = SistaTheme.typography.bodyMedium,
                     color = SistaTheme.colors.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Spacing.sm),
@@ -441,19 +453,27 @@ private fun RefreshRateDialog(display: DisplayChoice, onSelect: (RefreshRateMode
                         RadioButton(selected = mode == display.mode, onClick = null)
                         Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
-                            Text(refreshModeLabel(mode), style = SistaTheme.typography.bodyLarge)
-                            Text(mode.description, style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
+                            Text(stringResource(refreshModeLabel(mode)), style = SistaTheme.typography.bodyLarge)
+                            Text(stringResource(refreshModeDescription(mode)), style = SistaTheme.typography.bodySmall, color = SistaTheme.colors.onSurfaceVariant)
                         }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.profile_close)) } },
     )
 }
 
-internal fun refreshModeLabel(mode: RefreshRateMode): String = when (mode) {
-    RefreshRateMode.ADAPTIVE_SMOOTH -> "Adaptif (setinggi yang didukung layar)"
-    RefreshRateMode.POWER_SAVER_60HZ -> "Hemat daya (60 Hz)"
-    RefreshRateMode.SYSTEM_DEFAULT -> "Ikuti sistem"
+@StringRes
+internal fun refreshModeLabel(mode: RefreshRateMode): Int = when (mode) {
+    RefreshRateMode.ADAPTIVE_SMOOTH -> R.string.profile_rate_adaptive
+    RefreshRateMode.POWER_SAVER_60HZ -> R.string.profile_rate_power_saver
+    RefreshRateMode.SYSTEM_DEFAULT -> R.string.profile_rate_system
+}
+
+@StringRes
+internal fun refreshModeDescription(mode: RefreshRateMode): Int = when (mode) {
+    RefreshRateMode.ADAPTIVE_SMOOTH -> R.string.profile_rate_desc_adaptive
+    RefreshRateMode.POWER_SAVER_60HZ -> R.string.profile_rate_desc_power_saver
+    RefreshRateMode.SYSTEM_DEFAULT -> R.string.profile_rate_desc_system
 }

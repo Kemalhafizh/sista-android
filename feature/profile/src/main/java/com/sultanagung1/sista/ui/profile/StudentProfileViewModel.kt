@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.ui.profile
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
+import com.sultanagung1.sista.feature.profile.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sultanagung1.sista.core.network.NetworkResult
@@ -14,8 +16,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ProfileTab(val label: String) {
-    Academic("Akademik"), Ibadah("Ibadah"), Discipline("Kedisiplinan"), Activities("Prestasi & ekskul"), Health("Kesehatan"),
+enum class ProfileTab(@StringRes val label: Int) {
+    Academic(R.string.p360_tab_academic),
+    Ibadah(R.string.p360_tab_ibadah),
+    Discipline(R.string.p360_tab_discipline),
+    Activities(R.string.p360_tab_activities),
+    Health(R.string.p360_tab_health),
 }
 
 /** [profile] null + [errorMessage] null = still loading. */

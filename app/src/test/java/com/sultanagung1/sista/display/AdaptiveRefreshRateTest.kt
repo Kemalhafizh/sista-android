@@ -144,7 +144,7 @@ class AdaptiveRefreshRateTest {
         assertTrue(file.exists())
 
         val content = file.readText()
-        assertTrue("Must have Refresh Rate menu item", content.contains("Laju penyegaran layar"))
+        assertTrue("Must have Refresh Rate menu item", content.contains("R.string.profile_refresh_rate"))
         assertTrue("Must open the refresh rate dialog", content.contains("ProfileDialog.RefreshRate"))
         assertTrue("Choice is saved", content.contains("AdaptiveRefreshRateManager.saveMode"))
         assertTrue("Must detect capabilities in ProfileScreen", content.contains("AdaptiveRefreshRateManager.detectCapabilities"))

@@ -5,7 +5,10 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.sultanagung1.sista.core.accessibility.AppThemeMode
@@ -32,7 +35,7 @@ import org.robolectric.annotation.GraphicsMode
 /** The profile and device-security pages in their states. The people exist only in this test. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w400dp-h1500dp-xhdpi")
+@Config(sdk = [35], qualifiers = "in-w400dp-h1500dp-xhdpi")
 class ProfileScreenshotTest {
 
     @get:Rule
@@ -61,7 +64,13 @@ class ProfileScreenshotTest {
 
     private fun capture(name: String, dark: Boolean = false, display: DisplayPreferences = DisplayPreferences(), content: @Composable () -> Unit) {
         compose.setContent {
-            CompositionLocalProvider(LocalDisplayPreferences provides display) {
+            // The app's manifest sets supportsRtl; this module's test manifest doesn't,
+            // so take the direction from the locale like the app does.
+            val rtl = LocalConfiguration.current.locales[0].language == "ar"
+            CompositionLocalProvider(
+                LocalDisplayPreferences provides display,
+                LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
+            ) {
                 MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) { content() }
             }
         }
@@ -72,7 +81,7 @@ class ProfileScreenshotTest {
         capture("profile_$name", dark, DisplayPreferences(amoledBlack = theme == AppThemeMode.AMOLED_BLACK)) {
             ProfileContent(
                 state = state, sessionName = "Nadia Putri Rahmawati", themeMode = theme, display = display,
-                appVersion = "1.4.0 (build 140)", canOpen = { true }, onRetry = {}, onNavigate = {}, onThemeMode = {},
+                appVersion = appVersionLabel("1.4.0", 140), canOpen = { true }, onRetry = {}, onNavigate = {}, onThemeMode = {},
                 onRefreshMode = {}, onLogout = {}, onNavigateBack = null,
             )
         }
@@ -89,6 +98,12 @@ class ProfileScreenshotTest {
         profile("parent_no_children", ProfileUiState(profile = parent.copy(children = emptyList()), isLoading = false))
 
     @Test fun loading() = profile("loading", ProfileUiState())
+
+    @Test @Config(qualifiers = "en-w400dp-h1500dp-xhdpi")
+    fun teacherEnglish() = profile("teacher_en", ProfileUiState(profile = teacher.copy(roleLabel = "Teacher"), isLoading = false))
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1500dp-xhdpi")
+    fun parentArabic() = profile("parent_ar", ProfileUiState(profile = parent.copy(roleLabel = "ولي الأمر"), isLoading = false))
 
     @Test fun error() = profile("error", ProfileUiState(isLoading = false, errorMessage = "Tidak dapat terhubung ke server."))
 

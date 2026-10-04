@@ -20,6 +20,7 @@ data class MeProfile(
     @SerializedName("children") val children: List<MeChild>? = null,
     @SerializedName("homeroom_classrooms") val homeroomClassrooms: List<MeClassroom>? = null,
     @SerializedName("academic_year") val academicYear: MeAcademicYear? = null,
+    @SerializedName("preferred_locale") val preferredLocale: String? = null,
 )
 
 data class MeStudentData(

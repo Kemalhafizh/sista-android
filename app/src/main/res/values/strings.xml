@@ -139,4 +139,8 @@
     <string name="widget_prayer_unavailable">Jadwal salat belum tersedia</string>
     <string name="widget_prayer_no_source">Belum ada sumber jadwal resmi di aplikasi</string>
     <string name="widget_prayer_tap">Ketuk untuk membuka Mutaba\'ah ➔</string>
+
+    <!-- Tab utama -->
+    <string name="nav_services">Layanan</string>
+    <string name="nav_notifications">Notifikasi</string>
 </resources>

@@ -1,6 +1,8 @@
 package com.sultanagung1.sista.core.ui.state
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.R
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -46,7 +48,7 @@ fun <T> StatefulContent(
     state: UiState<T>,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    errorTitle: String = "Gagal memuat",
+    errorTitle: String = stringResource(R.string.core_load_failed),
     loading: @Composable () -> Unit = { SkeletonList() },
     content: @Composable (T) -> Unit,
 ) {
@@ -60,7 +62,7 @@ fun <T> StatefulContent(
                     InlineBanner(
                         message = state.notice,
                         tone = StatusTone.Warning,
-                        actionLabel = "Muat ulang",
+                        actionLabel = stringResource(R.string.core_reload),
                         onAction = onRetry,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.sm),
                     )

@@ -1,19 +1,23 @@
 package com.sultanagung1.sista.core.accessibility
 
+import android.content.Context
 import androidx.compose.ui.unit.LayoutDirection
-import com.sultanagung1.sista.core.storage.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
+/**
+ * The languages the app (and the web) is offered in. [nativeName] is how the
+ * language calls itself, so anyone can find theirs whatever is showing now.
+ */
 enum class AppLanguage(val code: String, val title: String, val nativeName: String, val layoutDirection: LayoutDirection) {
     INDONESIAN("id", "Bahasa Indonesia", "Bahasa Indonesia", LayoutDirection.Ltr),
-    ENGLISH("en", "English", "English (US)", LayoutDirection.Ltr),
-    ARABIC("ar", "Bahasa Arab", "العربية (RTL)", LayoutDirection.Rtl);
+    ENGLISH("en", "English", "English", LayoutDirection.Ltr),
+    ARABIC("ar", "Bahasa Arab", "العربية", LayoutDirection.Rtl);
 
     companion object {
         fun fromCode(code: String): AppLanguage {
@@ -22,31 +26,17 @@ enum class AppLanguage(val code: String, val title: String, val nativeName: Stri
     }
 }
 
-class LanguageManager(
-    private val sessionManager: SessionManager? = null,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
-) {
+/** The current language as a flow for screens; storing and applying it is [AppLocale]'s job. */
+class LanguageManager(private val context: Context) {
 
-    private val _currentLanguage = MutableStateFlow(AppLanguage.INDONESIAN)
-    val currentLanguage: StateFlow<AppLanguage> = _currentLanguage.asStateFlow()
+    val currentLanguage: StateFlow<AppLanguage> = AppLocale.changes
+        .map { it ?: AppLocale.current(context) }
+        .stateIn(CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate), SharingStarted.Eagerly, AppLocale.current(context))
 
-    init {
-        sessionManager?.let { sm ->
-            scope.launch {
-                val savedCode = sm.appLanguageFlow.first()
-                _currentLanguage.value = AppLanguage.fromCode(savedCode)
-            }
-        }
+    /** [byUser] = picked on this phone, still to be saved on the account. */
+    fun setLanguage(language: AppLanguage, byUser: Boolean = true) {
+        AppLocale.set(context, language, byUser)
     }
 
-    fun setLanguage(language: AppLanguage) {
-        _currentLanguage.value = language
-        sessionManager?.let { sm ->
-            scope.launch(Dispatchers.IO) {
-                sm.saveLanguagePreference(language.code)
-            }
-        }
-    }
-
-    fun isRtl(): Boolean = _currentLanguage.value.layoutDirection == LayoutDirection.Rtl
+    fun isRtl(): Boolean = currentLanguage.value.layoutDirection == LayoutDirection.Rtl
 }
