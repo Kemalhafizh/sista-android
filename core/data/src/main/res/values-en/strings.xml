@@ -28,4 +28,11 @@
     <string name="remedial_auto_done">Automatic remedial has run.</string>
     <string name="remedials_load_failed">Couldn\'t load remedials (code %1$d).</string>
     <string name="assessment_history_load_failed">Couldn\'t load assessment history (code %1$d).</string>
+
+    <!-- Pengawas CBT -->
+    <string name="proctor_exams_load_failed">Couldn\'t load the exams you proctor (code %1$d).</string>
+    <string name="proctor_token_load_failed">Couldn\'t load the exam token (code %1$d).</string>
+    <string name="proctor_token_renew_failed">Couldn\'t renew the exam token (code %1$d).</string>
+    <string name="proctor_reset_failed">Couldn\'t let the student back in (code %1$d).</string>
+    <string name="proctor_locked_load_failed">Couldn\'t load locked-out students (code %1$d).</string>
 </resources>

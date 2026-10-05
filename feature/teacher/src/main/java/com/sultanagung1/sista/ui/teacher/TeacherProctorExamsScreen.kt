@@ -1,30 +1,45 @@
 package com.sultanagung1.sista.ui.teacher
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sultanagung1.sista.core.designsystem.*
+import com.sultanagung1.sista.core.designsystem.SulaonePullToRefreshBox
+import com.sultanagung1.sista.core.ui.component.EmptyState
+import com.sultanagung1.sista.core.ui.component.ErrorState
+import com.sultanagung1.sista.core.ui.component.IconBadge
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.SkeletonList
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.TeacherCbtExamItem
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import com.sultanagung1.sista.feature.teacher.R
 
 /**
  * "Pengawas CBT" entry point. Shows only exams the backend says this teacher
@@ -35,7 +50,7 @@ import java.util.Locale
 fun TeacherProctorExamsScreen(
     viewModel: TeacherProctorExamsViewModel = hiltViewModel(),
     onOpenExam: (examId: Long, replacePicker: Boolean) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -46,57 +61,70 @@ fun TeacherProctorExamsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Pengawas CBT",
-                subtitle = "Pilih ujian yang Anda awasi",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        SulaonePullToRefreshBox(
-            isRefreshing = uiState.isLoading && uiState.hasLoaded,
-            onRefresh = { viewModel.loadExams() },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            LazyColumn(
+    TeacherProctorExamsContent(
+        state = uiState,
+        onRefresh = viewModel::loadExams,
+        onOpen = { onOpenExam(it.id, false) },
+        onNavigateBack = onNavigateBack,
+    )
+}
+
+/** The proctor's exam list without a ViewModel, for previews and screenshots. */
+@Composable
+fun TeacherProctorExamsContent(
+    state: TeacherProctorExamsUiState,
+    onRefresh: () -> Unit,
+    onOpen: (TeacherCbtExamItem) -> Unit,
+    onNavigateBack: (() -> Unit)?,
+) {
+    ShellTheme {
+        Scaffold(
+            topBar = {
+                SistaTopBar(
+                    title = stringResource(R.string.pe_title),
+                    subtitle = stringResource(R.string.pe_subtitle),
+                    onBack = onNavigateBack,
+                )
+            },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            SulaonePullToRefreshBox(
+                isRefreshing = state.isLoading && state.hasLoaded,
+                onRefresh = onRefresh,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(padding),
             ) {
-                uiState.errorMessage?.let { message ->
-                    item {
-                        SulaoneErrorBanner(message = message, onRetry = { viewModel.loadExams() })
-                    }
-                }
-
-                when {
-                    !uiState.hasLoaded -> item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = Emerald600)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.sm, bottom = Spacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    if (state.errorMessage != null && state.exams.isNotEmpty()) {
+                        item(key = "stale") {
+                            InlineBanner(
+                                message = stringResource(R.string.tj_stale, state.errorMessage),
+                                tone = StatusTone.Warning,
+                                actionLabel = stringResource(R.string.tj_retry),
+                                onAction = onRefresh,
+                            )
                         }
                     }
-                    uiState.exams.isEmpty() && uiState.errorMessage == null -> item {
-                        SulaoneEmptyState(
-                            icon = Icons.Default.EventBusy,
-                            title = "Belum Ada Ujian untuk Diawasi",
-                            description = "Tidak ada ujian terbit yang sedang berlangsung atau terjadwal atas nama Anda. " +
-                                "UTS/UAS muncul di sini jika Anda ditunjuk sebagai Operator Ujian; " +
-                                "Ulangan Harian/Try Out muncul jika Anda pembuatnya.",
-                            ctaLabel = "Muat Ulang",
-                            onCtaClick = { viewModel.loadExams() }
-                        )
-                    }
-                    else -> items(uiState.exams, key = { it.id }) { exam ->
-                        ProctorExamCard(exam = exam, onClick = { onOpenExam(exam.id, false) })
+                    when {
+                        !state.hasLoaded -> item(key = "loading") { SkeletonList(rows = 3) }
+                        state.errorMessage != null && state.exams.isEmpty() -> item(key = "error") {
+                            ErrorState(title = stringResource(R.string.pe_error), body = state.errorMessage, onRetry = onRefresh)
+                        }
+                        state.exams.isEmpty() -> item(key = "empty") {
+                            EmptyState(
+                                title = stringResource(R.string.pe_empty),
+                                body = stringResource(R.string.pe_empty_body),
+                                icon = Icons.Outlined.EventBusy,
+                            )
+                        }
+                        else -> items(state.exams, key = { it.id }, contentType = { "exam" }) { exam ->
+                            ExamCard(exam, onClick = { onOpen(exam) })
+                        }
                     }
                 }
             }
@@ -105,77 +133,31 @@ fun TeacherProctorExamsScreen(
 }
 
 @Composable
-private fun ProctorExamCard(exam: TeacherCbtExamItem, onClick: () -> Unit) {
-    val accent = if (exam.isOngoing) Emerald700 else Slate500
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(0.5.dp, Slate200),
-        elevation = CardDefaults.cardElevation(0.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(accent.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Security, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+private fun ExamCard(exam: TeacherCbtExamItem, onClick: () -> Unit) {
+    SistaCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Outlined.Security, tone = if (exam.isOngoing) StatusTone.Success else StatusTone.Neutral)
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(exam.title, style = SistaTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
-                    text = exam.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = listOfNotNull(examTypeLabel(exam.type), exam.subject, exam.classroom).joinToString(" • "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    listOfNotNull(ProctorFormat.examType(exam.type).asString(), exam.subject, exam.classroom).joinToString(" · "),
+                    style = SistaTheme.typography.bodySmall,
+                    color = SistaTheme.colors.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
                 if (exam.isOngoing) {
-                    SulaoneBadge(text = "Sedang Berlangsung")
+                    StatusPill(stringResource(R.string.pe_ongoing), StatusTone.Success)
                 } else {
                     Text(
-                        text = "Mulai ${formatExamTime(exam.startTime)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Slate500
+                        ProctorFormat.examTime(exam.startTime)?.let { stringResource(R.string.pe_starts, it) }
+                            ?: stringResource(R.string.pe_no_start),
+                        style = SistaTheme.typography.labelMedium,
+                        color = SistaTheme.colors.onSurfaceVariant,
                     )
                 }
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Slate400)
         }
-    }
-}
-
-private fun examTypeLabel(type: String): String = when (type) {
-    "uts" -> "UTS"
-    "uas" -> "UAS"
-    "ulangan_harian" -> "Ulangan Harian"
-    "try_out" -> "Try Out"
-    else -> type
-}
-
-private val examTimeFormatter = DateTimeFormatter.ofPattern("EEE, d MMM yyyy • HH:mm", Locale("id", "ID"))
-
-private fun formatExamTime(iso: String?): String {
-    if (iso.isNullOrBlank()) return "—"
-    return try {
-        OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).format(examTimeFormatter)
-    } catch (e: Exception) {
-        iso
     }
 }

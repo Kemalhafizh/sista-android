@@ -89,6 +89,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
+import com.sultanagung1.sista.data.model.LockedExamStudent
 
 class AuthRepository(
     private val apiClient: ApiClient,
@@ -425,7 +426,7 @@ class AttendanceRepository(
     }
 }
 
-class CbtRepository(private val apiClient: ApiClient) {
+class CbtRepository(private val apiClient: ApiClient, private val messages: FallbackMessages) {
 
     fun getExams(): Flow<NetworkResult<List<CbtExamItem>>> = flow {
         emit(NetworkResult.Loading)
@@ -558,10 +559,10 @@ class CbtRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body != null && body.success && body.data != null) {
                 emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal memuat daftar ujian (${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.proctor_exams_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -573,10 +574,10 @@ class CbtRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body != null && body.success && body.data != null) {
                 emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal memuat token ujian (${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.proctor_token_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -588,10 +589,10 @@ class CbtRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body != null && body.success && body.data != null) {
                 emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal memperbarui token ujian (${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.proctor_token_renew_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -603,10 +604,26 @@ class CbtRepository(private val apiClient: ApiClient) {
             if (response.isSuccessful && body != null && body.success && body.data != null) {
                 emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(body?.message ?: "Gagal mereset status siswa (${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.proctor_reset_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /** Students the anti-cheat locked out of [examId], for the operator to let back in. */
+    fun getLockedStudents(examId: Long): Flow<NetworkResult<List<LockedExamStudent>>> = flow {
+        emit(NetworkResult.Loading)
+        try {
+            val response = apiClient.cbtApi.getLockedStudents(examId)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success && body.data != null) {
+                emit(NetworkResult.Success(body.data!!))
+            } else {
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.proctor_locked_load_failed), response.code()))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 

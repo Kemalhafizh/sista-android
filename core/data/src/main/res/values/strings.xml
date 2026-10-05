@@ -28,4 +28,11 @@
     <string name="remedial_auto_done">Remedial otomatis sudah dijalankan.</string>
     <string name="remedials_load_failed">Daftar remedial belum bisa dimuat (kode %1$d).</string>
     <string name="assessment_history_load_failed">Riwayat penilaian belum bisa dimuat (kode %1$d).</string>
+
+    <!-- Pengawas CBT -->
+    <string name="proctor_exams_load_failed">Daftar ujian yang diawasi belum bisa dimuat (kode %1$d).</string>
+    <string name="proctor_token_load_failed">Token ujian belum bisa dimuat (kode %1$d).</string>
+    <string name="proctor_token_renew_failed">Token ujian belum bisa diperbarui (kode %1$d).</string>
+    <string name="proctor_reset_failed">Akses siswa belum bisa dibuka (kode %1$d).</string>
+    <string name="proctor_locked_load_failed">Daftar siswa terkunci belum bisa dimuat (kode %1$d).</string>
 </resources>

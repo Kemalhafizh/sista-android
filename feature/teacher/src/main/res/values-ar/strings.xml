@@ -239,4 +239,35 @@
     <string name="tatt_empty_body">سيظهر هنا الطلاب المسجلون في هذا الفصل.</string>
     <string name="tatt_saved">تم حفظ الحضور. عدد الطلاب المسجلين: %1$d.</string>
     <string name="si_nisn">NISN %1$s</string>
+
+    <!-- Pengawas ujian -->
+    <string name="pe_title">مراقبة الاختبار</string>
+    <string name="pe_subtitle">اختر الاختبار الذي تراقبه</string>
+    <string name="pe_error">تعذّر تحميل الاختبارات</string>
+    <string name="pe_empty">لا توجد اختبارات للمراقبة</string>
+    <string name="pe_empty_body">تظهر هنا الاختبارات المنشورة الجارية أو المجدولة باسمك: اختبارات منتصف ونهاية الفصل إن كنت مشغّل الاختبار، والاختبارات اليومية والتجريبية إن كنت أنشأتها.</string>
+    <string name="pe_ongoing">جارٍ الآن</string>
+    <string name="pe_starts">يبدأ %1$s</string>
+    <string name="pe_no_start">لم يُحدَّد وقت البدء</string>
+    <string name="pe_type_uts">اختبار منتصف الفصل</string>
+    <string name="pe_type_uas">الاختبار النهائي</string>
+    <string name="pe_type_daily">اختبار يومي</string>
+    <string name="pe_type_tryout">اختبار تجريبي</string>
+    <string name="pr_title">مراقبة الاختبار</string>
+    <string name="pr_exam_number">الاختبار رقم %1$d</string>
+    <string name="pr_token">رمز دخول الاختبار</string>
+    <string name="pr_token_valid_for">صالح لمدة %1$d دقائق من إصداره</string>
+    <string name="pr_token_missing">لم يتم تحميل الرمز.</string>
+    <string name="pr_token_expired">انتهت صلاحية الرمز. أصدر رمزًا جديدًا.</string>
+    <string name="pr_token_remaining">صالح لمدة %1$s أخرى</string>
+    <string name="pr_token_active">الرمز نشط</string>
+    <string name="pr_token_renew">إصدار رمز جديد</string>
+    <string name="pr_locked">الطلاب المقفلون</string>
+    <string name="pr_locked_empty">لا يوجد طلاب مقفلون</string>
+    <string name="pr_locked_empty_body">يظهر هنا الطلاب الذين أخرجهم نظام مكافحة الغش، ويمكنك السماح لهم بالعودة.</string>
+    <string name="pr_student_unnamed">طالب بلا اسم</string>
+    <string name="pr_violations">المخالفات: %1$d</string>
+    <string name="pr_unlock">السماح بالعودة</string>
+    <string name="pr_unlocked">يمكن لـ %1$s الدخول مجددًا بالرمز.</string>
+    <string name="pr_unlocked_unnamed">يمكن للطالب الدخول مجددًا بالرمز.</string>
 </resources>
