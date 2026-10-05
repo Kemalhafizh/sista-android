@@ -118,10 +118,11 @@ object WidgetTextMapper {
         val lines = today.map { lesson ->
             val start = WidgetSnapshots.clock(lesson.start) ?: lesson.start
             val room = lesson.room?.takeIf { it.isNotBlank() }
+            val subject = lesson.subject?.takeIf { it.isNotBlank() } ?: res(R.string.widget_unknown_value)
             if (room != null) {
-                res(R.string.widget_schedule_lesson, start, lesson.subject, room)
+                res(R.string.widget_schedule_lesson, start, subject, room)
             } else {
-                res(R.string.widget_schedule_lesson_no_room, start, lesson.subject)
+                res(R.string.widget_schedule_lesson_no_room, start, subject)
             }
         }
         val shown = if (lines.size <= SCHEDULE_SLOTS) {

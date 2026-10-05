@@ -91,14 +91,14 @@ private fun TodayLessonRow(lesson: ScheduleItem, status: LessonStatus, isNext: B
         done -> R.string.lesson_done
         else -> null
     }?.let { stringResource(it) }
-    val lessonText = stringResource(R.string.home_lesson_cd, lesson.subjectName, start, end)
+    val lessonText = stringResource(R.string.home_lesson_cd, ScheduleRules.subjectOf(lesson), start, end)
     val spoken = if (label == null) lessonText else stringResource(R.string.home_lesson_cd_status, lessonText, label)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             // The Schedule screen continues this card for the same lesson.
-            .sulaoneSharedBounds(key = "schedule_card_${lesson.subjectName}")
+            .sulaoneSharedBounds(key = "schedule_card_${lesson.id}")
             .padding(vertical = Spacing.sm)
             .semantics(mergeDescendants = true) {
                 contentDescription = spoken
@@ -112,14 +112,14 @@ private fun TodayLessonRow(lesson: ScheduleItem, status: LessonStatus, isNext: B
         )
         Column(Modifier.weight(1f)) {
             Text(
-                lesson.subjectName,
+                ScheduleRules.subjectOf(lesson),
                 style = SistaTheme.typography.bodyLarge,
                 color = if (done) SistaTheme.colors.onSurfaceVariant else SistaTheme.colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                listOf(lesson.teacherName, ScheduleRules.locationOf(lesson)).filter { it.isNotBlank() && it != "—" }.joinToString(" · "),
+                ScheduleRules.detailsOf(lesson),
                 style = SistaTheme.typography.bodySmall,
                 color = SistaTheme.colors.onSurfaceVariant,
                 maxLines = 1,

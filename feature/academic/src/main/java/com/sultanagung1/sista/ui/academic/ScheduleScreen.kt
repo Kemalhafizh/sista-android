@@ -236,10 +236,10 @@ private fun LessonCard(lesson: ScheduleItem, status: LessonStatus, isNext: Boole
         modifier = Modifier
             .fillMaxWidth()
             // Continues the card the Home preview shows for the same lesson.
-            .sulaoneSharedBounds(key = "schedule_card_${lesson.subjectName}")
+            .sulaoneSharedBounds(key = "schedule_card_${lesson.id}")
             .semantics(mergeDescendants = true) {
                 contentDescription = buildString {
-                    append("${lesson.subjectName}, $start sampai $end")
+                    append("${ScheduleRules.subjectOf(lesson)}, $start sampai $end")
                     if (ongoing) append(", sedang berlangsung")
                     if (isNext) append(", berikutnya")
                     if (done) append(", selesai")
@@ -258,7 +258,7 @@ private fun LessonCard(lesson: ScheduleItem, status: LessonStatus, isNext: Boole
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
                 Text(
-                    lesson.subjectName,
+                    ScheduleRules.subjectOf(lesson),
                     style = SistaTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -266,7 +266,7 @@ private fun LessonCard(lesson: ScheduleItem, status: LessonStatus, isNext: Boole
                 )
                 Spacer(Modifier.height(Spacing.xxs))
                 Text(
-                    listOf(lesson.teacherName, ScheduleRules.locationOf(lesson)).filter { it.isNotBlank() && it != "—" }.joinToString(" · "),
+                    ScheduleRules.detailsOf(lesson),
                     style = SistaTheme.typography.bodyMedium,
                     color = if (ongoing) SistaTheme.colors.onPrimaryContainer else SistaTheme.colors.onSurfaceVariant,
                     maxLines = 2,

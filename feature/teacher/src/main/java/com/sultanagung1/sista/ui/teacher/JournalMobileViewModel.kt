@@ -12,6 +12,7 @@ import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.data.model.JournalScheduleItem
 import com.sultanagung1.sista.data.model.JournalSummaryCompliance
+import com.sultanagung1.sista.data.model.ScheduleRules
 import com.sultanagung1.sista.data.model.StoreJournalRequest
 import com.sultanagung1.sista.data.model.TeacherScheduleSlot
 import com.sultanagung1.sista.data.model.TeachingJournalEntry
@@ -338,8 +339,8 @@ class JournalMobileViewModel @Inject constructor(
         return JournalScheduleItem(
             id = "sched-$id",
             timeRange = timeRange(sessionStart, sessionEnd),
-            subject = subjectName ?: "-",
-            className = classroomName ?: "-",
+            subject = subjectName ?: ScheduleRules.MISSING,
+            className = classroomName ?: ScheduleRules.MISSING,
             isFilled = entry != null,
             subjectId = subjectId,
             classroomId = classroomId,
@@ -360,8 +361,8 @@ class JournalMobileViewModel @Inject constructor(
     private fun TeachingJournalEntry.toJournalScheduleItem(): JournalScheduleItem {
         return JournalScheduleItem(
             id = "entry-$uuid",
-            subject = subjectName ?: "-",
-            className = classroomName ?: "-",
+            subject = subjectName ?: ScheduleRules.MISSING,
+            className = classroomName ?: ScheduleRules.MISSING,
             isFilled = true,
             subjectId = subjectId,
             classroomId = classroomId,
