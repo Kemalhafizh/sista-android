@@ -22,30 +22,26 @@ class MinimalistUxOverhaulTest {
             ?: File(relativePath)
     }
 
+    /**
+     * The module directory (EnterpriseCatalogScreen, ModuleFavoritesScreen,
+     * SsoWebViewScreen) decided access with a role list in the screen, repeated
+     * the Services tab and listed marketing labels. It was removed; the Web3
+     * "Paspor Digital" entry this test used to guard went with it.
+     */
     @Test
-    fun testWeb3GimmickPurgedFromCatalog() {
-        val catalogFile = findSourceFile("src/main/java/com/sultanagung1/sista/ui/portal/EnterpriseCatalogScreen.kt")
-        val portalModelsFile = findSourceFile("src/main/java/com/sultanagung1/sista/data/model/PortalModels.kt")
-        assertTrue("EnterpriseCatalogScreen.kt must exist", catalogFile.exists())
-        assertTrue("PortalModels.kt must exist", portalModelsFile.exists())
-
-        val content = catalogFile.readText() + "\n" + portalModelsFile.readText()
-        assertFalse(
-            "Web3 Blockchain passport gimmick must be purged from catalog",
-            content.contains("Paspor Digital Web3 (DID)")
-        )
-        assertFalse(
-            "Category AI & Web3 should be renamed to AI Edukasi",
-            content.contains("\"AI & Web3\"")
-        )
-        assertTrue(
-            "Must have Kecerdasan Buatan (AI Edukasi) category",
-            content.contains("Kecerdasan Buatan (AI Edukasi)")
-        )
-        assertTrue(
-            "Must have E-Ijazah & Transkrip Resmi replacement",
-            content.contains("E-Ijazah & Transkrip Resmi")
-        )
+    fun testModuleDirectoryStaysRemoved() {
+        val root = listOf(File("."), File("..")).first { File(it, "settings.gradle").exists() || File(it, "settings.gradle.kts").exists() }
+        val portal = File(root, "feature/home/src/main/java/com/sultanagung1/sista/ui/portal")
+        for (name in listOf("EnterpriseCatalogScreen.kt", "ModuleFavoritesScreen.kt", "SsoWebViewScreen.kt", "ModuleCatalogViewModel.kt")) {
+            assertFalse("$name must stay deleted", File(portal, name).exists())
+        }
+        val screens = File(root, "core/common/src/main/java/com/sultanagung1/sista/ui/navigation/Screen.kt").readText()
+        for (route in listOf("enterprise_catalog", "module_favorites", "sso_webview")) {
+            assertFalse("Route $route must not come back", screens.contains("\"$route\""))
+        }
+        val models = File(root, "core/model/src/main/java/com/sultanagung1/sista/data/model/PortalModels.kt").readText()
+        assertFalse("The static module catalog must not come back", models.contains("EnterpriseModuleCatalog"))
+        assertFalse("Web3 passport gimmick must not come back", models.contains("Paspor Digital Web3"))
     }
 
     @Test

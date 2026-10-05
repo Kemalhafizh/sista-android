@@ -69,7 +69,6 @@ class CleanArchitectureTest {
         com.sultanagung1.sista.ui.finance.BillingViewModel::class.java,
         com.sultanagung1.sista.ui.ibadah.TahsinRecorderViewModel::class.java,
         com.sultanagung1.sista.ui.ibadah.TahsinViewModel::class.java,
-        com.sultanagung1.sista.ui.portal.ModuleCatalogViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.CbtProctorViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.TeacherCreateExamViewModel::class.java,
         com.sultanagung1.sista.ui.teacher.TeacherProctorExamsViewModel::class.java,
