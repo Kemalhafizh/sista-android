@@ -4601,3 +4601,80 @@ sealed interface ActiveSessionEffect : UiEffect {
 ---
 
 *Roadmap Master ini disahkan sebagai pedoman implementasi jangka panjang bagi arsitektur dan antarmuka aplikasi Android Sulaone (SISTA Mobile).*
+
+---
+
+## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[RANCANGAN BARU]`
+
+> **Tanggal Rancangan:** 5 Oktober 2026
+> **Pelaksana:** Agent Frontend/Mobile (repo `sista-android`). Pasangannya di backend: **FASE 119** di `sistem-terpadu/implementation_plan.md`.
+> **Prioritas:** P0. Kerjakan sebelum fitur baru apa pun.
+> **Prinsip:** Setiap layar harus dipakai siswa, ortu, guru, atau staf SMA Islam Sultan Agung 1 secara rutin. Kalau tidak, layarnya dihapus.
+
+### 78.0: Keputusan Pemilik Produk (5 Okt 2026)
+
+| Topik | Keputusan |
+|---|---|
+| Status produksi | Belum rilis, belum ada pengguna. Layar dan kode **dihapus permanen**, bukan disembunyikan |
+| Presensi siswa | **Hanya QR per mapel** (`StudentSessionQrScan`, FASE 77). Hapus GPS/geofence, QR identitas dinamis, dan pendaftaran wajah |
+| Presensi guru/karyawan | Memakai mesin sidik jari di sekolah. Aplikasi **tidak** menyediakan check-in pegawai |
+| Gamifikasi | Gimmick, hapus seluruhnya |
+| Pendidikan inklusi | Dipertahankan di backend (di bawah BK). Belum ada layar Android, jadi tidak perlu ditambah sekarang |
+
+### 78.1: Layar yang DIHAPUS
+
+Hapus layar beserta ViewModel, repository/API service, model, entri `Screen`, rute navigasi, entri `FeatureCatalog` (dan kunci kapabilitasnya), string di **tiga bahasa** (`values`, `values-en`, `values-ar`), screenshot Roborazzi, test, serta entri `debt`/`allowed` di test arsitektur yang menunjuk ke file terhapus.
+
+| Layar | Kunci kapabilitas | Alasan |
+|---|---|---|
+| `GeofenceAttendanceScreen` | `attendance.gps` | Presensi siswa cukup QR per mapel |
+| `DynamicQrScreen` | `attendance.id_qr` | QR gerbang tidak dipakai |
+| `FaceEnrollmentScreen`, rute `Screen.FaceBiometric` | `attendance.face_enroll` | Tidak dipakai, dan data biometrik wajah anak di bawah umur berisiko besar (UU PDP) |
+| `AiTutorScreen` | `student.ai_tutor` | Gimmick, butuh biaya API LLM bulanan |
+| rute `Screen.AiEssayGrader` + komposabelnya | `student.ai_essay` | Gimmick, penilaian tetap oleh guru |
+| `GamificationDashboardScreen`, `LeaderboardScreen`, `BadgeCollectionScreen` | `student.gamification` | Gimmick, tujuan tidak jelas |
+| `DocumentScannerScreen` | `documents.scan` | Tidak ada alur administrasi yang membutuhkannya |
+| `SignatureScreen` (`DigitalSignature`) | `documents.signature` | Sama |
+| `ExecutiveAnalyticsScreen` | `admin.executive` | Analitik pimpinan cukup di web |
+| `DiagnosticReportScreen` | — | Tidak berguna bagi pengguna sekolah |
+| `QrScannerScreen` mode identitas | `scanner.identity` | QR identitas dihapus. **Mode acara (`scanner.event`) tetap** |
+
+Ikut dihapus:
+- Permission `ACCESS_FINE_LOCATION` dan `ACCESS_COARSE_LOCATION` di `AndroidManifest.xml`, serta dependensi `play-services-location` (bila tidak ada pemakai lain).
+- Test E2E `e2e/.../AttendanceGpsFlowE2ETest.kt` dan bagian `AppiumTestBase` yang khusus GPS.
+- **Tetap dipertahankan:** `USE_BIOMETRIC` (buka kunci login dengan sidik jari HP), `CAMERA` (scan QR), dan `RECORD_AUDIO` (Tahsin).
+
+### 78.2: Layar yang DIUBAH
+
+- **`AntiBullyingSosScreen`** (status sekarang `NOT_READY`) diubah menjadi form sederhana **"Lapor Perundungan"**: isi kejadian, waktu, tempat, opsi anonim, lalu kirim ke endpoint lapor perundungan dari FASE 119 PR 4. Tanpa tombol SOS, tanpa lokasi GPS. Tampilkan pesan server apa adanya. Screenshot: kosong, terisi, terkirim, error. Layar ini hanya diaktifkan setelah endpoint backend ada (CLAUDE.md aturan 2).
+- **Menu presensi siswa** di Home/ServicesHub: satu pintu saja, "Scan QR Kelas" (`StudentSessionQrScan`).
+- **Widget:** `AttendanceWidgetProvider` dipertahankan bila datanya dari presensi QR per mapel. Hapus bagian yang bergantung pada GPS bila ada.
+
+### 78.3: Fitur yang DIPERTAHANKAN (inti)
+
+- **Siswa:** jadwal, scan QR kelas, nilai, rapor, remedial, CBT, e-learning (materi & tugas), tagihan, perpustakaan, kalender & acara, BK, riwayat UKS, kedisiplinan, ekstrakurikuler, prestasi, Mutabaah, Tahsin, pengumuman, notifikasi.
+- **Orang tua:** dashboard anak, detail & progres anak, aktivitas anak, chat dengan wali kelas, tagihan anak, pengumuman.
+- **Guru:** sesi kelas hari ini & QR sesi, presensi kelas, jurnal mengajar, penilaian harian & input nilai, remedial, bank soal & buat ujian, pengawas CBT, chat ortu, review Tahsin.
+- **BK/UKS/Admin:** dasbor konseling, form sesi konseling, kunjungan UKS, manajemen sesi kelas & koreksi presensi.
+- **Umum:** login, profil, pengaturan (bahasa, keamanan, notifikasi), SPMB, PDF viewer & riwayat unduhan, update in-app.
+- `AccessibilitySettings` digabung ke halaman Pengaturan, tidak berdiri sendiri.
+
+### 78.4: Menunggu Keputusan Pemilik Produk (jangan disentuh di FASE 78)
+
+- `UtbkTryOutScreen` (tryout UTBK + rekomendasi PTN).
+- `TeacherEvaluationScreen` (evaluasi guru oleh siswa).
+- `PrayerTimeWidgetProvider` (widget jadwal sholat).
+
+### 78.5: Urutan & Koordinasi dengan Backend
+
+1. **PR A (Android duluan):** hapus layar 78.1. Pastikan aplikasi mengabaikan kunci kapabilitas yang tidak dikenal dari server (cek `FeatureCatalog`/`CapabilitiesRepository`), supaya urutan merge dengan backend tidak membuat crash.
+2. **Backend FASE 119 PR 3** menghapus endpoint pemakainya setelah PR A di-merge. Tautkan kedua PR satu sama lain.
+3. **PR B:** ubah `AntiBullyingSosScreen` menjadi "Lapor Perundungan" setelah endpoint FASE 119 PR 4 tersedia.
+
+### 78.6: Kriteria Selesai
+
+- [ ] `./gradlew assembleDebug testDebugUnitTest lintDebug` hijau, screenshot Roborazzi direkam ulang dan di-commit.
+- [ ] Tidak ada lagi kelas, string, atau rute untuk layar 78.1. `LocalizationTest` dan `HardcodedUiTextTest` hijau, dan daftar `debt` ikut menyusut.
+- [ ] `FeatureCatalogTest` hijau tanpa kunci yang dihapus.
+- [ ] APK tidak lagi meminta izin lokasi.
+- [ ] Bagian ini diperbarui menjadi `[SELESAI]` dengan angka sebelum/sesudah: jumlah layar, baris kode `src/main`, dan ukuran APK debug.
