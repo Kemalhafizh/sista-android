@@ -42,10 +42,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.feature.teacher.R
 
 /**
  * Teacher-authored online exam (ulangan harian), created on the server with
@@ -105,51 +104,35 @@ fun TeacherCreateExamScreen(
 
     LaunchedEffect(uiState.imageError) {
         uiState.imageError?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(message.resolve(context))
             viewModel.onImageErrorShown()
         }
     }
 
     Scaffold(
         topBar = {
-            SulaoneTopBar(
-                title = "Buat Ulangan Daring",
-                subtitle = "Soal pilihan ganda • diterbitkan ke server",
-                onNavigateBack = requestLeave
+            SistaTopBar(
+                title = stringResource(R.string.ce_title),
+                subtitle = stringResource(R.string.ce_subtitle),
+                onBack = requestLeave
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            ExamInfoSection(
-                uiState = uiState,
+        TeacherCreateExamForm(
+            uiState = uiState,
+            showLivePreview = showLivePreview,
+            onToggleLivePreview = { showLivePreview = !showLivePreview },
+            actions = CreateExamActions(
                 onTitleChange = viewModel::updateTitle,
                 onChoiceSelected = viewModel::selectChoice,
                 onRetryChoices = viewModel::loadClassChoices,
                 onDurationChange = viewModel::updateDuration,
-                onPassingScoreChange = viewModel::updatePassingScore
-            )
-
-            ExamRulesSection(
-                uiState = uiState,
+                onPassingScoreChange = viewModel::updatePassingScore,
                 onMobileOnlyChange = viewModel::setMobileOnly,
                 onMaxViolationsChange = viewModel::setMaxViolations,
                 onShuffleQuestionsChange = viewModel::setShuffleQuestions,
-                onShuffleOptionsChange = viewModel::setShuffleOptions
-            )
-
-            QuestionsSection(
-                uiState = uiState,
-                showLivePreview = showLivePreview,
-                onToggleLivePreview = { showLivePreview = !showLivePreview },
+                onShuffleOptionsChange = viewModel::setShuffleOptions,
                 onSelectQuestion = viewModel::selectQuestion,
                 onAddQuestion = viewModel::addQuestion,
                 onRemoveQuestion = viewModel::removeQuestion,
@@ -160,24 +143,20 @@ fun TeacherCreateExamScreen(
                 onRemoveLastOption = viewModel::removeLastOption,
                 onPickImage = pickImageFor,
                 onRetryImage = viewModel::retryImageUpload,
-                onRemoveImage = viewModel::removeImage
-            )
-
-            PublishSection(
-                uiState = uiState,
+                onRemoveImage = viewModel::removeImage,
                 onPublish = viewModel::publish,
                 onDismissSubmitError = viewModel::dismissSubmitError,
-                onIssueClick = { index -> viewModel.selectQuestion(index) }
-            )
-        }
+            ),
+            modifier = Modifier.padding(paddingValues),
+        )
     }
 
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
             icon = { Icon(Icons.Default.WarningAmber, contentDescription = null, tint = AccentAmber) },
-            title = { Text("Buang draf ujian?") },
-            text = { Text("Ujian ini belum diterbitkan. Soal dan pengaturan yang sudah Anda isi akan hilang.") },
+            title = { Text(stringResource(R.string.ce_discard_title)) },
+            text = { Text(stringResource(R.string.ce_discard_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -185,10 +164,10 @@ fun TeacherCreateExamScreen(
                         onNavigateBack()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = AccentRose)
-                ) { Text("Buang Draf") }
+                ) { Text(stringResource(R.string.ce_discard)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false }) { Text("Lanjut Menyusun") }
+                TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.ce_keep_editing)) }
             }
         )
     }
@@ -198,6 +177,92 @@ fun TeacherCreateExamScreen(
             exam = exam,
             onOpenProctor = { onExamCreated(exam.examId) },
             onDone = onNavigateBack
+        )
+    }
+}
+
+/** Every edit the form can make; the screen wires them to [TeacherCreateExamViewModel]. */
+data class CreateExamActions(
+    val onTitleChange: (String) -> Unit = {},
+    val onChoiceSelected: (ExamClassChoice) -> Unit = {},
+    val onRetryChoices: () -> Unit = {},
+    val onDurationChange: (String) -> Unit = {},
+    val onPassingScoreChange: (String) -> Unit = {},
+    val onMobileOnlyChange: (Boolean) -> Unit = {},
+    val onMaxViolationsChange: (Int) -> Unit = {},
+    val onShuffleQuestionsChange: (Boolean) -> Unit = {},
+    val onShuffleOptionsChange: (Boolean) -> Unit = {},
+    val onSelectQuestion: (Int) -> Unit = {},
+    val onAddQuestion: () -> Unit = {},
+    val onRemoveQuestion: (Int) -> Unit = {},
+    val onQuestionTextChange: (String, String) -> Unit = { _, _ -> },
+    val onCorrectKeySelected: (String, String) -> Unit = { _, _ -> },
+    val onOptionTextChange: (String, String, String) -> Unit = { _, _, _ -> },
+    val onAddOption: (String) -> Unit = {},
+    val onRemoveLastOption: (String) -> Unit = {},
+    val onPickImage: (ImageTarget) -> Unit = {},
+    val onRetryImage: (ImageTarget) -> Unit = {},
+    val onRemoveImage: (ImageTarget) -> Unit = {},
+    val onPublish: () -> Unit = {},
+    val onDismissSubmitError: () -> Unit = {},
+)
+
+/** The exam form without a ViewModel or top bar, for previews and screenshots. */
+@Composable
+fun TeacherCreateExamForm(
+    uiState: TeacherCreateExamUiState,
+    showLivePreview: Boolean,
+    onToggleLivePreview: () -> Unit,
+    actions: CreateExamActions,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        ExamInfoSection(
+            uiState = uiState,
+            onTitleChange = actions.onTitleChange,
+            onChoiceSelected = actions.onChoiceSelected,
+            onRetryChoices = actions.onRetryChoices,
+            onDurationChange = actions.onDurationChange,
+            onPassingScoreChange = actions.onPassingScoreChange
+        )
+
+        ExamRulesSection(
+            uiState = uiState,
+            onMobileOnlyChange = actions.onMobileOnlyChange,
+            onMaxViolationsChange = actions.onMaxViolationsChange,
+            onShuffleQuestionsChange = actions.onShuffleQuestionsChange,
+            onShuffleOptionsChange = actions.onShuffleOptionsChange
+        )
+
+        QuestionsSection(
+            uiState = uiState,
+            showLivePreview = showLivePreview,
+            onToggleLivePreview = onToggleLivePreview,
+            onSelectQuestion = actions.onSelectQuestion,
+            onAddQuestion = actions.onAddQuestion,
+            onRemoveQuestion = actions.onRemoveQuestion,
+            onQuestionTextChange = actions.onQuestionTextChange,
+            onCorrectKeySelected = actions.onCorrectKeySelected,
+            onOptionTextChange = actions.onOptionTextChange,
+            onAddOption = actions.onAddOption,
+            onRemoveLastOption = actions.onRemoveLastOption,
+            onPickImage = actions.onPickImage,
+            onRetryImage = actions.onRetryImage,
+            onRemoveImage = actions.onRemoveImage
+        )
+
+        PublishSection(
+            uiState = uiState,
+            onPublish = actions.onPublish,
+            onDismissSubmitError = actions.onDismissSubmitError,
+            onIssueClick = actions.onSelectQuestion
         )
     }
 }
@@ -214,14 +279,14 @@ private fun ExamInfoSection(
     onPassingScoreChange: (String) -> Unit
 ) {
     SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-        SectionHeader(icon = Icons.Default.Assignment, title = "1. Informasi Ujian")
+        SectionHeader(icon = Icons.Default.Assignment, title = stringResource(R.string.ce_section_info))
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = uiState.title,
             onValueChange = onTitleChange,
-            label = { Text("Nama Ujian") },
-            placeholder = { Text("Contoh: Ulangan Harian Bab 3") },
+            label = { Text(stringResource(R.string.ce_name)) },
+            placeholder = { Text(stringResource(R.string.ce_name_hint)) },
             singleLine = true,
             enabled = !uiState.isSubmitting,
             modifier = Modifier.fillMaxWidth(),
@@ -239,23 +304,22 @@ private fun ExamInfoSection(
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Emerald700)
                 Spacer(modifier = Modifier.width(10.dp))
-                Text("Memuat jadwal mengajar Anda…", style = MaterialTheme.typography.bodySmall, color = Slate600)
+                Text(stringResource(R.string.ce_loading_schedule), style = MaterialTheme.typography.bodySmall, color = Slate600)
             }
 
             uiState.choicesError != null -> SulaoneErrorBanner(
-                message = "Jadwal mengajar gagal dimuat: ${uiState.choicesError}",
+                message = stringResource(R.string.ce_schedule_failed, uiState.choicesError),
                 onRetry = onRetryChoices
             )
 
             uiState.classChoices.isEmpty() -> InfoNote(
                 icon = Icons.Default.EventBusy,
-                text = "Belum ada jadwal mengajar yang tercatat untuk akun Anda, jadi mata pelajaran & kelas " +
-                    "belum bisa dipilih. Minta bagian kurikulum menambahkan jadwal Anda, lalu buka layar ini lagi.",
+                text = stringResource(R.string.ce_no_schedule),
                 tint = AccentAmber
             )
 
             else -> {
-                val labels = remember(uiState.classChoices) { choiceLabels(uiState.classChoices) }
+                val labels = choiceLabels(uiState.classChoices.map { classChoiceLabel(it) }, uiState.classChoices)
                 SulaoneDropdown(
                     selectedValue = uiState.selectedChoice
                         ?.let { selected -> labels.getOrNull(uiState.classChoices.indexOf(selected)) }
@@ -264,8 +328,8 @@ private fun ExamInfoSection(
                         uiState.classChoices.getOrNull(labels.indexOf(label))?.let(onChoiceSelected)
                     },
                     options = labels,
-                    label = "Mata Pelajaran & Kelas",
-                    placeholder = "Pilih dari jadwal mengajar Anda",
+                    label = stringResource(R.string.ce_class),
+                    placeholder = stringResource(R.string.ce_class_hint),
                     enabled = !uiState.isSubmitting,
                     searchEnabled = labels.size > 6
                 )
@@ -281,7 +345,7 @@ private fun ExamInfoSection(
             OutlinedTextField(
                 value = uiState.durationMinutes,
                 onValueChange = onDurationChange,
-                label = { Text("Durasi (menit)") },
+                label = { Text(stringResource(R.string.ce_duration)) },
                 placeholder = { Text("${TeacherCreateExamViewModel.MIN_DURATION}–${TeacherCreateExamViewModel.MAX_DURATION}") },
                 singleLine = true,
                 enabled = !uiState.isSubmitting,
@@ -292,7 +356,7 @@ private fun ExamInfoSection(
             OutlinedTextField(
                 value = uiState.passingScore,
                 onValueChange = onPassingScoreChange,
-                label = { Text("KKTP") },
+                label = { Text(stringResource(R.string.ce_passing)) },
                 placeholder = { Text("0–100") },
                 singleLine = true,
                 enabled = !uiState.isSubmitting,
@@ -306,8 +370,7 @@ private fun ExamInfoSection(
 
         InfoNote(
             icon = Icons.Default.Schedule,
-            text = "Ujian langsung dibuka setelah diterbitkan dan tersedia selama 7 hari. Token masuk " +
-                "diterbitkan oleh server dan berganti tiap 5 menit — tampilkan dari Ruang Pengawas."
+            text = stringResource(R.string.ce_info_note)
         )
     }
 }
@@ -324,12 +387,12 @@ private fun ExamRulesSection(
 ) {
     val enabled = !uiState.isSubmitting
     SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-        SectionHeader(icon = Icons.Default.Security, title = "2. Aturan Pengerjaan", tint = AccentRose)
+        SectionHeader(icon = Icons.Default.Security, title = stringResource(R.string.ce_section_rules), tint = AccentRose)
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingSwitchRow(
-            title = "Khusus aplikasi HP",
-            description = "Siswa hanya bisa mengerjakan lewat aplikasi Sulaone; akses dari browser ditolak server.",
+            title = stringResource(R.string.ce_mobile_only),
+            description = stringResource(R.string.ce_mobile_only_body),
             checked = uiState.mobileOnly,
             enabled = enabled,
             onCheckedChange = onMobileOnlyChange
@@ -342,10 +405,9 @@ private fun ExamRulesSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Batas pelanggaran", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(stringResource(R.string.ce_violations), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(
-                    "Keluar dari aplikasi atau membuka split-screen dihitung pelanggaran. Saat batas ini " +
-                        "tercapai, ujian siswa dihentikan otomatis.",
+                    stringResource(R.string.ce_violations_body),
                     fontSize = 11.sp,
                     color = Slate600
                 )
@@ -354,9 +416,9 @@ private fun ExamRulesSection(
             IconButton(
                 onClick = { onMaxViolationsChange(uiState.maxViolations - 1) },
                 enabled = enabled && uiState.maxViolations > TeacherCreateExamViewModel.MIN_VIOLATIONS
-            ) { Icon(Icons.Default.RemoveCircleOutline, contentDescription = "Kurangi batas pelanggaran") }
+            ) { Icon(Icons.Default.RemoveCircleOutline, contentDescription = stringResource(R.string.ce_violations_less)) }
             Text(
-                text = "${uiState.maxViolations}×",
+                text = stringResource(R.string.ce_violations_value, uiState.maxViolations),
                 style = MaterialTheme.typography.titleMedium.emphasized(),
                 color = Emerald800,
                 modifier = Modifier.widthIn(min = 28.dp)
@@ -364,7 +426,7 @@ private fun ExamRulesSection(
             IconButton(
                 onClick = { onMaxViolationsChange(uiState.maxViolations + 1) },
                 enabled = enabled && uiState.maxViolations < TeacherCreateExamViewModel.MAX_VIOLATIONS
-            ) { Icon(Icons.Default.AddCircleOutline, contentDescription = "Tambah batas pelanggaran") }
+            ) { Icon(Icons.Default.AddCircleOutline, contentDescription = stringResource(R.string.ce_violations_more)) }
         }
 
         SettingsDivider()
@@ -373,17 +435,16 @@ private fun ExamRulesSection(
         // (ApiStudentController::cbtExamQuestions) honor these flags with the
         // same per-student seeded order, so they apply to app-only exams too.
         SettingSwitchRow(
-            title = "Acak urutan soal",
-            description = "Tiap siswa mendapat urutan berbeda; urutannya tetap sama bila ujian dibuka ulang.",
+            title = stringResource(R.string.ce_shuffle_questions),
+            description = stringResource(R.string.ce_shuffle_questions_body),
             checked = uiState.shuffleQuestions,
             enabled = enabled,
             onCheckedChange = onShuffleQuestionsChange
         )
         SettingsDivider()
         SettingSwitchRow(
-            title = "Acak urutan pilihan jawaban",
-            description = "Posisi pilihan diacak per siswa; huruf A–E tetap melekat pada pilihan aslinya, " +
-                "jadi kunci jawaban tidak berubah.",
+            title = stringResource(R.string.ce_shuffle_options),
+            description = stringResource(R.string.ce_shuffle_options_body),
             checked = uiState.shuffleOptions,
             enabled = enabled,
             onCheckedChange = onShuffleOptionsChange
@@ -393,8 +454,7 @@ private fun ExamRulesSection(
 
         InfoNote(
             icon = Icons.Default.Shield,
-            text = "Di aplikasi siswa, blokir tangkapan layar, penguncian layar ujian, deteksi split-screen, " +
-                "serta pemeriksaan root/emulator selalu aktif untuk setiap ujian."
+            text = stringResource(R.string.ce_security_note)
         )
     }
 }
@@ -427,9 +487,9 @@ private fun QuestionsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                SectionHeader(icon = Icons.Default.EditNote, title = "3. Soal Pilihan Ganda")
+                SectionHeader(icon = Icons.Default.EditNote, title = stringResource(R.string.ce_section_questions))
                 Text(
-                    text = "Gunakan \$\$…\$\$ untuk rumus. Gambar diunggah ke server begitu dipilih.",
+                    text = stringResource(R.string.ce_questions_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = Slate600
                 )
@@ -438,7 +498,7 @@ private fun QuestionsSection(
             FilterChip(
                 selected = showLivePreview,
                 onClick = onToggleLivePreview,
-                label = { Text("Pratinjau", fontSize = 12.sp) },
+                label = { Text(stringResource(R.string.ce_preview), fontSize = 12.sp) },
                 leadingIcon = {
                     Icon(
                         imageVector = if (showLivePreview) Icons.Default.Visibility else Icons.Default.VisibilityOff,
@@ -499,7 +559,7 @@ private fun QuestionsSection(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Soal", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text(stringResource(R.string.ce_add_question), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
@@ -516,7 +576,7 @@ private fun QuestionsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Soal #${index + 1} dari ${uiState.questions.size}",
+                text = stringResource(R.string.ce_question_of, index + 1, uiState.questions.size),
                 style = MaterialTheme.typography.titleSmall.emphasized(),
                 color = Emerald800
             )
@@ -528,7 +588,7 @@ private fun QuestionsSection(
                 ) {
                     Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Hapus Soal", fontSize = 12.sp)
+                    Text(stringResource(R.string.ce_remove_question), fontSize = 12.sp)
                 }
             }
         }
@@ -538,8 +598,8 @@ private fun QuestionsSection(
         OutlinedTextField(
             value = question.text,
             onValueChange = { onQuestionTextChange(question.localId, it) },
-            label = { Text("Teks pertanyaan") },
-            placeholder = { Text("Tulis pertanyaan di sini") },
+            label = { Text(stringResource(R.string.ce_question_text)) },
+            placeholder = { Text(stringResource(R.string.ce_question_hint)) },
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
@@ -569,7 +629,7 @@ private fun QuestionsSection(
             ) {
                 Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(16.dp), tint = Emerald700)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Lampirkan gambar soal (opsional)", fontSize = 12.sp, color = Emerald700)
+                Text(stringResource(R.string.ce_attach_question_image), fontSize = 12.sp, color = Emerald700)
             }
         } else {
             DraftImageCard(
@@ -588,16 +648,16 @@ private fun QuestionsSection(
         )
 
         Text(
-            text = "Pilihan jawaban (${question.options.first().key}–${question.options.last().key})",
+            text = stringResource(R.string.ce_choices, question.options.first().key, question.options.last().key),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = Emerald800
         )
         Text(
             text = if (question.correctKey == null) {
-                "Ketuk huruf pilihan untuk menandai kunci jawaban — belum ada yang ditandai."
+                stringResource(R.string.ce_key_missing)
             } else {
-                "Kunci jawaban: ${question.correctKey}. Ketuk huruf lain untuk mengganti."
+                stringResource(R.string.ce_key_set, question.correctKey)
             },
             style = MaterialTheme.typography.bodySmall,
             color = if (question.correctKey == null) AccentAmber else Slate600
@@ -633,7 +693,7 @@ private fun QuestionsSection(
                             contentAlignment = Alignment.Center
                         ) {
                             if (isCorrect) {
-                                Icon(Icons.Default.Check, contentDescription = "Kunci jawaban ${option.key}", tint = Color.White, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.ce_key_of, option.key), tint = Color.White, modifier = Modifier.size(18.dp))
                             } else {
                                 Text(
                                     text = option.key,
@@ -648,7 +708,7 @@ private fun QuestionsSection(
                         OutlinedTextField(
                             value = option.text,
                             onValueChange = { onOptionTextChange(question.localId, option.key, it) },
-                            placeholder = { Text("Pilihan ${option.key}") },
+                            placeholder = { Text(stringResource(R.string.ce_choice, option.key)) },
                             enabled = enabled,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
@@ -658,7 +718,7 @@ private fun QuestionsSection(
                             IconButton(onClick = { onPickImage(optionTarget) }, enabled = enabled) {
                                 Icon(
                                     imageVector = Icons.Default.AddPhotoAlternate,
-                                    contentDescription = "Lampirkan gambar pilihan ${option.key}",
+                                    contentDescription = stringResource(R.string.ce_attach_choice_image, option.key),
                                     tint = Slate600
                                 )
                             }
@@ -689,7 +749,7 @@ private fun QuestionsSection(
                 TextButton(onClick = { onAddOption(question.localId) }, enabled = enabled) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Pilihan ${TeacherCreateExamViewModel.OPTION_KEYS[question.options.size]}", fontSize = 12.sp)
+                    Text(stringResource(R.string.ce_choice, TeacherCreateExamViewModel.OPTION_KEYS[question.options.size]), fontSize = 12.sp)
                 }
             }
             if (question.options.size > TeacherCreateExamViewModel.MIN_OPTIONS) {
@@ -700,7 +760,7 @@ private fun QuestionsSection(
                 ) {
                     Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Hapus pilihan ${question.options.last().key}", fontSize = 12.sp)
+                    Text(stringResource(R.string.ce_remove_choice, question.options.last().key), fontSize = 12.sp)
                 }
             }
         }
@@ -726,7 +786,7 @@ private fun QuestionPreview(question: DraftQuestion) {
                 Icon(Icons.Default.Visibility, contentDescription = null, tint = Emerald700, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Pratinjau tampilan soal",
+                    text = stringResource(R.string.ce_preview_title),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = Emerald800
@@ -735,7 +795,7 @@ private fun QuestionPreview(question: DraftQuestion) {
             Spacer(modifier = Modifier.height(8.dp))
 
             if (question.text.isBlank()) {
-                Text("(Teks pertanyaan masih kosong)", style = MaterialTheme.typography.bodyMedium, color = Slate500)
+                Text(stringResource(R.string.ce_preview_empty), style = MaterialTheme.typography.bodyMedium, color = Slate500)
             } else {
                 CbtLatexMathView(text = question.text, style = MaterialTheme.typography.bodyLarge)
             }
@@ -779,7 +839,7 @@ private fun QuestionPreview(question: DraftQuestion) {
                         }
                     }
                     if (isCorrect) {
-                        Icon(Icons.Default.Check, contentDescription = "Kunci jawaban", tint = Emerald700, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.ce_key), tint = Emerald700, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -809,32 +869,32 @@ private fun DraftImageCard(
                 image.isUploading -> {
                     CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Emerald700)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Mengunggah gambar…", style = MaterialTheme.typography.labelSmall, color = Slate600, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.ce_uploading), style = MaterialTheme.typography.labelSmall, color = Slate600, modifier = Modifier.weight(1f))
                 }
                 image.error != null -> {
                     Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = AccentRose, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Gagal diunggah: ${image.error}",
+                        text = stringResource(R.string.ce_upload_failed, image.error),
                         style = MaterialTheme.typography.labelSmall,
                         color = AccentRose,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = onRetry, enabled = enabled) { Text("Coba Lagi", fontSize = 12.sp) }
+                    TextButton(onClick = onRetry, enabled = enabled) { Text(stringResource(R.string.ce_retry), fontSize = 12.sp) }
                 }
                 else -> {
                     Icon(Icons.Default.CloudDone, contentDescription = null, tint = AccentGreen, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Tersimpan di server", style = MaterialTheme.typography.labelSmall, color = AccentGreen, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.ce_uploaded), style = MaterialTheme.typography.labelSmall, color = AccentGreen, modifier = Modifier.weight(1f))
                 }
             }
             if (!image.isUploading) {
                 IconButton(onClick = onReplace, enabled = enabled) {
-                    Icon(Icons.Default.SwapHoriz, contentDescription = "Ganti gambar", tint = Slate600)
+                    Icon(Icons.Default.SwapHoriz, contentDescription = stringResource(R.string.ce_replace_image), tint = Slate600)
                 }
             }
             IconButton(onClick = onRemove, enabled = enabled) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = "Hapus gambar", tint = AccentRose)
+                Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.ce_remove_image), tint = AccentRose)
             }
         }
     }
@@ -860,7 +920,7 @@ private fun PublishSection(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = "Perbaiki ${issues.size} hal sebelum menerbitkan:",
+                    text = stringResource(R.string.ce_fix_count, issues.size),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = AccentRose
@@ -869,7 +929,7 @@ private fun PublishSection(
                 issues.forEach { issue ->
                     val questionIndex = issue.questionIndex
                     Text(
-                        text = "• ${issue.message}",
+                        text = "• ${issue.message.asString()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
@@ -903,11 +963,11 @@ private fun PublishSection(
                 Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = AccentRose, modifier = Modifier.size(22.dp))
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Ujian belum diterbitkan", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = AccentRose)
+                    Text(stringResource(R.string.ce_not_published), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = AccentRose)
                     Text(message, style = MaterialTheme.typography.bodySmall, color = AccentRose)
                 }
                 IconButton(onClick = onDismissSubmitError, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Tutup pesan", tint = AccentRose, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.ce_close_message), tint = AccentRose, modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -921,9 +981,9 @@ private fun PublishSection(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-            Text("Ringkasan", style = MaterialTheme.typography.labelSmall, color = Slate600)
+            Text(stringResource(R.string.ce_summary), style = MaterialTheme.typography.labelSmall, color = Slate600)
             Text(
-                text = "$questionCount soal • $duration menit • ${uiState.selectedChoice?.label ?: "kelas belum dipilih"}",
+                text = stringResource(R.string.ce_summary_line, questionCount, duration, uiState.selectedChoice?.let { classChoiceLabel(it) } ?: stringResource(R.string.ce_no_class)),
                 fontWeight = FontWeight.Bold,
                 color = Emerald900
             )
@@ -943,13 +1003,13 @@ private fun PublishSection(
             uiState.isSubmitting -> {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
                 Spacer(modifier = Modifier.width(10.dp))
-                Text("Menerbitkan ke server…", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.ce_publishing), fontWeight = FontWeight.Bold)
             }
-            uiState.isUploadingAnyImage -> Text("Menunggu gambar selesai diunggah…", fontWeight = FontWeight.Bold)
+            uiState.isUploadingAnyImage -> Text(stringResource(R.string.ce_waiting_images), fontWeight = FontWeight.Bold)
             else -> {
                 Icon(imageVector = Icons.Default.Publish, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Terbitkan Ujian", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.ce_publish), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -966,23 +1026,23 @@ private fun ExamCreatedDialog(
         // The exam already exists on the server; make the teacher pick where to go next.
         onDismissRequest = {},
         icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AccentGreen, modifier = Modifier.size(44.dp)) },
-        title = { Text("Ujian diterbitkan") },
+        title = { Text(stringResource(R.string.ce_published)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(exam.title, fontWeight = FontWeight.Bold)
                 listOfNotNull(exam.subject, exam.classroom).takeIf { it.isNotEmpty() }?.let {
                     Text(it.joinToString(" • "), color = Slate600)
                 }
-                Text("${exam.totalQuestions} soal • ${exam.durationMinutes} menit", color = Slate600)
-                formatCreatedExamTime(exam.endTime)?.let {
-                    Text("Dapat dikerjakan sampai $it", color = Slate600)
+                Text(stringResource(R.string.ce_published_meta, exam.totalQuestions, exam.durationMinutes), color = Slate600)
+                ProctorFormat.examTime(exam.endTime)?.let {
+                    Text(stringResource(R.string.ce_available_until, it), color = Slate600)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = if (exam.canViewToken) {
-                        "Token masuk diterbitkan server dan berganti tiap 5 menit. Buka Ruang Pengawas untuk menampilkannya kepada siswa."
+                        stringResource(R.string.ce_token_note)
                     } else {
-                        "Akun Anda tidak berwenang melihat token ujian ini. Token dibagikan oleh pengawas yang ditunjuk."
+                        stringResource(R.string.ce_token_not_allowed)
                     },
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -993,16 +1053,16 @@ private fun ExamCreatedDialog(
                 Button(
                     onClick = onOpenProctor,
                     colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
-                ) { Text("Buka Ruang Pengawas") }
+                ) { Text(stringResource(R.string.ce_open_proctor)) }
             } else {
                 Button(
                     onClick = onDone,
                     colors = ButtonDefaults.buttonColors(containerColor = Emerald700)
-                ) { Text("Selesai") }
+                ) { Text(stringResource(R.string.ce_done)) }
             }
         },
         dismissButton = if (exam.canViewToken) {
-            { TextButton(onClick = onDone) { Text("Selesai") } }
+            { TextButton(onClick = onDone) { Text(stringResource(R.string.ce_done)) } }
         } else {
             null
         }
@@ -1086,12 +1146,21 @@ private fun InfoNote(
  * subject and class names under different ids; those get their ids appended
  * so every label maps back to exactly one choice.
  */
-private fun choiceLabels(choices: List<ExamClassChoice>): List<String> {
-    val duplicated = choices.groupingBy { it.label }.eachCount().filterValues { it > 1 }.keys
-    return choices.map { choice ->
-        if (choice.label in duplicated) "${choice.label} (#${choice.subjectId}/#${choice.classroomId})" else choice.label
+private fun choiceLabels(labels: List<String>, choices: List<ExamClassChoice>): List<String> {
+    val duplicated = labels.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+    return labels.mapIndexed { index, label ->
+        val choice = choices[index]
+        if (label in duplicated) "$label (#${choice.subjectId}/#${choice.classroomId})" else label
     }
 }
+
+/** "Fisika · XI MIPA 2"; a name the schedule left empty is shown by its id. */
+@Composable
+private fun classChoiceLabel(choice: ExamClassChoice): String =
+    listOf(
+        choice.subjectName ?: stringResource(R.string.ce_subject_number, choice.subjectId),
+        choice.classroomName ?: stringResource(R.string.ce_class_number, choice.classroomId),
+    ).joinToString(" · ")
 
 /**
  * Reads a picked image off the main thread. Stops one byte past the server's
@@ -1125,15 +1194,4 @@ private fun readImageAttachment(context: Context, uri: Uri): CbtImageAttachment 
         else -> "jpg"
     }
     return CbtImageAttachment(bytes = bytes, mimeType = mimeType, fileName = "soal-${System.currentTimeMillis()}.$extension")
-}
-
-private val createdExamTimeFormatter = DateTimeFormatter.ofPattern("EEEE, d MMM yyyy • HH:mm", Locale("id", "ID"))
-
-private fun formatCreatedExamTime(iso: String?): String? {
-    if (iso.isNullOrBlank()) return null
-    return try {
-        OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).format(createdExamTimeFormatter)
-    } catch (e: Exception) {
-        null
-    }
 }

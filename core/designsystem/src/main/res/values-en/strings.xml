@@ -47,4 +47,29 @@
     <string name="cs_scan_ended">The class has ended. Ask the vice principal for curriculum or the school office for a correction.</string>
     <string name="cs_scan_not_started">The teacher hasn\'t started this class yet. Try again once it starts.</string>
     <string name="cs_override_not_allowed">This status change isn\'t allowed. A recorded presence can\'t be changed to absent.</string>
+
+    <!-- Toolbar rumus LaTeX -->
+    <string name="lx_fraction">Fraction</string>
+    <string name="lx_sqrt">Square root</string>
+    <string name="lx_power">Power</string>
+    <string name="lx_subscript">Subscript</string>
+    <string name="lx_integral">Integral</string>
+    <string name="lx_sum">Summation</string>
+    <string name="lx_limit">Limit</string>
+    <string name="lx_matrix">2×2 matrix</string>
+    <string name="lx_alpha">Alpha</string>
+    <string name="lx_beta">Beta</string>
+    <string name="lx_theta">Theta</string>
+    <string name="lx_pi">Pi</string>
+    <string name="lx_delta">Delta</string>
+    <string name="lx_lambda">Lambda</string>
+    <string name="lx_arrow">Reaction arrow</string>
+    <string name="lx_equilibrium">Equilibrium</string>
+    <string name="lx_plusminus">Plus-minus</string>
+    <string name="lx_infinity">Infinity</string>
+    <string name="lx_le">Less than or equal to</string>
+    <string name="lx_ge">Greater than or equal to</string>
+    <string name="lx_degree">Degree</string>
+    <string name="lx_title">Formula shortcuts (LaTeX):</string>
+    <string name="lx_hint">(tap to insert at the cursor)</string>
 </resources>

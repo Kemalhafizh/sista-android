@@ -6,7 +6,9 @@ import com.sultanagung1.sista.data.model.CbtApiEnvelope
 import com.sultanagung1.sista.data.model.CbtImageAttachment
 import com.sultanagung1.sista.data.model.TeacherCreatedExam
 import com.sultanagung1.sista.data.model.TeacherScheduleSlot
+import com.sultanagung1.sista.core.ui.text.UiText
 import com.sultanagung1.sista.data.repository.CbtRepository
+import com.sultanagung1.sista.feature.teacher.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -52,17 +54,18 @@ class TeacherCreateExamTest {
 
     @Test
     fun blankFormReportsEveryMissingPieceInsteadOfPublishingSampleData() {
+        // Messages are string resources worded in the app's language (strings.xml id/en/ar).
         val messages = vm.validate(TeacherCreateExamUiState()).map { it.message }
 
-        assertTrue(messages.contains("Nama ujian wajib diisi."))
-        assertTrue(messages.contains("Pilih mata pelajaran & kelas dari jadwal mengajar Anda."))
-        assertTrue(messages.any { it.startsWith("Durasi ujian harus") })
-        assertTrue(messages.contains("KKTP harus berupa angka 0–100."))
-        assertTrue(messages.contains("Soal #1: teks pertanyaan masih kosong."))
+        assertTrue(messages.contains(UiText.Res(R.string.ce_err_name)))
+        assertTrue(messages.contains(UiText.Res(R.string.ce_err_class)))
+        assertTrue(messages.contains(UiText.Res(R.string.ce_err_duration, vm.MIN_DURATION, vm.MAX_DURATION)))
+        assertTrue(messages.contains(UiText.Res(R.string.ce_err_passing)))
+        assertTrue(messages.contains(UiText.Res(R.string.ce_err_question_text, 1)))
         // No answer key is pre-marked: the old screen defaulted to "A".
-        assertTrue(messages.contains("Soal #1: tandai kunci jawaban yang benar."))
+        assertTrue(messages.contains(UiText.Res(R.string.ce_err_question_key, 1)))
         listOf("A", "B", "C", "D", "E").forEach { key ->
-            assertTrue(messages.contains("Soal #1: pilihan $key belum diisi (teks atau gambar)."))
+            assertTrue(messages.contains(UiText.Res(R.string.ce_err_choice_empty, 1, key)))
         }
     }
 
@@ -70,12 +73,13 @@ class TeacherCreateExamTest {
     fun durationAndPassingScoreFollowServerBounds() {
         fun issuesFor(duration: String, passing: String) =
             vm.validate(completeState().copy(durationMinutes = duration, passingScore = passing)).map { it.message }
+        val durationIssue = UiText.Res(R.string.ce_err_duration, vm.MIN_DURATION, vm.MAX_DURATION)
 
-        assertTrue(issuesFor("4", "75").any { it.startsWith("Durasi") })
-        assertTrue(issuesFor("301", "75").any { it.startsWith("Durasi") })
+        assertTrue(issuesFor("4", "75").contains(durationIssue))
+        assertTrue(issuesFor("301", "75").contains(durationIssue))
         assertTrue(issuesFor("5", "75").isEmpty())
         assertTrue(issuesFor("300", "75").isEmpty())
-        assertTrue(issuesFor("60", "100.5").any { it.startsWith("KKTP") })
+        assertTrue(issuesFor("60", "100.5").contains(UiText.Res(R.string.ce_err_passing)))
         assertTrue(issuesFor("60", "0").isEmpty())
         assertTrue(issuesFor("60", "72.5").isEmpty())
     }
@@ -96,11 +100,8 @@ class TeacherCreateExamTest {
         val failed = completeQuestion().copy(image = DraftImage("content://img/2", error = "Gagal"))
         val issues = vm.validate(completeState().copy(questions = listOf(uploading, failed)))
 
-        assertEquals(ValidationIssue("Soal #1: gambar masih diunggah, tunggu sebentar.", 0), issues[0])
-        assertEquals(
-            ValidationIssue("Soal #2: ada gambar yang gagal diunggah — coba lagi atau hapus gambarnya.", 1),
-            issues[1]
-        )
+        assertEquals(ValidationIssue(UiText.Res(R.string.ce_err_image_uploading, 1), 0), issues[0])
+        assertEquals(ValidationIssue(UiText.Res(R.string.ce_err_image_failed, 2), 1), issues[1])
         assertEquals(setOf(0, 1), completeState().copy(questions = listOf(uploading, failed), showValidation = true).questionsWithIssues)
     }
 
@@ -210,7 +211,11 @@ class TeacherCreateExamTest {
             )
         )
 
-        assertEquals(listOf("Biologi • XI IPA 2", "Fisika • XI IPA 2", "Mapel #9 • Kelas #14"), choices.map { it.label })
+        // A name the schedule left empty stays null (the screen shows "Mapel #9"), not a made-up name.
+        assertEquals(
+            listOf(Triple("Biologi", "XI IPA 2", 3L), Triple("Fisika", "XI IPA 2", 7L), Triple(null, null, 9L)),
+            choices.map { Triple(it.subjectName, it.classroomName, it.subjectId) },
+        )
         assertTrue(vm.classChoicesFrom(emptyList()).isEmpty())
     }
 
@@ -225,7 +230,7 @@ class TeacherCreateExamTest {
         assertNotNull(vm.imageRejectionReason(attachment(0, "image/png")))
         assertNull(vm.imageRejectionReason(attachment((10 * 1024 * 1024), "image/webp")))
         assertEquals(
-            "Ukuran gambar melebihi 10 MB.",
+            UiText.Res(R.string.ce_img_size),
             vm.imageRejectionReason(attachment(10 * 1024 * 1024 + 1, "image/webp"))
         )
     }
@@ -242,21 +247,21 @@ class TeacherCreateExamTest {
         """.trimIndent()
         assertEquals(
             "Kolom judul wajib diisi.\nKunci jawaban soal #1 harus salah satu pilihan.",
-            CbtRepository.describeServerError(422, body, null, "Gagal menerbitkan ujian")
+            CbtRepository.describeServerError(422, body, null)
         )
     }
 
     @Test
-    fun otherServerErrorsGetAReadableMessage() {
-        assertEquals(
-            "Akun ini tidak berwenang melakukan tindakan ini.",
-            CbtRepository.describeServerError(403, """{"message":"This action is unauthorized."}""", null, "Gagal")
-        )
+    fun otherServerErrorsUseTheServerWordsOrLeaveItToTheApp() {
+        // Laravel's untranslated default and an HTML error page are not shown; the
+        // repository then words the status in the app's language (FallbackMessages).
+        assertNull(CbtRepository.describeServerError(403, """{"message":"This action is unauthorized."}""", null))
+        assertNull(CbtRepository.describeServerError(500, "<html>", null))
+        assertNull(CbtRepository.describeServerError(401, """{"message":"Unauthenticated."}""", null))
         assertEquals(
             "Tidak ada tahun ajaran aktif.",
-            CbtRepository.describeServerError(422, """{"success":false,"message":"Tidak ada tahun ajaran aktif."}""", null, "Gagal")
+            CbtRepository.describeServerError(422, """{"success":false,"message":"Tidak ada tahun ajaran aktif."}""", null)
         )
-        assertEquals("Gagal menerbitkan ujian (kode 500).", CbtRepository.describeServerError(500, "<html>", null, "Gagal menerbitkan ujian"))
     }
 
     // --- source guard ---------------------------------------------------------------------

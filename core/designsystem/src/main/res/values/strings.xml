@@ -47,4 +47,29 @@
     <string name="cs_scan_ended">Sesi kelas sudah selesai. Minta koreksi ke Waka Kurikulum/TU.</string>
     <string name="cs_scan_not_started">Sesi kelas ini belum dimulai guru. Coba lagi setelah guru memulai kelas.</string>
     <string name="cs_override_not_allowed">Perubahan status ini tidak diizinkan. Kehadiran yang sudah tercatat tidak bisa diubah menjadi alpha.</string>
+
+    <!-- Toolbar rumus LaTeX -->
+    <string name="lx_fraction">Pecahan</string>
+    <string name="lx_sqrt">Akar kuadrat</string>
+    <string name="lx_power">Pangkat</string>
+    <string name="lx_subscript">Subskrip</string>
+    <string name="lx_integral">Integral</string>
+    <string name="lx_sum">Sigma penjumlahan</string>
+    <string name="lx_limit">Limit</string>
+    <string name="lx_matrix">Matriks 2×2</string>
+    <string name="lx_alpha">Alfa</string>
+    <string name="lx_beta">Beta</string>
+    <string name="lx_theta">Theta</string>
+    <string name="lx_pi">Pi</string>
+    <string name="lx_delta">Delta</string>
+    <string name="lx_lambda">Lambda</string>
+    <string name="lx_arrow">Panah reaksi</string>
+    <string name="lx_equilibrium">Reaksi kesetimbangan</string>
+    <string name="lx_plusminus">Plus minus</string>
+    <string name="lx_infinity">Tak hingga</string>
+    <string name="lx_le">Kurang dari atau sama dengan</string>
+    <string name="lx_ge">Lebih dari atau sama dengan</string>
+    <string name="lx_degree">Derajat</string>
+    <string name="lx_title">Pintasan rumus (LaTeX):</string>
+    <string name="lx_hint">(ketuk untuk menyisipkan di kursor)</string>
 </resources>

@@ -40,4 +40,11 @@
     <string name="question_bank_load_failed">Bank soal belum bisa dimuat (kode %1$d).</string>
     <string name="question_bank_pick_failed">Soal belum bisa dipilih dari bank soal (kode %1$d).</string>
     <string name="question_bank_save_failed">Soal belum tersimpan (kode %1$d).</string>
+
+    <!-- Buat ujian -->
+    <string name="exam_publish_failed">Ujian belum bisa diterbitkan (kode %1$d).</string>
+    <string name="exam_image_upload_failed">Gambar belum bisa diunggah (kode %1$d).</string>
+    <string name="error_session_expired">Sesi Anda berakhir. Silakan masuk kembali.</string>
+    <string name="error_forbidden">Akun ini tidak berwenang melakukan tindakan ini.</string>
+    <string name="error_file_too_large">Ukuran file terlalu besar untuk diterima server.</string>
 </resources>

@@ -20,35 +20,41 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sultanagung1.sista.core.designsystem.Emerald700
 import com.sultanagung1.sista.core.designsystem.Emerald900
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.sultanagung1.sista.core.designsystem.R
 
 data class LatexShortcut(
     val label: String,
     val latexSnippet: String,
-    val description: String
+    /** What the button inserts, read out by TalkBack. */
+    @StringRes val description: Int
 )
 
 val COMMON_LATEX_SHORTCUTS = listOf(
-    LatexShortcut("a/b", "\\frac{a}{b}", "Pecahan"),
-    LatexShortcut("√x", "\\sqrt{x}", "Akar Kuadrat"),
-    LatexShortcut("x²", "x^{2}", "Pangkat"),
-    LatexShortcut("x₁", "x_{1}", "Subskrip"),
-    LatexShortcut("∫dx", "\\int_{a}^{b} f(x) \\, dx", "Integral"),
-    LatexShortcut("∑", "\\sum_{i=1}^{n}", "Sigma Penjumlahan"),
-    LatexShortcut("lim", "\\lim_{x \\to 0}", "Limit"),
-    LatexShortcut("[Matriks]", "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", "Matriks 2x2"),
-    LatexShortcut("α", "\\alpha", "Alpha"),
-    LatexShortcut("β", "\\beta", "Beta"),
-    LatexShortcut("θ", "\\theta", "Theta"),
-    LatexShortcut("π", "\\pi", "Pi"),
-    LatexShortcut("Δ", "\\Delta", "Delta"),
-    LatexShortcut("λ", "\\lambda", "Lambda"),
-    LatexShortcut("→", "\\rightarrow", "Panah Reaksi"),
-    LatexShortcut("⇌", "\\rightleftharpoons", "Reaksi Kesetimbangan"),
-    LatexShortcut("±", "\\pm", "Plus Minus"),
-    LatexShortcut("∞", "\\infty", "Tak Hingga"),
-    LatexShortcut("≤", "\\le", "Kurang dari sama dengan"),
-    LatexShortcut("≥", "\\ge", "Lebih dari sama dengan"),
-    LatexShortcut("°", "^{\\circ}", "Derajat")
+    LatexShortcut("a/b", "\\frac{a}{b}", R.string.lx_fraction),
+    LatexShortcut("√x", "\\sqrt{x}", R.string.lx_sqrt),
+    LatexShortcut("x²", "x^{2}", R.string.lx_power),
+    LatexShortcut("x₁", "x_{1}", R.string.lx_subscript),
+    LatexShortcut("∫dx", "\\int_{a}^{b} f(x) \\, dx", R.string.lx_integral),
+    LatexShortcut("∑", "\\sum_{i=1}^{n}", R.string.lx_sum),
+    LatexShortcut("lim", "\\lim_{x \\to 0}", R.string.lx_limit),
+    LatexShortcut("[2×2]", "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", R.string.lx_matrix),
+    LatexShortcut("α", "\\alpha", R.string.lx_alpha),
+    LatexShortcut("β", "\\beta", R.string.lx_beta),
+    LatexShortcut("θ", "\\theta", R.string.lx_theta),
+    LatexShortcut("π", "\\pi", R.string.lx_pi),
+    LatexShortcut("Δ", "\\Delta", R.string.lx_delta),
+    LatexShortcut("λ", "\\lambda", R.string.lx_lambda),
+    LatexShortcut("→", "\\rightarrow", R.string.lx_arrow),
+    LatexShortcut("⇌", "\\rightleftharpoons", R.string.lx_equilibrium),
+    LatexShortcut("±", "\\pm", R.string.lx_plusminus),
+    LatexShortcut("∞", "\\infty", R.string.lx_infinity),
+    LatexShortcut("≤", "\\le", R.string.lx_le),
+    LatexShortcut("≥", "\\ge", R.string.lx_ge),
+    LatexShortcut("°", "^{\\circ}", R.string.lx_degree)
 )
 
 /**
@@ -80,14 +86,14 @@ fun CbtLatexToolbar(
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Pintasan Rumus Saintek (LaTeX):",
+                text = stringResource(R.string.lx_title),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = Emerald900
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "(Klik untuk menyisipkan ke kursor)",
+                text = stringResource(R.string.lx_hint),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -100,14 +106,15 @@ fun CbtLatexToolbar(
             contentPadding = PaddingValues(horizontal = 2.dp)
         ) {
             items(COMMON_LATEX_SHORTCUTS) { item ->
+                val description = stringResource(item.description)
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 1.dp,
                     shadowElevation = 0.5.dp,
-                    modifier = Modifier.clickable {
-                        onInsertSnippet(item.latexSnippet)
-                    }
+                    modifier = Modifier
+                        .semantics { contentDescription = description }
+                        .clickable { onInsertSnippet(item.latexSnippet) }
                 ) {
                     Text(
                         text = item.label,
