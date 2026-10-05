@@ -12,11 +12,6 @@ class RoleAuthorizationTest {
         }
     }
 
-    private fun isSupervisorPinValid(pin: String): Boolean {
-        val supervisorPins = setOf("195026", "SA1CBT", "889900")
-        return pin.trim() in supervisorPins
-    }
-
     private fun filterModulesByRole(
         userRole: String?,
         modules: List<Pair<String, String>> // Pair(id, route)
@@ -169,16 +164,5 @@ class RoleAuthorizationTest {
         assertTrue(categories.contains("Rahasia Pimpinan"))
         assertTrue(categories.contains("Khusus Guru"))
         assertTrue(categories.contains("Wali Murid"))
-    }
-
-    @Test
-    fun supervisorPin_validatesCorrectly() {
-        assertTrue(isSupervisorPinValid("195026"))
-        assertTrue(isSupervisorPinValid("SA1CBT"))
-        assertTrue(isSupervisorPinValid("889900"))
-
-        assertFalse(isSupervisorPinValid("000000"))
-        assertFalse(isSupervisorPinValid("123456"))
-        assertFalse(isSupervisorPinValid("admin"))
     }
 }

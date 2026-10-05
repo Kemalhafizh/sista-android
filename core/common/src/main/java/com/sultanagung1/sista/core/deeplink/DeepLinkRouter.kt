@@ -17,14 +17,9 @@ object DeepLinkRouter {
             return when (host) {
                 "attendance" -> Screen.GeofenceAttendance.route
                 "scanner", "qr" -> Screen.QrScanner.route
-                "cbt" -> {
-                    val examId = uri.lastPathSegment
-                    if (examId != null && examId != "cbt") {
-                        Screen.CbtRoom.createRoute(examId.toLongOrNull() ?: 1L)
-                    } else {
-                        Screen.CbtList.route
-                    }
-                }
+                // An exam is only ever entered through its token.
+                "cbt" -> uri.lastPathSegment?.toLongOrNull()
+                    ?.let { Screen.CbtTokenEntry.createRoute(it) } ?: Screen.CbtList.route
                 "billing", "spp" -> Screen.Billing.route
                 "schedule" -> Screen.Schedule.route
                 // FASE 77.7: class-session pushes (sesi dimulai, pengingat jadwal).

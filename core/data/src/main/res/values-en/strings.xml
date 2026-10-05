@@ -47,4 +47,13 @@
     <string name="error_session_expired">Your session has ended. Please sign in again.</string>
     <string name="error_forbidden">This account isn\'t allowed to do this.</string>
     <string name="error_file_too_large">The file is too large for the server.</string>
+
+    <!-- CBT siswa -->
+    <string name="cbt_exams_load_failed">The exam list couldn\'t be loaded (code %1$d).</string>
+    <string name="cbt_questions_load_failed">The exam questions couldn\'t be loaded (code %1$d).</string>
+    <string name="cbt_submit_failed">Your answer sheet wasn\'t sent (code %1$d).</string>
+    <string name="cbt_payload_failed">The question set couldn\'t be fetched (code %1$d).</string>
+    <string name="cbt_sync_failed">Answers weren\'t synced (code %1$d).</string>
+    <string name="cbt_token_failed">The token couldn\'t be checked (code %1$d).</string>
+    <string name="cbt_report_failed">The report to the proctor wasn\'t sent (code %1$d).</string>
 </resources>

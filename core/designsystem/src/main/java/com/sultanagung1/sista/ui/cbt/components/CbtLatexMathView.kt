@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.viewinterop.AndroidView
 import java.util.Locale
+import androidx.compose.ui.text.style.TextDirection
 
 /**
  * CbtLatexMathView
@@ -56,10 +57,12 @@ fun CbtLatexMathView(
     }
 
     if (!containsLatex) {
-        // High-performance direct Compose text rendering
+        // High-performance direct Compose text rendering. Question text keeps
+        // its own direction: an Indonesian question stays left-to-right inside
+        // the Arabic (RTL) app, and an Arabic one stays right-to-left.
         Text(
             text = text,
-            style = style,
+            style = style.copy(textDirection = TextDirection.Content),
             color = color,
             modifier = modifier
         )

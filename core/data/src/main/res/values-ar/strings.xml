@@ -47,4 +47,13 @@
     <string name="error_session_expired">انتهت جلستك. يُرجى تسجيل الدخول مجددًا.</string>
     <string name="error_forbidden">لا يحق لهذا الحساب القيام بهذا الإجراء.</string>
     <string name="error_file_too_large">حجم الملف أكبر مما يقبله الخادم.</string>
+
+    <!-- CBT siswa -->
+    <string name="cbt_exams_load_failed">تعذر تحميل قائمة الاختبارات (الرمز %1$d).</string>
+    <string name="cbt_questions_load_failed">تعذر تحميل أسئلة الاختبار (الرمز %1$d).</string>
+    <string name="cbt_submit_failed">لم تُرسل ورقة الإجابة (الرمز %1$d).</string>
+    <string name="cbt_payload_failed">تعذر جلب حزمة الأسئلة (الرمز %1$d).</string>
+    <string name="cbt_sync_failed">لم تتم مزامنة الإجابات (الرمز %1$d).</string>
+    <string name="cbt_token_failed">تعذر التحقق من الرمز (الرمز %1$d).</string>
+    <string name="cbt_report_failed">لم يُرسل التقرير إلى المراقب (الرمز %1$d).</string>
 </resources>

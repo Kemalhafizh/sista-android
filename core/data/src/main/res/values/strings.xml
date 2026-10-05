@@ -47,4 +47,13 @@
     <string name="error_session_expired">Sesi Anda berakhir. Silakan masuk kembali.</string>
     <string name="error_forbidden">Akun ini tidak berwenang melakukan tindakan ini.</string>
     <string name="error_file_too_large">Ukuran file terlalu besar untuk diterima server.</string>
+
+    <!-- CBT siswa -->
+    <string name="cbt_exams_load_failed">Daftar ujian belum bisa dimuat (kode %1$d).</string>
+    <string name="cbt_questions_load_failed">Soal ujian belum bisa dimuat (kode %1$d).</string>
+    <string name="cbt_submit_failed">Lembar jawaban belum terkirim (kode %1$d).</string>
+    <string name="cbt_payload_failed">Paket soal belum bisa diambil (kode %1$d).</string>
+    <string name="cbt_sync_failed">Jawaban belum tersinkron (kode %1$d).</string>
+    <string name="cbt_token_failed">Token belum bisa diperiksa (kode %1$d).</string>
+    <string name="cbt_report_failed">Laporan ke pengawas belum terkirim (kode %1$d).</string>
 </resources>

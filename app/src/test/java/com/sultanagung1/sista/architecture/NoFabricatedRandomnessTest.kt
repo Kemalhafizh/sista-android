@@ -18,8 +18,6 @@ class NoFabricatedRandomnessTest {
     private val allowed = mapOf(
         "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/ConfettiEffect.kt" to
             "Animasi konfeti: posisi dan warna partikel.",
-        "feature/cbt/src/main/java/com/sultanagung1/sista/core/security/RandomLivenessProctor.kt" to
-            "Pemeriksaan wajah ujian datang di waktu acak agar tidak bisa ditebak.",
     )
 
     private val pattern = Regex("""\bRandom\s*[.(]|kotlin\.random|java\.util\.Random\b|\bSecureRandom\b|Math\.random\s*\(|\.random\s*\(|\.shuffled\s*\(|\.shuffle\s*\(""")

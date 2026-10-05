@@ -31,7 +31,6 @@ import com.sultanagung1.sista.data.model.CbtForceCloseResponse
 import com.sultanagung1.sista.data.model.CbtImageAttachment
 import com.sultanagung1.sista.data.model.CbtMicroSyncRequest
 import com.sultanagung1.sista.data.model.CbtQuestionImageUpload
-import com.sultanagung1.sista.data.model.CbtQuestionItem
 import com.sultanagung1.sista.data.model.CbtResetStudentData
 import com.sultanagung1.sista.data.model.CbtResetStudentRequest
 import com.sultanagung1.sista.data.model.CbtSubmitRequest
@@ -90,6 +89,8 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import com.sultanagung1.sista.data.model.LockedExamStudent
+import com.sultanagung1.sista.data.model.CbtExamQuestionsResponse
+import com.sultanagung1.sista.data.model.CbtExamMeta
 
 class AuthRepository(
     private val apiClient: ApiClient,
@@ -432,44 +433,49 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.cbtApi.getExams()
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
+            val body = response.body()
+            if (response.isSuccessful && body?.data != null) {
+                emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat daftar ujian CBT", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.cbt_exams_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getExamQuestions(examId: Long): Flow<NetworkResult<List<CbtQuestionItem>>> = flow {
+    /** The questions and this student's clock ([CbtExamMeta.remainingSeconds]). */
+    fun getExamQuestions(examId: Long): Flow<NetworkResult<CbtExamQuestionsResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.cbtApi.getExamQuestions(examId)
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data.questions))
+            val body = response.body()
+            if (response.isSuccessful && body?.data != null) {
+                emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat soal ujian dari server (Kode: ${response.code()}).", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.cbt_questions_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat memuat soal ujian."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * A failure without an HTTP code means the request never reached the
+     * server; CbtViewModel queues those for replay instead of losing the answers.
+     */
     fun submitExam(request: CbtSubmitRequest): Flow<NetworkResult<CbtSubmitResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.cbtApi.submitExam(request.examId, request)
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
+            val body = response.body()
+            if (response.isSuccessful && body?.data != null) {
+                emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal mengirim lembar jawaban ujian", response.code()))
+                emit(NetworkResult.Error(body?.message ?: messages.failure(response, R.string.cbt_submit_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -482,10 +488,10 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Error("Gagal mengambil paket soal terenkripsi", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.cbt_payload_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -496,10 +502,10 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Error("Kunci dekripsi belum dapat diakses", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.cbt_payload_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -509,45 +515,35 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!))
             } else {
-                emit(NetworkResult.Error("Gagal sinkronisasi jawaban", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.cbt_sync_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
     // === FASE 26: Token Validation & Force Close ===
 
+    /**
+     * A refused token comes back as an error with the server's reason (wrong
+     * token, expired, another class, already finished, locked...), never a
+     * generic "invalid token". Token gating is a server-side authority check:
+     * a client-guessed token is never accepted when the server is unreachable.
+     */
     fun validateExamToken(examId: Long, token: String): Flow<NetworkResult<CbtTokenValidationResponse>> = flow {
         emit(NetworkResult.Loading)
         try {
             val response = apiClient.cbtApi.validateExamToken(examId, CbtTokenValidationRequest(token))
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
-                val data = body["data"] as? Map<*, *>
-                val valid = data?.get("valid") as? Boolean ?: false
-                val message = data?.get("message") as? String ?: (body["message"] as? String ?: "Token valid")
-                val attemptStatus = data?.get("attempt_status") as? String
-                // Gson deserializes a raw Map<String, Any>'s JSON numbers as
-                // Double, never Long/Int — must go through Number first.
-                val studentId = (data?.get("student_id") as? Number)?.toLong()
-                val maxViolations = (data?.get("max_violations") as? Number)?.toInt()
-                emit(NetworkResult.Success(CbtTokenValidationResponse(
-                    valid = valid,
-                    message = message,
-                    examId = examId,
-                    attemptStatus = attemptStatus,
-                    studentId = studentId,
-                    maxViolations = maxViolations
-                )))
+            val body = response.body()
+            val data = body?.data
+            if (response.isSuccessful && data != null && data.valid) {
+                emit(NetworkResult.Success(data))
             } else {
-                val errorMsg = if (response.code() == 403) "Token tidak valid atau akses hanya via aplikasi Android" else "Gagal validasi token (${response.code()})"
-                emit(NetworkResult.Error(errorMsg, response.code()))
+                val refused = data?.message?.takeIf { it.isNotBlank() } ?: body?.message
+                emit(NetworkResult.Error(refused ?: messages.failure(response, R.string.cbt_token_failed), response.code()))
             }
         } catch (e: Exception) {
-            // Token gating is a server-side authority check (exam entry control) —
-            // never accept a client-guessed token when the backend is unreachable.
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat memvalidasi token ujian."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -725,10 +721,10 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
                     forceCloseReason = reason
                 )))
             } else {
-                emit(NetworkResult.Error("Gagal melaporkan penutupan ujian", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.cbt_report_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -762,10 +758,10 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
                 val isBlocked = data?.get("is_blocked") as? Boolean ?: false
                 emit(NetworkResult.Success(isBlocked))
             } else {
-                emit(NetworkResult.Error("Gagal melaporkan pelanggaran", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.cbt_report_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 }

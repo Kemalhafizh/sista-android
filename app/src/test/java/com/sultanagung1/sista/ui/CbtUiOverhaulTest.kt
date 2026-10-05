@@ -5,9 +5,12 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Unit test verifying compliance of CBT Screens (CbtExamListScreen & CbtTokenEntryScreen)
- * overhaul with SISTA Modern Design System: Off-white canvas, 0dp elevation, 0.5dp border,
- * Emerald600 accents, and 48dp touch targets.
+ * The student CBT screens (list, token, room) are built on :core:ui like the
+ * rest of the app, and keep the exam honest: no device-side unlock, no clock
+ * or exam details the server didn't send, and every entry goes through the token.
+ *
+ * Replaces the earlier check that pinned the old Sulaone styling (Slate50,
+ * 0.5dp borders, Emerald600) to these files.
  */
 class CbtUiOverhaulTest {
 
@@ -21,93 +24,49 @@ class CbtUiOverhaulTest {
             ?: throw IllegalStateException("Cannot locate $relativePath in any candidate paths")
     }
 
+    private val cbtDir = "feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt"
+    private val screens = listOf("CbtExamListScreen.kt", "CbtTokenEntryScreen.kt", "CbtExamRoomScreen.kt")
+
     @Test
-    fun testCbtExamListScreenDesignCompliance() {
-        val file = findSourceFile("feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtExamListScreen.kt")
-        assertTrue("CbtExamListScreen.kt must exist", file.exists())
-
-        val content = file.readText()
-
-        // 1. Off-white background
-        assertTrue(
-            "CbtExamListScreen must use Slate50 background token",
-            content.contains("Slate50")
-        )
-
-        // 2. Flat elevation
-        assertTrue(
-            "CbtExamListScreen cards must use 0.dp elevation",
-            content.contains("cardElevation(0.dp)")
-        )
-
-        // 3. Hairline borders 0.5dp
-        assertTrue(
-            "CbtExamListScreen must apply 0.5.dp border with Slate200",
-            content.contains("0.5.dp") && content.contains("Slate200")
-        )
-
-        // 4. Accent Emerald600 for key indicators and buttons
-        assertTrue(
-            "CbtExamListScreen must use Emerald600 accent",
-            content.contains("Emerald600")
-        )
-
-        // 5. 48dp WCAG touch targets
-        assertTrue(
-            "CbtExamListScreen must adhere to 48dp touch targets",
-            content.contains("sulaoneInteractiveTouchTarget(48.dp)")
-        )
-
-        // 6. No hardcoded hex colors
-        val hardcodedRegex = Regex("""Color\s*\(\s*0x[0-9a-fA-F]{6,8}\s*\)""")
-        assertFalse(
-            "CbtExamListScreen must not contain hardcoded Color(0x...)",
-            hardcodedRegex.containsMatchIn(content)
-        )
+    fun screensUseTheSharedDesignSystem() {
+        val hardcodedColor = Regex("""Color\s*\(\s*0x[0-9a-fA-F]{6,8}\s*\)""")
+        screens.forEach { name ->
+            val content = findSourceFile("$cbtDir/$name").readText()
+            assertTrue("$name must use ShellTheme", content.contains("ShellTheme"))
+            assertTrue("$name must use SistaTopBar", content.contains("SistaTopBar("))
+            assertFalse("$name must not use SulaoneTopBar", content.contains("SulaoneTopBar("))
+            assertFalse("$name must not hardcode colours", hardcodedColor.containsMatchIn(content))
+        }
     }
 
     @Test
-    fun testCbtTokenEntryScreenDesignCompliance() {
-        val file = findSourceFile("feature/cbt/src/main/java/com/sultanagung1/sista/ui/cbt/CbtTokenEntryScreen.kt")
-        assertTrue("CbtTokenEntryScreen.kt must exist", file.exists())
+    fun noDeviceSideUnlockOrSupervisorPin() {
+        val engine = findSourceFile("feature/cbt/src/main/java/com/sultanagung1/sista/core/security/CbtAntiCheatEngine.kt").readText()
+        val room = findSourceFile("$cbtDir/CbtExamRoomScreen.kt").readText()
+        listOf(engine, room).forEach { content ->
+            assertFalse(content.contains("supervisorPin", ignoreCase = true))
+            assertFalse(content.contains("unlockExam", ignoreCase = true))
+        }
+    }
 
-        val content = file.readText()
+    @Test
+    fun noFabricatedExamClockOrDetails() {
+        val vm = findSourceFile("$cbtDir/CbtViewModel.kt").readText()
+        val room = findSourceFile("$cbtDir/CbtExamRoomScreen.kt").readText()
+        val nav = findSourceFile("app/src/main/java/com/sultanagung1/sista/ui/navigation/graphs/CbtNavGraph.kt").readText()
+        assertFalse("no fixed 90-minute clock", vm.contains("5400") || room.contains("5400"))
+        assertFalse("no invented exam fallback", nav.contains("Ujian CBT Sultan Agung") || nav.contains("Mata Pelajaran"))
+    }
 
-        // 1. Off-white background
-        assertTrue(
-            "CbtTokenEntryScreen must use Slate50 background token",
-            content.contains("Slate50")
+    @Test
+    fun everyExamEntryGoesThroughTheToken() {
+        val sources = listOf(
+            "core/common/src/main/java/com/sultanagung1/sista/core/notification/NotificationRouter.kt",
+            "core/common/src/main/java/com/sultanagung1/sista/core/deeplink/DeepLinkRouter.kt",
+            "app/src/main/java/com/sultanagung1/sista/ui/navigation/graphs/SettingsNavGraph.kt",
         )
-
-        // 2. Flat elevation
-        assertTrue(
-            "CbtTokenEntryScreen cards must use 0.dp elevation",
-            content.contains("cardElevation(0.dp)")
-        )
-
-        // 3. Hairline borders 0.5dp
-        assertTrue(
-            "CbtTokenEntryScreen must apply 0.5.dp border with Slate200",
-            content.contains("0.5.dp") && content.contains("Slate200")
-        )
-
-        // 4. Accent Emerald600 for key indicators and buttons
-        assertTrue(
-            "CbtTokenEntryScreen must use Emerald600 accent",
-            content.contains("Emerald600")
-        )
-
-        // 5. 48dp WCAG touch targets
-        assertTrue(
-            "CbtTokenEntryScreen must adhere to 48dp touch targets",
-            content.contains("sulaoneInteractiveTouchTarget(48.dp)")
-        )
-
-        // 6. No hardcoded hex colors
-        val hardcodedRegex = Regex("""Color\s*\(\s*0x[0-9a-fA-F]{6,8}\s*\)""")
-        assertFalse(
-            "CbtTokenEntryScreen must not contain hardcoded Color(0x...)",
-            hardcodedRegex.containsMatchIn(content)
-        )
+        sources.forEach { path ->
+            assertFalse("$path must open the token screen, not the room", findSourceFile(path).readText().contains("CbtRoom.createRoute"))
+        }
     }
 }
