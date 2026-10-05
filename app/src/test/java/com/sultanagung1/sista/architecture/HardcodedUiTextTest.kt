@@ -37,7 +37,6 @@ class HardcodedUiTextTest {
         "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SulaoneTieredLoading.kt" to 3,
         "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/SwipeActions.kt" to 2,
         "core/designsystem/src/main/java/com/sultanagung1/sista/ui/cbt/components/CbtImageViewer.kt" to 6,
-        "core/designsystem/src/main/java/com/sultanagung1/sista/ui/cbt/components/CbtLatexToolbar.kt" to 2,
         "core/designsystem/src/main/java/com/sultanagung1/sista/ui/common/DraftRestoreDialog.kt" to 4,
         "core/designsystem/src/main/java/com/sultanagung1/sista/ui/common/EmergencyAlertDialog.kt" to 2,
         "core/designsystem/src/main/java/com/sultanagung1/sista/ui/common/OfflineQueuedBanner.kt" to 1,
@@ -105,10 +104,7 @@ class HardcodedUiTextTest {
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/QrScannerScreen.kt" to 7,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/ScanResultHandler.kt" to 5,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/update/UpdatePromptScreen.kt" to 7,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/AutoGenerateExamScreen.kt" to 12,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/QuestionBankScreen.kt" to 19,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/RemedialScreen.kt" to 9,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherCreateExamScreen.kt" to 23,
     )
 
     private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"([^"\\]*+(?:\\.[^"\\]*+)*+)"""")

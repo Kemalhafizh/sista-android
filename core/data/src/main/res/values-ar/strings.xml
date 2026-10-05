@@ -35,4 +35,16 @@
     <string name="proctor_token_renew_failed">تعذّر تجديد رمز الاختبار (الرمز %1$d).</string>
     <string name="proctor_reset_failed">تعذّر إعادة سماح الطالب بالدخول (الرمز %1$d).</string>
     <string name="proctor_locked_load_failed">تعذّر تحميل الطلاب المقفلين (الرمز %1$d).</string>
+
+    <!-- Bank soal -->
+    <string name="question_bank_load_failed">تعذّر تحميل بنك الأسئلة (الرمز %1$d).</string>
+    <string name="question_bank_pick_failed">تعذّر اختيار الأسئلة من البنك (الرمز %1$d).</string>
+    <string name="question_bank_save_failed">لم يتم حفظ السؤال (الرمز %1$d).</string>
+
+    <!-- Buat ujian -->
+    <string name="exam_publish_failed">تعذّر نشر الاختبار (الرمز %1$d).</string>
+    <string name="exam_image_upload_failed">تعذّر رفع الصورة (الرمز %1$d).</string>
+    <string name="error_session_expired">انتهت جلستك. يُرجى تسجيل الدخول مجددًا.</string>
+    <string name="error_forbidden">لا يحق لهذا الحساب القيام بهذا الإجراء.</string>
+    <string name="error_file_too_large">حجم الملف أكبر مما يقبله الخادم.</string>
 </resources>

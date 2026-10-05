@@ -637,15 +637,10 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             if (response.isSuccessful && body != null && body.success && body.data != null) {
                 emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(
-                    NetworkResult.Error(
-                        describeServerError(response.code(), response.errorBody()?.string(), body?.message, "Gagal menerbitkan ujian"),
-                        response.code()
-                    )
-                )
+                emit(NetworkResult.Error(failureOf(response, body?.message, R.string.exam_publish_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat menerbitkan ujian."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -662,28 +657,39 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             if (response.isSuccessful && body != null && body.success && body.data != null) {
                 emit(NetworkResult.Success(body.data!!))
             } else {
-                emit(
-                    NetworkResult.Error(
-                        describeServerError(response.code(), response.errorBody()?.string(), body?.message, "Gagal mengunggah gambar"),
-                        response.code()
-                    )
-                )
+                emit(NetworkResult.Error(failureOf(response, body?.message, R.string.exam_image_upload_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus saat mengunggah gambar."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
+    /** The server's own words for a failed [response], else the app's text for its status in the user's language. */
+    private fun failureOf(response: retrofit2.Response<*>, envelopeMessage: String?, @androidx.annotation.StringRes fallback: Int): String =
+        describeServerError(response.code(), response.errorBody()?.string(), envelopeMessage)
+            ?: messages.get(
+                when (response.code()) {
+                    401 -> R.string.error_session_expired
+                    403 -> R.string.error_forbidden
+                    413 -> R.string.error_file_too_large
+                    else -> fallback
+                },
+                response.code(),
+            )
+
     companion object {
+        /** Laravel's untranslated default for a failed authorization. */
+        private const val LARAVEL_UNAUTHORIZED = "This action is unauthorized."
+
         /**
-         * Readable message for a non-2xx Laravel response. A 422 from
-         * `$request->validate()` is `{message, errors: {field: [...]}}`, where
-         * `message` only carries the FIRST error — so every distinct error line
-         * is surfaced, letting a teacher fix a long exam form in one pass
-         * instead of one error per submit. Validation text is already
-         * Indonesian (the backend runs with APP_LOCALE=id).
+         * What the server said about a non-2xx response, or null when it said
+         * nothing a user can read. A 422 from `$request->validate()` is
+         * `{message, errors: {field: [...]}}`, where `message` only carries the
+         * FIRST error, so every distinct error line is surfaced, letting a
+         * teacher fix a long exam form in one pass. The server writes them in
+         * the user's language (Accept-Language).
          */
-        fun describeServerError(code: Int, errorBody: String?, envelopeMessage: String?, fallback: String): String {
+        fun describeServerError(code: Int, errorBody: String?, envelopeMessage: String?): String? {
             val json = errorBody?.takeIf { it.isNotBlank() }?.let {
                 runCatching { com.google.gson.JsonParser.parseString(it).asJsonObject }.getOrNull()
             }
@@ -702,10 +708,9 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             val serverMessage = envelopeMessage
                 ?: json?.get("message")?.takeIf { it.isJsonPrimitive }?.asString
             return when (code) {
-                401 -> "Sesi Anda berakhir. Silakan masuk kembali."
-                403 -> "Akun ini tidak berwenang melakukan tindakan ini."
-                413 -> "Ukuran file terlalu besar untuk diterima server."
-                else -> serverMessage?.takeIf { it.isNotBlank() } ?: "$fallback (kode $code)."
+                // A session error or a file the web server refused never has a readable body.
+                401, 413 -> null
+                else -> serverMessage?.takeIf { it.isNotBlank() && it != LARAVEL_UNAUTHORIZED }
             }
         }
     }

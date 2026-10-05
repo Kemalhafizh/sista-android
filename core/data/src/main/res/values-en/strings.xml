@@ -35,4 +35,16 @@
     <string name="proctor_token_renew_failed">Couldn\'t renew the exam token (code %1$d).</string>
     <string name="proctor_reset_failed">Couldn\'t let the student back in (code %1$d).</string>
     <string name="proctor_locked_load_failed">Couldn\'t load locked-out students (code %1$d).</string>
+
+    <!-- Bank soal -->
+    <string name="question_bank_load_failed">Couldn\'t load the question bank (code %1$d).</string>
+    <string name="question_bank_pick_failed">Couldn\'t pick questions from the bank (code %1$d).</string>
+    <string name="question_bank_save_failed">The question wasn\'t saved (code %1$d).</string>
+
+    <!-- Buat ujian -->
+    <string name="exam_publish_failed">The exam couldn\'t be published (code %1$d).</string>
+    <string name="exam_image_upload_failed">The image couldn\'t be uploaded (code %1$d).</string>
+    <string name="error_session_expired">Your session has ended. Please sign in again.</string>
+    <string name="error_forbidden">This account isn\'t allowed to do this.</string>
+    <string name="error_file_too_large">The file is too large for the server.</string>
 </resources>

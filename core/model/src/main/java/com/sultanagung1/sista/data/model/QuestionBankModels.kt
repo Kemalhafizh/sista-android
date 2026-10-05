@@ -6,10 +6,14 @@ data class QuestionBankCategory(
     val id: Long,
     val uuid: String? = null,
     val name: String,
-    @SerializedName("grade_level") val gradeLevel: String = "X",
+    @SerializedName("grade_level") val gradeLevel: String? = null,
     @SerializedName("curriculum_ref") val curriculumRef: String? = null,
     val description: String? = null,
-    @SerializedName("items_count") val itemsCount: Int = 0
+    @SerializedName("items_count") val itemsCount: Int = 0,
+    // How many of the items are mudah / sedang / sulit, counted by the server.
+    @SerializedName("easy_count") val easyCount: Int? = null,
+    @SerializedName("medium_count") val mediumCount: Int? = null,
+    @SerializedName("hard_count") val hardCount: Int? = null,
 )
 
 data class QuestionBankItem(
@@ -21,8 +25,9 @@ data class QuestionBankItem(
     val options: Any? = null,
     @SerializedName("correct_answer") val correctAnswer: String,
     val explanation: String? = null,
-    val difficulty: String = "sedang",
-    @SerializedName("cognitive_level") val cognitiveLevel: String = "C3",
+    // mudah, sedang or sulit; null when the item has none.
+    val difficulty: String? = null,
+    @SerializedName("cognitive_level") val cognitiveLevel: String? = null,
     @SerializedName("is_validated") val isValidated: Boolean = false,
     @SerializedName("usage_count") val usageCount: Int = 0
 )

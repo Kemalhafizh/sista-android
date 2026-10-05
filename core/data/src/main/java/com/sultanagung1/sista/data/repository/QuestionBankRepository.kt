@@ -9,7 +9,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
-class QuestionBankRepository(private val apiService: QuestionBankApiService) {
+class QuestionBankRepository(
+    private val apiService: QuestionBankApiService,
+    private val messages: FallbackMessages,
+) {
 
     fun getCategories(subjectId: Long? = null): Flow<NetworkResult<List<QuestionBankCategory>>> = flow {
         emit(NetworkResult.Loading)
@@ -18,10 +21,10 @@ class QuestionBankRepository(private val apiService: QuestionBankApiService) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal memuat kategori bank soal", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.question_bank_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -37,10 +40,10 @@ class QuestionBankRepository(private val apiService: QuestionBankApiService) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal men-generate soal ujian otomatis", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.question_bank_pick_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -51,10 +54,10 @@ class QuestionBankRepository(private val apiService: QuestionBankApiService) {
             if (response.isSuccessful && response.body() != null) {
                 emit(NetworkResult.Success(response.body()!!.data))
             } else {
-                emit(NetworkResult.Error("Gagal menyimpan butir soal", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.question_bank_save_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus"))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 }

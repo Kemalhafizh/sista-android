@@ -47,4 +47,29 @@
     <string name="cs_scan_ended">انتهت الحصة. اطلب التصحيح من وكيل الشؤون التعليمية أو الإدارة.</string>
     <string name="cs_scan_not_started">لم يبدأ المعلم هذه الحصة بعد. حاول مرة أخرى بعد بدئها.</string>
     <string name="cs_override_not_allowed">هذا التغيير غير مسموح. لا يمكن تحويل حضور مسجّل إلى غياب.</string>
+
+    <!-- Toolbar rumus LaTeX -->
+    <string name="lx_fraction">كسر</string>
+    <string name="lx_sqrt">جذر تربيعي</string>
+    <string name="lx_power">أُس</string>
+    <string name="lx_subscript">رمز سفلي</string>
+    <string name="lx_integral">تكامل</string>
+    <string name="lx_sum">مجموع</string>
+    <string name="lx_limit">نهاية</string>
+    <string name="lx_matrix">مصفوفة 2×2</string>
+    <string name="lx_alpha">ألفا</string>
+    <string name="lx_beta">بيتا</string>
+    <string name="lx_theta">ثيتا</string>
+    <string name="lx_pi">باي</string>
+    <string name="lx_delta">دلتا</string>
+    <string name="lx_lambda">لامدا</string>
+    <string name="lx_arrow">سهم التفاعل</string>
+    <string name="lx_equilibrium">تفاعل متوازن</string>
+    <string name="lx_plusminus">زائد ناقص</string>
+    <string name="lx_infinity">ما لا نهاية</string>
+    <string name="lx_le">أصغر من أو يساوي</string>
+    <string name="lx_ge">أكبر من أو يساوي</string>
+    <string name="lx_degree">درجة</string>
+    <string name="lx_title">اختصارات المعادلات (LaTeX):</string>
+    <string name="lx_hint">(اضغط للإدراج عند المؤشر)</string>
 </resources>

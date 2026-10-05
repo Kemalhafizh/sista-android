@@ -19,16 +19,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.feature.teacher.R
 
 /** A subject + class pair the teacher actually teaches (from GET teacher/schedule). */
 data class ExamClassChoice(
     val subjectId: Long,
-    val subjectName: String,
+    /** As the schedule names them; null when the schedule has no name (the screen shows the id). */
+    val subjectName: String?,
     val classroomId: Long,
-    val classroomName: String
-) {
-    val label: String get() = "$subjectName • $classroomName"
-}
+    val classroomName: String?
+)
 
 /**
  * A picked image. [previewUri] is the local content:// URI shown immediately;
@@ -66,7 +67,7 @@ sealed interface ImageTarget {
 }
 
 data class ValidationIssue(
-    val message: String,
+    val message: UiText,
     /** 0-based index of the question this issue belongs to, or null for exam-level fields. */
     val questionIndex: Int? = null
 )
@@ -90,7 +91,7 @@ data class TeacherCreateExamUiState(
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
     val createdExam: TeacherCreatedExam? = null,
-    val imageError: String? = null
+    val imageError: UiText? = null
 ) {
     /**
      * Recomputed from the current form rather than stored, so a fixed problem
@@ -349,21 +350,19 @@ class TeacherCreateExamViewModel @Inject constructor(
                 .map {
                     ExamClassChoice(
                         subjectId = it.subjectId,
-                        subjectName = it.subjectName?.takeIf { name -> name.isNotBlank() } ?: "Mapel #${it.subjectId}",
+                        subjectName = it.subjectName?.takeIf { name -> name.isNotBlank() },
                         classroomId = it.classroomId,
-                        classroomName = it.classroomName?.takeIf { name -> name.isNotBlank() } ?: "Kelas #${it.classroomId}"
+                        classroomName = it.classroomName?.takeIf { name -> name.isNotBlank() }
                     )
                 }
                 .distinctBy { it.subjectId to it.classroomId }
-                .sortedWith(compareBy({ it.subjectName }, { it.classroomName }))
+                // Unnamed subjects last, then by name, so the picker stays stable.
+                .sortedWith(compareBy({ it.subjectName == null }, { it.subjectName }, { it.subjectId }, { it.classroomName }, { it.classroomId }))
 
-        fun imageRejectionReason(attachment: CbtImageAttachment): String? = when {
-            attachment.mimeType.lowercase() !in ALLOWED_IMAGE_TYPES ->
-                "Format gambar tidak didukung. Gunakan JPG, PNG, atau WebP."
-            attachment.bytes.size > MAX_IMAGE_BYTES ->
-                "Ukuran gambar melebihi 10 MB."
-            attachment.bytes.isEmpty() ->
-                "Gambar tidak bisa dibaca dari perangkat."
+        fun imageRejectionReason(attachment: CbtImageAttachment): UiText? = when {
+            attachment.mimeType.lowercase() !in ALLOWED_IMAGE_TYPES -> UiText.Res(R.string.ce_img_type)
+            attachment.bytes.size > MAX_IMAGE_BYTES -> UiText.Res(R.string.ce_img_size)
+            attachment.bytes.isEmpty() -> UiText.Res(R.string.ce_img_unreadable)
             else -> null
         }
 
@@ -371,33 +370,33 @@ class TeacherCreateExamViewModel @Inject constructor(
         fun validate(state: TeacherCreateExamUiState): List<ValidationIssue> {
             val issues = mutableListOf<ValidationIssue>()
 
-            if (state.title.isBlank()) issues += ValidationIssue("Nama ujian wajib diisi.")
-            if (state.selectedChoice == null) issues += ValidationIssue("Pilih mata pelajaran & kelas dari jadwal mengajar Anda.")
+            if (state.title.isBlank()) issues += ValidationIssue(UiText.Res(R.string.ce_err_name))
+            if (state.selectedChoice == null) issues += ValidationIssue(UiText.Res(R.string.ce_err_class))
 
             val duration = state.durationMinutes.toIntOrNull()
             if (duration == null || duration !in MIN_DURATION..MAX_DURATION) {
-                issues += ValidationIssue("Durasi ujian harus $MIN_DURATION–$MAX_DURATION menit.")
+                issues += ValidationIssue(UiText.Res(R.string.ce_err_duration, MIN_DURATION, MAX_DURATION))
             }
             val passing = state.passingScore.toDoubleOrNull()
             if (passing == null || passing < 0.0 || passing > 100.0) {
-                issues += ValidationIssue("KKTP harus berupa angka 0–100.")
+                issues += ValidationIssue(UiText.Res(R.string.ce_err_passing))
             }
-            if (state.questions.isEmpty()) issues += ValidationIssue("Tambahkan minimal satu soal.")
+            if (state.questions.isEmpty()) issues += ValidationIssue(UiText.Res(R.string.ce_err_no_questions))
 
             state.questions.forEachIndexed { index, q ->
                 val n = index + 1
-                if (q.text.isBlank()) issues += ValidationIssue("Soal #$n: teks pertanyaan masih kosong.", index)
+                if (q.text.isBlank()) issues += ValidationIssue(UiText.Res(R.string.ce_err_question_text, n), index)
                 if (q.correctKey == null || q.options.none { it.key == q.correctKey }) {
-                    issues += ValidationIssue("Soal #$n: tandai kunci jawaban yang benar.", index)
+                    issues += ValidationIssue(UiText.Res(R.string.ce_err_question_key, n), index)
                 }
                 q.options.filter { it.text.isBlank() && it.image == null }.forEach { opt ->
-                    issues += ValidationIssue("Soal #$n: pilihan ${opt.key} belum diisi (teks atau gambar).", index)
+                    issues += ValidationIssue(UiText.Res(R.string.ce_err_choice_empty, n, opt.key), index)
                 }
                 val images = listOfNotNull(q.image) + q.options.mapNotNull { it.image }
                 if (images.any { it.isUploading }) {
-                    issues += ValidationIssue("Soal #$n: gambar masih diunggah, tunggu sebentar.", index)
+                    issues += ValidationIssue(UiText.Res(R.string.ce_err_image_uploading, n), index)
                 } else if (images.any { it.remoteUrl == null }) {
-                    issues += ValidationIssue("Soal #$n: ada gambar yang gagal diunggah — coba lagi atau hapus gambarnya.", index)
+                    issues += ValidationIssue(UiText.Res(R.string.ce_err_image_failed, n), index)
                 }
             }
             return issues
