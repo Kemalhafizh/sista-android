@@ -141,4 +141,9 @@
     <!-- Tab utama -->
     <string name="nav_services">الخدمات</string>
     <string name="nav_notifications">الإشعارات</string>
+
+    <!-- CBT siswa -->
+    <string name="cbt_biometric_title">التحقق من هوية المختبَر</string>
+    <string name="cbt_biometric_subtitle">امسح بصمتك قبل دخول قاعة الاختبار</string>
+    <string name="cbt_biometric_cancel">إلغاء</string>
 </resources>

@@ -72,4 +72,12 @@
     <string name="lx_degree">Degree</string>
     <string name="lx_title">Formula shortcuts (LaTeX):</string>
     <string name="lx_hint">(tap to insert at the cursor)</string>
+
+    <!-- Gambar soal CBT -->
+    <string name="cs_img_question">Question image</string>
+    <string name="cs_img_failed_icon">Image failed to load</string>
+    <string name="cs_img_failed">The image couldn\'t be loaded</string>
+    <string name="cs_img_zoom">Zoom in</string>
+    <string name="cs_img_zoomed">Enlarged question image</string>
+    <string name="cs_img_close">Close</string>
 </resources>

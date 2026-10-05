@@ -72,4 +72,12 @@
     <string name="lx_degree">Derajat</string>
     <string name="lx_title">Pintasan rumus (LaTeX):</string>
     <string name="lx_hint">(ketuk untuk menyisipkan di kursor)</string>
+
+    <!-- Gambar soal CBT -->
+    <string name="cs_img_question">Gambar soal</string>
+    <string name="cs_img_failed_icon">Gambar gagal dimuat</string>
+    <string name="cs_img_failed">Gambar tidak bisa dimuat</string>
+    <string name="cs_img_zoom">Perbesar gambar</string>
+    <string name="cs_img_zoomed">Gambar soal diperbesar</string>
+    <string name="cs_img_close">Tutup</string>
 </resources>

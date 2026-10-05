@@ -101,7 +101,7 @@ interface CbtApiService {
     suspend fun validateExamToken(
         @Path("id") examId: Long,
         @Body request: CbtTokenValidationRequest
-    ): Response<Map<String, Any>>
+    ): Response<ApiEnvelope<CbtTokenValidationResponse>>
 
     @POST("student/cbt/exams/{id}/force-close")
     suspend fun forceCloseExam(

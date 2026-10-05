@@ -41,13 +41,24 @@ sealed interface CbtUiEffect : UiEffect {
 
 data class CbtUiState(
     val isLoading: Boolean = false,
+    /** The exam list was asked for at least once; before that an empty list means nothing. */
+    val examsLoaded: Boolean = false,
     val exams: List<CbtExamItem> = emptyList(),
+    /** The exam as GET questions describes it, with this student's clock. */
+    val examMeta: CbtExamMeta? = null,
     val currentExamQuestions: List<CbtQuestionItem> = emptyList(),
     val currentQuestionIndex: Int = 0,
     val selectedAnswers: Map<String, String> = emptyMap(),
-    val remainingSeconds: Long = 5400, // 90 mins
+    /**
+     * Seconds left on this student's attempt, as the server counts it (its
+     * duration from the first start, cut off by the exam's end). Null until
+     * the server has said, so the screen shows "–" instead of a made-up clock.
+     */
+    val remainingSeconds: Long? = null,
     val violationCount: Int = 0,
     val isSubmitted: Boolean = false,
+    /** The answers were sent because the time ran out. */
+    val isTimeUp: Boolean = false,
     val submitResult: CbtSubmitResponse? = null,
     val errorMessage: String? = null,
     // === FASE 25: Enterprise CBT States ===
@@ -65,24 +76,26 @@ data class CbtUiState(
     // per-student private proctor-intervention channel. ===
     val studentId: Long? = null,
     // The exam's real anti-cheat lockout threshold (exams.max_violations),
-    // also resolved from validateExamToken() — drives
-    // CbtAntiCheatEngine.maxViolationsAllowed instead of a hardcoded value.
+    // also resolved from validateExamToken().
     val maxViolations: Int? = null,
+    /** log-violation answered is_blocked: the server closed and graded the attempt. */
+    val isBlockedByServer: Boolean = false,
     // === FASE 69: Resilient submission — a true network failure (not a
     // server-side rejection) queues the submission offline instead of
     // just showing an error the student can do nothing about. ===
     val isQueuedOffline: Boolean = false
-) : UiState
+) : UiState {
+    /** Nothing more can be answered on this device. */
+    val isOver: Boolean get() = isSubmitted || isForceClosedBySystem || isBlockedByServer
+}
 
 
 /**
  * FASE 69.1: [savedStateHandle] survives process death (the LMK killing the
- * app while a student briefly switches away during a 90-minute exam) —
+ * app while a student briefly switches away during an exam):
  * currentQuestionIndex/selectedAnswers/remainingSeconds are restored instead
- * of resetting to a blank exam. The countdown timer itself now lives here
- * (a single tick source) instead of duplicated as separate, disconnected
- * Compose-local state in CbtExamRoomScreen, which never actually flowed back
- * into timeSpentSeconds on submit.
+ * of resetting to a blank exam. The countdown lives here (a single tick
+ * source); its starting point always comes from the server.
  */
 @HiltViewModel
 class CbtViewModel @Inject constructor(
@@ -101,11 +114,9 @@ class CbtViewModel @Inject constructor(
     private var autoSyncJob: Job? = null
     private var timerJob: Job? = null
     private var heartbeatJob: Job? = null
+    private var timerExamId: Long? = null
+    private var submitInFlight = false
     private val gson = Gson()
-
-    init {
-        loadExams()
-    }
 
     private fun restoreSnapshot(): CbtUiState {
         val answersJson = savedStateHandle.get<String>(KEY_ANSWERS)
@@ -119,7 +130,7 @@ class CbtViewModel @Inject constructor(
         return CbtUiState(
             currentQuestionIndex = savedStateHandle.get<Int>(KEY_QUESTION_INDEX) ?: 0,
             selectedAnswers = restoredAnswers,
-            remainingSeconds = savedStateHandle.get<Long>(KEY_REMAINING_SECONDS) ?: 5400L,
+            remainingSeconds = savedStateHandle.get<Long>(KEY_REMAINING_SECONDS),
             violationCount = savedStateHandle.get<Int>(KEY_VIOLATION_COUNT) ?: 0
         )
     }
@@ -128,32 +139,50 @@ class CbtViewModel @Inject constructor(
     private fun persistSnapshot(state: CbtUiState) {
         savedStateHandle[KEY_ANSWERS] = gson.toJson(state.selectedAnswers)
         savedStateHandle[KEY_QUESTION_INDEX] = state.currentQuestionIndex
-        savedStateHandle[KEY_REMAINING_SECONDS] = state.remainingSeconds
+        state.remainingSeconds?.let { savedStateHandle[KEY_REMAINING_SECONDS] = it }
         savedStateHandle[KEY_VIOLATION_COUNT] = state.violationCount
     }
 
     /**
-     * Starts (or resumes) the exam countdown. Uses a wall-clock deadline
-     * rather than a naive per-second decrement so a process-death gap of
-     * several minutes is reflected accurately once the ViewModel restarts,
-     * instead of silently pausing the clock while the app was dead.
+     * (Re)starts the countdown from [seconds] the server reported. Uses an
+     * elapsed-realtime deadline rather than a naive per-second decrement.
+     * When it reaches zero the answers are sent, as the web does.
      */
-    fun startExamTimer(totalDurationSeconds: Long) {
-        if (timerJob?.isActive == true) return
-        val alreadyRestored = savedStateHandle.get<Long>(KEY_REMAINING_SECONDS) != null
-        if (!alreadyRestored) {
-            _uiState.value = _uiState.value.copy(remainingSeconds = totalDurationSeconds)
-            persistSnapshot(_uiState.value)
-        }
-        val deadlineElapsedRealtime = android.os.SystemClock.elapsedRealtime() + _uiState.value.remainingSeconds * 1000
+    fun startExamTimer(examId: Long, seconds: Long) {
+        timerJob?.cancel()
+        timerExamId = examId
+        val start = seconds.coerceAtLeast(0)
+        _uiState.value = _uiState.value.copy(remainingSeconds = start)
+        savedStateHandle[KEY_REMAINING_SECONDS] = start
+        val deadlineElapsedRealtime = android.os.SystemClock.elapsedRealtime() + start * 1000
         timerJob = viewModelScope.launch {
-            while (_uiState.value.remainingSeconds > 0) {
+            while ((_uiState.value.remainingSeconds ?: 0) > 0) {
                 delay(1000)
                 val secondsLeft = ((deadlineElapsedRealtime - android.os.SystemClock.elapsedRealtime()) / 1000).coerceAtLeast(0)
                 _uiState.value = _uiState.value.copy(remainingSeconds = secondsLeft)
                 savedStateHandle[KEY_REMAINING_SECONDS] = secondsLeft
             }
+            onTimeUp(examId)
         }
+    }
+
+    /**
+     * Starts the clock from the token's answer only when nothing fresher is
+     * known (a restored snapshot, or the questions' own clock).
+     */
+    fun startExamTimerIfUnknown(examId: Long, seconds: Long?) {
+        val known = _uiState.value.remainingSeconds
+        when {
+            known != null -> if (timerJob?.isActive != true) startExamTimer(examId, known)
+            seconds != null -> startExamTimer(examId, seconds)
+        }
+    }
+
+    private fun onTimeUp(examId: Long) {
+        val state = _uiState.value
+        if (state.isOver || submitInFlight) return
+        _uiState.value = state.copy(isTimeUp = true)
+        submitExam(examId)
     }
 
     fun pauseExamTimer() {
@@ -171,25 +200,20 @@ class CbtViewModel @Inject constructor(
 
     fun loadExams() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
             cbtRepository.getExams().collect { result ->
                 when (result) {
-                    is NetworkResult.Success -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            exams = result.data,
-                            errorMessage = null
-                        )
-                    }
-                    is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = result.message
-                        )
-                    }
-                    is NetworkResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(isLoading = true)
-                    }
+                    is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        examsLoaded = true,
+                        exams = result.data,
+                        errorMessage = null
+                    )
+                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        examsLoaded = true,
+                        errorMessage = result.message
+                    )
+                    is NetworkResult.Loading -> _uiState.value = _uiState.value.copy(isLoading = true)
                 }
             }
         }
@@ -201,22 +225,22 @@ class CbtViewModel @Inject constructor(
             cbtRepository.getExamQuestions(examId).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
+                        val restoredIndex = _uiState.value.currentQuestionIndex
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            currentExamQuestions = result.data,
-                            currentQuestionIndex = 0,
+                            examMeta = result.data.exam,
+                            currentExamQuestions = result.data.questions,
+                            currentQuestionIndex = restoredIndex.coerceIn(0, (result.data.questions.size - 1).coerceAtLeast(0)),
                             errorMessage = null
                         )
+                        // The server's clock wins over anything restored on the device.
+                        result.data.exam.remainingSeconds?.let { startExamTimer(examId, it) }
                     }
-                    is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = result.message
-                        )
-                    }
-                    is NetworkResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(isLoading = true)
-                    }
+                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = result.message
+                    )
+                    is NetworkResult.Loading -> _uiState.value = _uiState.value.copy(isLoading = true)
                 }
             }
         }
@@ -248,43 +272,40 @@ class CbtViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             cbtRepository.getDecryptionKey(examId).collect { result ->
+                if (result is NetworkResult.Loading) return@collect
                 if (result is NetworkResult.Success) {
-                    val map = result.data
-                    val key = map["key"] as? String
-                    if (!key.isNullOrBlank()) {
-                        val decryptedJson = vault.decryptExamPayload(examId, key)
-                        if (!decryptedJson.isNullOrBlank()) {
-                            try {
-                                val parsed = gson.fromJson<Map<String, Any>>(
-                                    decryptedJson,
-                                    object : TypeToken<Map<String, Any>>() {}.type
-                                )
-                                val questionsRaw = parsed["questions"]
-                                val questionsJson = gson.toJson(questionsRaw)
-                                val questionsList: List<CbtQuestionItem> = gson.fromJson(
-                                    questionsJson,
-                                    object : TypeToken<List<CbtQuestionItem>>() {}.type
-                                )
-                                _uiState.value = _uiState.value.copy(
-                                    isLoading = false,
-                                    isVaultDecrypted = true,
-                                    currentExamQuestions = questionsList,
-                                    currentQuestionIndex = 0
-                                )
-                                return@collect
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                    val key = result.data["key"] as? String
+                    val decryptedJson = key?.takeIf { it.isNotBlank() }?.let { vault.decryptExamPayload(examId, it) }
+                    if (!decryptedJson.isNullOrBlank()) {
+                        try {
+                            val parsed = gson.fromJson<Map<String, Any>>(
+                                decryptedJson,
+                                object : TypeToken<Map<String, Any>>() {}.type
+                            )
+                            val questionsList: List<CbtQuestionItem> = gson.fromJson(
+                                gson.toJson(parsed["questions"]),
+                                object : TypeToken<List<CbtQuestionItem>>() {}.type
+                            )
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                isVaultDecrypted = true,
+                                currentExamQuestions = questionsList,
+                                currentQuestionIndex = _uiState.value.currentQuestionIndex
+                                    .coerceIn(0, (questionsList.size - 1).coerceAtLeast(0))
+                            )
+                            return@collect
+                        } catch (_: Exception) {
+                            // A payload that doesn't parse falls back to the online load below.
                         }
                     }
                 }
-                // Fallback to standard online load
                 loadQuestions(examId)
             }
         }
     }
 
     fun selectOption(questionId: Long, optionKey: String, examId: Long? = null) {
+        if (_uiState.value.isOver) return
         val updatedAnswers = _uiState.value.selectedAnswers + (questionId.toString() to optionKey)
         _uiState.value = _uiState.value.copy(selectedAnswers = updatedAnswers)
         persistSnapshot(_uiState.value)
@@ -316,8 +337,8 @@ class CbtViewModel @Inject constructor(
     /**
      * [violationType] is one of CbtAntiCheatEngine's ExamViolationType.name
      * values (e.g. "SCREENSHOT_ATTEMPT") — reported to the backend so the
-     * proctor sees it live (StudentCheatedEvent), in addition to updating
-     * the local count that submitExam() sends as totalViolations.
+     * proctor sees it live (StudentCheatedEvent). When the server answers
+     * is_blocked it has closed and graded the attempt; the screen locks.
      */
     fun recordViolation(examId: Long? = null, violationType: String? = null) {
         _uiState.value = _uiState.value.copy(violationCount = _uiState.value.violationCount + 1)
@@ -325,7 +346,14 @@ class CbtViewModel @Inject constructor(
 
         if (examId != null && violationType != null) {
             viewModelScope.launch {
-                cbtRepository.logViolation(examId, violationType).collect { }
+                cbtRepository.logViolation(examId, violationType).collect { result ->
+                    if (result is NetworkResult.Success && result.data) {
+                        pauseExamTimer()
+                        stopLiveProctoring()
+                        clearSnapshot()
+                        _uiState.value = _uiState.value.copy(isBlockedByServer = true)
+                    }
+                }
             }
         }
     }
@@ -333,10 +361,10 @@ class CbtViewModel @Inject constructor(
     fun handleProctorCommand(command: ProctorCommand) {
         _uiState.value = _uiState.value.copy(proctorIntervention = command)
         val extraMinutes = command.extraMinutes
-        if (command.action == "EXTEND_TIME" && extraMinutes != null) {
-            _uiState.value = _uiState.value.copy(
-                remainingSeconds = _uiState.value.remainingSeconds + (extraMinutes * 60)
-            )
+        val remaining = _uiState.value.remainingSeconds
+        val examId = timerExamId
+        if (command.action == "EXTEND_TIME" && extraMinutes != null && remaining != null && examId != null) {
+            startExamTimer(examId, remaining + extraMinutes * 60L)
         }
     }
 
@@ -348,9 +376,8 @@ class CbtViewModel @Inject constructor(
      * FASE 72.2: subscribes to this student's private proctor-intervention
      * channel and starts listening for ProctorInterventionEvent, without
      * pausing the exam timer — interventions render as a dismissible
-     * overlay (see handleProctorCommand()/CbtExamRoomScreen's dialog), not
-     * a blocking gate. No-op if studentId isn't known yet (e.g. token
-     * validation response didn't resolve one) or the socket is unavailable.
+     * overlay, not a blocking gate. No-op if studentId isn't known yet or the
+     * socket is unavailable.
      */
     fun startLiveProctoring(examId: Long, studentId: Long?) {
         if (webSocketManager == null || studentId == null) return
@@ -359,10 +386,8 @@ class CbtViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketManager.events.collect { event ->
                 if (event is WebSocketEvent.ProctorInterventionReceived && event.examId == examId) {
-                    // Sets uiState.proctorIntervention — CbtExamRoomScreen's existing
-                    // (previously dead) dialog renders it and, for FORCE_SUBMIT,
-                    // itself calls submitExam() from the "Kumpulkan Sekarang" button;
-                    // triggering submit here too would race it.
+                    // For FORCE_SUBMIT the dialog's own button submits; submitting
+                    // here too would race it.
                     handleProctorCommand(
                         ProctorCommand(
                             action = event.actionType,
@@ -380,8 +405,6 @@ class CbtViewModel @Inject constructor(
     /**
      * Pings the backend every 15s so the proctor dashboard can distinguish a
      * quiet-but-alive student from one whose app died / lost connection.
-     * Distinct from forceCloseExam(), which reports an explicit lifecycle
-     * violation.
      */
     private fun startHeartbeat(examId: Long) {
         heartbeatJob?.cancel()
@@ -398,15 +421,18 @@ class CbtViewModel @Inject constructor(
     }
 
     fun submitExam(examId: Long, vault: CbtEncryptedVault? = null) {
+        if (submitInFlight || _uiState.value.isOver) return
+        submitInFlight = true
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             pauseExamTimer()
             stopLiveProctoring()
+            val state = _uiState.value
             val request = CbtSubmitRequest(
                 examId = examId,
-                answers = _uiState.value.selectedAnswers,
-                totalViolations = _uiState.value.violationCount,
-                timeSpentSeconds = 5400 - _uiState.value.remainingSeconds
+                answers = state.selectedAnswers,
+                totalViolations = state.violationCount,
+                timeSpentSeconds = timeSpent(state.examMeta?.durationMinutes, state.remainingSeconds)
             )
 
             cbtRepository.submitExam(request).collect { result ->
@@ -424,8 +450,7 @@ class CbtViewModel @Inject constructor(
                         // FASE 69.3: a genuine connectivity failure (no HTTP code — the
                         // request never reached the server) queues the submission for
                         // automatic replay instead of stranding the student's answers.
-                        // A real server-side rejection (validation, auth) still surfaces
-                        // as an error — that must not be silently treated as "submitted".
+                        // A real server-side rejection still surfaces as an error.
                         if (result.code == null) {
                             offlineActionQueue.queueCbtSubmit(request)
                             vault?.clearVault(examId)
@@ -445,6 +470,7 @@ class CbtViewModel @Inject constructor(
                     is NetworkResult.Loading -> Unit
                 }
             }
+            submitInFlight = false
         }
     }
 
@@ -460,40 +486,35 @@ class CbtViewModel @Inject constructor(
         private const val KEY_QUESTION_INDEX = "cbt_snapshot_question_index"
         private const val KEY_REMAINING_SECONDS = "cbt_snapshot_remaining_seconds"
         private const val KEY_VIOLATION_COUNT = "cbt_snapshot_violation_count"
+
+        /** Seconds used of the exam's duration; null when either is unknown. */
+        fun timeSpent(durationMinutes: Int?, remainingSeconds: Long?): Long? {
+            if (durationMinutes == null || remainingSeconds == null) return null
+            return (durationMinutes * 60L - remainingSeconds).coerceAtLeast(0)
+        }
     }
 
     // === FASE 26: Token Validation & Force Close Functions ===
 
-    fun validateExamToken(examId: Long, token: String, onValidated: () -> Unit = {}) {
+    /** The server's reason is shown when a token is refused (wrong, expired, finished, locked...). */
+    fun validateExamToken(examId: Long, token: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(tokenValidationState = TokenValidationState.Loading)
             cbtRepository.validateExamToken(examId, token.trim().uppercase()).collect { result ->
                 when (result) {
-                    is NetworkResult.Success -> {
-                        if (result.data.valid) {
-                            _uiState.value = _uiState.value.copy(
-                                tokenValidated = true,
-                                tokenValidationState = TokenValidationState.Success(result.data.message),
-                                studentId = result.data.studentId,
-                                maxViolations = result.data.maxViolations
-                            )
-                            onValidated()
-                        } else {
-                            _uiState.value = _uiState.value.copy(
-                                tokenValidationState = TokenValidationState.Error(result.data.message)
-                            )
-                        }
-                    }
-                    is NetworkResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            tokenValidationState = TokenValidationState.Error(
-                                result.message ?: "Token tidak valid atau ujian belum aktif"
-                            )
-                        )
-                    }
-                    is NetworkResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(tokenValidationState = TokenValidationState.Loading)
-                    }
+                    is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
+                        tokenValidated = true,
+                        tokenValidationState = TokenValidationState.Success(result.data.message),
+                        studentId = result.data.studentId,
+                        maxViolations = result.data.maxViolations,
+                        remainingSeconds = result.data.remainingSeconds
+                    )
+                    is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                        tokenValidationState = TokenValidationState.Error(result.message)
+                    )
+                    is NetworkResult.Loading -> _uiState.value = _uiState.value.copy(
+                        tokenValidationState = TokenValidationState.Loading
+                    )
                 }
             }
         }
@@ -501,6 +522,7 @@ class CbtViewModel @Inject constructor(
 
     fun forceCloseExam(examId: Long, reason: String, vault: CbtEncryptedVault? = null) {
         stopLiveProctoring()
+        pauseExamTimer()
         _uiState.value = _uiState.value.copy(
             isForceClosedBySystem = true,
             forceCloseReason = reason,
@@ -528,4 +550,3 @@ class CbtViewModel @Inject constructor(
         return _uiState.value.exams.firstOrNull { it.id == examId }
     }
 }
-

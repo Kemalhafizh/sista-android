@@ -143,4 +143,9 @@
     <!-- Tab utama -->
     <string name="nav_services">Layanan</string>
     <string name="nav_notifications">Notifikasi</string>
+
+    <!-- CBT siswa -->
+    <string name="cbt_biometric_title">Verifikasi peserta ujian</string>
+    <string name="cbt_biometric_subtitle">Pindai sidik jari sebelum masuk ruang ujian</string>
+    <string name="cbt_biometric_cancel">Batal</string>
 </resources>

@@ -389,7 +389,7 @@ fun NavGraphBuilder.settingsNavGraph(
         UtbkTryOutScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() },
-            onStartExamRoom = { examId -> navController.navigate(Screen.CbtRoom.createRoute(examId)) }
+            onStartExamRoom = { examId -> navController.navigate(Screen.CbtTokenEntry.createRoute(examId)) }
         )
     }
 

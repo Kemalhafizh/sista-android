@@ -22,16 +22,14 @@ sealed class Screen(val route: String, val title: String = "") {
     
     // CBT Anti-Cheat
     object CbtList : Screen("cbt_list", "Ujian CBT")
-    object CbtTokenEntry : Screen("cbt_token/{examId}/{examTitle}/{examSubject}/{examType}/{duration}/{totalQuestions}", "Token Masuk Ujian") {
-        fun createRoute(examId: Long, title: String, subject: String, type: String, duration: Int, totalQuestions: Int): String {
-            val encTitle = URLEncoder.encode(title, StandardCharsets.UTF_8.toString())
-            val encSubject = URLEncoder.encode(subject, StandardCharsets.UTF_8.toString())
-            return "cbt_token/$examId/$encTitle/$encSubject/$type/$duration/$totalQuestions"
-        }
+    /** Every way into an exam goes through the token: the screen reads the exam from the student's own list. */
+    object CbtTokenEntry : Screen("cbt_token/{examId}", "Token Masuk Ujian") {
+        fun createRoute(examId: Long) = "cbt_token/$examId"
     }
-    object CbtRoom : Screen("cbt_room/{examId}?studentId={studentId}&maxViolations={maxViolations}", "Ruang Ujian") {
-        fun createRoute(examId: Long, studentId: Long? = null, maxViolations: Int? = null) =
-            "cbt_room/$examId?studentId=${studentId ?: -1L}&maxViolations=${maxViolations ?: -1}"
+    /** Reached only from a validated token; [remainingSeconds] is the server's clock at that moment. */
+    object CbtRoom : Screen("cbt_room/{examId}?studentId={studentId}&maxViolations={maxViolations}&remainingSeconds={remainingSeconds}", "Ruang Ujian") {
+        fun createRoute(examId: Long, studentId: Long? = null, maxViolations: Int? = null, remainingSeconds: Long? = null) =
+            "cbt_room/$examId?studentId=${studentId ?: -1L}&maxViolations=${maxViolations ?: -1}&remainingSeconds=${remainingSeconds ?: -1L}"
     }
 
     // Ibadah & Character

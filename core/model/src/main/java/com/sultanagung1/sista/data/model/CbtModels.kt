@@ -2,19 +2,31 @@ package com.sultanagung1.sista.data.model
 
 import com.google.gson.annotations.SerializedName
 
-/** GET student/cbt/exams — mirrors ApiStudentController::cbtExams() exactly. */
+/**
+ * GET student/cbt/exams — mirrors ApiStudentController::cbtExams(). Only
+ * published (or completed) exams of the student's class are listed. What the
+ * server leaves out is null here, not a guessed subject, duration or pass mark.
+ */
 data class CbtExamItem(
     @SerializedName("id") val id: Long,
     @SerializedName("uuid") val uuid: String? = null,
     @SerializedName("title") val title: String,
-    @SerializedName("subject") val subject: String,
-    @SerializedName("type") val type: String = "CBT",
-    @SerializedName("duration_minutes") val durationMinutes: Int,
-    @SerializedName("total_questions") val totalQuestions: Int,
-    @SerializedName("passing_score") val passingScore: Double = 75.0,
-    @SerializedName("status") val status: String = "published", // "draft" or "published" — not a lifecycle state
+    @SerializedName("subject") val subject: String? = null,
+    /** uts, uas, ulangan_harian or try_out, upper-cased by the server. */
+    @SerializedName("type") val type: String? = null,
+    @SerializedName("duration_minutes") val durationMinutes: Int? = null,
+    @SerializedName("total_questions") val totalQuestions: Int? = null,
+    @SerializedName("passing_score") val passingScore: Double? = null,
+    @SerializedName("status") val status: String? = null, // "published" or "completed" — not a lifecycle state
+    /** ISO-8601. */
+    @SerializedName("starts_at") val startsAt: String? = null,
+    @SerializedName("ends_at") val endsAt: String? = null,
+    /** upcoming, ongoing or ended; older servers only send [isOngoing]. */
+    @SerializedName("availability_code") val availabilityCode: String? = null,
     @SerializedName("is_ongoing") val isOngoing: Boolean = false,
     @SerializedName("has_attempted") val hasAttempted: Boolean = false,
+    /** in_progress, submitted, graded, blocked_violation, timeout or force_closed. */
+    @SerializedName("attempt_status") val attemptStatus: String? = null,
     @SerializedName("score") val score: Double? = null
 )
 
@@ -22,8 +34,11 @@ data class CbtExamItem(
 data class CbtExamMeta(
     @SerializedName("id") val id: Long,
     @SerializedName("title") val title: String,
-    @SerializedName("duration_minutes") val durationMinutes: Int,
-    @SerializedName("total_questions") val totalQuestions: Int
+    @SerializedName("duration_minutes") val durationMinutes: Int? = null,
+    @SerializedName("total_questions") val totalQuestions: Int? = null,
+    /** When this student's attempt runs out (ISO-8601); null before the token is entered. */
+    @SerializedName("ends_at") val endsAt: String? = null,
+    @SerializedName("remaining_seconds") val remainingSeconds: Long? = null
 )
 
 data class CbtExamQuestionsResponse(
@@ -114,7 +129,8 @@ data class CbtSubmitRequest(
     @SerializedName("exam_id") val examId: Long,
     @SerializedName("answers") val answers: Map<String, String>,
     @SerializedName("total_violations") val totalViolations: Int,
-    @SerializedName("time_spent_seconds") val timeSpentSeconds: Long
+    /** Null when the exam's duration or the clock is unknown, rather than a guess. */
+    @SerializedName("time_spent_seconds") val timeSpentSeconds: Long? = null
 )
 
 /** POST student/cbt/exams/{id}/submit response — mirrors ApiStudentController::cbtSubmitExam() exactly. */
@@ -188,7 +204,10 @@ data class CbtTokenValidationResponse(
     // The exam's real lockout threshold — must drive CbtAntiCheatEngine's
     // maxViolationsAllowed instead of a hardcoded value, since it's
     // configurable per-exam and the backend enforces this exact number.
-    @SerializedName("max_violations") val maxViolations: Int? = null
+    @SerializedName("max_violations") val maxViolations: Int? = null,
+    /** The attempt's own clock: its duration from the first start, cut off by the exam's end. */
+    @SerializedName("ends_at") val endsAt: String? = null,
+    @SerializedName("remaining_seconds") val remainingSeconds: Long? = null
 )
 
 data class CbtTokenInfoResponse(

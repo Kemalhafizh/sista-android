@@ -23,6 +23,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.SubcomposeAsyncImage
 import com.sultanagung1.sista.core.designsystem.Emerald700
+import androidx.compose.ui.res.stringResource
+import com.sultanagung1.sista.core.designsystem.R
 
 /**
  * CbtImageViewer
@@ -54,7 +56,7 @@ fun CbtImageViewer(
     ) {
         SubcomposeAsyncImage(
             model = imageUrl,
-            contentDescription = "Gambar Soal / Pilihan CBT",
+            contentDescription = stringResource(R.string.cs_img_question),
             contentScale = contentScale,
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,13 +85,13 @@ fun CbtImageViewer(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             imageVector = Icons.Default.BrokenImage,
-                            contentDescription = "Gagal memuat gambar",
+                            contentDescription = stringResource(R.string.cs_img_failed_icon),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Gambar tidak dapat dimuat",
+                            text = stringResource(R.string.cs_img_failed),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -111,7 +113,7 @@ fun CbtImageViewer(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.ZoomIn,
-                        contentDescription = "Perbesar Gambar",
+                        contentDescription = stringResource(R.string.cs_img_zoom),
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
@@ -136,7 +138,7 @@ fun CbtImageViewer(
                 // Image container
                 SubcomposeAsyncImage(
                     model = imageUrl,
-                    contentDescription = "Zoom Gambar Soal",
+                    contentDescription = stringResource(R.string.cs_img_zoomed),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -153,7 +155,7 @@ fun CbtImageViewer(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Tutup",
+                        contentDescription = stringResource(R.string.cs_img_close),
                         tint = Color.White
                     )
                 }

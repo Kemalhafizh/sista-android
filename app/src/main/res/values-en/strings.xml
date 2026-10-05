@@ -141,4 +141,9 @@
     <!-- Tab utama -->
     <string name="nav_services">Services</string>
     <string name="nav_notifications">Notifications</string>
+
+    <!-- CBT siswa -->
+    <string name="cbt_biometric_title">Verify the exam taker</string>
+    <string name="cbt_biometric_subtitle">Scan your fingerprint before entering the exam</string>
+    <string name="cbt_biometric_cancel">Cancel</string>
 </resources>

@@ -72,4 +72,12 @@
     <string name="lx_degree">درجة</string>
     <string name="lx_title">اختصارات المعادلات (LaTeX):</string>
     <string name="lx_hint">(اضغط للإدراج عند المؤشر)</string>
+
+    <!-- Gambar soal CBT -->
+    <string name="cs_img_question">صورة السؤال</string>
+    <string name="cs_img_failed_icon">فشل تحميل الصورة</string>
+    <string name="cs_img_failed">تعذر تحميل الصورة</string>
+    <string name="cs_img_zoom">تكبير الصورة</string>
+    <string name="cs_img_zoomed">صورة السؤال مكبرة</string>
+    <string name="cs_img_close">إغلاق</string>
 </resources>
