@@ -156,8 +156,8 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideQuestionBankRepository(questionBankApi: QuestionBankApiService): QuestionBankRepository =
-        QuestionBankRepository(questionBankApi)
+    fun provideQuestionBankRepository(questionBankApi: QuestionBankApiService, messages: FallbackMessages): QuestionBankRepository =
+        QuestionBankRepository(questionBankApi, messages)
 
     @Provides
     @Singleton

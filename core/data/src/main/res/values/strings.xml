@@ -35,4 +35,9 @@
     <string name="proctor_token_renew_failed">Token ujian belum bisa diperbarui (kode %1$d).</string>
     <string name="proctor_reset_failed">Akses siswa belum bisa dibuka (kode %1$d).</string>
     <string name="proctor_locked_load_failed">Daftar siswa terkunci belum bisa dimuat (kode %1$d).</string>
+
+    <!-- Bank soal -->
+    <string name="question_bank_load_failed">Bank soal belum bisa dimuat (kode %1$d).</string>
+    <string name="question_bank_pick_failed">Soal belum bisa dipilih dari bank soal (kode %1$d).</string>
+    <string name="question_bank_save_failed">Soal belum tersimpan (kode %1$d).</string>
 </resources>

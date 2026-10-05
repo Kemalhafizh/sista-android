@@ -1,204 +1,215 @@
 package com.sultanagung1.sista.ui.teacher
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.sultanagung1.sista.core.designsystem.*
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import com.sultanagung1.sista.core.ui.component.InlineBanner
+import com.sultanagung1.sista.core.ui.component.SectionHeader
+import com.sultanagung1.sista.core.ui.component.SistaButton
+import com.sultanagung1.sista.core.ui.component.SistaCard
+import com.sultanagung1.sista.core.ui.component.SistaTextField
+import com.sultanagung1.sista.core.ui.component.SistaTopBar
+import com.sultanagung1.sista.core.ui.component.StatusPill
+import com.sultanagung1.sista.core.ui.theme.ShellTheme
+import com.sultanagung1.sista.core.ui.theme.SistaTheme
+import com.sultanagung1.sista.core.ui.theme.Spacing
+import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.AutoGenerateExamRequest
-import androidx.compose.material.icons.Icons
+import com.sultanagung1.sista.data.model.QuestionBankItem
+import com.sultanagung1.sista.feature.teacher.R
 import com.sultanagung1.sista.ui.cbt.components.CbtLatexMathView
 
+/** What the teacher asks the bank for. [categoryId] null means every category. */
+data class QuestionPickForm(
+    val categoryId: Long? = null,
+    val count: String = "10",
+    val mixIndex: Int = 0,
+) {
+    /** `question-bank/auto-generate` accepts 1..100 questions. */
+    val countValue: Int? get() = count.toIntOrNull()?.takeIf { it in 1..100 }
+}
+
+/**
+ * Previews a set of questions picked from the bank by difficulty. The server
+ * only returns the set (no exam id is sent), so nothing is saved here; an exam
+ * is made in "Buat ujian".
+ */
 @Composable
 fun AutoGenerateExamScreen(
     viewModel: QuestionBankViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var categoryId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var count by rememberSaveable { mutableStateOf("10") }
+    var mixIndex by rememberSaveable { mutableIntStateOf(0) }
+    val form = QuestionPickForm(categoryId, count, mixIndex)
 
-    var totalQuestionsInput by remember { mutableStateOf("10") }
-    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
-    var mudahPercent by remember { mutableFloatStateOf(30f) }
-    var sedangPercent by remember { mutableFloatStateOf(50f) }
-    var sulitPercent by remember { mutableFloatStateOf(20f) }
-
-    Scaffold(
-        topBar = {
-            SulaoneTopBar(
-                title = "Auto-Generate Ujian CBT",
-                onNavigateBack = onNavigateBack
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Parameter Seleksi Bank Soal",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Emerald800
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = totalQuestionsInput,
-                        onValueChange = { totalQuestionsInput = it },
-                        label = { Text("Jumlah Butir Soal") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Distribusi Tingkat Kesulitan:",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Mudah: ${mudahPercent.toInt()}%", fontSize = 12.sp, color = Emerald700)
-                        Text("Sedang: ${sedangPercent.toInt()}%", fontSize = 12.sp, color = Gold700)
-                        Text("Sulit: ${sulitPercent.toInt()}%", fontSize = 12.sp, color = AccentRose)
-                    }
-
-                    Slider(
-                        value = mudahPercent,
-                        onValueChange = {
-                            mudahPercent = it
-                            val remainder = 100f - mudahPercent
-                            sedangPercent = remainder * 0.7f
-                            sulitPercent = remainder * 0.3f
-                        },
-                        valueRange = 10f..60f,
-                        colors = SliderDefaults.colors(thumbColor = Emerald700, activeTrackColor = Emerald700)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            val count = totalQuestionsInput.toIntOrNull() ?: 10
-                            viewModel.autoGenerate(
-                                AutoGenerateExamRequest(
-                                    categoryId = selectedCategoryId,
-                                    totalQuestions = count,
-                                    difficultyDistribution = mapOf(
-                                        "mudah" to mudahPercent.toInt(),
-                                        "sedang" to sedangPercent.toInt(),
-                                        "sulit" to sulitPercent.toInt()
-                                    )
-                                )
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
-                        enabled = !uiState.isGenerating
-                    ) {
-                        if (uiState.isGenerating) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sedang Mengambil Soal...")
-                        } else {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generate Paket Soal Sekarang")
-                        }
-                    }
-                }
+    AutoGenerateContent(
+        state = uiState,
+        form = form,
+        onCategory = { categoryId = it },
+        onCount = { count = it.filter(Char::isDigit).take(3) },
+        onMix = { mixIndex = it },
+        onPick = {
+            form.countValue?.let { total ->
+                viewModel.autoGenerate(
+                    AutoGenerateExamRequest(
+                        categoryId = form.categoryId,
+                        totalQuestions = total,
+                        difficultyDistribution = QuestionBankFormat.MIXES[form.mixIndex],
+                    ),
+                )
             }
+        },
+        onNavigateBack = onNavigateBack,
+    )
+}
 
-            if (uiState.generatedExam != null) {
-                val generated = uiState.generatedExam!!
-                item {
-                    Text(
-                        text = "Hasil Generator: ${generated.totalGenerated} Butir Soal Terpilih",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Emerald900
-                    )
-                }
-
-                itemsIndexed(generated.items) { index, item ->
-                    SulaoneCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Soal No. ${index + 1}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Emerald700
-                            )
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = when (item.difficulty) {
-                                    "mudah" -> Emerald100
-                                    "sulit" -> AccentRose.copy(alpha = 0.15f)
-                                    else -> Gold100
+/** The preview without a ViewModel, for previews and screenshots. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun AutoGenerateContent(
+    state: QuestionBankUiState,
+    form: QuestionPickForm,
+    onCategory: (Long?) -> Unit,
+    onCount: (String) -> Unit,
+    onMix: (Int) -> Unit,
+    onPick: () -> Unit,
+    onNavigateBack: (() -> Unit)?,
+) {
+    ShellTheme {
+        Scaffold(
+            topBar = { SistaTopBar(title = stringResource(R.string.qb_preview), onBack = onNavigateBack) },
+            containerColor = SistaTheme.colors.background,
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .imePadding(),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.sm, bottom = Spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                item(key = "note") { InlineBanner(message = stringResource(R.string.qb_preview_note), tone = StatusTone.Info) }
+                item(key = "form") {
+                    SistaCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                            Text(stringResource(R.string.qb_category), style = SistaTheme.typography.labelLarge)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                                Choice(stringResource(R.string.qb_all_categories), form.categoryId == null) { onCategory(null) }
+                                state.categories.forEach { category ->
+                                    Choice(category.name, form.categoryId == category.id) { onCategory(category.id) }
                                 }
-                            ) {
-                                Text(
-                                    text = "${item.difficulty.uppercase()} | ${item.cognitiveLevel}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = when (item.difficulty) {
-                                        "mudah" -> Emerald800
-                                        "sulit" -> AccentRose
-                                        else -> Gold800
-                                    },
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
                             }
+                            SistaTextField(
+                                value = form.count,
+                                onValueChange = onCount,
+                                label = stringResource(R.string.qb_count),
+                                errorText = stringResource(R.string.qb_count_invalid).takeIf { form.countValue == null },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            )
+                            Text(stringResource(R.string.qb_mix), style = SistaTheme.typography.labelLarge)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                                QuestionBankFormat.MIXES.forEachIndexed { index, mix ->
+                                    Choice(QuestionBankFormat.mixLabel(mix), form.mixIndex == index) { onMix(index) }
+                                }
+                            }
+                            Text(
+                                stringResource(R.string.qb_mix_hint),
+                                style = SistaTheme.typography.bodySmall,
+                                color = SistaTheme.colors.onSurfaceVariant,
+                            )
+                            SistaButton(
+                                stringResource(R.string.qb_pick),
+                                onPick,
+                                leadingIcon = Icons.Outlined.AutoAwesome,
+                                loading = state.isGenerating,
+                                enabled = !state.isGenerating && form.countValue != null,
+                                fullWidth = true,
+                            )
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CbtLatexMathView(
-                            text = item.questionText,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Kunci: ${item.correctAnswer}",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Emerald800
-                        )
                     }
                 }
+                state.generateError?.let { error ->
+                    item(key = "error") { InlineBanner(message = error, tone = StatusTone.Danger) }
+                }
+                state.generatedExam?.let { result ->
+                    item(key = "result_header") {
+                        SectionHeader(stringResource(R.string.qb_picked, result.totalGenerated))
+                    }
+                    if (result.items.isEmpty()) {
+                        item(key = "result_empty") { InlineBanner(message = stringResource(R.string.qb_picked_none), tone = StatusTone.Warning) }
+                    }
+                    itemsIndexed(result.items, key = { _, item -> item.id }) { index, item -> PickedQuestion(index + 1, item) }
+                }
             }
+        }
+    }
+}
 
-            item {
-                Spacer(modifier = Modifier.height(40.dp))
+@Composable
+private fun Choice(label: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = if (selected) ({ Icon(Icons.Outlined.Check, contentDescription = null) }) else null,
+    )
+}
+
+@Composable
+private fun PickedQuestion(number: Int, item: QuestionBankItem) {
+    SistaCard(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.qb_question_number, number),
+                    style = SistaTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(Spacing.sm))
+                StatusPill(
+                    listOfNotNull(QuestionBankFormat.difficulty(item.difficulty).asString(), item.cognitiveLevel).joinToString(" · "),
+                    QuestionBankFormat.difficultyTone(item.difficulty),
+                )
             }
+            CbtLatexMathView(text = item.questionText, style = SistaTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.qb_answer_key, item.correctAnswer),
+                style = SistaTheme.typography.labelLarge,
+                color = SistaTheme.colors.primary,
+            )
         }
     }
 }

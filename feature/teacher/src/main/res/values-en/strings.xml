@@ -270,4 +270,31 @@
     <string name="pr_unlock">Let back in</string>
     <string name="pr_unlocked">%1$s can enter again with the token.</string>
     <string name="pr_unlocked_unnamed">The student can enter again with the token.</string>
+
+    <!-- Bank soal -->
+    <string name="qb_title">Question bank</string>
+    <string name="qb_preview">Preview a question set</string>
+    <string name="qb_create_exam">Create exam</string>
+    <string name="qb_error">Couldn\'t load the question bank</string>
+    <string name="qb_empty">The question bank is empty</string>
+    <string name="qb_empty_body">Categories and questions added in Question Bank on the web will appear here.</string>
+    <string name="qb_categories">Competency categories: %1$d</string>
+    <string name="qb_grade">Phase %1$s</string>
+    <string name="qb_items">Questions: %1$d</string>
+    <string name="qb_easy">Easy</string>
+    <string name="qb_medium">Medium</string>
+    <string name="qb_hard">Hard</string>
+    <string name="qb_no_difficulty">No level</string>
+    <string name="qb_preview_note">This preview only shows the questions picked from the bank and saves nothing. To use them, create an exam in Create exam.</string>
+    <string name="qb_category">Category</string>
+    <string name="qb_all_categories">All categories</string>
+    <string name="qb_count">Number of questions (1–100)</string>
+    <string name="qb_count_invalid">Enter a number from 1 to 100</string>
+    <string name="qb_mix">Easy / medium / hard mix (%)</string>
+    <string name="qb_mix_hint">If a level runs short, the server fills in with questions from other levels.</string>
+    <string name="qb_pick">Pick questions</string>
+    <string name="qb_picked">Questions picked: %1$d</string>
+    <string name="qb_picked_none">No matching questions in the bank.</string>
+    <string name="qb_question_number">Question %1$d</string>
+    <string name="qb_answer_key">Answer: %1$s</string>
 </resources>

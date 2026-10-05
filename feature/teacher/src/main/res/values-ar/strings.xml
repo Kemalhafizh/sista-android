@@ -270,4 +270,31 @@
     <string name="pr_unlock">السماح بالعودة</string>
     <string name="pr_unlocked">يمكن لـ %1$s الدخول مجددًا بالرمز.</string>
     <string name="pr_unlocked_unnamed">يمكن للطالب الدخول مجددًا بالرمز.</string>
+
+    <!-- Bank soal -->
+    <string name="qb_title">بنك الأسئلة</string>
+    <string name="qb_preview">معاينة مجموعة أسئلة</string>
+    <string name="qb_create_exam">إنشاء اختبار</string>
+    <string name="qb_error">تعذّر تحميل بنك الأسئلة</string>
+    <string name="qb_empty">بنك الأسئلة فارغ</string>
+    <string name="qb_empty_body">ستظهر هنا الفئات والأسئلة المضافة في قائمة بنك الأسئلة على الويب.</string>
+    <string name="qb_categories">فئات الكفايات: %1$d</string>
+    <string name="qb_grade">المرحلة %1$s</string>
+    <string name="qb_items">الأسئلة: %1$d</string>
+    <string name="qb_easy">سهل</string>
+    <string name="qb_medium">متوسط</string>
+    <string name="qb_hard">صعب</string>
+    <string name="qb_no_difficulty">بلا مستوى</string>
+    <string name="qb_preview_note">تعرض هذه المعاينة الأسئلة المختارة من البنك فقط ولا تحفظ شيئًا. لاستخدامها، أنشئ اختبارًا من قائمة إنشاء اختبار.</string>
+    <string name="qb_category">الفئة</string>
+    <string name="qb_all_categories">كل الفئات</string>
+    <string name="qb_count">عدد الأسئلة (⁦1–100⁩)</string>
+    <string name="qb_count_invalid">أدخل رقمًا من 1 إلى 100</string>
+    <string name="qb_mix">نسبة السهل / المتوسط / الصعب (%)</string>
+    <string name="qb_mix_hint">إذا نقصت أسئلة مستوى ما، يكمل الخادم بأسئلة من مستويات أخرى.</string>
+    <string name="qb_pick">اختيار الأسئلة</string>
+    <string name="qb_picked">الأسئلة المختارة: %1$d</string>
+    <string name="qb_picked_none">لا توجد أسئلة مطابقة في البنك.</string>
+    <string name="qb_question_number">السؤال %1$d</string>
+    <string name="qb_answer_key">الإجابة: %1$s</string>
 </resources>

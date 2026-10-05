@@ -270,4 +270,31 @@
     <string name="pr_unlock">Buka akses</string>
     <string name="pr_unlocked">%1$s bisa masuk kembali dengan token.</string>
     <string name="pr_unlocked_unnamed">Siswa bisa masuk kembali dengan token.</string>
+
+    <!-- Bank soal -->
+    <string name="qb_title">Bank soal</string>
+    <string name="qb_preview">Pratinjau paket soal</string>
+    <string name="qb_create_exam">Buat ujian</string>
+    <string name="qb_error">Bank soal belum bisa dimuat</string>
+    <string name="qb_empty">Bank soal masih kosong</string>
+    <string name="qb_empty_body">Kategori dan soal yang ditambahkan di menu Bank Soal pada web akan muncul di sini.</string>
+    <string name="qb_categories">Kategori kompetensi: %1$d</string>
+    <string name="qb_grade">Fase %1$s</string>
+    <string name="qb_items">Soal: %1$d</string>
+    <string name="qb_easy">Mudah</string>
+    <string name="qb_medium">Sedang</string>
+    <string name="qb_hard">Sulit</string>
+    <string name="qb_no_difficulty">Tanpa tingkat</string>
+    <string name="qb_preview_note">Pratinjau ini hanya menampilkan soal yang dipilih dari bank soal dan tidak menyimpan apa pun. Untuk memakainya, buat ujian di menu Buat ujian.</string>
+    <string name="qb_category">Kategori</string>
+    <string name="qb_all_categories">Semua kategori</string>
+    <string name="qb_count">Jumlah soal (1–100)</string>
+    <string name="qb_count_invalid">Isi angka 1 sampai 100</string>
+    <string name="qb_mix">Komposisi mudah / sedang / sulit (%)</string>
+    <string name="qb_mix_hint">Kalau soal di satu tingkat kurang, server mengisinya dengan soal dari tingkat lain.</string>
+    <string name="qb_pick">Pilih soal</string>
+    <string name="qb_picked">Soal terpilih: %1$d</string>
+    <string name="qb_picked_none">Tidak ada soal yang cocok di bank soal.</string>
+    <string name="qb_question_number">Soal %1$d</string>
+    <string name="qb_answer_key">Kunci: %1$s</string>
 </resources>

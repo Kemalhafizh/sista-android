@@ -105,8 +105,6 @@ class HardcodedUiTextTest {
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/QrScannerScreen.kt" to 7,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/ScanResultHandler.kt" to 5,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/update/UpdatePromptScreen.kt" to 7,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/AutoGenerateExamScreen.kt" to 12,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/QuestionBankScreen.kt" to 19,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/RemedialScreen.kt" to 9,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherCreateExamScreen.kt" to 23,
     )
