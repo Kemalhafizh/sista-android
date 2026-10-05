@@ -239,4 +239,35 @@
     <string name="tatt_empty_body">Siswa yang terdaftar di kelas ini akan muncul di sini.</string>
     <string name="tatt_saved">Presensi tersimpan. Siswa tercatat: %1$d.</string>
     <string name="si_nisn">NISN %1$s</string>
+
+    <!-- Pengawas ujian -->
+    <string name="pe_title">Pengawas ujian</string>
+    <string name="pe_subtitle">Pilih ujian yang Anda awasi</string>
+    <string name="pe_error">Daftar ujian belum bisa dimuat</string>
+    <string name="pe_empty">Belum ada ujian untuk diawasi</string>
+    <string name="pe_empty_body">Ujian terbit yang sedang berlangsung atau terjadwal atas nama Anda muncul di sini: UTS/UAS jika Anda Operator Ujian, ulangan harian dan try out jika Anda pembuatnya.</string>
+    <string name="pe_ongoing">Sedang berlangsung</string>
+    <string name="pe_starts">Mulai %1$s</string>
+    <string name="pe_no_start">Waktu mulai belum diatur</string>
+    <string name="pe_type_uts">UTS</string>
+    <string name="pe_type_uas">UAS</string>
+    <string name="pe_type_daily">Ulangan harian</string>
+    <string name="pe_type_tryout">Try out</string>
+    <string name="pr_title">Pengawas ujian</string>
+    <string name="pr_exam_number">Ujian #%1$d</string>
+    <string name="pr_token">Token masuk ujian</string>
+    <string name="pr_token_valid_for">Berlaku %1$d menit sejak diterbitkan</string>
+    <string name="pr_token_missing">Token belum dimuat.</string>
+    <string name="pr_token_expired">Token kedaluwarsa. Terbitkan token baru.</string>
+    <string name="pr_token_remaining">Berlaku %1$s lagi</string>
+    <string name="pr_token_active">Token aktif</string>
+    <string name="pr_token_renew">Terbitkan token baru</string>
+    <string name="pr_locked">Siswa terkunci</string>
+    <string name="pr_locked_empty">Tidak ada siswa terkunci</string>
+    <string name="pr_locked_empty_body">Siswa yang dikeluarkan sistem anti-curang muncul di sini dan bisa Anda izinkan masuk kembali.</string>
+    <string name="pr_student_unnamed">Siswa tanpa nama</string>
+    <string name="pr_violations">Pelanggaran: %1$d</string>
+    <string name="pr_unlock">Buka akses</string>
+    <string name="pr_unlocked">%1$s bisa masuk kembali dengan token.</string>
+    <string name="pr_unlocked_unnamed">Siswa bisa masuk kembali dengan token.</string>
 </resources>

@@ -28,4 +28,11 @@
     <string name="remedial_auto_done">تم تشغيل العلاج التلقائي.</string>
     <string name="remedials_load_failed">تعذّر تحميل قائمة العلاج (الرمز %1$d).</string>
     <string name="assessment_history_load_failed">تعذّر تحميل سجل التقييمات (الرمز %1$d).</string>
+
+    <!-- Pengawas CBT -->
+    <string name="proctor_exams_load_failed">تعذّر تحميل الاختبارات التي تراقبها (الرمز %1$d).</string>
+    <string name="proctor_token_load_failed">تعذّر تحميل رمز الاختبار (الرمز %1$d).</string>
+    <string name="proctor_token_renew_failed">تعذّر تجديد رمز الاختبار (الرمز %1$d).</string>
+    <string name="proctor_reset_failed">تعذّر إعادة سماح الطالب بالدخول (الرمز %1$d).</string>
+    <string name="proctor_locked_load_failed">تعذّر تحميل الطلاب المقفلين (الرمز %1$d).</string>
 </resources>

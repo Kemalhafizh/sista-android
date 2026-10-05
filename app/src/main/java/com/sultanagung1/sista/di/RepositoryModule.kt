@@ -69,8 +69,8 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideCbtRepository(apiClient: ApiClient): CbtRepository =
-        CbtRepository(apiClient)
+    fun provideCbtRepository(apiClient: ApiClient, messages: FallbackMessages): CbtRepository =
+        CbtRepository(apiClient, messages)
 
     @Provides
     @Singleton

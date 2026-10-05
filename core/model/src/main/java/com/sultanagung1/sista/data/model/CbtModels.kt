@@ -196,9 +196,26 @@ data class CbtTokenInfoResponse(
     @SerializedName("title") val title: String,
     @SerializedName("access_token") val accessToken: String,
     @SerializedName("token_expires_at") val tokenExpiresAt: String? = null,
-    @SerializedName("remaining_seconds") val remainingSeconds: Int = 300,
+    // From the server; a token without them is shown without a countdown, not as 5 minutes.
+    @SerializedName("remaining_seconds") val remainingSeconds: Int? = null,
     @SerializedName("is_expired") val isExpired: Boolean = false,
-    @SerializedName("duration_minutes") val durationMinutes: Int = 5
+    @SerializedName("duration_minutes") val durationMinutes: Int? = null
+)
+
+/**
+ * A student the anti-cheat locked out of an exam (`teacher/cbt/exams/{id}/locked-students`).
+ * [reasonCode] is app_minimized, app_closed, split_screen or back_button_pressed;
+ * [reason] is the server's label for it in the user's language.
+ */
+data class LockedExamStudent(
+    @SerializedName("student_id") val studentId: Long,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("nis") val nis: String? = null,
+    @SerializedName("classroom") val classroom: String? = null,
+    @SerializedName("reason_code") val reasonCode: String? = null,
+    @SerializedName("reason") val reason: String? = null,
+    @SerializedName("violation_count") val violationCount: Int? = null,
+    @SerializedName("locked_at") val lockedAt: String? = null,
 )
 
 data class CbtForceCloseRequest(

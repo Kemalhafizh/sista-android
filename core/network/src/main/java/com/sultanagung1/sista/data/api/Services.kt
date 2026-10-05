@@ -138,6 +138,11 @@ interface CbtApiService {
         @Path("id") examId: Long
     ): Response<CbtApiEnvelope<CbtTokenInfoResponse>>
 
+    @GET("teacher/cbt/exams/{id}/locked-students")
+    suspend fun getLockedStudents(
+        @Path("id") examId: Long
+    ): Response<CbtApiEnvelope<List<LockedExamStudent>>>
+
     @POST("teacher/cbt/exams/{id}/token/reset-student")
     suspend fun resetStudentAttempt(
         @Path("id") examId: Long,

@@ -109,8 +109,6 @@ class HardcodedUiTextTest {
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/QuestionBankScreen.kt" to 19,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/RemedialScreen.kt" to 9,
         "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherCreateExamScreen.kt" to 23,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherProctorDashboardScreen.kt" to 11,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/TeacherProctorExamsScreen.kt" to 6,
     )
 
     private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"([^"\\]*+(?:\\.[^"\\]*+)*+)"""")

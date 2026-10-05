@@ -239,4 +239,35 @@
     <string name="tatt_empty_body">Students enrolled in this class will appear here.</string>
     <string name="tatt_saved">Attendance saved. Students recorded: %1$d.</string>
     <string name="si_nisn">NISN %1$s</string>
+
+    <!-- Pengawas ujian -->
+    <string name="pe_title">Exam proctoring</string>
+    <string name="pe_subtitle">Choose the exam you proctor</string>
+    <string name="pe_error">Couldn\'t load your exams</string>
+    <string name="pe_empty">No exams to proctor</string>
+    <string name="pe_empty_body">Published exams running or scheduled under your name appear here: midterms and finals if you are the exam operator, daily tests and practice tests if you created them.</string>
+    <string name="pe_ongoing">In progress</string>
+    <string name="pe_starts">Starts %1$s</string>
+    <string name="pe_no_start">Start time not set</string>
+    <string name="pe_type_uts">Midterm</string>
+    <string name="pe_type_uas">Final exam</string>
+    <string name="pe_type_daily">Daily test</string>
+    <string name="pe_type_tryout">Practice test</string>
+    <string name="pr_title">Exam proctoring</string>
+    <string name="pr_exam_number">Exam #%1$d</string>
+    <string name="pr_token">Exam entry token</string>
+    <string name="pr_token_valid_for">Valid for %1$d minutes after it is issued</string>
+    <string name="pr_token_missing">The token hasn\'t loaded.</string>
+    <string name="pr_token_expired">The token has expired. Issue a new one.</string>
+    <string name="pr_token_remaining">Valid for another %1$s</string>
+    <string name="pr_token_active">Token active</string>
+    <string name="pr_token_renew">Issue a new token</string>
+    <string name="pr_locked">Locked-out students</string>
+    <string name="pr_locked_empty">No students are locked out</string>
+    <string name="pr_locked_empty_body">Students the anti-cheat closed out appear here, and you can let them back in.</string>
+    <string name="pr_student_unnamed">Unnamed student</string>
+    <string name="pr_violations">Violations: %1$d</string>
+    <string name="pr_unlock">Let back in</string>
+    <string name="pr_unlocked">%1$s can enter again with the token.</string>
+    <string name="pr_unlocked_unnamed">The student can enter again with the token.</string>
 </resources>
