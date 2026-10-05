@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Check
@@ -87,7 +86,6 @@ val ADMIN_SHORTCUTS = listOf(
     AdminShortcut("Pengumuman", Icons.Outlined.Campaign, Screen.AnnouncementFeed.route),
     AdminShortcut("Evaluasi guru", Icons.Outlined.RateReview, Screen.TeacherEvaluation.route),
     AdminShortcut("Tata tertib", Icons.Outlined.Gavel, Screen.Discipline.createRoute()),
-    AdminShortcut("Modul sekolah", Icons.AutoMirrored.Outlined.Assignment, Screen.EnterpriseCatalog.route),
 )
 
 /** A decision the user is about to confirm. */

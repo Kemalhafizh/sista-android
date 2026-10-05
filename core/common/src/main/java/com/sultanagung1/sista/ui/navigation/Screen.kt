@@ -84,7 +84,6 @@ sealed class Screen(val route: String, val title: String = "") {
     }
     object NotificationCenter : Screen("notification_center", "Pusat Notifikasi")
 
-    object EnterpriseCatalog : Screen("enterprise_catalog", "Direktori Enterprise")
 
     // Documents & PDF Management
     object PdfViewer : Screen("pdf_viewer?fileUrl={fileUrl}&title={title}&sizeBytes={sizeBytes}", "Rapor & Dokumen PDF") {
@@ -108,8 +107,6 @@ sealed class Screen(val route: String, val title: String = "") {
     object ExecutiveAnalytics : Screen("executive_analytics", "KPI Eksekutif")
 
     // SuperApp Marketplace, SSO & Updates
-    object SsoWebView : Screen("sso_webview", "Portal Web SSO")
-    object ModuleFavorites : Screen("module_favorites", "Modul Favorit")
     object InAppUpdate : Screen("in_app_update", "Pembaruan Aplikasi")
 
     // User Profile & Settings

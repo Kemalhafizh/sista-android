@@ -22,8 +22,7 @@ object FeatureCatalog {
         Screen.Login, Screen.ServicesHub, Screen.Profile, Screen.Settings,
         Screen.LanguageSettings, Screen.AccessibilitySettings, Screen.SecuritySettings,
         Screen.NotificationSettings, Screen.DiagnosticReport,
-        Screen.InAppUpdate, Screen.ModuleFavorites, Screen.EnterpriseCatalog,
-        Screen.PdfViewer, Screen.DownloadHistory, Screen.SsoWebView,
+        Screen.InAppUpdate, Screen.PdfViewer, Screen.DownloadHistory,
         // Admissions are public: anyone may look up or register.
         Screen.SpmbMobile, Screen.SpmbInfo, Screen.SpmbRegistration, Screen.SpmbTracking,
     ).map { it.route }.toSet()

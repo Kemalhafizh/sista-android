@@ -46,9 +46,6 @@ import com.sultanagung1.sista.ui.ibadah.TahsinRecorderScreen
 import com.sultanagung1.sista.ui.library.LibraryCatalogScreen
 import com.sultanagung1.sista.ui.library.LibraryViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
-import com.sultanagung1.sista.ui.portal.EnterpriseCatalogScreen
-import com.sultanagung1.sista.ui.portal.ModuleFavoritesScreen
-import com.sultanagung1.sista.ui.portal.SsoWebViewScreen
 import com.sultanagung1.sista.ui.profile.ProfileScreen
 import com.sultanagung1.sista.ui.profile.ProfileViewModel
 import com.sultanagung1.sista.ui.profile.StudentProfileComprehensiveScreen
@@ -75,7 +72,6 @@ fun NavGraphBuilder.settingsNavGraph(
     navController: NavHostController,
     sessionManager: SessionManager,
     themeManager: ThemeManager,
-    userRole: String,
     navigateToRoleHome: () -> Unit,
     audioRecorderManager: AudioRecorderManager,
     downloadManager: DownloadManager,
@@ -273,14 +269,6 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    guardedComposable(Screen.EnterpriseCatalog.route) {
-        EnterpriseCatalogScreen(
-            userRole = userRole,
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateRoute = { route -> navController.navigate(route) }
-        )
-    }
-
     // --- Counseling BK ---
     guardedComposable(Screen.CounselingDashboard.route) {
         val viewModel: CounselingViewModel = hiltViewModel()
@@ -372,20 +360,6 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     // --- SuperApp Marketplace, SSO & Updates ---
-    guardedComposable(Screen.SsoWebView.route) {
-        SsoWebViewScreen(
-            sessionManager = sessionManager,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.ModuleFavorites.route) {
-        ModuleFavoritesScreen(
-            onNavigateToRoute = { route -> navController.navigate(route) },
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
     guardedComposable(Screen.InAppUpdate.route) {
         UpdatePromptScreen(
             updateManager = inAppUpdateManager,
