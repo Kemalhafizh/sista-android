@@ -35,21 +35,8 @@ interface StudentApiService {
 
 interface AttendanceApiService {
 
-    @POST("mobile/attendance/gps-checkin")
-    suspend fun submitGpsCheckin(
-        @Body request: GpsCheckinRequest
-    ): Response<AttendanceCheckinResponse>
-
-    @GET("mobile/attendance/dynamic-qr")
-    suspend fun getDynamicQr(): Response<DynamicQrResponse>
-
     @GET("student/attendance")
     suspend fun getAttendanceHistory(): Response<ApiEnvelope<List<AttendanceHistoryItem>>>
-
-    @POST("iot/face/enroll")
-    suspend fun enrollFaceBiometric(
-        @Body request: FaceEnrollRequest
-    ): Response<Map<String, Any>>
 }
 
 interface CbtApiService {
@@ -161,28 +148,6 @@ interface CbtApiService {
     suspend fun uploadExamImage(
         @Part image: MultipartBody.Part
     ): Response<CbtApiEnvelope<CbtQuestionImageUpload>>
-}
-
-interface AiApiService {
-
-    @POST("ai/tutor/session")
-    suspend fun startTutorSession(
-        @Body request: AiTutorSessionRequest
-    ): Response<AiTutorSessionEnvelope>
-
-    @POST("ai/tutor/session/{id}/message")
-    suspend fun sendTutorMessage(
-        @Path("id") sessionId: Long,
-        @Body request: AiMessageRequest
-    ): Response<ApiEnvelope<AiTutorReplyData>>
-
-    @GET("ai/tutor/suggestions")
-    suspend fun getTutorSuggestions(): Response<ApiEnvelope<List<String>>>
-
-    @POST("ai/essay/grade")
-    suspend fun submitEssay(
-        @Body request: EssaySubmissionRequest
-    ): Response<EssayFeedbackResponse>
 }
 
 interface GeneralApiService {

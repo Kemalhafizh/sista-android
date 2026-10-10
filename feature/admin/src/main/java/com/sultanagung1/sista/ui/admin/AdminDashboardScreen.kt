@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.CoPresent
 import androidx.compose.material.icons.outlined.EventAvailable
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.PendingActions
 import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -81,7 +80,6 @@ import java.util.Calendar
 data class AdminShortcut(val title: String, val icon: ImageVector, val route: String)
 
 val ADMIN_SHORTCUTS = listOf(
-    AdminShortcut("Analitik eksekutif", Icons.Outlined.Insights, Screen.ExecutiveAnalytics.route),
     AdminShortcut("Sesi kelas", Icons.Outlined.CoPresent, Screen.AdminSessionManagement.route),
     AdminShortcut("Pengumuman", Icons.Outlined.Campaign, Screen.AnnouncementFeed.route),
     AdminShortcut("Evaluasi guru", Icons.Outlined.RateReview, Screen.TeacherEvaluation.route),

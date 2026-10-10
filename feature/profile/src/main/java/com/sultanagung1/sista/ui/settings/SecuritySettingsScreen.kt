@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.WarningAmber
@@ -50,32 +49,38 @@ import com.sultanagung1.sista.core.ui.theme.ShellTheme
 import com.sultanagung1.sista.core.ui.theme.SistaTheme
 import com.sultanagung1.sista.core.ui.theme.Spacing
 import com.sultanagung1.sista.core.ui.theme.StatusTone
-import com.sultanagung1.sista.ui.navigation.LocalCapabilityState
-import com.sultanagung1.sista.ui.navigation.Screen
-import com.sultanagung1.sista.ui.navigation.canOpen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Switch
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.sultanagung1.sista.core.security.BiometricAvailability
+import com.sultanagung1.sista.core.ui.component.InlineBanner
 
 /**
- * What this phone's own checks found. The biometric lock is set on its own
- * page (FaceEnrollment), where it is saved; this page used to carry a second
- * switch that only changed local state and came back on every visit.
+ * What this phone's own checks found, and the fingerprint settings: signing in
+ * with the fingerprint (registered on the server) and asking for it before a
+ * report card or a CBT exam opens.
  */
 @Composable
 fun SecuritySettingsScreen(
+    viewModel: BiometricSettingsViewModel,
     onNavigateBack: () -> Unit,
-    onNavigate: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val capabilities = LocalCapabilityState.current
+    val biometric by viewModel.uiState.collectAsState()
     var report by remember { mutableStateOf<DeviceIntegrityReport?>(null) }
     LaunchedEffect(Unit) {
+        viewModel.checkDevice(context)
         report = withContext(Dispatchers.Default) { DeviceIntegrityChecker(context).checkIntegrity() }
     }
     SecuritySettingsContent(
         report = report,
-        canOpenBiometrics = capabilities.canOpen(Screen.FaceEnrollment.route),
-        onOpenBiometrics = { onNavigate(Screen.FaceEnrollment.route) },
+        biometric = biometric,
+        onLoginChange = viewModel::setLoginEnabled,
+        onProtectionChange = viewModel::setSensitiveProtection,
         onNavigateBack = onNavigateBack,
     )
 }
@@ -84,8 +89,9 @@ fun SecuritySettingsScreen(
 @Composable
 fun SecuritySettingsContent(
     report: DeviceIntegrityReport?,
-    canOpenBiometrics: Boolean,
-    onOpenBiometrics: () -> Unit,
+    biometric: BiometricSettingsUiState,
+    onLoginChange: (Boolean) -> Unit,
+    onProtectionChange: (Boolean) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     ShellTheme {
@@ -162,20 +168,76 @@ fun SecuritySettingsContent(
                         }
                     }
                 }
-                if (canOpenBiometrics) {
-                    item(key = "biometrics") {
-                        SistaCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.md), contentPadding = PaddingValues(vertical = Spacing.xs)) {
-                            SistaListItem(
-                                headline = stringResource(R.string.sec_biometric),
-                                supporting = stringResource(R.string.sec_biometric_hint),
-                                leading = { IconBadge(Icons.Outlined.Fingerprint, tone = StatusTone.Neutral) },
-                                trailing = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = SistaTheme.colors.onSurfaceVariant) },
-                                onClick = onOpenBiometrics,
-                            )
-                        }
-                    }
-                }
+                item(key = "biometric_header") { SectionHeader(stringResource(R.string.bio_title), Modifier.padding(top = Spacing.md)) }
+                item(key = "biometric") { BiometricCard(biometric, onLoginChange, onProtectionChange) }
             }
         }
     }
+}
+
+@Composable
+private fun BiometricCard(
+    state: BiometricSettingsUiState,
+    onLoginChange: (Boolean) -> Unit,
+    onProtectionChange: (Boolean) -> Unit,
+) {
+    val ready = state.availability == BiometricAvailability.AVAILABLE
+    SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+        state.availability?.takeIf { !ready }?.let {
+            InlineBanner(
+                message = stringResource(biometricAvailabilityText(it)),
+                tone = StatusTone.Warning,
+                modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+            )
+        }
+        BiometricSwitch(
+            icon = Icons.Outlined.Fingerprint,
+            title = stringResource(R.string.bio_login),
+            hint = stringResource(R.string.bio_login_hint),
+            checked = state.isLoginEnabled,
+            enabled = ready && !state.isSaving,
+            onChange = onLoginChange,
+        )
+        HorizontalDivider(color = SistaTheme.colors.outlineVariant)
+        BiometricSwitch(
+            icon = Icons.Outlined.Lock,
+            title = stringResource(R.string.bio_protection),
+            hint = stringResource(R.string.bio_protection_hint),
+            checked = state.isSensitiveProtectionEnabled,
+            enabled = ready,
+            onChange = onProtectionChange,
+        )
+        state.message?.let {
+            InlineBanner(
+                message = it.asString(),
+                tone = if (state.messageIsError) StatusTone.Danger else StatusTone.Success,
+                modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+            )
+        }
+        Text(
+            stringResource(R.string.bio_privacy),
+            style = SistaTheme.typography.bodySmall,
+            color = SistaTheme.colors.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+        )
+    }
+}
+
+@Composable
+private fun BiometricSwitch(icon: ImageVector, title: String, hint: String, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    SistaListItem(
+        headline = title,
+        supporting = hint,
+        leading = { IconBadge(icon, tone = StatusTone.Neutral) },
+        trailing = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
+        onClick = if (enabled) ({ onChange(!checked) }) else null,
+    )
+}
+
+@StringRes
+internal fun biometricAvailabilityText(availability: BiometricAvailability): Int = when (availability) {
+    BiometricAvailability.AVAILABLE -> R.string.bio_ready
+    BiometricAvailability.NOT_ENROLLED -> R.string.bio_not_enrolled
+    BiometricAvailability.NO_HARDWARE -> R.string.bio_no_hardware
+    BiometricAvailability.SECURITY_UPDATE_REQUIRED -> R.string.bio_update_required
 }

@@ -8,8 +8,8 @@ import java.net.URL
 import java.time.Duration
 
 /**
- * FASE 74.1: shared Appium/ADB plumbing for the two E2E scenarios in the
- * roadmap (GPS attendance flow, CBT offline resilience). Requires, on the
+ * FASE 74.1: shared Appium/ADB plumbing for the E2E scenarios (CBT offline
+ * resilience; the GPS attendance flow went with FASE 78). Requires, on the
  * machine actually running this suite (not this sandbox — see e2e/README.md):
  *  - An Appium server reachable at APPIUM_URL (default http://127.0.0.1:4723)
  *  - A running emulator/device with the debug APK already installed
@@ -65,33 +65,6 @@ abstract class AppiumTestBase {
         val output = process.inputStream.bufferedReader().readText()
         process.waitFor()
         return output
-    }
-
-    /**
-     * Injects a GPS fix via the emulator console's `geo fix` command — this
-     * is the real, standard technique for feeding location to an emulator's
-     * actual GPS/FusedLocationProvider (what GeofenceAttendanceScreen.kt
-     * consumes via play-services-location) without the app needing any
-     * test-only code of its own. Only works against an emulator (not a
-     * physical device — see scripts/mock_location.sh for the physical-
-     * device alternative via `adb shell appops set ... mock_location allow`
-     * plus a mock-location provider app, which needs one extra manual step
-     * the emulator path doesn't).
-     *
-     * NOTE: because GeofenceAttendanceScreen surfaces "Proteksi Anti-Fake
-     * GPS & TEE" (isMockLocationDetected — see GeofenceAttendanceScreen.kt),
-     * a real end-to-end run against the physical-device mock-location path
-     * would legitimately trip that same anti-cheat flag the app is designed
-     * to catch. The emulator `geo fix` path below is a genuine (non-mocked,
-     * from the OS's point of view) GPS provider update instead, so it does
-     * not trigger that flag — use it for this scenario's "happy path" run.
-     */
-    protected fun setGpsFix(latitude: Double, longitude: Double) {
-        val udidArgs = DEVICE_UDID?.let { arrayOf("-s", it) } ?: emptyArray()
-        val process = ProcessBuilder("adb", *udidArgs, "emu", "geo", "fix", longitude.toString(), latitude.toString())
-            .redirectErrorStream(true)
-            .start()
-        process.waitFor()
     }
 
     protected fun setNetworkEnabled(enabled: Boolean) {

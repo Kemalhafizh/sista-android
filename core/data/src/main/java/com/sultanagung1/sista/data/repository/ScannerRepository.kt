@@ -3,8 +3,6 @@ package com.sultanagung1.sista.data.repository
 import com.google.gson.Gson
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.api.ScannerMobileApiService
-import com.sultanagung1.sista.data.model.AttendanceQrVerifyRequest
-import com.sultanagung1.sista.data.model.AttendanceQrVerifyResult
 import com.sultanagung1.sista.data.model.EventTicketScanRequest
 import com.sultanagung1.sista.data.model.EventTicketScanResult
 import com.sultanagung1.sista.data.model.VisitorPassScanRequest
@@ -19,7 +17,7 @@ class ScannerRepository(private val apiService: ScannerMobileApiService) {
 
     private val gson = Gson()
 
-    // These 3 endpoints return the SAME {valid, message, ...} shape whether
+    // These endpoints return the SAME {valid, message, ...} shape whether
     // the HTTP status is 200 or 422 — Retrofit only populates body() on a
     // 2xx response, so the 422 case is parsed from errorBody() instead of
     // being treated as a network-level failure.
@@ -32,21 +30,6 @@ class ScannerRepository(private val apiService: ScannerMobileApiService) {
             }
         }
     }
-
-    fun verifyAttendanceQr(qrToken: String): Flow<NetworkResult<AttendanceQrVerifyResult>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiService.verifyAttendanceQr(AttendanceQrVerifyRequest(qrToken))
-            val result = bodyOrParsedError(response)
-            if (result != null) {
-                emit(NetworkResult.Success(result))
-            } else {
-                emit(NetworkResult.Error("Gagal memverifikasi QR presensi (Kode: ${response.code()}).", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan saat memverifikasi QR presensi."))
-        }
-    }.flowOn(Dispatchers.IO)
 
     fun scanEventTicket(ticketCode: String): Flow<NetworkResult<EventTicketScanResult>> = flow {
         emit(NetworkResult.Loading)

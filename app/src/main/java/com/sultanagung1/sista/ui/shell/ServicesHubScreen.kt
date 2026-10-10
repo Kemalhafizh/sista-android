@@ -38,7 +38,6 @@ import com.sultanagung1.sista.core.ui.theme.StatusTone
 import com.sultanagung1.sista.data.model.AppFeature
 import com.sultanagung1.sista.data.model.Capabilities
 import com.sultanagung1.sista.data.model.CapabilityState
-import com.sultanagung1.sista.data.model.FeatureAccess
 import com.sultanagung1.sista.data.model.FeatureGroup
 import com.sultanagung1.sista.ui.navigation.FeatureCatalog
 
@@ -99,11 +98,7 @@ private fun ServicesGrid(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val sections: List<Pair<FeatureGroup, List<AppFeature>>> = remember(capabilities, query) {
-        val needle = query.trim()
-        FeatureAccess.grouped(capabilities) { feature ->
-            feature.key in FeatureCatalog.ENTRY &&
-                (needle.isEmpty() || feature.title.contains(needle, ignoreCase = true))
-        }.map { (group, features) -> group to features.distinctBy { FeatureCatalog.ENTRY[it.key] } }
+        FeatureCatalog.menuFeatures(capabilities, query)
     }
 
     LazyVerticalGrid(

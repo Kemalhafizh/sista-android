@@ -101,14 +101,14 @@ class StudentProfileScreenshotTest {
     @Test fun settings() = capture("settings") {
         SettingsContent(
             theme = AppThemeMode.SYSTEM, language = AppLanguage.INDONESIAN, canOpen = { true },
-            onTheme = {}, onLanguage = {}, onAccessibility = {}, onBiometrics = {}, onSecurity = {}, onNavigateBack = {},
+            onTheme = {}, onLanguage = {}, onAccessibility = {}, onSecurity = {}, onNavigateBack = {},
         )
     }
 
     @Test fun settingsAmoled() = capture("settings_amoled", dark = true, display = DisplayPreferences(amoledBlack = true)) {
         SettingsContent(
             theme = AppThemeMode.AMOLED_BLACK, language = AppLanguage.INDONESIAN, canOpen = { true },
-            onTheme = {}, onLanguage = {}, onAccessibility = {}, onBiometrics = {}, onSecurity = {}, onNavigateBack = {},
+            onTheme = {}, onLanguage = {}, onAccessibility = {}, onSecurity = {}, onNavigateBack = {},
         )
     }
 
@@ -138,7 +138,7 @@ class StudentProfileScreenshotTest {
     fun settingsArabic() = capture("settings_ar") {
         SettingsContent(
             theme = AppThemeMode.SYSTEM, language = AppLanguage.ARABIC, canOpen = { true },
-            onTheme = {}, onLanguage = {}, onAccessibility = {}, onBiometrics = {}, onSecurity = {}, onNavigateBack = {},
+            onTheme = {}, onLanguage = {}, onAccessibility = {}, onSecurity = {}, onNavigateBack = {},
         )
     }
 

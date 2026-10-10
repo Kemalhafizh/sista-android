@@ -130,7 +130,7 @@ class MainActivity : FragmentActivity() {
                     // Compose's own semantics tree, not the native accessibility
                     // tree ADB/Appium walk. testTagsAsResourceId republishes every
                     // testTag as a real resource-id in that tree so E2E scripts can
-                    // find elements (e.g. "geofence_checkin_button",
+                    // find elements (e.g. "cbt_start_exam_button",
                     // "cbt_token_input") without brittle text/coordinate matching.
                     // Debug-only: it's a testing hook, not release-build behavior.
                     val rootModifier = Modifier

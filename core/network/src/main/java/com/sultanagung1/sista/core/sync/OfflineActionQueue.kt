@@ -28,10 +28,6 @@ class OfflineActionQueue(
     private val gson = Gson()
     private val queueMutex = Mutex()
 
-    fun queueAttendance(request: GpsCheckinRequest): String {
-        return localStore.enqueueAction("ATTENDANCE_CHECKIN", request)
-    }
-
     fun queueMutabaah(activities: List<MutabaahLogItem>): String {
         return localStore.enqueueAction("MUTABAAH_LOG", activities)
     }
@@ -60,12 +56,6 @@ class OfflineActionQueue(
                     var statusCode = 200
 
                     when (action.actionType) {
-                        "ATTENDANCE_CHECKIN" -> {
-                            val req = gson.fromJson(action.payloadJson, GpsCheckinRequest::class.java)
-                            val response = apiClient.attendanceApi.submitGpsCheckin(req)
-                            statusCode = response.code()
-                            isSuccess = response.isSuccessful
-                        }
                         "MUTABAAH_LOG" -> {
                             val activities = gson.fromJson(action.payloadJson, Array<MutabaahLogItem>::class.java).toList()
                             localStore.saveMutabaah(activities)

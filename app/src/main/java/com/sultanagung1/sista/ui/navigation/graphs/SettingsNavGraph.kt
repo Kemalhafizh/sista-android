@@ -21,25 +21,16 @@ import com.sultanagung1.sista.core.update.InAppUpdateManager
 import com.sultanagung1.sista.ui.auth.LoginViewModel
 import com.sultanagung1.sista.ui.achievement.AchievementUploadScreen
 import com.sultanagung1.sista.ui.achievement.AchievementViewModel
-import com.sultanagung1.sista.ui.ai.AiTutorScreen
-import com.sultanagung1.sista.ui.ai.AiViewModel
-import com.sultanagung1.sista.ui.attendance.*
 import com.sultanagung1.sista.ui.counseling.*
 import com.sultanagung1.sista.ui.discipline.DisciplineScreen
 import com.sultanagung1.sista.ui.discipline.DisciplineViewModel
-import com.sultanagung1.sista.ui.document.DocumentScannerScreen
 import com.sultanagung1.sista.ui.document.DownloadHistoryScreen
 import com.sultanagung1.sista.ui.document.PdfViewerScreen
-import com.sultanagung1.sista.ui.document.SignatureScreen
 import com.sultanagung1.sista.ui.evaluation.TeacherEvaluationScreen
 import com.sultanagung1.sista.ui.evaluation.EvaluationViewModel
 import com.sultanagung1.sista.ui.extracurricular.ExtracurricularScreen
 import com.sultanagung1.sista.ui.extracurricular.ExtracurricularViewModel
 import com.sultanagung1.sista.ui.finance.BillingScreen
-import com.sultanagung1.sista.ui.gamification.BadgeCollectionScreen
-import com.sultanagung1.sista.ui.gamification.GamificationDashboardScreen
-import com.sultanagung1.sista.ui.gamification.GamificationViewModel
-import com.sultanagung1.sista.ui.gamification.LeaderboardScreen
 import com.sultanagung1.sista.ui.ibadah.IbadahViewModel
 import com.sultanagung1.sista.ui.ibadah.MutabaahScreen
 import com.sultanagung1.sista.ui.ibadah.TahsinRecorderScreen
@@ -63,6 +54,7 @@ import com.sultanagung1.sista.ui.uks.UksViewModel
 import com.sultanagung1.sista.ui.update.UpdatePromptScreen
 import com.sultanagung1.sista.ui.utbk.UtbkTryOutScreen
 import com.sultanagung1.sista.ui.utbk.UtbkViewModel
+import com.sultanagung1.sista.ui.settings.BiometricSettingsViewModel
 
 /**
  * Sub-Navigation Graph untuk Modul Pengaturan, Profil, Perangkat Keras,
@@ -97,21 +89,12 @@ fun NavGraphBuilder.settingsNavGraph(
         }
     }
 
-    guardedComposable(Screen.DiagnosticReport.route) {
-        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
-            com.sultanagung1.sista.ui.profile.DiagnosticReportScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-    }
-
     guardedComposable(Screen.Settings.route) {
         val viewModel: SettingsViewModel = hiltViewModel()
         SettingsScreen(
             viewModel = viewModel,
             onNavigateToLanguage = { navController.navigate(Screen.LanguageSettings.route) },
             onNavigateToAccessibility = { navController.navigate(Screen.AccessibilitySettings.route) },
-            onNavigateToBiometrics = { navController.navigate(Screen.FaceEnrollment.route) },
             onNavigateToSecurity = { navController.navigate(Screen.SecuritySettings.route) },
             onNavigateBack = { navController.popBackStack() }
         )
@@ -135,8 +118,8 @@ fun NavGraphBuilder.settingsNavGraph(
 
     guardedComposable(Screen.SecuritySettings.route) {
         SecuritySettingsScreen(
-            onNavigateBack = { navController.popBackStack() },
-            onNavigate = { route -> navController.navigate(route) }
+            viewModel = hiltViewModel<BiometricSettingsViewModel>(),
+            onNavigateBack = { navController.popBackStack() }
         )
     }
 
@@ -157,42 +140,11 @@ fun NavGraphBuilder.settingsNavGraph(
         }
     }
 
-    // --- Hardware, Sensors & Attendance ---
-    guardedComposable(Screen.GeofenceAttendance.route) {
-        val viewModel: AttendanceViewModel = hiltViewModel()
-        GeofenceAttendanceScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.DynamicQr.route) {
-        val viewModel: AttendanceViewModel = hiltViewModel()
-        DynamicQrScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
+    // --- Scanner (event, library, visitor) ---
 
     guardedComposable(Screen.QrScanner.route) {
         val viewModel: ScannerViewModel = hiltViewModel()
         QrScannerScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.FaceEnrollment.route) {
-        val viewModel: FaceEnrollmentViewModel = hiltViewModel()
-        FaceEnrollmentScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.FaceBiometric.route) {
-        val viewModel: FaceEnrollmentViewModel = hiltViewModel()
-        FaceEnrollmentScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
@@ -242,15 +194,6 @@ fun NavGraphBuilder.settingsNavGraph(
             submissionId = submissionId,
             isTeacherMode = teacherMode,
             recorderManager = audioRecorderManager,
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    // --- AI Tutor ---
-    guardedComposable(Screen.AiTutor.route) {
-        val viewModel: AiViewModel = hiltViewModel()
-        AiTutorScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )
@@ -344,18 +287,6 @@ fun NavGraphBuilder.settingsNavGraph(
                     navController.navigate(Screen.PdfViewer.createRoute("file://$path", task.title, task.sizeBytes))
                 }
             }
-        )
-    }
-
-    guardedComposable(Screen.DocumentScanner.route) {
-        DocumentScannerScreen(
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.DigitalSignature.route) {
-        SignatureScreen(
-            onNavigateBack = { navController.popBackStack() }
         )
     }
 
@@ -508,33 +439,6 @@ fun NavGraphBuilder.settingsNavGraph(
         val viewModel: UksViewModel = hiltViewModel()
         HealthHistoryScreen(
             studentId = studentId,
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    // --- Gamifikasi ---
-    guardedComposable(Screen.GamificationDashboard.route) {
-        val viewModel: GamificationViewModel = hiltViewModel()
-        GamificationDashboardScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() },
-            onNavigateToLeaderboard = { navController.navigate(Screen.Leaderboard.route) },
-            onNavigateToBadges = { navController.navigate(Screen.BadgeCollection.route) }
-        )
-    }
-
-    guardedComposable(Screen.Leaderboard.route) {
-        val viewModel: GamificationViewModel = hiltViewModel()
-        LeaderboardScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.BadgeCollection.route) {
-        val viewModel: GamificationViewModel = hiltViewModel()
-        BadgeCollectionScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )

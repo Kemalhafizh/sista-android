@@ -4604,7 +4604,7 @@ sealed interface ActiveSessionEffect : UiEffect {
 
 ---
 
-## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[RANCANGAN BARU]`
+## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[PR A SELESAI 10 Okt 2026 — PR B menunggu endpoint FASE 119 PR 4]`
 
 > **Tanggal Rancangan:** 5 Oktober 2026
 > **Pelaksana:** Agent Frontend/Mobile (repo `sista-android`). Pasangannya di backend: **FASE 119** di `sistem-terpadu/implementation_plan.md`.
@@ -4673,8 +4673,24 @@ Ikut dihapus:
 
 ### 78.6: Kriteria Selesai
 
-- [ ] `./gradlew assembleDebug testDebugUnitTest lintDebug` hijau, screenshot Roborazzi direkam ulang dan di-commit.
-- [ ] Tidak ada lagi kelas, string, atau rute untuk layar 78.1. `LocalizationTest` dan `HardcodedUiTextTest` hijau, dan daftar `debt` ikut menyusut.
-- [ ] `FeatureCatalogTest` hijau tanpa kunci yang dihapus.
-- [ ] APK tidak lagi meminta izin lokasi.
-- [ ] Bagian ini diperbarui menjadi `[SELESAI]` dengan angka sebelum/sesudah: jumlah layar, baris kode `src/main`, dan ukuran APK debug.
+- [x] `./gradlew assembleDebug testDebugUnitTest lintDebug` hijau, screenshot Roborazzi direkam ulang dan di-commit (PR A).
+- [x] Tidak ada lagi kelas, string, atau rute untuk layar 78.1. `LocalizationTest` dan `HardcodedUiTextTest` hijau, dan daftar `debt` menyusut 12 file.
+- [x] `FeatureCatalogTest` hijau tanpa kunci yang dihapus, ditambah test bahwa kunci yang tidak dikenal diabaikan.
+- [x] APK tidak lagi meminta izin lokasi (`aapt2 dump permissions`, dan `tools:node="remove"` di manifest).
+- [ ] Bagian ini diperbarui menjadi `[SELESAI]` setelah PR B (Lapor Perundungan).
+
+### 78.7: Hasil PR A (10 Okt 2026)
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Entri `Screen` | 90 | 77 |
+| Komposabel `*Screen` | 89 | 78 |
+| Baris Kotlin `src/main` | 65.860 | 60.688 |
+| APK debug | 69,5 MB | 67,5 MB |
+
+Catatan pelaksanaan:
+- **Kunci kapabilitas yang tidak dikenal** sudah diabaikan sejak awal (menu Layanan hanya menampilkan kunci yang ada di `FeatureCatalog.ENTRY`). Aturan itu dipindah dari composable ke `FeatureCatalog.menuFeatures()` dan diuji, termasuk server yang masih mengirim kunci yang dihapus dan server yang sudah mengirim kunci baru.
+- **`FaceEnrollmentScreen` ternyata tidak merekam wajah.** Isinya pengaturan masuk dengan sidik jari dan proteksi rapor/ujian. Layar dan rute `FaceBiometric` dihapus sesuai 78.1, API `iot/face/enroll` dihapus, tetapi kedua sakelar sidik jari dipindah ke Pengaturan → Keamanan (`BiometricSettingsViewModel`), karena `USE_BIOMETRIC` dipertahankan.
+- **Ikut dihapus karena hanya dipakai layar 78.1:** `GeoUtils` dan data `campus` dari `mobile/config`, antrean offline cek-in GPS, `DocumentApiService`/`DocumentRepository`, `GamificationApiService`/`GamificationRepository`, `AiApiService`/`AiRepository`, endpoint `analytics/executive/kpi`, `mobile/attendance/{gps-checkin,dynamic-qr,verify-qr}`, ringkasan `gamification` di model beranda kontekstual, mode scanner "Presensi QR", dan `play-services-location`.
+- **Pintu presensi siswa** (FAB beranda dan deep link `attendance`) sekarang membuka `StudentSessionQrScan`.
+- Widget presensi tidak lagi diperbarui dari cek-in GPS. Sumber datanya (`student/attendance`) belum diganti ke presensi per mapel; itu bagian 78.2.

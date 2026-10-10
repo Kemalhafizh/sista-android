@@ -17,7 +17,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.HorizontalDivider
@@ -57,7 +56,6 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateToLanguage: () -> Unit,
     onNavigateToAccessibility: () -> Unit,
-    onNavigateToBiometrics: () -> Unit,
     onNavigateToSecurity: () -> Unit = {},
     onNavigateBack: () -> Unit,
 ) {
@@ -71,7 +69,6 @@ fun SettingsScreen(
         onTheme = viewModel::setTheme,
         onLanguage = onNavigateToLanguage,
         onAccessibility = onNavigateToAccessibility,
-        onBiometrics = onNavigateToBiometrics,
         onSecurity = onNavigateToSecurity,
         onNavigateBack = onNavigateBack,
     )
@@ -100,7 +97,6 @@ fun SettingsContent(
     onTheme: (AppThemeMode) -> Unit,
     onLanguage: () -> Unit,
     onAccessibility: () -> Unit,
-    onBiometrics: () -> Unit,
     onSecurity: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -151,7 +147,6 @@ fun SettingsContent(
                 }
 
                 val security = listOfNotNull(
-                    Triple(Icons.Outlined.Fingerprint, R.string.sec_biometric, onBiometrics).takeIf { canOpen(Screen.FaceEnrollment.route) },
                     Triple(Icons.Outlined.Security, R.string.sec_title, onSecurity).takeIf { canOpen(Screen.SecuritySettings.route) },
                 )
                 if (security.isNotEmpty()) {

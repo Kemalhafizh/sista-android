@@ -1,8 +1,10 @@
 package com.sultanagung1.sista.ui.navigation
 
+import com.sultanagung1.sista.data.model.AppFeature
 import com.sultanagung1.sista.data.model.Capabilities
 import com.sultanagung1.sista.data.model.CapabilityState
 import com.sultanagung1.sista.data.model.FeatureAccess
+import com.sultanagung1.sista.data.model.FeatureGroup
 import com.sultanagung1.sista.data.model.GateDecision
 
 /**
@@ -21,7 +23,7 @@ object FeatureCatalog {
     val OPEN: Set<String> = setOf(
         Screen.Login, Screen.ServicesHub, Screen.Profile, Screen.Settings,
         Screen.LanguageSettings, Screen.AccessibilitySettings, Screen.SecuritySettings,
-        Screen.NotificationSettings, Screen.DiagnosticReport,
+        Screen.NotificationSettings,
         Screen.InAppUpdate, Screen.PdfViewer, Screen.DownloadHistory,
         // Admissions are public: anyone may look up or register.
         Screen.SpmbMobile, Screen.SpmbInfo, Screen.SpmbRegistration, Screen.SpmbTracking,
@@ -56,8 +58,6 @@ object FeatureCatalog {
         put(Screen.AssignmentSubmit, "student.elearning")
         put(Screen.AcademicAnalytics, "student.analytics")
         put(Screen.UtbkTryout, "student.utbk")
-        put(Screen.AiTutor, "student.ai_tutor")
-        put(Screen.AiEssayGrader, "student.ai_essay")
         put(Screen.LibraryCatalog, "library")
         put(Screen.AcademicCalendar, "calendar")
         put(Screen.EventDetail, "calendar")
@@ -66,12 +66,8 @@ object FeatureCatalog {
         put(Screen.ClassAnalytics, "class_analytics")
 
         // Presensi
-        put(Screen.GeofenceAttendance, "attendance.gps")
         put(Screen.StudentSessionQrScan, "attendance.class_scan")
-        put(Screen.DynamicQr, "attendance.id_qr")
-        put(Screen.FaceEnrollment, "attendance.face_enroll")
-        put(Screen.FaceBiometric, "attendance.face_enroll")
-        put(Screen.QrScanner, "scanner.identity", "scanner.event")
+        put(Screen.QrScanner, "scanner.event")
 
         // Ibadah
         put(Screen.Mutabaah, "student.mutabaah")
@@ -91,9 +87,6 @@ object FeatureCatalog {
         put(Screen.Extracurricular, "extracurricular")
         put(Screen.AchievementUpload, "achievements")
         put(Screen.TeacherEvaluation, "student.evaluations")
-        put(Screen.GamificationDashboard, "student.gamification")
-        put(Screen.Leaderboard, "student.gamification")
-        put(Screen.BadgeCollection, "student.gamification")
         put(Screen.ChildActivityFeed, "activity.feed")
         // The SOS button only ran a countdown on the phone: nothing reached
         // the school. Kept shut until it sends a real report.
@@ -126,12 +119,7 @@ object FeatureCatalog {
         put(Screen.AnnouncementDetail, "announcements")
         put(Screen.NotificationCenter, "notifications")
 
-        // Dokumen
-        put(Screen.DocumentScanner, "documents.scan")
-        put(Screen.DigitalSignature, "documents.signature")
-
         // Manajemen
-        put(Screen.ExecutiveAnalytics, "admin.executive")
         put(Screen.AdminSessionManagement, "admin.class_sessions")
         put(Screen.AdminAttendanceOverride, "admin.class_sessions")
     }
@@ -150,17 +138,11 @@ object FeatureCatalog {
         "student.elearning" to Screen.ElearningClassList.route,
         "student.analytics" to Screen.AcademicAnalytics.route,
         "student.utbk" to Screen.UtbkTryout.route,
-        "student.ai_tutor" to Screen.AiTutor.route,
-        "student.ai_essay" to Screen.AiEssayGrader.route,
         "library" to Screen.LibraryCatalog.route,
         "calendar" to Screen.AcademicCalendar.route,
         "question_bank" to Screen.QuestionBank.route,
         "class_analytics" to Screen.ClassAnalytics.route,
-        "attendance.gps" to Screen.GeofenceAttendance.route,
         "attendance.class_scan" to Screen.StudentSessionQrScan.route,
-        "attendance.id_qr" to Screen.DynamicQr.route,
-        "attendance.face_enroll" to Screen.FaceEnrollment.route,
-        "scanner.identity" to Screen.QrScanner.route,
         "scanner.event" to Screen.QrScanner.route,
         "student.mutabaah" to Screen.Mutabaah.route,
         "tahsin.record" to Screen.TahsinRecorder.route,
@@ -173,7 +155,6 @@ object FeatureCatalog {
         "extracurricular" to Screen.Extracurricular.route,
         "achievements" to Screen.AchievementUpload.route,
         "student.evaluations" to Screen.TeacherEvaluation.route,
-        "student.gamification" to Screen.GamificationDashboard.route,
         "activity.feed" to Screen.ChildActivityFeed.createRoute(),
         "teacher.sessions" to Screen.TeacherTodaySessions.route,
         "teacher.classes" to Screen.TeacherDashboard.route,
@@ -188,13 +169,24 @@ object FeatureCatalog {
         "parent.progress" to Screen.ChildProgress.createRoute(),
         "parent.messages" to Screen.ConversationList.route,
         "admin.dashboard" to Screen.AdminDashboard.route,
-        "admin.executive" to Screen.ExecutiveAnalytics.route,
         "admin.class_sessions" to Screen.AdminSessionManagement.route,
         "announcements" to Screen.AnnouncementFeed.route,
         "notifications" to Screen.NotificationCenter.route,
-        "documents.scan" to Screen.DocumentScanner.route,
-        "documents.signature" to Screen.DigitalSignature.route,
     )
+
+    /**
+     * The features a menu lists, in the server's groups: only keys this
+     * version of the app has a screen for. A key the app does not know (a
+     * feature added on the server, or one whose screen was removed, as in
+     * FASE 78) is skipped, never an error, so the app and the server can be
+     * updated in either order. Two keys opening the same screen show once.
+     */
+    fun menuFeatures(capabilities: Capabilities, query: String = ""): List<Pair<FeatureGroup, List<AppFeature>>> {
+        val needle = query.trim()
+        return FeatureAccess.grouped(capabilities) { feature ->
+            feature.key in ENTRY && (needle.isEmpty() || feature.title.contains(needle, ignoreCase = true))
+        }.map { (group, features) -> group to features.distinctBy { ENTRY[it.key] } }
+    }
 
     /**
      * Which home a Beranda tab opens, most specific audience first. An

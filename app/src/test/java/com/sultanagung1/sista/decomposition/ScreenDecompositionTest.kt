@@ -1,7 +1,6 @@
 package com.sultanagung1.sista.decomposition
 
 import com.sultanagung1.sista.data.model.BillingInvoice
-import com.sultanagung1.sista.ui.attendance.QrDisplayState
 import com.sultanagung1.sista.ui.finance.BillingUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -90,18 +89,6 @@ class ScreenDecompositionTest {
 
         val errorState = BillingUiState.Error("Koneksi gagal")
         assertEquals("Koneksi gagal", errorState.message)
-    }
-
-    @Test
-    fun testDynamicQrDisplayStatePattern() {
-        val loadingState: QrDisplayState = QrDisplayState.Loading
-        assertNotNull(loadingState)
-
-        val contentState = QrDisplayState.Content("SULA-TOTP-TOKEN-9821", com.sultanagung1.sista.data.model.ClassSessionRules.QrFreshness.FRESH)
-        assertEquals("SULA-TOTP-TOKEN-9821", contentState.qrToken)
-
-        val errorState = QrDisplayState.Error("Server presensi sedang sibuk")
-        assertEquals("Server presensi sedang sibuk", errorState.message)
     }
 
     @Test

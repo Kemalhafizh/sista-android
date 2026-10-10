@@ -14,8 +14,8 @@ package com.sultanagung1.sista.ui.navigation
  *   for every route not listed there, which covers them by construction.
  */
 enum class ContextualFabAction(val label: String, val targetRoute: String) {
-    /** Student home: GPS check-in, the one thing done every school morning. */
-    QUICK_ATTENDANCE("Presensi", Screen.GeofenceAttendance.route),
+    /** Student home: scanning the class QR, the one way a student is marked present. */
+    QUICK_ATTENDANCE("Presensi", Screen.StudentSessionQrScan.route),
 
     /** Teacher dashboard: the daily KBM journal. */
     TEACHING_JOURNAL("Jurnal KBM", Screen.TeachingJournalMobile.route),

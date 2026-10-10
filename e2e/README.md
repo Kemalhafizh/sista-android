@@ -62,7 +62,7 @@ mungkin lolos), ditambahkan:
   build debug) — supaya `testTag` muncul sebagai `resource-id` asli di
   accessibility tree yang dibaca Appium/`adb shell uiautomator dump`.
 - `testTag` pada: role tab login, field identifier/password, tombol login,
-  `home_screen_root`, tombol check-in presensi, input token CBT, tombol
+  `home_screen_root`, input token CBT, tombol
   mulai ujian, tiap opsi jawaban (`cbt_option_A`..`E`), tombol
   Selanjutnya/Kumpulkan, tombol konfirmasi submit, dan dialog hasil submit
   (online vs offline).
@@ -72,13 +72,8 @@ mungkin lolos), ditambahkan:
 - Kredensial test dan token ujian harus disediakan dari data nyata yang
   sudah di-seed — skrip ini tidak dan tidak boleh membuat data palsu untuk
   meloloskan dirinya sendiri.
-- `mock_location.sh` untuk device fisik sengaja berhenti di tahap
-  `appops set ... mock_location allow` dengan catatan jujur bahwa
-  langkah suntik-koordinatnya sendiri butuh tooling tambahan (mis. sebuah
-  instrumentation `LocationManager.addTestProvider()`, atau app pihak
-  ketiga) yang belum dibuat di sini — jangan anggap skrip ini sudah
-  lengkap untuk jalur device fisik. Jalur emulator (`adb emu geo fix`,
-  dipakai `AttendanceGpsFlowE2ETest`) sudah lengkap dan real.
+- Skenario presensi GPS (`AttendanceGpsFlowE2ETest`, `mock_location.sh`)
+  dihapus di FASE 78: presensi siswa sekarang hanya lewat scan QR kelas.
 - `memory_anr_budget_check.sh` mem-parsing `dumpsys gfxinfo framestats`
   berdasar nama kolom header (bukan index tetap) karena formatnya berbeda
   antar versi Android — kalau di device target ternyata kolom

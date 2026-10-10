@@ -15,7 +15,7 @@ class ScannerViewModel @Inject constructor(
     private val scanResultHandler: ScanResultHandler
 ) : ViewModel() {
 
-    private val _currentMode = MutableStateFlow(ScanMode.ATTENDANCE)
+    private val _currentMode = MutableStateFlow(ScanMode.EVENT_TICKET)
     val currentMode: StateFlow<ScanMode> = _currentMode.asStateFlow()
 
     private val _isTorchOn = MutableStateFlow(false)

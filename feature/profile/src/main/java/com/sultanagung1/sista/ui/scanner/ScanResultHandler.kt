@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 enum class ScanMode(val title: String, val description: String) {
-    ATTENDANCE("Presensi QR", "Pindai QR Gerbang & Kelas"),
     LIBRARY_BOOK("Buku Perpus", "Pindai Barcode ISBN Buku"),
     EVENT_TICKET("Tiket Acara", "Pindai Tiket Kajian / Seminar"),
     VISITOR_PASS("Buku Tamu", "Pindai QR Akses Tamu Yayasan")
@@ -35,36 +34,9 @@ class ScanResultHandler @Inject constructor(
 
     suspend fun parse(rawCode: String, mode: ScanMode): ParsedScanResult {
         return when (mode) {
-            ScanMode.ATTENDANCE -> parseAttendance(rawCode)
             ScanMode.LIBRARY_BOOK -> parseLibraryBook(rawCode)
             ScanMode.EVENT_TICKET -> parseEventTicket(rawCode)
             ScanMode.VISITOR_PASS -> parseVisitorPass(rawCode)
-        }
-    }
-
-    private suspend fun parseAttendance(rawCode: String): ParsedScanResult {
-        val result = scannerRepository.verifyAttendanceQr(rawCode).first { it !is NetworkResult.Loading }
-        return when (result) {
-            is NetworkResult.Success -> {
-                val data = result.data
-                if (data.valid) {
-                    ParsedScanResult(
-                        title = "Identitas Terverifikasi",
-                        subtitle = "${data.userName ?: "Pengguna"} • ${data.userRole ?: ""}",
-                        type = ScanMode.ATTENDANCE,
-                        rawPayload = rawCode,
-                        isValid = true,
-                        details = mapOf(
-                            "Diverifikasi Pukul" to (data.verifiedAt?.takeLast(14)?.take(8) ?: "-"),
-                            "Peran" to (data.userRole ?: "-")
-                        )
-                    )
-                } else {
-                    invalidResult(ScanMode.ATTENDANCE, rawCode, data.message ?: "QR presensi tidak valid.")
-                }
-            }
-            is NetworkResult.Error -> invalidResult(ScanMode.ATTENDANCE, rawCode, result.message)
-            is NetworkResult.Loading -> invalidResult(ScanMode.ATTENDANCE, rawCode, "Memproses...")
         }
     }
 

@@ -91,52 +91,6 @@ data class ParentProgressData(
 )
 
 /**
- * analytics/executive/kpi. Raw figures that the screen formats itself; a
- * rate is null when there was nothing to divide by, never 0.
- */
-data class ExecutiveAnalyticsData(
-    val totalActiveStudents: Int = 0,
-    val attendance: ExecutiveAttendance? = null,
-    val spp: ExecutiveSpp? = null,
-)
-
-data class ExecutiveAttendance(
-    val today: AttendanceBreakdown? = null,
-    /** Days with records in the last 14, oldest first; days without records are absent, not 0%. */
-    val days: List<AttendanceDay> = emptyList(),
-)
-
-/** Attendance records by status: H, S, I, A. */
-data class AttendanceBreakdown(
-    val recorded: Int = 0,
-    val present: Int = 0,
-    val sick: Int = 0,
-    val permit: Int = 0,
-    val absent: Int = 0,
-    val rate: Double? = null,
-)
-
-data class AttendanceDay(
-    val date: String = "",
-    val recorded: Int = 0,
-    val present: Int = 0,
-    val rate: Double = 0.0,
-)
-
-/** This month's SPP: how much of the billed amount is settled, and what came in. */
-data class ExecutiveSpp(
-    val month: String = "",
-    val billed: Double = 0.0,
-    val settled: Double = 0.0,
-    @SerializedName("settled_rate") val settledRate: Double? = null,
-    val bills: Int = 0,
-    @SerializedName("bills_paid") val billsPaid: Int = 0,
-    @SerializedName("received_this_month") val receivedThisMonth: Double = 0.0,
-    @SerializedName("received_last_month") val receivedLastMonth: Double = 0.0,
-    @SerializedName("received_change_pct") val receivedChangePct: Double? = null,
-)
-
-/**
  * A (class, subject) the teacher teaches this year, from
  * analytics/teacher/my-classes. The ids are null on an older server, which
  * sent names only.

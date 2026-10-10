@@ -1,7 +1,6 @@
 package com.sultanagung1.sista.ui
 
 import com.sultanagung1.sista.data.repository.UsageRanking
-import com.sultanagung1.sista.ui.ai.AiReplyFormatting
 import com.sultanagung1.sista.ui.navigation.ContextualFab
 import com.sultanagung1.sista.ui.navigation.ContextualFabAction
 import com.sultanagung1.sista.ui.navigation.RoleGroup
@@ -68,7 +67,7 @@ class Fase76CompletionLogicTest {
         assertEquals(ContextualFabAction.QUICK_ATTENDANCE, ContextualFab.actionFor(Screen.Home.route, "student"))
         assertEquals(ContextualFabAction.TEACHING_JOURNAL, ContextualFab.actionFor(Screen.TeacherDashboard.route, "guru"))
         assertEquals(ContextualFabAction.MESSAGE_TEACHER, ContextualFab.actionFor(Screen.ParentDashboard.route, "orang_tua"))
-        assertEquals(Screen.GeofenceAttendance.route, ContextualFabAction.QUICK_ATTENDANCE.targetRoute)
+        assertEquals(Screen.StudentSessionQrScan.route, ContextualFabAction.QUICK_ATTENDANCE.targetRoute)
         assertEquals(Screen.TeachingJournalMobile.route, ContextualFabAction.TEACHING_JOURNAL.targetRoute)
         assertEquals(Screen.ConversationList.route, ContextualFabAction.MESSAGE_TEACHER.targetRoute)
     }
@@ -126,56 +125,5 @@ class Fase76CompletionLogicTest {
         val counts = mapOf("a" to 2, "b" to 3, "c" to 10, "d" to 3, "e" to 7, "f" to 5)
         assertEquals(listOf("c", "e", "f", "b"), UsageRanking.frequent(candidates, counts, limit = 4))
         assertTrue(UsageRanking.frequent(candidates, mapOf("a" to 2)).isEmpty())
-    }
-
-    // ── 76.7 tutor replies ───────────────────────────────────────────────
-
-    @Test
-    fun shortRepliesStayOneBubble() {
-        assertEquals(listOf("Halo!"), AiReplyFormatting.splitIntoBubbles("  Halo!  "))
-        assertTrue(AiReplyFormatting.splitIntoBubbles("   ").isEmpty())
-    }
-
-    @Test
-    fun longRepliesSplitAtParagraphsAndLoseNothing() {
-        val p1 = "A".repeat(200)
-        val p2 = "B".repeat(200)
-        val p3 = "C".repeat(200)
-        val reply = "$p1\n\n$p2\n\n$p3"
-        val bubbles = AiReplyFormatting.splitIntoBubbles(reply, maxChars = 420)
-        assertEquals(listOf("$p1\n\n$p2", p3), bubbles)
-        assertEquals(reply, bubbles.joinToString("\n\n"))
-        assertTrue(bubbles.all { it.length <= 420 })
-    }
-
-    @Test
-    fun oneHugeParagraphSplitsAtSentenceEnds() {
-        val sentence = "Ini kalimat penjelasan yang cukup panjang untuk diuji. "
-        val paragraph = sentence.repeat(20).trim()
-        val bubbles = AiReplyFormatting.splitIntoBubbles(paragraph, maxChars = 200)
-        assertTrue(bubbles.size > 1)
-        assertTrue(bubbles.all { it.length <= 200 })
-        assertTrue(bubbles.all { it.endsWith(".") })
-        assertEquals(paragraph, bubbles.joinToString(" "))
-    }
-
-    @Test
-    fun codeBlocksAreNeverCut() {
-        val code = "```\n" + (1..40).joinToString("\n") { "x = $it" } + "\n```"
-        val reply = "Perhatikan kode ini:\n\n$code\n\nCoba jalankan."
-        val bubbles = AiReplyFormatting.splitIntoBubbles(reply, maxChars = 100)
-        assertTrue(bubbles.contains(code))
-    }
-
-    @Test
-    fun boldMarkersBecomeRangesInsteadOfLiteralAsterisks() {
-        val styled = AiReplyFormatting.parseBold("Saya **Sultan AI Tutor**, siap membantu.")
-        assertEquals("Saya Sultan AI Tutor, siap membantu.", styled.text)
-        assertEquals(listOf(5 until 20), styled.boldRanges)
-        assertEquals("Sultan AI Tutor", styled.text.substring(styled.boldRanges.single()))
-
-        val unmatched = AiReplyFormatting.parseBold("2 ** 3 = 8")
-        assertEquals("2 ** 3 = 8", unmatched.text)
-        assertTrue(unmatched.boldRanges.isEmpty())
     }
 }

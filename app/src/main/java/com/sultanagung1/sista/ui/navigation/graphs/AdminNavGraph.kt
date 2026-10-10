@@ -12,8 +12,6 @@ import com.sultanagung1.sista.ui.admin.sessions.AdminAttendanceOverrideScreen
 import com.sultanagung1.sista.ui.admin.sessions.AdminAttendanceOverrideViewModel
 import com.sultanagung1.sista.ui.admin.sessions.AdminSessionManagementScreen
 import com.sultanagung1.sista.ui.admin.sessions.AdminSessionManagementViewModel
-import com.sultanagung1.sista.ui.analytics.ExecutiveAnalyticsScreen
-import com.sultanagung1.sista.ui.analytics.ExecutiveAnalyticsViewModel
 import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.navigation.UserRoles
 
@@ -30,14 +28,6 @@ fun NavGraphBuilder.adminNavGraph(
         AdminDashboardScreen(
             viewModel = viewModel,
             onNavigateRoute = { route -> navController.navigate(route) }
-        )
-    }
-
-    guardedComposable(Screen.ExecutiveAnalytics.route) {
-        val viewModel: ExecutiveAnalyticsViewModel = hiltViewModel()
-        ExecutiveAnalyticsScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() },
         )
     }
 

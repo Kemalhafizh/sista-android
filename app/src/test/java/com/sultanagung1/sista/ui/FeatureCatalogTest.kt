@@ -129,4 +129,49 @@ class FeatureCatalogTest {
         assertEquals(listOf("a", "b", "zzz"), grouped.map { it.first.key })
         assertEquals(listOf("b1"), grouped[1].second.map { it.key })
     }
+
+    /** Feature keys whose screens FASE 78 removed; the server may keep sending them for a while. */
+    private val removedKeys = listOf(
+        "attendance.gps", "attendance.id_qr", "attendance.face_enroll", "student.ai_tutor", "student.ai_essay",
+        "student.gamification", "documents.scan", "documents.signature", "admin.executive", "scanner.identity",
+    )
+
+    @Test
+    fun `removed features have no screen and no gate`() {
+        removedKeys.forEach { key ->
+            assertTrue("$key still opens a screen", key !in FeatureCatalog.ENTRY)
+            assertTrue("$key still guards a route", FeatureCatalog.REQUIRES.values.none { key in it })
+        }
+    }
+
+    @Test
+    fun `keys the app does not know are skipped, in any order with the server`() {
+        // A server that still sends the removed keys, and one that already sends
+        // a key this app has never heard of: the menu shows only what it can open.
+        val capabilities = Capabilities(
+            features = (removedKeys + listOf("student.schedule", "student.something_new", "announcements"))
+                .map { AppFeature(key = it, title = it, group = "akademik") },
+            groups = listOf(FeatureGroup("akademik", "Akademik")),
+        )
+        val listed = FeatureCatalog.menuFeatures(capabilities).flatMap { (_, features) -> features.map { it.key } }
+        assertEquals(listOf("student.schedule", "announcements"), listed)
+
+        val state = CapabilityState.Ready(capabilities)
+        assertEquals(GateDecision.OPEN, FeatureCatalog.decide(state, Screen.Schedule.route))
+        assertEquals(GateDecision.LOCKED, FeatureCatalog.decide(state, Screen.QrScanner.route))
+        assertEquals(Screen.Home.route, FeatureCatalog.homeRouteFor(capabilities))
+    }
+
+    @Test
+    fun `the menu search matches titles and lists a shared screen once`() {
+        val capabilities = Capabilities(
+            features = listOf(
+                AppFeature("parent.messages", "Pesan", "komunikasi"),
+                AppFeature("teacher.messages", "Pesan", "komunikasi"),
+                AppFeature("announcements", "Pengumuman", "komunikasi"),
+            ),
+        )
+        assertEquals(listOf("parent.messages", "announcements"), FeatureCatalog.menuFeatures(capabilities).single().second.map { it.key })
+        assertEquals(listOf("announcements"), FeatureCatalog.menuFeatures(capabilities, " umum ").single().second.map { it.key })
+    }
 }

@@ -114,7 +114,6 @@ dependencies {
     implementation libs.room.ktx
 
     // Hardware Sensors & Security
-    implementation libs.play.services.location
     implementation libs.androidx.biometric
     implementation libs.androidx.datastore.preferences
 

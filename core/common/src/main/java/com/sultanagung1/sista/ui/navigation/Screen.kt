@@ -9,12 +9,8 @@ sealed class Screen(val route: String, val title: String = "") {
     /** Every feature this account has, grouped: the same screen for every role. */
     object ServicesHub : Screen("layanan", "Layanan")
     
-    // Attendance & Hardware
-    object GeofenceAttendance : Screen("geofence_attendance", "Presensi GPS")
-    object DynamicQr : Screen("dynamic_qr", "QR Presensi")
-    object FaceBiometric : Screen("face_biometric", "Face Biometric")
+    // Scanner
     object QrScanner : Screen("qr_scanner", "Pemindai Kamera Multi-Mode")
-    object FaceEnrollment : Screen("face_enrollment", "Keamanan Sidik Jari (m-Banking)")
 
     // Academic & LMS
     object Schedule : Screen("schedule", "Jadwal Pelajaran")
@@ -40,10 +36,6 @@ sealed class Screen(val route: String, val title: String = "") {
     object TahsinSubmissionDetail : Screen("tahsin_submission/{submissionId}?teacherMode={teacherMode}", "Detail Setoran Tahsin") {
         fun createRoute(submissionId: Long, teacherMode: Boolean) = "tahsin_submission/$submissionId?teacherMode=$teacherMode"
     }
-
-    // AI Tutor
-    object AiTutor : Screen("ai_tutor", "Sultan AI Tutor")
-    object AiEssayGrader : Screen("ai_essay_grader", "Koreksi Esai AI")
 
     // Finance & Library & Counseling
     object Billing : Screen("billing", "Tagihan SPP")
@@ -92,8 +84,6 @@ sealed class Screen(val route: String, val title: String = "") {
         }
     }
     object DownloadHistory : Screen("download_history", "Manajer Unduhan")
-    object DocumentScanner : Screen("document_scanner", "Pemindai Dokumen OCR")
-    object DigitalSignature : Screen("digital_signature", "Tanda Tangan Digital")
 
     // Analytics & KPI Dashboards
     object AcademicAnalytics : Screen("academic_analytics", "Analitik Siswa")
@@ -102,7 +92,6 @@ sealed class Screen(val route: String, val title: String = "") {
         fun createRoute(studentUuid: String? = null) =
             if (!studentUuid.isNullOrBlank()) "child_progress?studentUuid=$studentUuid" else "child_progress"
     }
-    object ExecutiveAnalytics : Screen("executive_analytics", "KPI Eksekutif")
 
     // SuperApp Marketplace, SSO & Updates
     object InAppUpdate : Screen("in_app_update", "Pembaruan Aplikasi")
@@ -197,10 +186,7 @@ sealed class Screen(val route: String, val title: String = "") {
         fun createRoute(scheduleId: String) = "journal_form/$scheduleId"
     }
 
-    // Fase 39 - 48: SuperApp Next-Gen, Gamifikasi, Notifikasi & Parent Experience
-    object GamificationDashboard : Screen("gamification_dashboard", "Gamifikasi & Level")
-    object Leaderboard : Screen("leaderboard", "Papan Peringkat Siswa")
-    object BadgeCollection : Screen("badge_collection", "Koleksi Lencana & Prestasi")
+    // Fase 39 - 48: Notifikasi & Parent Experience
     object NotificationSettings : Screen("notification_settings", "Preferensi & Saluran Notifikasi")
     // The child is optional so a menu can open the feed; the dashboard passes
     // the chosen child so a parent of two sees the right one.
@@ -208,9 +194,6 @@ sealed class Screen(val route: String, val title: String = "") {
         fun createRoute(studentUuid: String? = null) =
             if (!studentUuid.isNullOrBlank()) "child_activity_feed?studentUuid=$studentUuid" else "child_activity_feed"
     }
-
-    // Fase 64: Production Observability & Crash Analytics
-    object DiagnosticReport : Screen("diagnostic_report", "Pusat Diagnostik & Laporan Kendala")
 
     // FASE 77: Sesi Kelas Hidup & Presensi Per-Mapel
     object TeacherTodaySessions : Screen("teacher_today_sessions", "Sesi Kelas Hari Ini")
