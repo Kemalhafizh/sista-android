@@ -2,22 +2,6 @@ package com.sultanagung1.sista.data.model
 
 import com.google.gson.annotations.SerializedName
 
-// POST mobile/attendance/verify-qr — real dynamic-TOTP QR identity check
-// (GeofenceAttendanceService::verifyDynamicTotpQr). This only confirms WHO
-// the scanned QR belongs to; it does not itself write an Attendance row.
-data class AttendanceQrVerifyRequest(
-    @SerializedName("qr_token") val qrToken: String
-)
-
-data class AttendanceQrVerifyResult(
-    val valid: Boolean = false,
-    val message: String? = null,
-    @SerializedName("user_id") val userId: Long? = null,
-    @SerializedName("user_name") val userName: String? = null,
-    @SerializedName("user_role") val userRole: String? = null,
-    @SerializedName("verified_at") val verifiedAt: String? = null
-)
-
 // Library scan mode reuses the existing real BorrowBookRequest/BookLoanItem
 // (LibraryModels.kt) via LibraryRepository.borrowBookByQr() — no separate
 // model needed here.

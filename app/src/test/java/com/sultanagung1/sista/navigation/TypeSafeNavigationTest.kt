@@ -21,12 +21,20 @@ class TypeSafeNavigationTest {
 
     private val allScreens = Screen::class.sealedSubclasses.mapNotNull { it.objectInstance }
 
+    /**
+     * FASE 78 removed the screens the school does not use. A minimum screen
+     * count (this test used to demand at least 80) worked against that; what
+     * matters is that the removed routes stay gone.
+     */
     @Test
-    fun testMinimumScreenCount() {
-        assertTrue(
-            "Total Screen terdaftar harus minimal 80 (sekarang ${allScreens.size})",
-            allScreens.size >= 80
+    fun testRemovedScreensStayRemoved() {
+        val removed = setOf(
+            "geofence_attendance", "dynamic_qr", "face_biometric", "face_enrollment", "ai_tutor", "ai_essay_grader",
+            "gamification_dashboard", "leaderboard", "badge_collection", "document_scanner", "digital_signature",
+            "executive_analytics", "diagnostic_report",
         )
+        assertTrue(allScreens.isNotEmpty())
+        assertEquals(emptyList<String>(), allScreens.map { it.route }.filter { it in removed })
     }
 
     @Test

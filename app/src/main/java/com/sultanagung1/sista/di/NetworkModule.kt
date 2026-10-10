@@ -107,11 +107,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideAiApiService(retrofit: Retrofit): AiApiService =
-        retrofit.create(AiApiService::class.java)
-
-    @Provides
-    @Singleton
     fun provideGeneralApiService(retrofit: Retrofit): GeneralApiService =
         retrofit.create(GeneralApiService::class.java)
 
@@ -139,11 +134,6 @@ object NetworkModule {
     @Singleton
     fun provideNotificationApiService(retrofit: Retrofit): NotificationApiService =
         retrofit.create(NotificationApiService::class.java)
-
-    @Provides
-    @Singleton
-    fun provideDocumentApiService(retrofit: Retrofit): DocumentApiService =
-        retrofit.create(DocumentApiService::class.java)
 
     @Provides
     @Singleton
@@ -240,11 +230,6 @@ object NetworkModule {
     @Singleton
     fun provideContextualHomeApiService(retrofit: Retrofit): ContextualHomeApiService =
         retrofit.create(ContextualHomeApiService::class.java)
-
-    @Provides
-    @Singleton
-    fun provideGamificationApiService(retrofit: Retrofit): GamificationApiService =
-        retrofit.create(GamificationApiService::class.java)
 
     @Provides
     @Singleton

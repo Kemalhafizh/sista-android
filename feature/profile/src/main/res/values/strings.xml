@@ -13,8 +13,6 @@
     <string name="profile_notifications_hint">Kabar untuk akun ini</string>
     <string name="profile_announcements">Pengumuman</string>
     <string name="profile_announcements_hint">Pengumuman sekolah</string>
-    <string name="profile_biometric">Kunci biometrik</string>
-    <string name="profile_biometric_hint">Masuk dengan sidik jari atau wajah di HP ini</string>
     <string name="profile_device_security">Keamanan perangkat</string>
     <string name="profile_device_security_hint">Pemeriksaan root, emulator, dan debugging</string>
     <string name="profile_theme">Tema</string>
@@ -24,8 +22,6 @@
     <string name="profile_update">Pembaruan aplikasi</string>
     <string name="profile_update_installed">Terpasang %1$s</string>
     <string name="profile_update_check">Periksa versi terbaru</string>
-    <string name="profile_diagnostics">Diagnostik &amp; laporan kendala</string>
-    <string name="profile_diagnostics_hint">Catatan galat di HP ini untuk dikirim ke IT sekolah</string>
     <string name="profile_about">Tentang</string>
     <string name="profile_about_hint">Sekolah dan versi aplikasi</string>
     <string name="profile_logout">Keluar</string>
@@ -150,8 +146,6 @@
     <string name="sec_signature">Sidik jari tanda tangan aplikasi</string>
     <string name="sec_signature_hint">SHA-256 sertifikat yang menandatangani aplikasi ini. IT sekolah bisa mencocokkannya dengan versi resmi.</string>
     <string name="sec_signature_unreadable">Tidak terbaca di HP ini.</string>
-    <string name="sec_biometric">Kunci biometrik</string>
-    <string name="sec_biometric_hint">Atur masuk dengan sidik jari atau wajah</string>
     <string name="sec_root">Akses root</string>
     <string name="sec_root_found">Terdeteksi tanda root. Data akun di HP ini bisa dibaca aplikasi lain.</string>
     <string name="sec_root_ok">Tidak ditemukan tanda root.</string>
@@ -198,4 +192,18 @@
     <string name="lang_name_en">Bahasa Inggris</string>
     <string name="lang_name_ar">Bahasa Arab</string>
     <string name="lang_note">Pilihan ini juga tersimpan di akun Anda, jadi situs web sekolah ikut memakai bahasa yang sama. Isi yang ditulis sekolah (nama, kelas, pengumuman) tetap seperti aslinya.</string>
+
+    <!-- Sidik jari -->
+    <string name="bio_title">Sidik jari</string>
+    <string name="bio_login">Masuk dengan sidik jari</string>
+    <string name="bio_login_hint">Masuk ke SISTA di HP ini tanpa mengetik kata sandi.</string>
+    <string name="bio_protection">Minta sidik jari untuk rapor &amp; ujian</string>
+    <string name="bio_protection_hint">Sidik jari diminta sebelum rapor atau ruang ujian CBT dibuka.</string>
+    <string name="bio_privacy">Sidik jari diperiksa oleh HP Anda sendiri dan tidak pernah dikirim ke server sekolah.</string>
+    <string name="bio_login_on">Masuk dengan sidik jari aktif di HP ini.</string>
+    <string name="bio_key_failed">Kunci keamanan HP belum bisa dibuat. Coba lagi.</string>
+    <string name="bio_ready">Sensor sidik jari siap dipakai.</string>
+    <string name="bio_not_enrolled">Belum ada sidik jari terdaftar. Tambahkan dulu di Pengaturan HP.</string>
+    <string name="bio_no_hardware">HP ini tidak punya sensor sidik jari.</string>
+    <string name="bio_update_required">HP ini perlu pembaruan keamanan sebelum sidik jari bisa dipakai.</string>
 </resources>

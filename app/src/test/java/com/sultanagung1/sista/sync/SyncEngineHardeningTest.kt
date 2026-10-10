@@ -118,7 +118,7 @@ class SyncEngineHardeningTest {
         )
         val item1 = PendingActionItem(
             id = "uuid-1",
-            actionType = "ATTENDANCE_CHECKIN",
+            actionType = "CBT_SUBMIT",
             payloadJson = "{}",
             createdAt = 1000L,
             retryCount = 0

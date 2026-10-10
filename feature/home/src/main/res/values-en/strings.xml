@@ -10,7 +10,6 @@
     <string name="home_scan_qr">Scan QR</string>
     <string name="home_detail_class">Class %1$s</string>
     <string name="home_detail_nis">NIS %1$s</string>
-    <string name="quick_gps_attendance">GPS attendance</string>
     <string name="quick_class_qr">Scan class QR</string>
     <string name="quick_grades">Grades</string>
     <string name="quick_cbt">CBT exams</string>

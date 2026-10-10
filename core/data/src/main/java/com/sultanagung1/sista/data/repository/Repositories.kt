@@ -13,12 +13,7 @@ import com.sultanagung1.sista.core.widget.withBilling
 import com.sultanagung1.sista.data.local.dao.UserDao
 import com.sultanagung1.sista.data.local.entity.UserEntity
 import com.sultanagung1.sista.data.model.AdminDashboardData
-import com.sultanagung1.sista.data.model.AiChatMessage
-import com.sultanagung1.sista.data.model.AiMessageRequest
-import com.sultanagung1.sista.data.model.AiTutorSessionData
-import com.sultanagung1.sista.data.model.AiTutorSessionRequest
 import com.sultanagung1.sista.data.model.AnnouncementItem
-import com.sultanagung1.sista.data.model.AttendanceCheckinResponse
 import com.sultanagung1.sista.data.model.AttendanceHistoryItem
 import com.sultanagung1.sista.data.model.AttendanceRecordedResponse
 import com.sultanagung1.sista.data.model.BillingInvoice
@@ -48,12 +43,8 @@ import com.sultanagung1.sista.data.model.ChildVsClassComparison
 import com.sultanagung1.sista.data.model.ContextualHomePayload
 import com.sultanagung1.sista.data.model.ConversationItem
 import com.sultanagung1.sista.data.model.DeviceTokenRegisterRequest
-import com.sultanagung1.sista.data.model.DynamicQrResponse
 import com.sultanagung1.sista.data.model.EmergencyBroadcastData
 import com.sultanagung1.sista.data.model.EmergencyBroadcastRequest
-import com.sultanagung1.sista.data.model.EssayFeedbackResponse
-import com.sultanagung1.sista.data.model.EssaySubmissionRequest
-import com.sultanagung1.sista.data.model.GpsCheckinRequest
 import com.sultanagung1.sista.data.model.GradeEntry
 import com.sultanagung1.sista.data.model.LoginRequest
 import com.sultanagung1.sista.data.model.LoginResponse
@@ -358,40 +349,6 @@ class AttendanceRepository(
     private val widgetSnapshots: WidgetSnapshotStore? = null
 ) {
 
-    fun submitGpsCheckin(request: GpsCheckinRequest): Flow<NetworkResult<AttendanceCheckinResponse>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.attendanceApi.submitGpsCheckin(request)
-            val body = response.body()
-            if (response.isSuccessful && body != null) {
-                // The response only says the GPS check passed (it is also 200 for
-                // accounts without a student row, where nothing is recorded), so
-                // the widget re-reads the real attendance row instead of assuming "Hadir".
-                recordLatestAttendance()
-                emit(NetworkResult.Success(body))
-            } else {
-                emit(NetworkResult.Error(response.message().ifEmpty { "Presensi gagal. Anda di luar radius sekolah." }, response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun getDynamicQr(): Flow<NetworkResult<DynamicQrResponse>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.attendanceApi.getDynamicQr()
-            val body = response.body()
-            if (response.isSuccessful && body != null && !body.qrToken.isNullOrBlank()) {
-                emit(NetworkResult.Success(body))
-            } else {
-                emit(NetworkResult.Error("Gagal memuat QR presensi dinamis", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
     fun getAttendanceHistory(): Flow<NetworkResult<List<AttendanceHistoryItem>>> = flow {
         emit(NetworkResult.Loading)
         try {
@@ -407,19 +364,6 @@ class AttendanceRepository(
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
-
-    private suspend fun recordLatestAttendance() {
-        if (widgetSnapshots == null) return
-        try {
-            val response = apiClient.attendanceApi.getAttendanceHistory()
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) recordAttendanceSnapshot(data)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            // The check-in itself succeeded; a failed widget refresh must not hide that.
-        }
-    }
 
     private suspend fun recordAttendanceSnapshot(history: List<AttendanceHistoryItem>) {
         val latest = WidgetSnapshots.studentAttendance(history, DateUtils.nowMillis()) ?: return
@@ -762,82 +706,6 @@ class CbtRepository(private val apiClient: ApiClient, private val messages: Fall
             }
         } catch (e: Exception) {
             emit(NetworkResult.Error(messages.connection(e)))
-        }
-    }.flowOn(Dispatchers.IO)
-}
-
-class AiRepository(private val apiClient: ApiClient) {
-
-    fun startTutorSession(subjectName: String, topic: String): Flow<NetworkResult<AiTutorSessionData>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.aiApi.startTutorSession(AiTutorSessionRequest(subjectName, topic))
-            val session = response.body()?.session
-            if (response.isSuccessful && session != null) {
-                emit(NetworkResult.Success(session))
-            } else {
-                emit(NetworkResult.Error("Gagal memulai sesi AI Tutor", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi AI terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun sendMessage(sessionId: Long, message: String): Flow<NetworkResult<AiChatMessage>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.aiApi.sendTutorMessage(sessionId, AiMessageRequest(message))
-            val reply = response.body()?.data
-            if (response.isSuccessful && reply != null) {
-                emit(NetworkResult.Success(reply.aiResponse.toChatMessage()))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal mengirim pertanyaan ke AI", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi AI terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun getTutorSuggestions(): Flow<NetworkResult<List<String>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.aiApi.getTutorSuggestions()
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat saran pertanyaan", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun submitEssay(title: String, subject: String, text: String): Flow<NetworkResult<EssayFeedbackResponse>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.aiApi.submitEssay(EssaySubmissionRequest(title, subject, text))
-            if (response.isSuccessful && response.body() != null) {
-                emit(NetworkResult.Success(response.body()!!))
-            } else {
-                emit(NetworkResult.Error("Gagal memeriksa esai dengan AI", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi AI terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun getSmartSuggestions(): Flow<NetworkResult<List<SmartSuggestion>>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.contextualHomeApi.getSmartSuggestions()
-            if (response.isSuccessful && response.body()?.data != null) {
-                emit(NetworkResult.Success(response.body()!!.data))
-            } else {
-                emit(NetworkResult.Success(emptyList()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Success(emptyList()))
         }
     }.flowOn(Dispatchers.IO)
 }

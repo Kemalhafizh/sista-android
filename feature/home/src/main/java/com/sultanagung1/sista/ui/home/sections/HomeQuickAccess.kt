@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Class
 import androidx.compose.material.icons.outlined.Grade
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.SelfImprovement
@@ -46,7 +45,6 @@ data class QuickItem(
 
 /** A student's everyday shortcuts, in their default order. Each is shown only when the account has it. */
 val STUDENT_QUICK_ITEMS = listOf(
-    QuickItem("attendance.gps", R.string.quick_gps_attendance, Icons.Outlined.LocationOn, Screen.GeofenceAttendance.route, listOf(Icons.Outlined.LocationOn)),
     QuickItem("attendance.class_scan", R.string.quick_class_qr, Icons.Outlined.QrCodeScanner, Screen.StudentSessionQrScan.route, listOf(Icons.Outlined.CameraAlt)),
     QuickItem("student.grades", R.string.quick_grades, Icons.Outlined.Grade, Screen.Grades.route),
     QuickItem("student.cbt", R.string.quick_cbt, Icons.Outlined.Quiz, Screen.CbtList.route),

@@ -15,7 +15,8 @@ object DeepLinkRouter {
         // Handle sulaone:// scheme
         if (scheme == "sulaone") {
             return when (host) {
-                "attendance" -> Screen.GeofenceAttendance.route
+                // Presence is the class QR, scanned per lesson (FASE 77/78).
+                "attendance" -> Screen.StudentSessionQrScan.route
                 "scanner", "qr" -> Screen.QrScanner.route
                 // An exam is only ever entered through its token.
                 "cbt" -> uri.lastPathSegment?.toLongOrNull()
@@ -46,9 +47,9 @@ object DeepLinkRouter {
                     }
                 }
                 "settings" -> Screen.Settings.route
-                "diagnostics" -> Screen.DiagnosticReport.route
                 "profile" -> Screen.Profile.route
-                "biometrics", "face_enrollment" -> Screen.FaceEnrollment.route
+                // Fingerprint sign-in lives on the security page.
+                "biometrics" -> Screen.SecuritySettings.route
                 else -> null
             }
         }
@@ -59,7 +60,7 @@ object DeepLinkRouter {
                 (host.endsWith(".sultanagung1.sch.id", ignoreCase = true) && !host.contains("@"))
         if (scheme == "https" && isTrustedHost) {
             return when {
-                path.startsWith("/app/attendance") -> Screen.GeofenceAttendance.route
+                path.startsWith("/app/attendance") -> Screen.StudentSessionQrScan.route
                 path.startsWith("/app/cbt") -> Screen.CbtList.route
                 path.startsWith("/app/billing") -> Screen.Billing.route
                 path.startsWith("/app/rapor") -> Screen.PdfViewer.route

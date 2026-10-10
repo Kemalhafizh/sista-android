@@ -51,14 +51,12 @@ class ApiClient(private val context: Context) {
     val studentApi: StudentApiService by lazy { retrofit.create(StudentApiService::class.java) }
     val attendanceApi: AttendanceApiService by lazy { retrofit.create(AttendanceApiService::class.java) }
     val cbtApi: CbtApiService by lazy { retrofit.create(CbtApiService::class.java) }
-    val aiApi: AiApiService by lazy { retrofit.create(AiApiService::class.java) }
     val generalApi: GeneralApiService by lazy { retrofit.create(GeneralApiService::class.java) }
     val teacherApi: TeacherApiService by lazy { retrofit.create(TeacherApiService::class.java) }
     val parentApi: ParentApiService by lazy { retrofit.create(ParentApiService::class.java) }
     val adminApi: AdminApiService by lazy { retrofit.create(AdminApiService::class.java) }
     val chatApi: ChatApiService by lazy { retrofit.create(ChatApiService::class.java) }
     val notificationApi: NotificationApiService by lazy { retrofit.create(NotificationApiService::class.java) }
-    val documentApi: DocumentApiService by lazy { retrofit.create(DocumentApiService::class.java) }
     val analyticsApi: AnalyticsApiService by lazy { retrofit.create(AnalyticsApiService::class.java) }
     val disciplineApi: DisciplineApiService by lazy { retrofit.create(DisciplineApiService::class.java) }
     val utbkApi: UtbkApiService by lazy { retrofit.create(UtbkApiService::class.java) }
@@ -77,7 +75,6 @@ class ApiClient(private val context: Context) {
     val uksApi: UksMobileApiService by lazy { retrofit.create(UksMobileApiService::class.java) }
     val teachingJournalApi: TeachingJournalMobileApiService by lazy { retrofit.create(TeachingJournalMobileApiService::class.java) }
     val contextualHomeApi: ContextualHomeApiService by lazy { retrofit.create(ContextualHomeApiService::class.java) }
-    val gamificationApi: GamificationApiService by lazy { retrofit.create(GamificationApiService::class.java) }
     val parentExperienceApi: ParentExperienceApiService by lazy { retrofit.create(ParentExperienceApiService::class.java) }
     val syncApi: SyncApiService by lazy { retrofit.create(SyncApiService::class.java) }
     val mobileConfigApi: MobileConfigApiService by lazy { retrofit.create(MobileConfigApiService::class.java) }

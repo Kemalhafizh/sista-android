@@ -21,10 +21,8 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
@@ -181,7 +179,6 @@ fun ProfileContent(
                 menuSection("account", R.string.profile_section_account, account, onNavigate)
 
                 val security = listOf(
-                    MenuEntry(Icons.Outlined.Fingerprint, R.string.profile_biometric, R.string.profile_biometric_hint, Screen.FaceEnrollment.route),
                     MenuEntry(Icons.Outlined.Security, R.string.profile_device_security, R.string.profile_device_security_hint, Screen.SecuritySettings.route),
                 ).filter { canOpen(it.route) }
                 menuSection("security", R.string.profile_section_security, security, onNavigate)
@@ -234,7 +231,6 @@ fun ProfileContent(
 
                 val help = listOf(
                     MenuEntry(Icons.Outlined.SystemUpdate, R.string.profile_update, R.string.profile_update_check, Screen.InAppUpdate.route, subtitleText = appVersion?.let { UiText.Res(R.string.profile_update_installed, it) }),
-                    MenuEntry(Icons.Outlined.BugReport, R.string.profile_diagnostics, R.string.profile_diagnostics_hint, Screen.DiagnosticReport.route),
                 ).filter { canOpen(it.route) }
                 item(key = "help_header") { SectionHeader(stringResource(R.string.profile_section_help), Modifier.padding(top = Spacing.md)) }
                 item(key = "help") {

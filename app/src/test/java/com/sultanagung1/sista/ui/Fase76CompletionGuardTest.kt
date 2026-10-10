@@ -45,8 +45,6 @@ class Fase76CompletionGuardTest {
     private val adminDash = "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/AdminDashboardScreen.kt"
     private val profile = "feature/profile/src/main/java/com/sultanagung1/sista/ui/profile/ProfileScreen.kt"
     private val themeManager = "core/common/src/main/java/com/sultanagung1/sista/core/accessibility/ThemeManager.kt"
-    private val tutorScreen = "feature/academic/src/main/java/com/sultanagung1/sista/ui/ai/AiTutorScreen.kt"
-    private val tutorVm = "feature/academic/src/main/java/com/sultanagung1/sista/ui/ai/AiViewModel.kt"
     private val chatScreen = "feature/chat/src/main/java/com/sultanagung1/sista/ui/chat/ChatScreen.kt"
     private val theme = "core/designsystem/src/main/java/com/sultanagung1/sista/core/designsystem/Theme.kt"
     private val mainActivity = "app/src/main/java/com/sultanagung1/sista/MainActivity.kt"
@@ -160,25 +158,9 @@ class Fase76CompletionGuardTest {
         assertFalse(code(themeManager).contains("Super hemat baterai"))
     }
 
-    // ── 76.7 tutor chat ──────────────────────────────────────────────────
-
-    @Test
-    fun tutorIsTransparentAndRecoversForReal() {
-        val screen = code(tutorScreen)
-        assertFalse("App can't know the server is up 24/7", screen.contains("Online 24/7"))
-        assertTrue(screen.contains("TUTOR_ENGINE_DISCLOSURE"))
-        assertTrue(source(tutorScreen).contains("belum model AI generatif"))
-        assertTrue("Retry resends", screen.contains("onRetry = { viewModel.retryLastMessage() }"))
-        assertFalse("Retry must not just hide the error", screen.contains("onRetry = { viewModel.clearError() }"))
-        assertTrue(screen.contains("AiReplyFormatting.splitIntoBubbles("))
-        assertTrue(screen.contains("listState.animateScrollToItem("))
-        assertFalse("No invented confidence score", screen.contains("comprehension"))
-        assertTrue(code(tutorVm).contains("fun retryLastMessage()"))
-    }
-
     @Test
     fun composersSitAboveTheKeyboard() {
-        for (screen in listOf(tutorScreen, chatScreen)) {
+        for (screen in listOf(chatScreen)) {
             val c = code(screen)
             assertTrue("$screen: consumes scaffold insets", c.contains(".consumeWindowInsets(paddingValues)"))
             assertTrue("$screen: ime padding", c.contains(".imePadding()"))

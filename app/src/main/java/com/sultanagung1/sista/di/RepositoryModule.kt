@@ -74,11 +74,6 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideAiRepository(apiClient: ApiClient): AiRepository =
-        AiRepository(apiClient)
-
-    @Provides
-    @Singleton
     fun provideTeacherRepository(apiClient: ApiClient, messages: FallbackMessages): TeacherRepository =
         TeacherRepository(apiClient, messages)
 
@@ -113,11 +108,6 @@ object RepositoryModule {
     @Singleton
     fun provideProfileRepository(apiClient: ApiClient): ProfileRepository =
         ProfileRepository(apiClient)
-
-    @Provides
-    @Singleton
-    fun provideDocumentRepository(apiClient: ApiClient): DocumentRepository =
-        DocumentRepository(apiClient)
 
     @Provides
     @Singleton
@@ -209,11 +199,6 @@ object RepositoryModule {
     @Singleton
     fun provideClassSessionRepository(classSessionApi: ClassSessionApiService): ClassSessionRepository =
         ClassSessionRepository(classSessionApi)
-
-    @Provides
-    @Singleton
-    fun provideGamificationRepository(gamificationApi: GamificationApiService): GamificationRepository =
-        GamificationRepository(gamificationApi)
 
     @Provides
     @Singleton

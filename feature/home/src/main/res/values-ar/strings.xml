@@ -10,7 +10,6 @@
     <string name="home_scan_qr">مسح QR</string>
     <string name="home_detail_class">الصف %1$s</string>
     <string name="home_detail_nis">NIS %1$s</string>
-    <string name="quick_gps_attendance">الحضور عبر GPS</string>
     <string name="quick_class_qr">مسح QR الحصة</string>
     <string name="quick_grades">الدرجات الأكاديمية</string>
     <string name="quick_cbt">الاختبارات الإلكترونية</string>

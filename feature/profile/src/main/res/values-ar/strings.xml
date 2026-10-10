@@ -13,8 +13,6 @@
     <string name="profile_notifications_hint">أخبار هذا الحساب</string>
     <string name="profile_announcements">الإعلانات</string>
     <string name="profile_announcements_hint">إعلانات المدرسة</string>
-    <string name="profile_biometric">القفل البيومتري</string>
-    <string name="profile_biometric_hint">تسجيل الدخول ببصمة الإصبع أو الوجه على هذا الهاتف</string>
     <string name="profile_device_security">أمان الجهاز</string>
     <string name="profile_device_security_hint">فحص الروت والمحاكي وتصحيح الأخطاء</string>
     <string name="profile_theme">المظهر</string>
@@ -24,8 +22,6 @@
     <string name="profile_update">تحديثات التطبيق</string>
     <string name="profile_update_installed">المثبّت %1$s</string>
     <string name="profile_update_check">التحقق من أحدث إصدار</string>
-    <string name="profile_diagnostics">التشخيص والإبلاغ عن المشكلات</string>
-    <string name="profile_diagnostics_hint">سجل الأخطاء على هذا الهاتف لإرساله إلى قسم تقنية المعلومات بالمدرسة</string>
     <string name="profile_about">حول</string>
     <string name="profile_about_hint">المدرسة وإصدار التطبيق</string>
     <string name="profile_logout">تسجيل الخروج</string>
@@ -150,8 +146,6 @@
     <string name="sec_signature">بصمة توقيع التطبيق</string>
     <string name="sec_signature_hint">بصمة SHA-256 للشهادة التي وقّعت هذا التطبيق. يمكن لقسم تقنية المعلومات مطابقتها مع النسخة الرسمية.</string>
     <string name="sec_signature_unreadable">تعذّرت قراءتها على هذا الهاتف.</string>
-    <string name="sec_biometric">القفل البيومتري</string>
-    <string name="sec_biometric_hint">إعداد الدخول ببصمة الإصبع أو الوجه</string>
     <string name="sec_root">صلاحيات الروت</string>
     <string name="sec_root_found">تم العثور على علامات روت. قد تتمكن تطبيقات أخرى من قراءة بيانات حسابك على هذا الهاتف.</string>
     <string name="sec_root_ok">لا توجد علامات روت.</string>
@@ -198,4 +192,18 @@
     <string name="lang_name_en">الإنجليزية</string>
     <string name="lang_name_ar">العربية</string>
     <string name="lang_note">يُحفظ هذا الاختيار في حسابك أيضًا، فيستخدم موقع المدرسة اللغة نفسها. يبقى المحتوى الذي تكتبه المدرسة (الأسماء والصفوف والإعلانات) كما كُتب.</string>
+
+    <!-- Sidik jari -->
+    <string name="bio_title">بصمة الإصبع</string>
+    <string name="bio_login">تسجيل الدخول بالبصمة</string>
+    <string name="bio_login_hint">سجّل الدخول إلى SISTA على هذا الهاتف دون كتابة كلمة المرور.</string>
+    <string name="bio_protection">طلب البصمة للشهادات والاختبارات</string>
+    <string name="bio_protection_hint">تُطلب بصمتك قبل فتح الشهادة أو الاختبار الإلكتروني.</string>
+    <string name="bio_privacy">يتحقق هاتفك نفسه من بصمتك ولا تُرسل أبدًا إلى خادم المدرسة.</string>
+    <string name="bio_login_on">تم تفعيل تسجيل الدخول بالبصمة على هذا الهاتف.</string>
+    <string name="bio_key_failed">تعذر إنشاء مفتاح أمان الهاتف. حاول مرة أخرى.</string>
+    <string name="bio_ready">مستشعر البصمة جاهز.</string>
+    <string name="bio_not_enrolled">لا توجد بصمة مسجلة بعد. أضفها أولًا من إعدادات الهاتف.</string>
+    <string name="bio_no_hardware">لا يحتوي هذا الهاتف على مستشعر بصمة.</string>
+    <string name="bio_update_required">يحتاج هذا الهاتف إلى تحديث أمني قبل استخدام البصمة.</string>
 </resources>

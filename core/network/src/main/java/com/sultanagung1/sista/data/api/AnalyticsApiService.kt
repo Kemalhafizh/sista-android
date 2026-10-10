@@ -23,7 +23,4 @@ interface AnalyticsApiService {
     /** [studentUuid] null = the first child linked to this account. */
     @GET("analytics/parent/child-progress")
     suspend fun getParentProgress(@Query("student_id") studentUuid: String? = null): Response<ParentProgressData>
-
-    @GET("analytics/executive/kpi")
-    suspend fun getExecutiveKpi(): Response<ExecutiveAnalyticsData>
 }

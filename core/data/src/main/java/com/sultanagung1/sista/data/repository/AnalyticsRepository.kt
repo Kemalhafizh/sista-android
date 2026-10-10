@@ -3,7 +3,6 @@ package com.sultanagung1.sista.data.repository
 import com.sultanagung1.sista.core.network.ApiClient
 import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.model.ClassAnalyticsData
-import com.sultanagung1.sista.data.model.ExecutiveAnalyticsData
 import com.sultanagung1.sista.data.model.ParentProgressData
 import com.sultanagung1.sista.data.model.StudentAnalyticsData
 import com.sultanagung1.sista.data.model.TeacherClassOption
@@ -38,9 +37,6 @@ class AnalyticsRepository(private val apiClient: ApiClient) {
     /** [studentUuid] null = the first child linked to this account. */
     fun getParentProgress(studentUuid: String? = null): Flow<NetworkResult<ParentProgressData>> =
         fetch("progres anak") { apiClient.analyticsApi.getParentProgress(studentUuid) }
-
-    fun getExecutiveKpi(): Flow<NetworkResult<ExecutiveAnalyticsData>> =
-        fetch("analitik eksekutif") { apiClient.analyticsApi.getExecutiveKpi() }
 
     private fun <T : Any> fetch(what: String, call: suspend () -> Response<T>): Flow<NetworkResult<T>> = flow {
         emit(NetworkResult.Loading)

@@ -31,6 +31,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import com.sultanagung1.sista.core.security.BiometricAvailability
+import com.sultanagung1.sista.core.ui.text.UiText
+import com.sultanagung1.sista.ui.settings.BiometricSettingsUiState
 
 /** The profile and device-security pages in their states. The people exist only in this test. */
 @RunWith(RobolectricTestRunner::class)
@@ -107,13 +110,38 @@ class ProfileScreenshotTest {
 
     @Test fun error() = profile("error", ProfileUiState(isLoading = false, errorMessage = "Tidak dapat terhubung ke server."))
 
-    private fun security(name: String, report: DeviceIntegrityReport?) = capture("security_$name") {
-        SecuritySettingsContent(report = report, canOpenBiometrics = true, onOpenBiometrics = {}, onNavigateBack = {})
-    }
+    private val fingerprintOn = BiometricSettingsUiState(availability = BiometricAvailability.AVAILABLE, isLoginEnabled = true)
+
+    private fun security(name: String, report: DeviceIntegrityReport?, biometric: BiometricSettingsUiState = fingerprintOn) =
+        capture("security_$name") {
+            SecuritySettingsContent(report = report, biometric = biometric, onLoginChange = {}, onProtectionChange = {}, onNavigateBack = {})
+        }
 
     @Test fun securitySafe() = security("safe", DeviceIntegrityReport(false, false, false, "3F9A".repeat(16), isSecure = true))
 
     @Test fun securityWarning() = security("warning", DeviceIntegrityReport(true, false, true, "", isSecure = false))
 
     @Test fun securityLoading() = security("loading", null)
+
+    @Test fun securityNoFingerprint() = security(
+        "no_fingerprint",
+        DeviceIntegrityReport(false, false, false, "3F9A".repeat(16), isSecure = true),
+        BiometricSettingsUiState(availability = BiometricAvailability.NOT_ENROLLED),
+    )
+
+    @Test fun securityRegistrationRefused() = security(
+        "fingerprint_refused",
+        DeviceIntegrityReport(false, false, false, "3F9A".repeat(16), isSecure = true),
+        BiometricSettingsUiState(
+            availability = BiometricAvailability.AVAILABLE,
+            message = UiText.Raw("Perangkat ini sudah terdaftar untuk akun lain."),
+            messageIsError = true,
+        ),
+    )
+
+    @Test @Config(qualifiers = "en-w400dp-h1500dp-xhdpi")
+    fun securityEnglish() = security("en", DeviceIntegrityReport(false, false, false, "3F9A".repeat(16), isSecure = true))
+
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1500dp-xhdpi")
+    fun securityArabic() = security("ar", DeviceIntegrityReport(false, false, false, "3F9A".repeat(16), isSecure = true))
 }

@@ -67,7 +67,6 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel.compose
     implementation libs.androidx.biometric
     implementation libs.androidx.datastore.preferences
-    implementation libs.play.services.location
 
     // FASE 77.5: student scans the class-session QR (same stack as feature:profile's scanner)
     implementation libs.androidx.camera.core

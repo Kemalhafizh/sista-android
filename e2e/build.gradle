@@ -24,7 +24,7 @@ dependencies {
 
 test {
     useJUnit()
-    // Real device state changes (GPS mock, wifi/data toggle) are not safe to
+    // Real device state changes (wifi/data toggle) are not safe to
     // parallelize against a single emulator/device.
     maxParallelForks = 1
     testLogging {

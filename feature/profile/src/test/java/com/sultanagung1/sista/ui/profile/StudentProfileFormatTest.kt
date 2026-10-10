@@ -1,10 +1,8 @@
 package com.sultanagung1.sista.ui.profile
 
-import android.content.pm.ApplicationInfo
 import com.sultanagung1.sista.core.ui.text.UiText
 import com.sultanagung1.sista.feature.profile.R
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -74,11 +72,5 @@ class StudentProfileFormatTest {
         assertEquals(com.sultanagung1.sista.core.ui.theme.StatusTone.Warning, disciplineTone("sp1"))
         assertEquals(com.sultanagung1.sista.core.ui.theme.StatusTone.Danger, disciplineTone("sp3"))
         assertEquals(com.sultanagung1.sista.core.ui.theme.StatusTone.Neutral, disciplineTone(null))
-    }
-
-    @Test
-    fun theCrashDrillIsOnlyInDebuggableBuilds() {
-        assertTrue(crashDrillAvailable(ApplicationInfo.FLAG_DEBUGGABLE))
-        assertFalse(crashDrillAvailable(0))
     }
 }

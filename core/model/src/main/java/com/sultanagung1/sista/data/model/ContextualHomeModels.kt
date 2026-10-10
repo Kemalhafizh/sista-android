@@ -13,7 +13,6 @@ data class ContextualHomePayload(
     @SerializedName("hero") val hero: HeroCard,
     @SerializedName("quickActions") val quickActions: List<QuickAction> = emptyList(),
     @SerializedName("suggestions") val suggestions: List<SmartSuggestion> = emptyList(),
-    @SerializedName("gamification") val gamification: GamificationSummary
 )
 
 data class HomeContext(
@@ -54,11 +53,4 @@ data class SmartSuggestionsResponse(
     @SerializedName("success") val success: Boolean = true,
     @SerializedName("message") val message: String? = null,
     @SerializedName("data") val data: List<SmartSuggestion> = emptyList()
-)
-
-data class GamificationSummary(
-    @SerializedName("xpToday") val xpToday: Int,
-    @SerializedName("totalXp") val totalXp: Int,
-    @SerializedName("level") val level: Int,
-    @SerializedName("streakDays") val streakDays: Int
 )
