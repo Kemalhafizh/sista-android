@@ -48,7 +48,7 @@ Presensi GPS, QR identitas, pendaftaran wajah, AI tutor & esai, gamifikasi, pind
 | **79** | **Siap rilis:** token terenkripsi, build rilis R8, konfigurasi lingkungan, signing, Firebase sekolah, widget sholat, kode mati | ⏳ **Berikutnya**, bisa langsung jalan paralel | 119.12 (endpoint jadwal sholat) |
 | **80** | Sisi Android FASE 120: survei peminatan, kelas tahun depan, riwayat rombel | ⏳ Setelah API 120.4 tersedia | 120 |
 | 81 | Sisi Android FASE 121: ajukan izin/sakit anak, rapor terbit, kotak masuk persetujuan pimpinan | 📝 Garis besar | 121 |
-| 82 | Rilis: Play Console, kebijakan privasi, jalur internal → pilot Jan 2027 | 📝 Garis besar | 123 |
+| 82 | Rilis & serah terima: Play Console dan keystore atas nama sekolah, kebijakan privasi, jalur internal → pilot Jan 2027 | 📝 Garis besar | 123 |
 
 ---
 
@@ -264,7 +264,14 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 - **Ganti password wajib saat login pertama** (akun dibuat massal, ALUR K5). Bila WA gateway aktif, ada reset password lewat OTP WA.
 - **Pimpinan dan penyetuju lain:** kotak masuk "Menunggu Persetujuan Saya", diurutkan menurut tenggat. Setujui/tolak/kembalikan dengan catatan, **setujui massal** (misalnya semua izin hari ini, atau rapor satu angkatan), dan delegasikan saat berhalangan. Notifikasi pengingat dan eskalasi dari server. Tujuannya: tidak ada pekerjaan tertahan karena penyetuju tidak sedang di depan komputer.
 
-## FASE 82: RILIS `[GARIS BESAR]`
-- Play Console atas akun sekolah, kebijakan privasi (UU PDP, pengguna di bawah umur), dan formulir Data Safety (data: identitas, presensi, nilai; kamera untuk QR; mikrofon untuk Tahsin).
-- Jalur internal testing → pilot Januari 2027 (1–2 rombel) → produksi Juli 2027.
+## FASE 82: RILIS & SERAH TERIMA `[GARIS BESAR]`
+> SISTA dijual ke sekolah dan dikelola IT sekolah setelah serah terima (sistem-terpadu FASE 123). Semua yang dibutuhkan untuk merilis pembaruan harus **atas nama sekolah** dan bisa dijalankan IT sekolah tanpa pembuatnya.
+- **Akun atas nama sekolah:**
+  - **Google Play Console** milik sekolah (biaya pendaftaran sekali);
+  - proyek **Firebase** milik sekolah (79.5);
+  - aplikasi diterbitkan dari akun sekolah sejak rilis pertama. Memindahkan aplikasi antar akun Play Console belakangan lebih rumit.
+- **Keystore rilis** dibuat sekali, disimpan oleh sekolah (dengan cadangan), dan **tidak pernah** di repo. Kehilangan keystore berarti aplikasi tidak bisa diperbarui. Disarankan memakai *Play App Signing* agar kunci unggah bisa diganti bila hilang.
+- **Kebijakan privasi** (UU PDP, pengguna di bawah umur) dan formulir Data Safety. Data yang dikumpulkan: identitas, presensi, nilai. Izin yang dipakai: kamera untuk QR, mikrofon untuk Tahsin.
+- **Jalur rilis:** internal testing → pilot Januari 2027 (1–2 rombel) → produksi Juli 2027.
+- **Dokumen rilis untuk IT sekolah:** cara membangun APK/AAB rilis, menaikkan versi, mengunggah ke Play Console, dan membaca laporan crash Crashlytics, langkah demi langkah.
 - Server staging untuk menghidupkan lagi pipeline E2E.
