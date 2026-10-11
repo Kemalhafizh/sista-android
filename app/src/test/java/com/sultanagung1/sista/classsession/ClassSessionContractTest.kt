@@ -76,6 +76,32 @@ class ClassSessionContractTest {
     """.trimIndent()
 
     @Test
+    fun lessonAttendanceOfTheDayParsesDayAttendanceFor() = runBlocking {
+        // ClassSessionService::dayAttendanceFor (sistem-terpadu#47).
+        respond(200, """{"success":true,"message":"Presensi per mapel berhasil diambil","data":{
+            "date":"2026-10-05",
+            "sessions":[
+              {"session_id":45,"subject_name":"Matematika Peminatan","teacher_name":"Pak Hadi","jam_ke":1,
+               "scheduled_start":"07:00","scheduled_end":"08:30","session_status":"active",
+               "status_code":"alpha","status":"Alpha","check_in_method":"auto_alpha","checked_in_at":null,"awaiting_scan":true},
+              {"session_id":46,"subject_name":"Fisika","teacher_name":null,"jam_ke":5,
+               "scheduled_start":"10:00","scheduled_end":"10:45","session_status":"scheduled",
+               "status_code":null,"status":null,"check_in_method":null,"checked_in_at":null,"awaiting_scan":false}
+            ],
+            "summary":{"sessions":2,"recorded":0,"hadir":0,"telat":0,"sakit":0,"izin":0,"alpha":0}}}""")
+
+        val day = repo.getMyLessonAttendance().data()
+        assertEquals("/api/v1/student/class-session/attendance", server.takeRequest(1, TimeUnit.SECONDS)!!.path)
+        assertEquals("2026-10-05", day.date)
+        val (running, later) = day.sessions!!
+        assertEquals(45L, running.sessionId)
+        assertEquals("alpha", running.statusCode)
+        assertEquals(true, running.awaitingScan)
+        assertEquals(null, later.statusCode)
+        assertEquals(0, day.summary!!.recorded)
+    }
+
+    @Test
     fun todayListParsesTheResource() = runBlocking {
         respond(200, """{"success":true,"message":"Sesi kelas hari ini berhasil diambil","data":[
             $activeSession,

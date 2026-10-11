@@ -62,10 +62,7 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideAttendanceRepository(
-        apiClient: ApiClient,
-        widgetSnapshots: WidgetSnapshotStore
-    ): AttendanceRepository = AttendanceRepository(apiClient, widgetSnapshots)
+    fun provideAttendanceRepository(apiClient: ApiClient): AttendanceRepository = AttendanceRepository(apiClient)
 
     @Provides
     @Singleton
@@ -202,8 +199,10 @@ object RepositoryModule {
     // FASE 77: Sesi Kelas Hidup — guru, siswa, dan admin/Waka Kurikulum/TU.
     @Provides
     @Singleton
-    fun provideClassSessionRepository(classSessionApi: ClassSessionApiService): ClassSessionRepository =
-        ClassSessionRepository(classSessionApi)
+    fun provideClassSessionRepository(
+        classSessionApi: ClassSessionApiService,
+        widgetSnapshots: WidgetSnapshotStore,
+    ): ClassSessionRepository = ClassSessionRepository(classSessionApi, widgetSnapshots)
 
     @Provides
     @Singleton

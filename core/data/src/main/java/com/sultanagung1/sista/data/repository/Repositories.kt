@@ -8,7 +8,7 @@ import com.sultanagung1.sista.core.storage.SessionManager
 import com.sultanagung1.sista.core.util.DateUtils
 import com.sultanagung1.sista.core.widget.WidgetSnapshotStore
 import com.sultanagung1.sista.core.widget.WidgetSnapshots
-import com.sultanagung1.sista.core.widget.withAttendance
+import com.sultanagung1.sista.core.widget.withLessonAttendance
 import com.sultanagung1.sista.core.widget.withBilling
 import com.sultanagung1.sista.data.local.dao.UserDao
 import com.sultanagung1.sista.data.local.entity.UserEntity
@@ -70,6 +70,7 @@ import com.sultanagung1.sista.data.model.UserProfile
 import com.sultanagung1.sista.data.model.WeeklyDigest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -346,7 +347,6 @@ class StudentRepository(
 
 class AttendanceRepository(
     private val apiClient: ApiClient,
-    private val widgetSnapshots: WidgetSnapshotStore? = null
 ) {
 
     fun getAttendanceHistory(): Flow<NetworkResult<List<AttendanceHistoryItem>>> = flow {
@@ -355,7 +355,6 @@ class AttendanceRepository(
             val response = apiClient.attendanceApi.getAttendanceHistory()
             val data = response.body()?.data
             if (response.isSuccessful && data != null) {
-                recordAttendanceSnapshot(data)
                 emit(NetworkResult.Success(data))
             } else {
                 emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat riwayat presensi", response.code()))
@@ -364,11 +363,6 @@ class AttendanceRepository(
             emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
         }
     }.flowOn(Dispatchers.IO)
-
-    private suspend fun recordAttendanceSnapshot(history: List<AttendanceHistoryItem>) {
-        val latest = WidgetSnapshots.studentAttendance(history, DateUtils.nowMillis()) ?: return
-        widgetSnapshots?.update { it.withAttendance(latest) }
-    }
 }
 
 class CbtRepository(private val apiClient: ApiClient, private val messages: FallbackMessages) {
@@ -809,9 +803,6 @@ class ParentRepository(
             val response = apiClient.parentApi.getChildAttendanceHistory(uuid)
             val body = response.body()
             if (response.isSuccessful && body?.success == true) {
-                WidgetSnapshots.childAttendance(uuid, body.data.orEmpty(), DateUtils.nowMillis())?.let { latest ->
-                    widgetSnapshots?.update { it.withAttendance(latest) }
-                }
                 emit(NetworkResult.Success(body.data.orEmpty()))
             } else {
                 emit(NetworkResult.Error(body?.message ?: "Gagal memuat riwayat presensi anak", response.code()))
@@ -820,6 +811,25 @@ class ParentRepository(
             emit(NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan jaringan"))
         }
     }.flowOn(Dispatchers.IO)
+
+    /**
+     * Today's lessons of the child and the per-lesson QR attendance. Only the
+     * attendance widget reads it, so it is stored there and nothing is emitted:
+     * a failure leaves the widget's last snapshot (with its "updated at") as is.
+     */
+    suspend fun refreshChildLessonAttendance(uuid: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.parentApi.getChildLessonAttendance(uuid)
+                val day = response.body()?.takeIf { response.isSuccessful && it.success }?.data ?: return@withContext
+                widgetSnapshots?.update { it.withLessonAttendance(WidgetSnapshots.lessonAttendance(uuid, day, DateUtils.nowMillis())) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Offline or refused: keep what the widget already shows.
+            }
+        }
+    }
 
     fun getChildGrades(uuid: String): Flow<NetworkResult<List<ChildGradeItem>>> = flow {
         emit(NetworkResult.Loading)

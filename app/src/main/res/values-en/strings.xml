@@ -113,12 +113,8 @@
     <string name="widget_only_student_parent">Available for student &amp; parent accounts</string>
     <string name="widget_only_student">Available for student accounts</string>
     <string name="widget_tap_for_detail">Tap for details ➔</string>
-    <string name="widget_attendance_today">%1$s today</string>
-    <string name="widget_attendance_today_at">%1$s today (%2$s)</string>
     <string name="widget_attendance_not_yet_today">Not recorded today yet</string>
     <string name="widget_attendance_none">No attendance recorded yet</string>
-    <string name="widget_attendance_last">Last: %1$s (%2$s)</string>
-    <string name="widget_attendance_child_last">%1$s • last %2$s (%3$s)</string>
     <string name="widget_attendance_status_h">Present</string>
     <string name="widget_attendance_status_s">Sick</string>
     <string name="widget_attendance_status_i">Excused</string>
@@ -145,4 +141,10 @@
     <string name="cbt_biometric_title">Verify the exam taker</string>
     <string name="cbt_biometric_subtitle">Scan your fingerprint before entering the exam</string>
     <string name="cbt_biometric_cancel">Cancel</string>
+    <string name="widget_lessons_none_today">No lesson has started today</string>
+    <string name="widget_lessons_awaiting_scan">Not checked in yet: %1$s</string>
+    <string name="widget_lessons_present">Present in %1$d of %2$d lessons</string>
+    <string name="widget_child_and">%1$s • %2$s</string>
+    <string name="widget_lesson_status">%1$s: %2$s</string>
+    <string name="widget_lesson_status_at">%1$s: %2$s (%3$s)</string>
 </resources>

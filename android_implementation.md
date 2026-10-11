@@ -4604,7 +4604,7 @@ sealed interface ActiveSessionEffect : UiEffect {
 
 ---
 
-## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[PR A SELESAI 10 Okt 2026, PR B SELESAI 11 Okt 2026, Aksesibilitas digabung 11 Okt 2026 — sisa: sumber data widget presensi (78.2), menunggu endpoint]`
+## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[SELESAI 11 Okt 2026 — widget presensi butuh sistem-terpadu#47 ter-deploy]`
 
 > **Tanggal Rancangan:** 5 Oktober 2026
 > **Pelaksana:** Agent Frontend/Mobile (repo `sista-android`). Pasangannya di backend: **FASE 119** di `sistem-terpadu/implementation_plan.md`.
@@ -4679,7 +4679,8 @@ Ikut dihapus:
 - [x] APK tidak lagi meminta izin lokasi (`aapt2 dump permissions`, dan `tools:node="remove"` di manifest).
 - [x] PR B: "Lapor Perundungan" mengirim ke `POST counseling/bullying-reports` (sistem-terpadu#44), dengan screenshot kosong, terisi, terkirim, error, gelap, en, ar.
 - [x] 78.3: ukuran teks, ramah disleksia, dan kontras tinggi ada langsung di halaman Pengaturan; rute `accessibility_settings` dihapus.
-- [ ] Bagian ini diperbarui menjadi `[SELESAI]` setelah sumber data widget presensi (78.2) beres.
+- [x] 78.2: widget presensi membaca presensi QR per mapel hari ini (`student/class-session/attendance`, `parent/child/{uuid}/class-session-attendance`, sistem-terpadu#47).
+- [x] Bagian ini diperbarui menjadi `[SELESAI]`.
 
 ### 78.7: Hasil PR A (10 Okt 2026)
 
@@ -4712,3 +4713,11 @@ Catatan pelaksanaan:
 ### 78.10: Catatan widget presensi (78.2)
 
 `AttendanceWidgetProvider` membaca `GET student/attendance` (dan `parent/child/{uuid}/attendance` untuk orang tua). Kedua endpoint itu membaca tabel `attendances`, yaitu presensi harian dari input guru, `AttendanceService`, dan sinkronisasi offline, **bukan** presensi QR per mapel (`session_attendances`, FASE 117). Belum ada endpoint siswa atau orang tua untuk presensi sesi. Agar widget memakai presensi QR per mapel, sistem-terpadu perlu endpoint baru lebih dulu (CLAUDE.md aturan 2). Bagian GPS sudah hilang sejak PR A.
+
+**Selesai (11 Okt 2026):** sistem-terpadu#47 menambah `GET student/class-session/attendance` dan `GET parent/child/{uuid}/class-session-attendance` (`ClassSessionService::dayAttendanceFor`). Widget sekarang menyimpan `LessonAttendanceSnapshot` (pelajaran hari itu dan status tiap sesi) dan menampilkan:
+- "Hadir di N dari M pelajaran", dihitung dari yang sudah tercatat (hadir dan telat dianggap hadir);
+- "Belum absen: <mapel>" untuk kelas yang sedang berjalan dan belum di-scan (`awaiting_scan`), bukan "Alpa";
+- "Belum ada pelajaran yang dimulai hari ini" untuk hari tanpa sesi;
+- "Belum tercatat hari ini" bila data terakhir dari hari lain.
+
+Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membuka anak. Snapshot presensi harian versi lama (kunci `attendance`) tidak dibaca lagi.

@@ -1,9 +1,10 @@
 package com.sultanagung1.sista.widget
 
-import com.sultanagung1.sista.core.widget.AttendanceSnapshot
 import com.sultanagung1.sista.core.widget.BillingSnapshot
+import com.sultanagung1.sista.core.widget.LessonAttendanceSnapshot
 import com.sultanagung1.sista.core.widget.ScheduleSnapshot
 import com.sultanagung1.sista.core.widget.WidgetLesson
+import com.sultanagung1.sista.core.widget.WidgetLessonAttendance
 import com.sultanagung1.sista.core.widget.WidgetSnapshot
 import com.sultanagung1.sista.widget.WidgetTestStrings.render
 import org.junit.Assert.assertEquals
@@ -56,95 +57,99 @@ class WidgetTextMapperTest {
         }
     }
 
+    private fun lesson(
+        subject: String?,
+        code: String?,
+        label: String? = null,
+        awaiting: Boolean = false,
+        at: String? = null,
+    ) = WidgetLessonAttendance(subject, "07:00", code, label, awaitingScan = awaiting, checkInTime = at)
+
+    private fun lessons(vararg items: WidgetLessonAttendance, date: String = "2026-09-27", child: String? = null, name: String? = null) =
+        LessonAttendanceSnapshot(childUuid = child, childName = name, date = date, lessons = items.toList(), fetchedAt = millis(27, 7, 10))
+
     @Test
-    fun attendanceTodayWithCheckInTime() {
+    fun countsOnlyRecordedLessonsAndShowsTheLastOne() {
         val snapshot = student.copy(
-            attendance = AttendanceSnapshot(
-                date = "2026-09-27", statusCode = "H", statusLabel = null,
-                checkInTime = "06:45", fetchedAt = millis(27, 7, 10)
+            lessonAttendance = lessons(
+                lesson("Matematika", "hadir", at = "07:05"),
+                lesson("Fisika", "telat", at = "08:50"),
+                lesson("Kimia", "alpha"),
+                lesson("Biologi", null),
             )
         )
         val content = WidgetTextMapper.attendance(snapshot, sundayMorning)
-        assertEquals("Hadir hari ini (06:45)", render(content.status))
-        assertNull(content.detail)
+        // hadir + telat = in class; Biologi is not recorded yet and is not counted.
+        assertEquals("Hadir di 2 dari 3 pelajaran", render(content.status))
+        assertEquals("Kimia: Alpa", render(content.detail))
         assertEquals("Diperbarui 07:10", render(content.updated))
     }
 
     @Test
-    fun attendanceTodayWithoutCheckInTime() {
+    fun aRunningClassNotScannedYetIsNotShownAsAlpa() {
         val snapshot = student.copy(
-            attendance = AttendanceSnapshot(
-                date = "2026-09-27", statusCode = "s", statusLabel = null, fetchedAt = millis(27, 7, 0)
-            )
-        )
-        assertEquals("Sakit hari ini", render(WidgetTextMapper.attendance(snapshot, sundayMorning).status))
-    }
-
-    @Test
-    fun olderRecordIsNeverShownAsToday() {
-        val snapshot = student.copy(
-            attendance = AttendanceSnapshot(
-                date = "2026-09-26", statusCode = "H", statusLabel = null,
-                checkInTime = "06:40", fetchedAt = millis(26, 18, 0)
+            lessonAttendance = lessons(
+                lesson("Matematika", "hadir", at = "07:05"),
+                lesson("Fisika", "alpha", awaiting = true),
             )
         )
         val content = WidgetTextMapper.attendance(snapshot, sundayMorning)
-        assertEquals("Belum tercatat hari ini", render(content.status))
-        assertEquals("Terakhir: Hadir (26/09)", render(content.detail))
-        assertEquals("Diperbarui 26/09 18:00", render(content.updated))
+        assertEquals("Belum absen: Fisika", render(content.status))
+        assertEquals("Matematika: Hadir (07:05)", render(content.detail))
     }
 
     @Test
-    fun parentSeesTheSelectedChildByName() {
-        val today = parent.copy(
-            attendance = AttendanceSnapshot(
-                childUuid = "c-1", childName = "Budi", date = "2026-09-27",
-                statusCode = "I", statusLabel = "Izin", fetchedAt = millis(27, 7, 20)
-            )
-        )
-        val content = WidgetTextMapper.attendance(today, sundayMorning)
-        assertEquals("Izin hari ini", render(content.status))
-        assertEquals("Budi", render(content.detail))
-
-        val older = today.copy(attendance = today.attendance!!.copy(date = "2026-09-25", statusCode = "A"))
-        val olderContent = WidgetTextMapper.attendance(older, sundayMorning)
-        assertEquals("Belum tercatat hari ini", render(olderContent.status))
-        assertEquals("Budi • terakhir Alpa (25/09)", render(olderContent.detail))
-    }
-
-    @Test
-    fun gpsCheckInStatusWordIsUnderstood() {
-        // GeofenceAttendanceService stores status = 'hadir', not 'H'.
-        val snapshot = student.copy(
-            attendance = AttendanceSnapshot(date = "2026-09-27", statusCode = "hadir", statusLabel = null, fetchedAt = millis(27, 7, 0))
-        )
-        assertEquals("Hadir hari ini", render(WidgetTextMapper.attendance(snapshot, sundayMorning).status))
-    }
-
-    @Test
-    fun emptyHistorySaysNothingRecorded() {
-        val snapshot = student.copy(
-            attendance = AttendanceSnapshot(date = null, statusCode = null, statusLabel = null, fetchedAt = millis(27, 7, 0))
-        )
+    fun startedLessonsWithNothingRecordedSayNothingRecorded() {
+        val snapshot = student.copy(lessonAttendance = lessons(lesson("Matematika", null)))
         val content = WidgetTextMapper.attendance(snapshot, sundayMorning)
         assertEquals("Belum ada presensi tercatat", render(content.status))
         assertNull(content.detail)
     }
 
     @Test
-    fun unknownStatusCodeFallsBackToServerLabelThenDash() {
-        val withLabel = parent.copy(
-            attendance = AttendanceSnapshot(
-                childUuid = "c-1", date = "2026-09-27", statusCode = "D",
-                statusLabel = "Dispensasi", fetchedAt = millis(27, 7, 0)
-            )
-        )
-        assertEquals("Dispensasi hari ini", render(WidgetTextMapper.attendance(withLabel, sundayMorning).status))
+    fun aDayWithoutLessonsIsNotZeroPercent() {
+        val content = WidgetTextMapper.attendance(student.copy(lessonAttendance = lessons()), sundayMorning)
+        assertEquals("Belum ada pelajaran yang dimulai hari ini", render(content.status))
+        assertNull(content.detail)
+    }
 
-        val noLabel = student.copy(
-            attendance = AttendanceSnapshot(date = "2026-09-27", statusCode = null, statusLabel = null, fetchedAt = millis(27, 7, 0))
+    @Test
+    fun yesterdaysLessonsAreNeverShownAsToday() {
+        val snapshot = student.copy(lessonAttendance = lessons(lesson("Matematika", "hadir"), date = "2026-09-26"))
+        val content = WidgetTextMapper.attendance(snapshot, sundayMorning)
+        assertEquals("Belum tercatat hari ini", render(content.status))
+        assertEquals("Buka Sulaone untuk memuat data", render(content.detail))
+    }
+
+    @Test
+    fun parentSeesTheSelectedChildByName() {
+        val snapshot = parent.copy(
+            lessonAttendance = lessons(lesson("Matematika", "izin"), child = "c-1", name = "Budi")
         )
-        assertEquals("– hari ini", render(WidgetTextMapper.attendance(noLabel, sundayMorning).status))
+        val content = WidgetTextMapper.attendance(snapshot, sundayMorning)
+        assertEquals("Hadir di 0 dari 1 pelajaran", render(content.status))
+        assertEquals("Budi • Matematika: Izin", render(content.detail))
+
+        val older = snapshot.copy(lessonAttendance = snapshot.lessonAttendance!!.copy(date = "2026-09-25"))
+        val olderContent = WidgetTextMapper.attendance(older, sundayMorning)
+        assertEquals("Belum tercatat hari ini", render(olderContent.status))
+        assertEquals("Budi", render(olderContent.detail))
+    }
+
+    @Test
+    fun unknownStatusCodeFallsBackToServerLabelThenCodeAndMissingSubjectToDash() {
+        val withLabel = student.copy(lessonAttendance = lessons(lesson(null, "dispensasi", label = "Dispensasi")))
+        assertEquals("–: Dispensasi", render(WidgetTextMapper.attendance(withLabel, sundayMorning).detail))
+
+        val noLabel = student.copy(lessonAttendance = lessons(lesson("Seni", "dispensasi")))
+        assertEquals("Seni: dispensasi", render(WidgetTextMapper.attendance(noLabel, sundayMorning).detail))
+    }
+
+    @Test
+    fun aStoredSnapshotWithoutLessonsIsReadAsNoLessons() {
+        // Gson can leave the list null in a snapshot saved on disk.
+        val snapshot = student.copy(lessonAttendance = LessonAttendanceSnapshot(date = "2026-09-27", lessons = null, fetchedAt = millis(27, 7, 0)))
+        assertEquals("Belum ada pelajaran yang dimulai hari ini", render(WidgetTextMapper.attendance(snapshot, sundayMorning).status))
     }
 
     // ---------------------------------------------------------------- SPP

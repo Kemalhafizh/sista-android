@@ -1,7 +1,7 @@
 package com.sultanagung1.sista.widget
 
 import com.sultanagung1.sista.R
-import com.sultanagung1.sista.core.widget.AttendanceSnapshot
+import com.sultanagung1.sista.core.widget.WidgetLessonAttendance
 import com.sultanagung1.sista.core.widget.WidgetSnapshot
 import com.sultanagung1.sista.core.widget.WidgetSnapshots
 import com.sultanagung1.sista.ui.navigation.RoleGroup
@@ -37,43 +37,51 @@ object WidgetTextMapper {
 
     private val TIME = DateTimeFormatter.ofPattern("HH:mm")
     private val DAY_TIME = DateTimeFormatter.ofPattern("dd/MM HH:mm")
-    private val DAY_MONTH = DateTimeFormatter.ofPattern("dd/MM")
 
+    /**
+     * Today's per-lesson QR attendance (FASE 117). Counts only what the server
+     * has recorded; a running class the student has not scanned yet reads
+     * "belum absen", not "alpa".
+     */
     fun attendance(snapshot: WidgetSnapshot?, now: ZonedDateTime): AttendanceWidgetContent {
         if (snapshot != null && UserRoles.groupOf(snapshot.role) in STAFF) {
             return AttendanceWidgetContent(res(R.string.widget_no_data), res(R.string.widget_only_student_parent), null)
         }
-        val record = snapshot?.attendance
+        val record = snapshot?.lessonAttendance
             ?: return AttendanceWidgetContent(res(R.string.widget_no_data), res(R.string.widget_open_app), null)
 
         val child = record.childName?.takeIf { it.isNotBlank() }
         val updated = updatedAt(record.fetchedAt, now)
-        // Local copy: record comes from :core:common, so its properties don't smart-cast here.
-        val rawDate = record.date
-        val date = rawDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-
-        return when {
-            rawDate == null ->
-                AttendanceWidgetContent(res(R.string.widget_attendance_none), child?.let(WidgetText::Raw), updated)
-            date == now.toLocalDate() -> {
-                val label = statusLabel(record)
-                val status = record.checkInTime
-                    ?.let { res(R.string.widget_attendance_today_at, label, it) }
-                    ?: res(R.string.widget_attendance_today, label)
-                AttendanceWidgetContent(status, child?.let(WidgetText::Raw), updated)
-            }
-            else -> {
-                // The newest record is from another day. Nothing is known about
-                // today beyond "not recorded when the app last loaded it".
-                val day = date?.format(DAY_MONTH) ?: rawDate
-                val last = if (child != null) {
-                    res(R.string.widget_attendance_child_last, child, statusLabel(record), day)
-                } else {
-                    res(R.string.widget_attendance_last, statusLabel(record), day)
-                }
-                AttendanceWidgetContent(res(R.string.widget_attendance_not_yet_today), last, updated)
-            }
+        val date = record.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        if (date != now.toLocalDate()) {
+            // Loaded on another day: nothing is known about today yet.
+            val detail = child?.let(WidgetText::Raw) ?: res(R.string.widget_open_app)
+            return AttendanceWidgetContent(res(R.string.widget_attendance_not_yet_today), detail, updated)
         }
+
+        val lessons = record.lessons.orEmpty()
+        if (lessons.isEmpty()) {
+            return AttendanceWidgetContent(res(R.string.widget_lessons_none_today), child?.let(WidgetText::Raw), updated)
+        }
+
+        val waiting = lessons.firstOrNull { it.awaitingScan }
+        val recorded = lessons.filter { it.statusCode != null && !it.awaitingScan }
+        val status = when {
+            waiting != null -> res(R.string.widget_lessons_awaiting_scan, subjectOf(waiting))
+            recorded.isEmpty() -> res(R.string.widget_attendance_none)
+            else -> res(
+                R.string.widget_lessons_present,
+                recorded.count { it.statusCode?.lowercase() in PRESENT },
+                recorded.size
+            )
+        }
+        val last = recorded.lastOrNull()?.let(::lessonLine)
+        val detail = when {
+            child != null && last != null -> res(R.string.widget_child_and, child, last)
+            child != null -> WidgetText.Raw(child)
+            else -> last
+        }
+        return AttendanceWidgetContent(status, detail, updated)
     }
 
     fun spp(snapshot: WidgetSnapshot?, now: ZonedDateTime): SppWidgetContent {
@@ -139,15 +147,31 @@ object WidgetTextMapper {
 
     private val STAFF = setOf(RoleGroup.TEACHER, RoleGroup.ADMIN, RoleGroup.ACADEMIC_STAFF)
 
-    /** Both spellings the backend stores: codes from class attendance, words from GPS check-in. */
-    private fun statusLabel(record: AttendanceSnapshot): WidgetText = when (record.statusCode?.trim()?.uppercase()) {
-        "H", "HADIR" -> res(R.string.widget_attendance_status_h)
-        "S", "SAKIT" -> res(R.string.widget_attendance_status_s)
-        "I", "IZIN" -> res(R.string.widget_attendance_status_i)
-        "A", "ALPA", "ALPHA", "ALFA" -> res(R.string.widget_attendance_status_a)
-        "T", "TERLAMBAT" -> res(R.string.widget_attendance_status_t)
-        else -> record.statusLabel?.takeIf { it.isNotBlank() }?.let(WidgetText::Raw)
-            ?: record.statusCode?.takeIf { it.isNotBlank() }?.let(WidgetText::Raw)
+    /** hadir and telat both mean the student was in class, as on the server (PRESENT_STATUSES). */
+    private val PRESENT = setOf("hadir", "telat")
+
+    private fun subjectOf(lesson: WidgetLessonAttendance): WidgetText =
+        lesson.subject?.takeIf { it.isNotBlank() }?.let(WidgetText::Raw) ?: res(R.string.widget_unknown_value)
+
+    /** "Matematika: Hadir (07:05)" */
+    private fun lessonLine(lesson: WidgetLessonAttendance): WidgetText {
+        val time = lesson.checkInTime
+        return if (time != null) {
+            res(R.string.widget_lesson_status_at, subjectOf(lesson), statusLabel(lesson), time)
+        } else {
+            res(R.string.widget_lesson_status, subjectOf(lesson), statusLabel(lesson))
+        }
+    }
+
+    /** The server's status codes (SessionAttendance::STATUSES); its own label for anything else. */
+    private fun statusLabel(lesson: WidgetLessonAttendance): WidgetText = when (lesson.statusCode?.trim()?.lowercase()) {
+        "hadir" -> res(R.string.widget_attendance_status_h)
+        "sakit" -> res(R.string.widget_attendance_status_s)
+        "izin" -> res(R.string.widget_attendance_status_i)
+        "alpha" -> res(R.string.widget_attendance_status_a)
+        "telat" -> res(R.string.widget_attendance_status_t)
+        else -> lesson.statusLabel?.takeIf { it.isNotBlank() }?.let(WidgetText::Raw)
+            ?: lesson.statusCode?.takeIf { it.isNotBlank() }?.let(WidgetText::Raw)
             ?: res(R.string.widget_unknown_value)
     }
 

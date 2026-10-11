@@ -35,6 +35,10 @@ interface ParentApiService {
     @GET("parent/child/{uuid}/attendance")
     suspend fun getChildAttendanceHistory(@Path("uuid") uuid: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<ChildAttendanceLog>>>
 
+    /** The child's lessons today and the per-lesson QR attendance (only the caller's own child). */
+    @GET("parent/child/{uuid}/class-session-attendance")
+    suspend fun getChildLessonAttendance(@Path("uuid") uuid: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<com.sultanagung1.sista.data.model.LessonAttendanceDay>>
+
     @GET("parent/child/{uuid}/grades")
     suspend fun getChildGrades(@Path("uuid") uuid: String): Response<com.sultanagung1.sista.core.network.ApiEnvelope<List<ChildGradeItem>>>
 }

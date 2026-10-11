@@ -115,12 +115,8 @@
     <string name="widget_only_student_parent">Tersedia untuk akun siswa &amp; wali murid</string>
     <string name="widget_only_student">Tersedia untuk akun siswa</string>
     <string name="widget_tap_for_detail">Ketuk untuk detail ➔</string>
-    <string name="widget_attendance_today">%1$s hari ini</string>
-    <string name="widget_attendance_today_at">%1$s hari ini (%2$s)</string>
     <string name="widget_attendance_not_yet_today">Belum tercatat hari ini</string>
     <string name="widget_attendance_none">Belum ada presensi tercatat</string>
-    <string name="widget_attendance_last">Terakhir: %1$s (%2$s)</string>
-    <string name="widget_attendance_child_last">%1$s • terakhir %2$s (%3$s)</string>
     <string name="widget_attendance_status_h">Hadir</string>
     <string name="widget_attendance_status_s">Sakit</string>
     <string name="widget_attendance_status_i">Izin</string>
@@ -147,4 +143,10 @@
     <string name="cbt_biometric_title">Verifikasi peserta ujian</string>
     <string name="cbt_biometric_subtitle">Pindai sidik jari sebelum masuk ruang ujian</string>
     <string name="cbt_biometric_cancel">Batal</string>
+    <string name="widget_lessons_none_today">Belum ada pelajaran yang dimulai hari ini</string>
+    <string name="widget_lessons_awaiting_scan">Belum absen: %1$s</string>
+    <string name="widget_lessons_present">Hadir di %1$d dari %2$d pelajaran</string>
+    <string name="widget_child_and">%1$s • %2$s</string>
+    <string name="widget_lesson_status">%1$s: %2$s</string>
+    <string name="widget_lesson_status_at">%1$s: %2$s (%3$s)</string>
 </resources>

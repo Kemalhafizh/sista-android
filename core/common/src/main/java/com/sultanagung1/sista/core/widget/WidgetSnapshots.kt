@@ -1,11 +1,13 @@
 package com.sultanagung1.sista.core.widget
 
-import com.sultanagung1.sista.data.model.AttendanceHistoryItem
 import com.sultanagung1.sista.data.model.BillingInvoice
-import com.sultanagung1.sista.data.model.ChildAttendanceLog
 import com.sultanagung1.sista.data.model.ChildSummaryResponse
+import com.sultanagung1.sista.data.model.LessonAttendanceDay
 import com.sultanagung1.sista.data.model.ScheduleItem
 import com.sultanagung1.sista.data.model.ScheduleRules
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * API response → [WidgetSnapshot] section. Pure functions, no Android types,
@@ -29,52 +31,35 @@ object WidgetSnapshots {
         fetchedAt = fetchedAt
     )
 
+    private val SCHOOL_ZONE: ZoneId = ZoneId.of("Asia/Jakarta")
+
     /**
-     * Latest row of GET student/attendance. The backend orders by created_at,
-     * not by date, so the newest date is picked here. Returns null (record
-     * nothing) when rows exist but none has a readable date: "unknown" must not
-     * turn into "no attendance recorded".
+     * GET student/class-session/attendance (student, [childUuid] null) or
+     * GET parent/child/{uuid}/class-session-attendance. Lessons keep the
+     * server's order (by start time); nothing is counted here.
      */
-    fun studentAttendance(items: List<AttendanceHistoryItem>, fetchedAt: Long): AttendanceSnapshot? {
-        if (items.isEmpty()) {
-            return AttendanceSnapshot(date = null, statusCode = null, statusLabel = null, fetchedAt = fetchedAt)
-        }
-        val latest = items
-            .mapNotNull { item -> isoDate(item.date)?.let { it to item } }
-            .maxByOrNull { it.first }
-            ?: return null
-        return AttendanceSnapshot(
-            date = latest.first,
-            statusCode = latest.second.status,
-            statusLabel = null,
-            checkInTime = latest.second.checkIn?.let(::clock),
-            fetchedAt = fetchedAt
-        )
+    fun lessonAttendance(childUuid: String?, day: LessonAttendanceDay, fetchedAt: Long) = LessonAttendanceSnapshot(
+        childUuid = childUuid,
+        date = isoDate(day.date),
+        lessons = day.sessions.orEmpty().map { lesson ->
+            WidgetLessonAttendance(
+                subject = ScheduleRules.known(lesson.subjectName),
+                start = clock(lesson.scheduledStart),
+                statusCode = lesson.statusCode?.trim()?.takeIf { it.isNotEmpty() },
+                statusLabel = lesson.status?.takeIf { it.isNotBlank() },
+                awaitingScan = lesson.awaitingScan,
+                checkInTime = schoolClock(lesson.checkedInAt)
+            )
+        },
+        fetchedAt = fetchedAt
+    )
+
+    /** "2026-10-05T00:05:00+00:00" → "07:05": an ISO-8601 instant as a school-time clock. */
+    fun schoolClock(iso: String?): String? = iso?.let {
+        runCatching { OffsetDateTime.parse(it.trim()).atZoneSameInstant(SCHOOL_ZONE).format(HH_MM) }.getOrNull()
     }
 
-    /** Same as [studentAttendance] for GET parent/child/{uuid}/attendance. */
-    fun childAttendance(childUuid: String, logs: List<ChildAttendanceLog>, fetchedAt: Long): AttendanceSnapshot? {
-        if (logs.isEmpty()) {
-            return AttendanceSnapshot(
-                childUuid = childUuid,
-                date = null,
-                statusCode = null,
-                statusLabel = null,
-                fetchedAt = fetchedAt
-            )
-        }
-        val latest = logs
-            .mapNotNull { log -> isoDate(log.date)?.let { it to log } }
-            .maxByOrNull { it.first }
-            ?: return null
-        return AttendanceSnapshot(
-            childUuid = childUuid,
-            date = latest.first,
-            statusCode = latest.second.status,
-            statusLabel = latest.second.statusLabel,
-            fetchedAt = fetchedAt
-        )
-    }
+    private val HH_MM: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     /** Anything not explicitly "paid" (unpaid, partial, pending…) is still open, as in BillingViewModel. */
     fun studentBilling(invoices: List<BillingInvoice>, fetchedAt: Long): BillingSnapshot {
@@ -107,26 +92,27 @@ object WidgetSnapshots {
 }
 
 /**
- * Sets [attendance]. A parent's widgets follow one child: a record for another
- * child drops the billing section of the previous one, so the two widgets never
- * mix two children. The child's name is carried over when already known.
+ * Sets [lessonAttendance]. A parent's widgets follow one child: a record for
+ * another child drops the billing section of the previous one, so the two
+ * widgets never mix two children. The child's name is carried over when
+ * already known.
  */
-fun WidgetSnapshot.withAttendance(attendance: AttendanceSnapshot): WidgetSnapshot {
+fun WidgetSnapshot.withLessonAttendance(attendance: LessonAttendanceSnapshot): WidgetSnapshot {
     val sameChildBilling = billing?.takeIf { it.childUuid == attendance.childUuid }
     val name = attendance.childName
         ?: sameChildBilling?.childName
-        ?: this.attendance?.takeIf { it.childUuid == attendance.childUuid }?.childName
-    return copy(attendance = attendance.copy(childName = name), billing = sameChildBilling)
+        ?: lessonAttendance?.takeIf { it.childUuid == attendance.childUuid }?.childName
+    return copy(lessonAttendance = attendance.copy(childName = name), billing = sameChildBilling)
 }
 
-/** Counterpart of [withAttendance]. */
+/** Counterpart of [withLessonAttendance]. */
 fun WidgetSnapshot.withBilling(billing: BillingSnapshot): WidgetSnapshot {
-    val sameChildAttendance = attendance?.takeIf { it.childUuid == billing.childUuid }
+    val sameChildAttendance = lessonAttendance?.takeIf { it.childUuid == billing.childUuid }
     val name = billing.childName
         ?: sameChildAttendance?.childName
         ?: this.billing?.takeIf { it.childUuid == billing.childUuid }?.childName
     return copy(
         billing = billing.copy(childName = name),
-        attendance = sameChildAttendance?.let { if (it.childName == null) it.copy(childName = name) else it }
+        lessonAttendance = sameChildAttendance?.let { if (it.childName == null) it.copy(childName = name) else it }
     )
 }
