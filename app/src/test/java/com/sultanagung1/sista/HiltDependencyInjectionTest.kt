@@ -39,7 +39,6 @@ class HiltDependencyInjectionTest {
         com.sultanagung1.sista.ui.analytics.ChildProgressViewModel::class.java,
         com.sultanagung1.sista.ui.settings.SettingsViewModel::class.java,
         com.sultanagung1.sista.ui.discipline.DisciplineViewModel::class.java,
-        com.sultanagung1.sista.ui.utbk.UtbkViewModel::class.java,
         com.sultanagung1.sista.ui.library.LibraryViewModel::class.java,
         com.sultanagung1.sista.ui.extracurricular.ExtracurricularViewModel::class.java,
         com.sultanagung1.sista.ui.achievement.AchievementViewModel::class.java,

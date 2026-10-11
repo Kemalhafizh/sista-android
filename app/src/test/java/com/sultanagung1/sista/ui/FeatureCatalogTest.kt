@@ -132,10 +132,14 @@ class FeatureCatalogTest {
         assertEquals(listOf("b1"), grouped[1].second.map { it.key })
     }
 
-    /** Feature keys whose screens FASE 78 removed; the server may keep sending them for a while. */
+    /**
+     * Feature keys whose screens FASE 78 removed, plus the UTBK tryout cut by 78.4;
+     * the server may keep sending them for a while.
+     */
     private val removedKeys = listOf(
         "attendance.gps", "attendance.id_qr", "attendance.face_enroll", "student.ai_tutor", "student.ai_essay",
         "student.gamification", "documents.scan", "documents.signature", "admin.executive", "scanner.identity",
+        "student.utbk",
     )
 
     @Test

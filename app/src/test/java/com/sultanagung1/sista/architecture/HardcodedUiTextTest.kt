@@ -70,7 +70,6 @@ class HardcodedUiTextTest {
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/spmb/SpmbTrackingScreen.kt" to 8,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/uks/HealthHistoryScreen.kt" to 15,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/uks/UksVisitScreen.kt" to 28,
-        "feature/academic/src/main/java/com/sultanagung1/sista/ui/utbk/UtbkTryOutScreen.kt" to 14,
         "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/AdminDashboardScreen.kt" to 17,
         "feature/admin/src/main/java/com/sultanagung1/sista/ui/admin/AdminUi.kt" to 9,
         "feature/chat/src/main/java/com/sultanagung1/sista/ui/chat/AdaptiveChatScaffold.kt" to 2,

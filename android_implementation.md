@@ -4661,7 +4661,7 @@ Ikut dihapus:
 
 ### 78.4: Menunggu Keputusan Pemilik Produk (jangan disentuh di FASE 78)
 
-- `UtbkTryOutScreen` (tryout UTBK + rekomendasi PTN).
+- ~~`UtbkTryOutScreen` (tryout UTBK + rekomendasi PTN).~~ **Diputuskan dipotong (11 Okt 2026, sistem-terpadu `implementation_plan.md` 119.11).** Daftar PTN dan passing grade-nya hanya isian seeder, bukan data resmi, dan server tidak punya halaman untuk membuat tryout. Layar, `UtbkViewModel`, `UtbkApiService`, `UtbkRepository`, `UtbkModels`, rute `utbk_tryout`, dan kunci `student.utbk` dihapus. Endpoint server `api/v1/utbk/*` dihapus sesudah PR ini di-merge. Persiapan UTBK tetap lewat CBT sekolah (jenis `try_out`).
 - `TeacherEvaluationScreen` (evaluasi guru oleh siswa).
 - `PrayerTimeWidgetProvider` (widget jadwal sholat).
 
