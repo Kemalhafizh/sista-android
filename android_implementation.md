@@ -256,7 +256,12 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 ## FASE 81: SISI ANDROID FASE 121 `[GARIS BESAR]`
 - **Orang tua:** ajukan izin/sakit anak (tanggal, alasan, foto surat dokter), lalu lihat status persetujuan wali kelas.
 - **Wali kelas:** setujui/tolak izin di aplikasi, termasuk massal untuk satu hari.
-- **Rapor terbit:** notifikasi dan PDF rapor yang sudah disahkan untuk orang tua dan siswa.
+- **Rapor terbit:** notifikasi dan **PDF rapor resmi dari e-Rapor Kemendikdasmen** yang diunggah sekolah, untuk orang tua dan siswa. Aplikasi tidak menyusun rapor sendiri. Bila layar rapor yang ada sekarang (`RaporDetail`) merakit rapor dari nilai, ubah menjadi penampil PDF resmi plus daftar nilai sebagai informasi.
+- **Pengajuan perubahan data diri** (ALUR K4) di halaman Profil, untuk siswa, orang tua, dan guru:
+  - pilih kolom, isi nilai baru, lampirkan foto bukti (KK/akta) dari kamera atau galeri;
+  - lihat status pengajuan;
+  - nomor HP dan email langsung tersimpan tanpa menunggu persetujuan.
+- **Ganti password wajib saat login pertama** (akun dibuat massal, ALUR K5). Bila WA gateway aktif, ada reset password lewat OTP WA.
 - **Pimpinan dan penyetuju lain:** kotak masuk "Menunggu Persetujuan Saya", diurutkan menurut tenggat. Setujui/tolak/kembalikan dengan catatan, **setujui massal** (misalnya semua izin hari ini, atau rapor satu angkatan), dan delegasikan saat berhalangan. Notifikasi pengingat dan eskalasi dari server. Tujuannya: tidak ada pekerjaan tertahan karena penyetuju tidak sedang di depan komputer.
 
 ## FASE 82: RILIS `[GARIS BESAR]`
