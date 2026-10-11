@@ -31,7 +31,7 @@ Presensi GPS, QR identitas, pendaftaran wajah, AI tutor & esai, gamifikasi, pind
 | Tanggal | Keputusan |
 |---|---|
 | 5 Okt 2026 | Presensi siswa hanya QR per mapel. Pegawai memakai mesin sidik jari (bukan aplikasi) |
-| 11 Okt 2026 | Full Kurikulum Merdeka: siswa kelas X memilih **paket mapel pilihan** lewat survei peminatan (FASE 80) |
+| 11 Okt 2026 | Full Kurikulum Merdeka: siswa kelas X mengisi **survei peminatan** mapel pilihan (FASE 80). Survei hanya memetakan minat; rombel XI dirancang dan diplot Waka Kurikulum di web |
 | 11 Okt 2026 | Evaluasi guru oleh siswa dipertahankan. Widget jadwal sholat **dipertahankan** |
 
 ### Aturan main
@@ -46,7 +46,7 @@ Presensi GPS, QR identitas, pendaftaran wajah, AI tutor & esai, gamifikasi, pind
 | 77 | Sesi kelas & presensi QR per mapel | ✅ (arsip) | 117 |
 | 78 | Debloat | ✅ | 119 |
 | **79** | **Siap rilis:** token terenkripsi, build rilis R8, konfigurasi lingkungan, signing, Firebase sekolah, widget sholat, kode mati | ⏳ **Berikutnya**, bisa langsung jalan paralel | 119.12 (endpoint jadwal sholat) |
-| **80** | Sisi Android FASE 120: pilih paket mapel pilihan, hasil, riwayat rombel | ⏳ Setelah API 120.4 tersedia | 120 |
+| **80** | Sisi Android FASE 120: survei peminatan, kelas tahun depan, riwayat rombel | ⏳ Setelah API 120.4 tersedia | 120 |
 | 81 | Sisi Android FASE 121: ajukan izin/sakit anak, rapor terbit, kotak masuk persetujuan pimpinan | 📝 Garis besar | 121 |
 | 82 | Rilis: Play Console, kebijakan privasi, jalur internal → pilot Jan 2027 | 📝 Garis besar | 123 |
 
@@ -217,20 +217,21 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 
 ---
 
-## 🎓 FASE 80: SISI ANDROID FASE 120: PAKET MAPEL PILIHAN & RIWAYAT ROMBEL `[RANCANGAN BARU]`
+## 🎓 FASE 80: SISI ANDROID FASE 120: SURVEI PEMINATAN & RIWAYAT ROMBEL `[RANCANGAN BARU]`
 
 > **Pelaksana:** Agent Frontend/Mobile, setelah sistem-terpadu FASE 120 PR 3 (API 120.4) di-merge.
 > **Alur:** `ALUR_KERJA.md` A3 (survei peminatan), A2 (rombel).
 
-### 80.1: Siswa Kelas X: "Pilih Paket Mapel"
+### 80.1: Siswa Kelas X: "Survei Peminatan"
+- Survei ini **hanya memetakan minat**. Waka Kurikulum yang merancang rombel XI dan memplot siswa di web; aplikasi tidak menampilkan kuota, peringkat peluang, atau tebakan rombel.
 - Muncul di beranda dan menu Akademik hanya bila kapabilitas `student.elective_survey` aktif, yang dikirim server selama ada survei untuk siswa itu.
-- Isi: daftar paket (nama, mapel di dalamnya, deskripsi, kuota dari server) dan pilihan berperingkat sampai `max_choices`. Siswa bisa mengubah pilihan selama status `dibuka`. Tampilkan tenggat `closes_at` (Asia/Jakarta).
-- Simpan ke server (`PUT …/choices`). Bila ditolak (survei ditutup), tampilkan pesan server dan muat ulang status, bertindak berdasarkan `error_code`, bukan teks.
-- Setelah `diumumkan`: kartu "Paket kamu tahun depan: …". Sebelum itu jangan menampilkan tebakan alokasi.
-- Screenshot: kosong (tidak ada survei), dibuka belum memilih, sudah memilih, ditutup menunggu, diumumkan, dan error. Ditambah `en-` dan `ar-ldrtl-`.
+- Isi: daftar mapel pilihan yang ditawarkan, aturan jumlah pilihan dari server ("pilih 4 mapel"), dan peringkat bila survei berperingkat (`ranked`). Siswa bisa mengubah pilihan selama status `dibuka`. Tampilkan tenggat `closes_at` (Asia/Jakarta).
+- Simpan ke server (`PUT …/choices`). Bila ditolak (survei ditutup, atau jumlah pilihan di luar batas), tampilkan pesan server dan bertindak berdasarkan `error_code`, bukan teks.
+- Setelah diumumkan: kartu "Kelas kamu tahun depan: XI-3", berisi susunan mapelnya dari `GET student/next-classroom`. Sebelum itu server mengirim `null` dan kartu tidak tampil.
+- Screenshot: tidak ada survei, dibuka belum mengisi, sudah mengisi, ditutup menunggu pengumuman, diumumkan, dan error. Ditambah `en-` dan `ar-ldrtl-`.
 
 ### 80.2: Orang Tua
-- Di detail anak: pilihan paket anak (baca saja) dan hasilnya setelah diumumkan (`parent.elective_survey`).
+- Di detail anak: mapel yang dipilih anak (baca saja) dan kelas tahun depan setelah diumumkan (`parent.elective_survey`).
 
 ### 80.3: Riwayat Rombel (opsional, di profil siswa)
 - Daftar TA → rombel → status (`naik/tinggal/lulus/mutasi`) dari `GET …/enrollment-history`.
