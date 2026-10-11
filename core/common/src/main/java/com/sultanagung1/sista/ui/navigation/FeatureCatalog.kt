@@ -49,7 +49,7 @@ object FeatureCatalog {
         put(Screen.Schedule, "student.schedule")
         put(Screen.Grades, "student.grades")
         put(Screen.RaporDetail, "student.rapor", "parent.children")
-        put(Screen.RemedialList, "student.remedials", "teacher.assessments")
+        put(Screen.RemedialList, "student.remedials")
         put(Screen.CbtList, "student.cbt")
         put(Screen.CbtTokenEntry, "student.cbt")
         put(Screen.CbtRoom, "student.cbt")

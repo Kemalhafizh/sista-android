@@ -107,6 +107,13 @@ class FeatureCatalogTest {
     }
 
     @Test
+    fun `the student's remedial list is not opened by a teacher's feature`() {
+        // It reads assessments/student/remedials, which answers students only; a teacher got a 403 page.
+        assertEquals(GateDecision.OPEN, FeatureCatalog.decide(ready("student.remedials"), Screen.RemedialList.route))
+        assertEquals(GateDecision.LOCKED, FeatureCatalog.decide(ready("teacher.assessments"), Screen.RemedialList.route))
+    }
+
+    @Test
     fun `home follows the account's features, not a local role`() {
         assertEquals(Screen.AdminDashboard.route, FeatureCatalog.homeRouteFor(caps("admin.dashboard", "admin.class_sessions")))
         assertEquals(Screen.TeacherDashboard.route, FeatureCatalog.homeRouteFor(caps("teacher.sessions")))

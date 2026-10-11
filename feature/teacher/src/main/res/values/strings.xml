@@ -385,4 +385,18 @@
     <string name="ce_img_type">Format gambar tidak didukung. Gunakan JPG, PNG, atau WebP.</string>
     <string name="ce_img_size">Ukuran gambar melebihi 10 MB.</string>
     <string name="ce_img_unreadable">Gambar tidak bisa dibaca dari perangkat.</string>
+    <string name="student_remedial_title">Remedial Saya</string>
+    <string name="student_remedial_load_failed">Daftar remedial belum bisa dimuat</string>
+    <string name="student_remedial_retry">Coba lagi</string>
+    <string name="student_remedial_empty_title">Tidak ada remedial</string>
+    <string name="student_remedial_empty_body">Belum ada remedial yang diberikan guru untukmu.</string>
+    <string name="student_remedial_unknown">–</string>
+    <string name="student_remedial_status_done">Tuntas</string>
+    <string name="student_remedial_status_pending">Belum tuntas</string>
+    <string name="student_remedial_status_overdue">Lewat batas waktu</string>
+    <string name="student_remedial_original">Nilai awal</string>
+    <string name="student_remedial_kkm">KKM</string>
+    <string name="student_remedial_result">Nilai remedial</string>
+    <string name="student_remedial_notes">Catatan guru: %1$s</string>
+    <string name="student_remedial_deadline">Batas waktu: %1$s</string>
 </resources>

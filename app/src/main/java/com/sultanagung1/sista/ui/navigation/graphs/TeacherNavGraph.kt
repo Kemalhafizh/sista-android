@@ -157,7 +157,7 @@ fun NavGraphBuilder.teacherNavGraph(
     }
 
     guardedComposable(Screen.RemedialList.route) {
-        val viewModel: DailyAssessmentViewModel = hiltViewModel()
+        val viewModel: StudentRemedialViewModel = hiltViewModel()
         RemedialScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }

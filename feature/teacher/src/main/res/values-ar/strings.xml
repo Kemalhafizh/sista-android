@@ -385,4 +385,18 @@
     <string name="ce_img_type">صيغة الصورة غير مدعومة. استخدم JPG أو PNG أو WebP.</string>
     <string name="ce_img_size">حجم الصورة يتجاوز 10 ميغابايت.</string>
     <string name="ce_img_unreadable">تعذّرت قراءة الصورة من الجهاز.</string>
+    <string name="student_remedial_title">الاختبارات التعويضية</string>
+    <string name="student_remedial_load_failed">تعذّر تحميل الاختبارات التعويضية</string>
+    <string name="student_remedial_retry">حاول مرة أخرى</string>
+    <string name="student_remedial_empty_title">لا توجد اختبارات تعويضية</string>
+    <string name="student_remedial_empty_body">لم يكلّفك المعلمون بأي عمل تعويضي.</string>
+    <string name="student_remedial_unknown">–</string>
+    <string name="student_remedial_status_done">مكتمل</string>
+    <string name="student_remedial_status_pending">لم يكتمل بعد</string>
+    <string name="student_remedial_status_overdue">تجاوز الموعد النهائي</string>
+    <string name="student_remedial_original">الدرجة الأولى</string>
+    <string name="student_remedial_kkm">درجة النجاح</string>
+    <string name="student_remedial_result">درجة التعويض</string>
+    <string name="student_remedial_notes">ملاحظة المعلم: %1$s</string>
+    <string name="student_remedial_deadline">الموعد النهائي: %1$s</string>
 </resources>

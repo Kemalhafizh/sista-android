@@ -85,7 +85,6 @@ class HardcodedUiTextTest {
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/QrScannerScreen.kt" to 7,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/scanner/ScanResultHandler.kt" to 3,
         "feature/profile/src/main/java/com/sultanagung1/sista/ui/update/UpdatePromptScreen.kt" to 7,
-        "feature/teacher/src/main/java/com/sultanagung1/sista/ui/teacher/RemedialScreen.kt" to 9,
     )
 
     private val pattern = Regex("""(?:\bText\(\s*|\b(?:title|subtitle|label|text|body|message|headline|supporting|actionLabel|contentDescription|placeholder|overline|description|errorTitle)\s*=\s*)"([^"\\]*+(?:\\.[^"\\]*+)*+)"""")

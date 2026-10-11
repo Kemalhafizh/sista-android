@@ -6,7 +6,6 @@ import com.sultanagung1.sista.core.network.NetworkResult
 import com.sultanagung1.sista.data.model.AssessmentScoreSheet
 import com.sultanagung1.sista.data.model.DailyAssessmentItem
 import com.sultanagung1.sista.data.model.RemedialDashboard
-import com.sultanagung1.sista.data.model.RemedialItem
 import com.sultanagung1.sista.data.model.ScoreSheetRules
 import com.sultanagung1.sista.data.model.StudentAssessmentHistoryItem
 import com.sultanagung1.sista.data.repository.DailyAssessmentRepository
@@ -25,7 +24,6 @@ data class DailyAssessmentUiState(
     val isLoading: Boolean = false,
     val assessments: List<DailyAssessmentItem> = emptyList(),
     val remedialDashboard: RemedialDashboard? = null,
-    val remedials: List<RemedialItem> = emptyList(),
     val studentHistory: List<StudentAssessmentHistoryItem> = emptyList(),
     /** The score sheet of the assessment being scored (`assessments/{id}/scores`). */
     val sheet: AssessmentScoreSheet? = null,
@@ -134,18 +132,6 @@ class DailyAssessmentViewModel @Inject constructor(
                     is NetworkResult.Loading -> _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
                     is NetworkResult.Success -> _uiState.update { it.copy(isSubmitting = false, successMessage = result.data.asUiText()) }
                     is NetworkResult.Error -> _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message) }
-                }
-            }
-        }
-    }
-
-    fun fetchStudentRemedials() {
-        viewModelScope.launch {
-            repository.getStudentRemedials().collect { result ->
-                when (result) {
-                    is NetworkResult.Loading -> _uiState.update { it.copy(isLoading = true) }
-                    is NetworkResult.Success -> _uiState.update { it.copy(isLoading = false, remedials = result.data, errorMessage = null) }
-                    is NetworkResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
             }
         }

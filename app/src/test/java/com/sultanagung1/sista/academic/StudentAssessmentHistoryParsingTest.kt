@@ -57,7 +57,17 @@ class StudentAssessmentHistoryParsingTest {
 
         assertEquals("UH 1 Dinamika", item.assessmentTitle)
         assertEquals("Fisika", item.subjectName)
-        assertEquals(60.0, item.originalScore, 0.0)
-        assertEquals(75.0, item.kkm, 0.0)
+        assertEquals(60.0, item.originalScore!!, 0.0)
+        assertEquals(75.0, item.kkm!!, 0.0)
+        assertEquals("pending", item.status)
+    }
+
+    @Test
+    fun `a remedial without a KKM keeps it unknown instead of 75`() {
+        val item = gson.fromJson("""{"id":4,"original_score":"58.00","status":"pending"}""", RemedialItem::class.java)
+
+        assertEquals(null, item.kkm)
+        assertEquals(null, item.remedialType)
+        assertEquals(null, item.remedialScore)
     }
 }

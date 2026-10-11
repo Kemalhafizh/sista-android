@@ -46,16 +46,22 @@ data class BatchScoreResult(
     val kkm: Double
 )
 
+/**
+ * GET assessments/student/remedials (a remedial_sessions row). Scores and KKM
+ * are null when the server leaves them out; nothing is filled in.
+ */
 data class RemedialItem(
     val id: Long,
     val uuid: String? = null,
     @SerializedName("assessment_title") val assessmentTitle: String? = null,
     @SerializedName("subject_name") val subjectName: String? = null,
-    @SerializedName("original_score") val originalScore: Double,
-    val kkm: Double,
+    @SerializedName("original_score") val originalScore: Double? = null,
+    val kkm: Double? = null,
     @SerializedName("remedial_score") val remedialScore: Double? = null,
-    @SerializedName("remedial_type") val remedialType: String = "tugas_tambahan",
-    val status: String = "pending",
+    @SerializedName("remedial_type") val remedialType: String? = null,
+    /** pending / completed (RemedialWorkflowService). */
+    val status: String? = null,
+    /** ISO-8601 */
     val deadline: String? = null,
     @SerializedName("teacher_notes") val teacherNotes: String? = null
 )
