@@ -98,22 +98,12 @@ class CalendarViewModel @Inject constructor(
             calendarRepository.getEvents(
                 month = _uiState.value.month,
                 year = _uiState.value.year,
-                category = _uiState.value.selectedCategory?.name?.lowercase()
+                // The category filter is applied on the device (filteredEvents):
+                // EventType names are not the server's event_type codes.
             ).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
-                        val apiEvents = result.data.map { item ->
-                            CalendarEvent(
-                                id = item.id.toString(),
-                                title = item.title,
-                                date = item.startTime.substringBefore("T").substringBefore(" "),
-                                type = mapCategoryToType(item.category),
-                                description = item.description ?: "Kegiatan resmi akademik SMA Islam Sultan Agung 1 Semarang.",
-                                location = item.location ?: "Kampus SMA Islam Sultan Agung 1",
-                                startTime = item.startTime,
-                                endTime = item.endTime
-                            )
-                        }
+                        val apiEvents = result.data.map(CalendarEventMapper::toEvent)
                         // An empty result is a real, honest state (no events
                         // this month) — no longer silently replaced with
                         // fabricated events.
@@ -171,8 +161,8 @@ class CalendarViewModel @Inject constructor(
             val intent = Intent(Intent.ACTION_INSERT).apply {
                 data = CalendarContract.Events.CONTENT_URI
                 putExtra(CalendarContract.Events.TITLE, event.title)
-                putExtra(CalendarContract.Events.DESCRIPTION, "${event.description}\n\nKategori: ${event.type.displayName}\nPenyelenggara: ${event.organizer}")
-                putExtra(CalendarContract.Events.EVENT_LOCATION, event.location)
+                event.description?.let { putExtra(CalendarContract.Events.DESCRIPTION, it) }
+                event.location?.let { putExtra(CalendarContract.Events.EVENT_LOCATION, it) }
                 putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startTimeMillis)
                 putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTimeMillis)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -180,20 +170,6 @@ class CalendarViewModel @Inject constructor(
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
-        }
-    }
-
-    private fun mapCategoryToType(category: String): EventType {
-        return when (category.lowercase()) {
-            "ujian", "pts", "pas", "cbt" -> EventType.UJIAN
-            "libur", "holiday" -> EventType.LIBUR
-            "keislaman", "keagamaan", "ibadah" -> EventType.KEISLAMAN
-            "spmb", "ppdb" -> EventType.SPMB
-            "ekskul", "osis" -> EventType.EKSKUL
-            "rapat", "dinas" -> EventType.RAPAT
-            "deadline", "tenggat" -> EventType.DEADLINE
-            "kbm", "akademik" -> EventType.KBM
-            else -> EventType.KEGIATAN
         }
     }
 

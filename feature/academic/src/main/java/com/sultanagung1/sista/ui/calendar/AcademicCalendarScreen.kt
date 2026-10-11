@@ -524,19 +524,21 @@ fun EventCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(13.dp),
-                        tint = Slate400
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = event.location,
-                        fontSize = 12.sp,
-                        color = Slate600
-                    )
+                event.location?.let { location ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = Slate400
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = location,
+                            fontSize = 12.sp,
+                            color = Slate600
+                        )
+                    }
                 }
 
                 if (event.startTime != null) {
