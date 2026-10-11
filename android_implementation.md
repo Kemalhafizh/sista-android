@@ -239,6 +239,11 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 ### 80.4: Penyesuaian Akibat Model Rombel Baru
 - Semua layar yang menampilkan nama kelas tetap membaca dari server. Tidak ada lagi label jurusan IPA/IPS. Bila ada string `IPA`/`IPS` di `res/values*`, hapus.
 - Layar guru dan wali kelas yang memilih kelas memakai `classroomId` dari server untuk TA aktif. Rombel bernama sama di tahun lalu tidak boleh tertukar (CLAUDE.md: id, bukan nama).
+- **Peran dan jabatan dari server (sistem-terpadu FASE 120 PR 0).** Jabatan (Kepala Sekolah, Waka, Kepala TU, dan jabatan baru buatan Admin) bisa berubah tanpa rilis aplikasi. Aplikasi tidak boleh memeriksa nama peran atau jabatan; menu dan layar mengikuti `capabilities` dari server (CLAUDE.md aturan 3). Sisa pemeriksaan role yang ditemukan PM (11 Okt 2026) dan harus diganti dengan capabilities atau data dari server di PR FASE 80:
+  - `core/common/.../navigation/UserRoles.kt` (`ACADEMIC_STAFF_ROLES`, `CLASS_SESSION_ADMIN_ROLES`, pemetaan `kepala_sekolah`→`kepsek`);
+  - `feature/admin/.../AdminUi.kt:112-113` (label nama peran yang ditulis di aplikasi; tampilkan label dari server);
+  - `feature/chat/.../ChatViewModel.kt:62`;
+  - `core/data/.../Repositories.kt:984` (`role.equals("guru")`). Profil boleh menampilkan daftar jabatan aktif dari server apa adanya.
 - **Tidak ada bulan atau tanggal kegiatan yang ditanam di aplikasi.** Setiap tahun sekolah menyusun Kalender Akademik sendiri. Contohnya, kartu survei peminatan muncul karena server mengirim kapabilitasnya, bukan karena bulannya April. Layar Kalender menampilkan label kegiatan kunci dari server (kode `milestone`) apa adanya, dan bertindak berdasarkan kode, bukan teks.
 
 ### 80.5: Kriteria Selesai
