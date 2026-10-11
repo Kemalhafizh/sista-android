@@ -32,10 +32,11 @@ data class CalendarEvent(
     val title: String,
     val date: String, // YYYY-MM-DD
     val type: EventType,
-    val description: String,
-    val location: String = "Kampus SMA Islam Sultan Agung 1",
+    /** Null when the event has none; nothing is made up in its place. */
+    val description: String? = null,
+    /** Null when the server doesn't know it (AcademicEvent has no location yet). */
+    val location: String? = null,
     val startTime: String? = null,
     val endTime: String? = null,
     val attachments: List<String> = emptyList(),
-    val organizer: String = "SMA Islam Sultan Agung 1 Semarang"
 )

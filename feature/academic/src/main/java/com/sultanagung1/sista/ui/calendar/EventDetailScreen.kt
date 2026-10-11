@@ -107,21 +107,6 @@ fun EventDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     lineHeight = 24.sp
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.School,
-                                        contentDescription = null,
-                                        tint = Gold400,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = event.organizer,
-                                        color = Slate200,
-                                        fontSize = 12.sp
-                                    )
-                                }
                             }
                         }
                     }
@@ -179,44 +164,48 @@ fun EventDetailScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
 
-                            // Location Row
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Slate200,
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Slate700, modifier = Modifier.size(18.dp))
+                            // Location Row: only when the server knows the place.
+                            event.location?.let { location ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Slate200,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Slate700, modifier = Modifier.size(18.dp))
+                                        }
                                     }
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Lokasi / Ruangan", fontSize = 11.sp, color = Slate500)
-                                    Text(event.location, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text("Lokasi / Ruangan", fontSize = 11.sp, color = Slate500)
+                                        Text(location, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // Description Card
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(18.dp)) {
-                            Text("Deskripsi & Catatan Kegiatan", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = event.description,
-                                fontSize = 13.sp,
-                                color = Slate700,
-                                lineHeight = 20.sp
-                            )
+                // Description Card: only when the event has one.
+                event.description?.let { description ->
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(18.dp)) {
+                                Text("Deskripsi & Catatan Kegiatan", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = description,
+                                    fontSize = 13.sp,
+                                    color = Slate700,
+                                    lineHeight = 20.sp
+                                )
+                            }
                         }
                     }
                 }
