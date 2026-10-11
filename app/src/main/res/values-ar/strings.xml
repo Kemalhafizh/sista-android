@@ -97,7 +97,6 @@
     <string name="settings_title">إعدادات التطبيق</string>
     <string name="settings_language">إعدادات اللغة</string>
     <string name="settings_theme">المظهر والوضع الداكن</string>
-    <string name="settings_accessibility">إمكانية الوصول وحجم الخط</string>
     <string name="settings_biometric">أمان بصمة الإصبع المصرفي</string>
     <string name="settings_about">حول مدرسة السلطان أجونج 1</string>
 

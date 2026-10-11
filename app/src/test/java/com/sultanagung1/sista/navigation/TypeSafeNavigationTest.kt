@@ -32,6 +32,10 @@ class TypeSafeNavigationTest {
             "geofence_attendance", "dynamic_qr", "face_biometric", "face_enrollment", "ai_tutor", "ai_essay_grader",
             "gamification_dashboard", "leaderboard", "badge_collection", "document_scanner", "digital_signature",
             "executive_analytics", "diagnostic_report",
+            // 78.2: the SOS button became "Lapor Perundungan" (bullying_report).
+            "antibullying_sos",
+            // 78.3: text size and reading aids live on the settings page.
+            "accessibility_settings",
         )
         assertTrue(allScreens.isNotEmpty())
         assertEquals(emptyList<String>(), allScreens.map { it.route }.filter { it in removed })

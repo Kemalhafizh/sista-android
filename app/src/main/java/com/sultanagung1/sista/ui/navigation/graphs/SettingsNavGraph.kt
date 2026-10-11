@@ -94,7 +94,6 @@ fun NavGraphBuilder.settingsNavGraph(
         SettingsScreen(
             viewModel = viewModel,
             onNavigateToLanguage = { navController.navigate(Screen.LanguageSettings.route) },
-            onNavigateToAccessibility = { navController.navigate(Screen.AccessibilitySettings.route) },
             onNavigateToSecurity = { navController.navigate(Screen.SecuritySettings.route) },
             onNavigateBack = { navController.popBackStack() }
         )
@@ -103,14 +102,6 @@ fun NavGraphBuilder.settingsNavGraph(
     guardedComposable(Screen.LanguageSettings.route) {
         val viewModel: SettingsViewModel = hiltViewModel()
         LanguageSettingsScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.AccessibilitySettings.route) {
-        val viewModel: SettingsViewModel = hiltViewModel()
-        AccessibilitySettingsScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
         )

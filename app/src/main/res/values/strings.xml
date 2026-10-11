@@ -97,7 +97,6 @@
     <string name="settings_title">Pengaturan SuperApp</string>
     <string name="settings_language">Pengaturan Bahasa</string>
     <string name="settings_theme">Tema &amp; Mode Gelap</string>
-    <string name="settings_accessibility">Aksesibilitas &amp; Font Scaling</string>
     <string name="settings_biometric">Keamanan Sidik Jari (m-Banking)</string>
     <string name="settings_about">Tentang SMA Islam Sultan Agung 1</string>
 

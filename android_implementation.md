@@ -4604,7 +4604,7 @@ sealed interface ActiveSessionEffect : UiEffect {
 
 ---
 
-## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[PR A SELESAI 10 Okt 2026, PR B SELESAI 11 Okt 2026 — sisa: sumber data widget presensi (78.2) dan Aksesibilitas digabung ke Pengaturan (78.3)]`
+## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[PR A SELESAI 10 Okt 2026, PR B SELESAI 11 Okt 2026, Aksesibilitas digabung 11 Okt 2026 — sisa: sumber data widget presensi (78.2), menunggu endpoint]`
 
 > **Tanggal Rancangan:** 5 Oktober 2026
 > **Pelaksana:** Agent Frontend/Mobile (repo `sista-android`). Pasangannya di backend: **FASE 119** di `sistem-terpadu/implementation_plan.md`.
@@ -4678,7 +4678,8 @@ Ikut dihapus:
 - [x] `FeatureCatalogTest` hijau tanpa kunci yang dihapus, ditambah test bahwa kunci yang tidak dikenal diabaikan.
 - [x] APK tidak lagi meminta izin lokasi (`aapt2 dump permissions`, dan `tools:node="remove"` di manifest).
 - [x] PR B: "Lapor Perundungan" mengirim ke `POST counseling/bullying-reports` (sistem-terpadu#44), dengan screenshot kosong, terisi, terkirim, error, gelap, en, ar.
-- [ ] Bagian ini diperbarui menjadi `[SELESAI]` setelah widget presensi (78.2) dan penggabungan Aksesibilitas (78.3) selesai.
+- [x] 78.3: ukuran teks, ramah disleksia, dan kontras tinggi ada langsung di halaman Pengaturan; rute `accessibility_settings` dihapus.
+- [ ] Bagian ini diperbarui menjadi `[SELESAI]` setelah sumber data widget presensi (78.2) beres.
 
 ### 78.7: Hasil PR A (10 Okt 2026)
 
@@ -4702,3 +4703,12 @@ Catatan pelaksanaan:
 - Isian: cerita kejadian (wajib, maks. 5.000 karakter), tanggal (hari ini/kemarin/pilih, tidak boleh di masa depan), tempat (maks. 255), jenis (kode `BullyingReport::TYPES` dari server), dan sakelar anonim yang menyala secara bawaan. Aturannya ada di `BullyingReportRules` dan mengikuti validasi `BullyingReportApiController::store`, sehingga form tidak mengirim sesuatu yang pasti ditolak.
 - Layar baru menyatakan "terkirim" setelah server menjawab 201, lalu menampilkan pesan server, nomor tiket, dan status dari server apa adanya. Bila gagal, pesan server ditampilkan dan isian tetap ada.
 - Tanpa GPS, tanpa SOS, dan tanpa angka atau nama karangan.
+
+### 78.9: Aksesibilitas digabung ke Pengaturan (11 Okt 2026)
+
+- `AccessibilitySettingsScreen` dan rute `accessibility_settings` dihapus. Kartu ukuran teks serta sakelar ramah disleksia dan kontras tinggi (`AccessibilityControls.kt`) kini ada di bagian "Bahasa & aksesibilitas" pada halaman Pengaturan, sehingga perubahannya langsung terlihat di halaman yang sama. Kartu "Pratinjau" ikut dihapus karena halaman Pengaturan sendiri sudah jadi pratinjaunya.
+- `TypeSafeNavigationTest` memastikan `accessibility_settings` dan `antibullying_sos` tidak muncul lagi.
+
+### 78.10: Catatan widget presensi (78.2)
+
+`AttendanceWidgetProvider` membaca `GET student/attendance` (dan `parent/child/{uuid}/attendance` untuk orang tua). Kedua endpoint itu membaca tabel `attendances`, yaitu presensi harian dari input guru, `AttendanceService`, dan sinkronisasi offline, **bukan** presensi QR per mapel (`session_attendances`, FASE 117). Belum ada endpoint siswa atau orang tua untuk presensi sesi. Agar widget memakai presensi QR per mapel, sistem-terpadu perlu endpoint baru lebih dulu (CLAUDE.md aturan 2). Bagian GPS sudah hilang sejak PR A.

@@ -97,7 +97,6 @@
     <string name="settings_title">SuperApp Settings</string>
     <string name="settings_language">Language Settings</string>
     <string name="settings_theme">Theme &amp; Dark Mode</string>
-    <string name="settings_accessibility">Accessibility &amp; Font Scaling</string>
     <string name="settings_biometric">Fingerprint Security (m-Banking)</string>
     <string name="settings_about">About SMA Islam Sultan Agung 1</string>
 

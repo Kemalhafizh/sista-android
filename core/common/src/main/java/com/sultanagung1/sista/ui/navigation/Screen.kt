@@ -100,7 +100,6 @@ sealed class Screen(val route: String, val title: String = "") {
     object Profile : Screen("profile", "Profil Saya")
     object Settings : Screen("settings", "Pengaturan SuperApp")
     object LanguageSettings : Screen("language_settings", "Pengaturan Bahasa")
-    object AccessibilitySettings : Screen("accessibility_settings", "Aksesibilitas & Font")
     object SecuritySettings : Screen("security_settings", "Keamanan & Biometrik")
 
     // Realistic Roadmap (Fase 18 - 24)
