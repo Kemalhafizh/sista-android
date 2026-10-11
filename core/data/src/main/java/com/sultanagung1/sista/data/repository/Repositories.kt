@@ -52,7 +52,6 @@ import com.sultanagung1.sista.data.model.MutabaahLogItem
 import com.sultanagung1.sista.data.model.NotificationItem
 import com.sultanagung1.sista.data.model.ParentChildItem
 import com.sultanagung1.sista.data.model.ParentMessageDto
-import com.sultanagung1.sista.data.model.PaymentVaResponse
 import com.sultanagung1.sista.data.model.PendingApprovalItem
 import com.sultanagung1.sista.data.model.RegisterBiometricRequest
 import com.sultanagung1.sista.data.model.ScheduleItem
@@ -257,25 +256,10 @@ class StudentRepository(
                 widgetSnapshots?.update { it.withBilling(WidgetSnapshots.studentBilling(data, DateUtils.nowMillis())) }
                 emit(NetworkResult.Success(data))
             } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal memuat tagihan SPP", response.code()))
+                emit(NetworkResult.Error(messages.failure(response, R.string.billing_load_failed), response.code()))
             }
         } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
-        }
-    }.flowOn(Dispatchers.IO)
-
-    fun requestPaymentVa(billingId: Long, bank: String): Flow<NetworkResult<PaymentVaResponse>> = flow {
-        emit(NetworkResult.Loading)
-        try {
-            val response = apiClient.studentApi.requestPaymentVa(billingId, mapOf("bank" to bank))
-            val data = response.body()?.data
-            if (response.isSuccessful && data != null) {
-                emit(NetworkResult.Success(data))
-            } else {
-                emit(NetworkResult.Error(response.body()?.message ?: "Gagal generate Virtual Account", response.code()))
-            }
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.localizedMessage ?: "Koneksi terputus."))
+            emit(NetworkResult.Error(messages.connection(e)))
         }
     }.flowOn(Dispatchers.IO)
 

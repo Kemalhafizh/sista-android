@@ -75,7 +75,6 @@ class HardcodedUiTextTest {
         "feature/chat/src/main/java/com/sultanagung1/sista/ui/chat/AdaptiveChatScaffold.kt" to 2,
         "feature/chat/src/main/java/com/sultanagung1/sista/ui/chat/ChatScreen.kt" to 7,
         "feature/chat/src/main/java/com/sultanagung1/sista/ui/chat/ConversationListScreen.kt" to 17,
-        "feature/finance/src/main/java/com/sultanagung1/sista/ui/finance/BillingScreen.kt" to 32,
         "feature/ibadah/src/main/java/com/sultanagung1/sista/ui/ibadah/MutabaahScreen.kt" to 8,
         "feature/ibadah/src/main/java/com/sultanagung1/sista/ui/ibadah/TahsinAudioPlayer.kt" to 1,
         "feature/ibadah/src/main/java/com/sultanagung1/sista/ui/ibadah/TahsinHistoryScreen.kt" to 4,

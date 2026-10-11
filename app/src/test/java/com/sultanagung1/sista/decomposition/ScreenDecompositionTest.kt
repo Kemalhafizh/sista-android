@@ -1,10 +1,12 @@
 package com.sultanagung1.sista.decomposition
 
 import com.sultanagung1.sista.data.model.BillingInvoice
+import com.sultanagung1.sista.ui.finance.BillingRules
 import com.sultanagung1.sista.ui.finance.BillingUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -63,32 +65,27 @@ class ScreenDecompositionTest {
 
     @Test
     fun testBillingUiStatePattern() {
-        // Test sealed interface subtypes and properties
-        val loadingState: BillingUiState = BillingUiState.Loading
-        assertNotNull(loadingState)
+        // BillingUiState is now one data class: invoices stay null until the server
+        // answered, and the summary and the filtered list are derived from them.
+        val loading = BillingUiState()
+        assertTrue(loading.isLoading)
+        assertNull(loading.invoices)
+        assertNull(loading.summary)
+        assertTrue(loading.shown.isEmpty())
 
         val sampleInvoices = listOf(
-            BillingInvoice(1L, "SPP", "September 2026", 750000.0, "Rp 750.000", "10 Sep 2026", "UNPAID", 750000.0),
-            BillingInvoice(2L, "SPP", "Agustus 2026", 750000.0, "Rp 750.000", "10 Agu 2026", "PAID", 0.0)
+            BillingInvoice(1L, "SPP", "September 2026", 750000.0, dueDate = "2026-09-10", status = "unpaid", remainingBalance = 750000.0),
+            BillingInvoice(2L, "SPP", "Agustus 2026", 750000.0, dueDate = "2026-08-10", status = "paid", remainingBalance = 0.0)
         )
+        val content = BillingUiState(isLoading = false, invoices = sampleInvoices)
+        assertEquals(1, content.summary!!.openCount)
+        assertEquals(750000.0, content.summary!!.remainingTotal, 0.01)
+        assertEquals(2, content.shown.size)
+        assertEquals(listOf(1L), content.copy(filter = BillingRules.Filter.OPEN).shown.map { it.id })
 
-        val contentState = BillingUiState.Content(
-            invoices = sampleInvoices,
-            totalUnpaid = 750000.0,
-            totalPaid = 750000.0,
-            selectedFilter = "SEMUA"
-        )
-
-        assertEquals(2, contentState.invoices.size)
-        assertEquals(750000.0, contentState.totalUnpaid, 0.01)
-        assertEquals(750000.0, contentState.totalPaid, 0.01)
-        assertEquals("SEMUA", contentState.selectedFilter)
-
-        val filteredUnpaid = contentState.copy(selectedFilter = "UNPAID")
-        assertEquals("UNPAID", filteredUnpaid.selectedFilter)
-
-        val errorState = BillingUiState.Error("Koneksi gagal")
-        assertEquals("Koneksi gagal", errorState.message)
+        val error = BillingUiState(isLoading = false, errorMessage = "Koneksi gagal")
+        assertEquals("Koneksi gagal", error.errorMessage)
+        assertNull(error.invoices)
     }
 
     @Test
