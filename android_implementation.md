@@ -255,9 +255,9 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 
 ## FASE 81: SISI ANDROID FASE 121 `[GARIS BESAR]`
 - **Orang tua:** ajukan izin/sakit anak (tanggal, alasan, foto surat dokter), lalu lihat status persetujuan wali kelas.
-- **Wali kelas:** setujui/tolak izin di aplikasi.
+- **Wali kelas:** setujui/tolak izin di aplikasi, termasuk massal untuk satu hari.
 - **Rapor terbit:** notifikasi dan PDF rapor yang sudah disahkan untuk orang tua dan siswa.
-- **Pimpinan:** kotak masuk "Menunggu Persetujuan Saya" (setujui/tolak/kembalikan dengan catatan).
+- **Pimpinan dan penyetuju lain:** kotak masuk "Menunggu Persetujuan Saya", diurutkan menurut tenggat. Setujui/tolak/kembalikan dengan catatan, **setujui massal** (misalnya semua izin hari ini, atau rapor satu angkatan), dan delegasikan saat berhalangan. Notifikasi pengingat dan eskalasi dari server. Tujuannya: tidak ada pekerjaan tertahan karena penyetuju tidak sedang di depan komputer.
 
 ## FASE 82: RILIS `[GARIS BESAR]`
 - Play Console atas akun sekolah, kebijakan privasi (UU PDP, pengguna di bawah umur), dan formulir Data Safety (data: identitas, presensi, nilai; kamera untuk QR; mikrofon untuk Tahsin).
