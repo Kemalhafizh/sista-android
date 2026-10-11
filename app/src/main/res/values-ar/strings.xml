@@ -113,12 +113,8 @@
     <string name="widget_only_student_parent">متاح لحسابات الطلاب وأولياء الأمور</string>
     <string name="widget_only_student">متاح لحسابات الطلاب</string>
     <string name="widget_tap_for_detail">اضغط للتفاصيل ➔</string>
-    <string name="widget_attendance_today">%1$s اليوم</string>
-    <string name="widget_attendance_today_at">%1$s اليوم (%2$s)</string>
     <string name="widget_attendance_not_yet_today">لم يُسجَّل اليوم بعد</string>
     <string name="widget_attendance_none">لا يوجد حضور مسجَّل بعد</string>
-    <string name="widget_attendance_last">آخر سجل: %1$s (%2$s)</string>
-    <string name="widget_attendance_child_last">%1$s • آخر سجل %2$s (%3$s)</string>
     <string name="widget_attendance_status_h">حاضر</string>
     <string name="widget_attendance_status_s">مريض</string>
     <string name="widget_attendance_status_i">مستأذن</string>
@@ -145,4 +141,10 @@
     <string name="cbt_biometric_title">التحقق من هوية المختبَر</string>
     <string name="cbt_biometric_subtitle">امسح بصمتك قبل دخول قاعة الاختبار</string>
     <string name="cbt_biometric_cancel">إلغاء</string>
+    <string name="widget_lessons_none_today">لم تبدأ أي حصة اليوم بعد</string>
+    <string name="widget_lessons_awaiting_scan">لم يُسجَّل الحضور بعد: %1$s</string>
+    <string name="widget_lessons_present">حاضر في ⁦%1$d⁩ من ⁦%2$d⁩ حصص</string>
+    <string name="widget_child_and">%1$s • %2$s</string>
+    <string name="widget_lesson_status">%1$s: %2$s</string>
+    <string name="widget_lesson_status_at">%1$s: %2$s (%3$s)</string>
 </resources>

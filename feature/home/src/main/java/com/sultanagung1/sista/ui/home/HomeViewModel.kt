@@ -13,7 +13,6 @@ import com.sultanagung1.sista.data.model.ActiveClassSessionDto
 import com.sultanagung1.sista.data.model.ClassSessionErrorKind
 import com.sultanagung1.sista.data.model.ClassSessionResult
 import com.sultanagung1.sista.data.model.ClassSessionRules
-import com.sultanagung1.sista.data.repository.AttendanceRepository
 import com.sultanagung1.sista.data.repository.ClassSessionRepository
 import com.sultanagung1.sista.data.repository.FeatureUsageRepository
 import com.sultanagung1.sista.data.repository.StudentRepository
@@ -61,7 +60,6 @@ class HomeViewModel @Inject constructor(
     private val studentRepository: StudentRepository,
     private val sessionManager: SessionManager,
     private val featureUsageRepository: FeatureUsageRepository,
-    private val attendanceRepository: AttendanceRepository,
     private val classSessionRepository: ClassSessionRepository
 ) : ViewModel() {
 
@@ -174,9 +172,9 @@ class HomeViewModel @Inject constructor(
             }
 
             // Home has no attendance card; this load only feeds the attendance
-            // home-screen widget (AttendanceRepository writes its snapshot).
+            // home-screen widget (today's per-lesson QR attendance).
             viewModelScope.launch {
-                attendanceRepository.getAttendanceHistory().collect { }
+                classSessionRepository.getMyLessonAttendance()
             }
 
             viewModelScope.launch {

@@ -131,6 +131,8 @@ class StudentSessionQrScanViewModel @Inject constructor(
                         )
                     }
                     emitEffect { StudentSessionQrScanEffect.Recorded }
+                    // So the attendance home-screen widget shows the scan right away.
+                    repository.getMyLessonAttendance()
                 }
                 is ClassSessionResult.Failure -> {
                     if (result.error.kind == ClassSessionErrorKind.NOT_DEPLOYED) {

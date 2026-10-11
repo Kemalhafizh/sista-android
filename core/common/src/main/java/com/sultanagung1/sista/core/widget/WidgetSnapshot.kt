@@ -17,7 +17,11 @@ data class WidgetSnapshot(
     val ownerUserId: String? = null,
     val role: String? = null,
     val schedule: ScheduleSnapshot? = null,
-    val attendance: AttendanceSnapshot? = null,
+    /**
+     * Stored under a new key: the daily-attendance section older versions
+     * saved as "attendance" is not read back.
+     */
+    val lessonAttendance: LessonAttendanceSnapshot? = null,
     val billing: BillingSnapshot? = null
 )
 
@@ -38,27 +42,36 @@ data class ScheduleSnapshot(
 )
 
 /**
- * The latest attendance record the app has seen.
+ * One day's per-lesson QR attendance (FASE 117) from
+ * GET student/class-session/attendance, or the parent's
+ * GET parent/child/{uuid}/class-session-attendance.
  *
- * [date] is null when the account has no attendance rows at all. [childUuid] /
- * [childName] are set for a parent account (the child last opened in the
- * parent dashboard) and null for a student.
+ * [childUuid] / [childName] are set for a parent account (the child last
+ * opened in the parent dashboard) and null for a student.
  */
-data class AttendanceSnapshot(
+data class LessonAttendanceSnapshot(
     val childUuid: String? = null,
     val childName: String? = null,
-    /** yyyy-MM-dd */
+    /** yyyy-MM-dd, the day the server answered for. */
     val date: String?,
-    /**
-     * attendances.status as stored: H / S / I / A from the teacher's class
-     * attendance, the word "hadir" from a GPS check-in.
-     */
-    val statusCode: String?,
-    /** The backend's own label for [statusCode], used when the code is unknown to the app. */
-    val statusLabel: String?,
-    /** HH:mm when the API sends a check-in time (student/attendance `check_in`). */
-    val checkInTime: String? = null,
+    /** Nullable because Gson can leave it null in a stored snapshot. */
+    val lessons: List<WidgetLessonAttendance>?,
     val fetchedAt: Long
+)
+
+/** One lesson of that day, as the server reported it. */
+data class WidgetLessonAttendance(
+    val subject: String?,
+    /** HH:mm */
+    val start: String?,
+    /** hadir / telat / sakit / izin / alpha, or null while nothing is recorded. */
+    val statusCode: String?,
+    /** The server's label for [statusCode], used when the code is unknown to the app. */
+    val statusLabel: String?,
+    /** Class running and not scanned yet: the automatic "alpha" can still become "hadir". */
+    val awaitingScan: Boolean,
+    /** HH:mm (Asia/Jakarta) of the scan, when there was one. */
+    val checkInTime: String?
 )
 
 /**

@@ -2,6 +2,7 @@ package com.sultanagung1.sista.data.api
 
 import com.sultanagung1.sista.core.network.ApiEnvelope
 import com.sultanagung1.sista.data.model.ActiveClassSessionDto
+import com.sultanagung1.sista.data.model.LessonAttendanceDay
 import com.sultanagung1.sista.data.model.AttendanceReportDto
 import com.sultanagung1.sista.data.model.BulkAttendanceRequest
 import com.sultanagung1.sista.data.model.BulkAttendanceResultDto
@@ -70,6 +71,10 @@ interface ClassSessionApiService {
 
     @GET("student/class-session/active")
     suspend fun getActiveSessionForStudent(): Response<ApiEnvelope<ActiveClassSessionDto?>>
+
+    /** One day's lessons and this student's attendance in each (today when [date] is null). */
+    @GET("student/class-session/attendance")
+    suspend fun getLessonAttendance(@Query("date") date: String? = null): Response<ApiEnvelope<LessonAttendanceDay>>
 
     @POST("student/class-session/scan-qr")
     suspend fun scanQr(

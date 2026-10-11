@@ -5,6 +5,10 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.MalformedJsonException
 import com.sultanagung1.sista.core.network.ApiEnvelope
+import com.sultanagung1.sista.core.util.DateUtils
+import com.sultanagung1.sista.core.widget.WidgetSnapshotStore
+import com.sultanagung1.sista.core.widget.WidgetSnapshots
+import com.sultanagung1.sista.core.widget.withLessonAttendance
 import com.sultanagung1.sista.data.api.ClassSessionApiService
 import com.sultanagung1.sista.data.model.ActiveClassSessionDto
 import com.sultanagung1.sista.data.model.AttendanceMarkRequest
@@ -20,6 +24,7 @@ import com.sultanagung1.sista.data.model.ClassSessionQrDto
 import com.sultanagung1.sista.data.model.ClassSessionResult
 import com.sultanagung1.sista.data.model.ClassSessionRules
 import com.sultanagung1.sista.data.model.ClassSessionStatus
+import com.sultanagung1.sista.data.model.LessonAttendanceDay
 import com.sultanagung1.sista.data.model.EndClassSessionRequest
 import com.sultanagung1.sista.data.model.OverrideAttendanceRequest
 import com.sultanagung1.sista.data.model.ScanClassQrRequest
@@ -44,6 +49,7 @@ import java.io.IOException
  */
 class ClassSessionRepository(
     private val api: ClassSessionApiService,
+    private val widgetSnapshots: WidgetSnapshotStore? = null,
     private val gson: Gson = Gson()
 ) {
 
@@ -99,6 +105,17 @@ class ClassSessionRepository(
 
     suspend fun scanQr(qrToken: String): ClassSessionResult<ScanQrResultDto> =
         call { api.scanQr(ScanClassQrRequest(qrToken.trim())) }
+
+    /**
+     * Today's lessons and this student's attendance in each. Also stored for
+     * the attendance home-screen widget.
+     */
+    suspend fun getMyLessonAttendance(): ClassSessionResult<LessonAttendanceDay> =
+        call { api.getLessonAttendance() }.also { result ->
+            if (result is ClassSessionResult.Success) {
+                widgetSnapshots?.update { it.withLessonAttendance(WidgetSnapshots.lessonAttendance(null, result.data, DateUtils.nowMillis())) }
+            }
+        }
 
     // ── Admin / Waka Kurikulum / TU ─────────────────────────────────────
 

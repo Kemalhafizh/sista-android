@@ -162,6 +162,8 @@ class ParentViewModel @Inject constructor(
                 if (result is NetworkResult.Success) _uiState.update { it.copy(childAttendanceLogs = result.data) }
             }
         },
+        // Only the attendance home-screen widget reads this (today's per-lesson QR attendance).
+        viewModelScope.launch { parentRepository.refreshChildLessonAttendance(uuid) },
         viewModelScope.launch {
             parentRepository.getChildGrades(uuid).collect { result ->
                 if (result is NetworkResult.Success) _uiState.update { it.copy(childGrades = result.data) }
