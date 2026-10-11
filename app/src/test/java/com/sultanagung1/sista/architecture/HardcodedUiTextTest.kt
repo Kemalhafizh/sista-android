@@ -52,7 +52,6 @@ class HardcodedUiTextTest {
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/announcements/AnnouncementFeedScreen.kt" to 6,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/calendar/AcademicCalendarScreen.kt" to 10,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/calendar/EventDetailScreen.kt" to 11,
-        "feature/academic/src/main/java/com/sultanagung1/sista/ui/counseling/AntiBullyingSosScreen.kt" to 11,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/counseling/CounselingDashboardScreen.kt" to 8,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/counseling/CounselingSessionFormScreen.kt" to 7,
         "feature/academic/src/main/java/com/sultanagung1/sista/ui/counseling/StudentCounselingScreen.kt" to 12,

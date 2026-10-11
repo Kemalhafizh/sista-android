@@ -20,4 +20,46 @@
     <string name="sq_manual">Tidak bisa memindai? Minta guru mengabsen Anda secara manual dari perangkat guru.</string>
     <string name="sq_camera_cd">Kamera pemindai QR sesi kelas</string>
     <string name="sq_already_status">Anda sudah tercatat dengan status %1$s di sesi ini.</string>
+
+    <!-- Lapor perundungan -->
+    <string name="bully_title">Lapor Perundungan</string>
+    <string name="bully_intro_title">Laporanmu dibaca Guru BK</string>
+    <string name="bully_intro_body">Ceritakan apa yang terjadi, padamu atau temanmu. Kalau kamu dalam bahaya sekarang, segera datangi guru atau orang dewasa terdekat.</string>
+    <string name="bully_what">Apa yang terjadi?</string>
+    <string name="bully_description">Ceritakan kejadiannya</string>
+    <string name="bully_description_hint">Siapa yang terlibat, apa yang dilakukan, dan sudah berapa kali.</string>
+    <string name="bully_count">%1$d/%2$d karakter</string>
+    <string name="bully_when">Kapan dan di mana?</string>
+    <string name="bully_today">Hari ini</string>
+    <string name="bully_yesterday">Kemarin</string>
+    <string name="bully_other_day">Tanggal lain…</string>
+    <string name="bully_date_unset">Tanggal tidak wajib diisi.</string>
+    <string name="bully_pick">Pilih</string>
+    <string name="bully_cancel">Batal</string>
+    <string name="bully_where">Tempat (opsional)</string>
+    <string name="bully_where_hint">Misalnya kantin, kelas XI MIPA 2, atau grup chat</string>
+    <string name="bully_type">Jenisnya (opsional)</string>
+    <string name="bully_type_hint">Kalau ragu, kosongkan saja. Guru BK yang akan menilainya.</string>
+    <string name="bully_type_verbal">Verbal</string>
+    <string name="bully_type_physical">Fisik</string>
+    <string name="bully_type_cyber">Siber</string>
+    <string name="bully_type_exclusion">Dikucilkan</string>
+    <string name="bully_type_extortion">Pemerasan</string>
+    <string name="bully_type_harassment">Pelecehan</string>
+    <string name="bully_type_intimidation">Intimidasi</string>
+    <string name="bully_type_other">Lainnya</string>
+    <string name="bully_anonymous">Kirim tanpa nama</string>
+    <string name="bully_anonymous_on">Namamu tidak disimpan bersama laporan ini.</string>
+    <string name="bully_anonymous_off">Guru BK bisa melihat namamu dan menghubungimu.</string>
+    <string name="bully_send">Kirim laporan</string>
+    <string name="bully_err_description">Ceritakan dulu apa yang terjadi.</string>
+    <string name="bully_err_description_long">Ceritanya terlalu panjang (maksimal %1$d karakter).</string>
+    <string name="bully_err_location_long">Tempatnya terlalu panjang (maksimal %1$d karakter).</string>
+    <string name="bully_err_future">Tanggal kejadian tidak boleh di masa depan.</string>
+    <string name="bully_sent_title">Laporan terkirim</string>
+    <string name="bully_ticket">Nomor laporan: %1$s</string>
+    <string name="bully_sent_anonymous">Laporan ini tanpa nama, jadi Guru BK tidak bisa menghubungimu. Kalau ingin bicara langsung, datangi ruang BK.</string>
+    <string name="bully_sent_named">Guru BK bisa menghubungimu untuk menindaklanjutinya.</string>
+    <string name="bully_new">Kirim laporan lain</string>
+    <string name="bully_done">Selesai</string>
 </resources>

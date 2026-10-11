@@ -171,6 +171,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideBullyingReportRepository(counselingApi: CounselingMobileApiService, messages: FallbackMessages): BullyingReportRepository =
+        BullyingReportRepository(counselingApi, messages)
+
+    @Provides
+    @Singleton
     fun provideStudentProfileRepository(studentProfileApi: StudentProfileApiService): StudentProfileRepository =
         StudentProfileRepository(studentProfileApi)
 

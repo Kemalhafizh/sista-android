@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PersonSearch
 import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.RecordVoiceOver
@@ -88,6 +89,7 @@ object FeatureIcons {
         "teacher.cbt" to Icons.Outlined.Quiz,
         "teacher.messages" to Icons.AutoMirrored.Outlined.Chat,
         "counseling.staff" to Icons.Outlined.Psychology,
+        "counseling.bullying_report" to Icons.Outlined.Shield,
         "uks.record" to Icons.Outlined.LocalHospital,
         "parent.children" to Icons.Outlined.FamilyRestroom,
         "parent.progress" to Icons.AutoMirrored.Outlined.TrendingUp,

@@ -20,4 +20,46 @@
     <string name="sq_manual">لا تستطيع المسح؟ اطلب من المعلم تسجيل حضورك يدويًا من جهازه.</string>
     <string name="sq_camera_cd">كاميرا مسح رمز QR للحصة</string>
     <string name="sq_already_status">أنت مسجّل بالفعل بحالة %1$s في هذه الحصة.</string>
+
+    <!-- Lapor perundungan -->
+    <string name="bully_title">الإبلاغ عن التنمر</string>
+    <string name="bully_intro_title">يقرأ بلاغك المرشدون</string>
+    <string name="bully_intro_body">أخبرنا بما حدث لك أو لصديقك. إن كنت في خطر الآن، فاذهب فورًا إلى معلم أو أقرب شخص بالغ.</string>
+    <string name="bully_what">ماذا حدث؟</string>
+    <string name="bully_description">صف ما حدث</string>
+    <string name="bully_description_hint">من شارك، وماذا حدث، وكم مرة.</string>
+    <string name="bully_count">⁦%1$d/%2$d⁩ حرفًا</string>
+    <string name="bully_when">متى وأين؟</string>
+    <string name="bully_today">اليوم</string>
+    <string name="bully_yesterday">أمس</string>
+    <string name="bully_other_day">يوم آخر…</string>
+    <string name="bully_date_unset">التاريخ اختياري.</string>
+    <string name="bully_pick">اختيار</string>
+    <string name="bully_cancel">إلغاء</string>
+    <string name="bully_where">المكان (اختياري)</string>
+    <string name="bully_where_hint">مثلًا المقصف أو الفصل أو مجموعة دردشة</string>
+    <string name="bully_type">النوع (اختياري)</string>
+    <string name="bully_type_hint">إن لم تكن متأكدًا فاتركه فارغًا. سيقيّمه المرشدون.</string>
+    <string name="bully_type_verbal">لفظي</string>
+    <string name="bully_type_physical">جسدي</string>
+    <string name="bully_type_cyber">إلكتروني</string>
+    <string name="bully_type_exclusion">إقصاء اجتماعي</string>
+    <string name="bully_type_extortion">ابتزاز</string>
+    <string name="bully_type_harassment">تحرش</string>
+    <string name="bully_type_intimidation">ترهيب</string>
+    <string name="bully_type_other">أخرى</string>
+    <string name="bully_anonymous">إرسال دون اسم</string>
+    <string name="bully_anonymous_on">لا يُحفظ اسمك مع هذا البلاغ.</string>
+    <string name="bully_anonymous_off">يمكن للمرشدين رؤية اسمك والتواصل معك.</string>
+    <string name="bully_send">إرسال البلاغ</string>
+    <string name="bully_err_description">صف ما حدث أولًا.</string>
+    <string name="bully_err_description_long">الوصف طويل جدًا (الحد الأقصى %1$d حرف).</string>
+    <string name="bully_err_location_long">المكان طويل جدًا (الحد الأقصى %1$d حرف).</string>
+    <string name="bully_err_future">لا يمكن أن يكون التاريخ في المستقبل.</string>
+    <string name="bully_sent_title">تم إرسال البلاغ</string>
+    <string name="bully_ticket">رقم البلاغ: %1$s</string>
+    <string name="bully_sent_anonymous">هذا البلاغ دون اسم، لذا لا يستطيع المرشدون التواصل معك. إن أردت التحدث فزر غرفة الإرشاد.</string>
+    <string name="bully_sent_named">قد يتواصل معك المرشدون للمتابعة.</string>
+    <string name="bully_new">إرسال بلاغ آخر</string>
+    <string name="bully_done">تم</string>
 </resources>

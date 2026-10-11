@@ -56,4 +56,7 @@
     <string name="cbt_sync_failed">Answers weren\'t synced (code %1$d).</string>
     <string name="cbt_token_failed">The token couldn\'t be checked (code %1$d).</string>
     <string name="cbt_report_failed">The report to the proctor wasn\'t sent (code %1$d).</string>
+
+    <!-- Lapor perundungan -->
+    <string name="bullying_report_failed">The report wasn\'t sent (code %1$d).</string>
 </resources>

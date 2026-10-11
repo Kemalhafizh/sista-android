@@ -88,9 +88,8 @@ object FeatureCatalog {
         put(Screen.AchievementUpload, "achievements")
         put(Screen.TeacherEvaluation, "student.evaluations")
         put(Screen.ChildActivityFeed, "activity.feed")
-        // The SOS button only ran a countdown on the phone: nothing reached
-        // the school. Kept shut until it sends a real report.
-        put(Screen.AntiBullyingSos, NOT_READY)
+        // Anyone signed in may report; the report goes to BK (FASE 119 PR 4).
+        put(Screen.BullyingReport, "counseling.bullying_report")
 
         // Mengajar
         put(Screen.TeacherTodaySessions, "teacher.sessions")
@@ -164,6 +163,7 @@ object FeatureCatalog {
         "teacher.cbt" to Screen.TeacherProctorExams.route,
         "teacher.messages" to Screen.ConversationList.route,
         "counseling.staff" to Screen.CounselingDashboard.route,
+        "counseling.bullying_report" to Screen.BullyingReport.route,
         "uks.record" to Screen.UksVisit.route,
         "parent.children" to Screen.ParentDashboard.route,
         "parent.progress" to Screen.ChildProgress.createRoute(),

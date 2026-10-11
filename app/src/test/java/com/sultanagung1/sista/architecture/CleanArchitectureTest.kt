@@ -38,6 +38,7 @@ class CleanArchitectureTest {
         com.sultanagung1.sista.ui.notifications.NotificationViewModel::class.java,
         com.sultanagung1.sista.ui.scanner.ScannerViewModel::class.java,
         com.sultanagung1.sista.ui.settings.BiometricSettingsViewModel::class.java,
+        com.sultanagung1.sista.ui.counseling.BullyingReportViewModel::class.java,
         com.sultanagung1.sista.ui.analytics.StudentAnalyticsViewModel::class.java,
         com.sultanagung1.sista.ui.analytics.ClassAnalyticsViewModel::class.java,
         com.sultanagung1.sista.ui.analytics.ChildProgressViewModel::class.java,
