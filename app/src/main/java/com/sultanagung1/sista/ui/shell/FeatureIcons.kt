@@ -58,7 +58,6 @@ object FeatureIcons {
         "student.cbt" to Icons.Outlined.Quiz,
         "student.elearning" to Icons.Outlined.Class,
         "student.analytics" to Icons.Outlined.Insights,
-        "student.utbk" to Icons.Outlined.School,
         "library" to Icons.AutoMirrored.Outlined.MenuBook,
         "calendar" to Icons.Outlined.EventNote,
         "question_bank" to Icons.Outlined.Quiz,

@@ -147,11 +147,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideUtbkApiService(retrofit: Retrofit): UtbkApiService =
-        retrofit.create(UtbkApiService::class.java)
-
-    @Provides
-    @Singleton
     fun provideLibraryApiService(retrofit: Retrofit): LibraryApiService =
         retrofit.create(LibraryApiService::class.java)
 

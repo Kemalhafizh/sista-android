@@ -116,11 +116,6 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideUtbkRepository(utbkApi: UtbkApiService): UtbkRepository =
-        UtbkRepository(utbkApi)
-
-    @Provides
-    @Singleton
     fun provideLibraryRepository(libraryApi: LibraryApiService): LibraryRepository =
         LibraryRepository(libraryApi)
 

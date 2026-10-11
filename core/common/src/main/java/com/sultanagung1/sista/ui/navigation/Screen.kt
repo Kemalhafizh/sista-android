@@ -111,7 +111,6 @@ sealed class Screen(val route: String, val title: String = "") {
         fun createRoute(studentUuid: String? = null) =
             if (!studentUuid.isNullOrBlank()) "discipline?studentUuid=$studentUuid" else "discipline"
     }
-    object UtbkTryout : Screen("utbk_tryout", "Simulasi UTBK & Analisis")
     object LibraryCatalog : Screen("library_catalog", "E-Pustaka Pintar")
     object Extracurricular : Screen("extracurricular", "Ekstrakurikuler & OSIS")
     object AchievementUpload : Screen("achievement_upload", "Portofolio Prestasi")

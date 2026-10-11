@@ -57,7 +57,6 @@ object FeatureCatalog {
         put(Screen.ElearningClassDetail, "student.elearning", "teacher.elearning")
         put(Screen.AssignmentSubmit, "student.elearning")
         put(Screen.AcademicAnalytics, "student.analytics")
-        put(Screen.UtbkTryout, "student.utbk")
         put(Screen.LibraryCatalog, "library")
         put(Screen.AcademicCalendar, "calendar")
         put(Screen.EventDetail, "calendar")
@@ -136,7 +135,6 @@ object FeatureCatalog {
         "student.cbt" to Screen.CbtList.route,
         "student.elearning" to Screen.ElearningClassList.route,
         "student.analytics" to Screen.AcademicAnalytics.route,
-        "student.utbk" to Screen.UtbkTryout.route,
         "library" to Screen.LibraryCatalog.route,
         "calendar" to Screen.AcademicCalendar.route,
         "question_bank" to Screen.QuestionBank.route,

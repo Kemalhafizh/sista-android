@@ -52,8 +52,6 @@ import com.sultanagung1.sista.ui.uks.HealthHistoryScreen
 import com.sultanagung1.sista.ui.uks.UksVisitScreen
 import com.sultanagung1.sista.ui.uks.UksViewModel
 import com.sultanagung1.sista.ui.update.UpdatePromptScreen
-import com.sultanagung1.sista.ui.utbk.UtbkTryOutScreen
-import com.sultanagung1.sista.ui.utbk.UtbkViewModel
 import com.sultanagung1.sista.ui.settings.BiometricSettingsViewModel
 
 /**
@@ -304,15 +302,6 @@ fun NavGraphBuilder.settingsNavGraph(
         DisciplineScreen(
             viewModel = viewModel,
             onNavigateBack = { navController.popBackStack() }
-        )
-    }
-
-    guardedComposable(Screen.UtbkTryout.route) {
-        val viewModel: UtbkViewModel = hiltViewModel()
-        UtbkTryOutScreen(
-            viewModel = viewModel,
-            onNavigateBack = { navController.popBackStack() },
-            onStartExamRoom = { examId -> navController.navigate(Screen.CbtTokenEntry.createRoute(examId)) }
         )
     }
 

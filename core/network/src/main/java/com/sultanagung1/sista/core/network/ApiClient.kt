@@ -59,7 +59,6 @@ class ApiClient(private val context: Context) {
     val notificationApi: NotificationApiService by lazy { retrofit.create(NotificationApiService::class.java) }
     val analyticsApi: AnalyticsApiService by lazy { retrofit.create(AnalyticsApiService::class.java) }
     val disciplineApi: DisciplineApiService by lazy { retrofit.create(DisciplineApiService::class.java) }
-    val utbkApi: UtbkApiService by lazy { retrofit.create(UtbkApiService::class.java) }
     val libraryApi: LibraryApiService by lazy { retrofit.create(LibraryApiService::class.java) }
     val extracurricularApi: ExtracurricularApiService by lazy { retrofit.create(ExtracurricularApiService::class.java) }
     val achievementApi: AchievementApiService by lazy { retrofit.create(AchievementApiService::class.java) }

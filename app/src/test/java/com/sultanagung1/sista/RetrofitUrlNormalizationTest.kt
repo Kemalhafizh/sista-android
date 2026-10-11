@@ -31,7 +31,6 @@ class RetrofitUrlNormalizationTest {
         StudentProfileApiService::class.java,
         TeachingJournalMobileApiService::class.java,
         UksMobileApiService::class.java,
-        UtbkApiService::class.java,
 
         // Other API Services in data.api
         AnalyticsApiService::class.java,
