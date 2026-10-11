@@ -239,6 +239,7 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 ### 80.4: Penyesuaian Akibat Model Rombel Baru
 - Semua layar yang menampilkan nama kelas tetap membaca dari server. Tidak ada lagi label jurusan IPA/IPS. Bila ada string `IPA`/`IPS` di `res/values*`, hapus.
 - Layar guru dan wali kelas yang memilih kelas memakai `classroomId` dari server untuk TA aktif. Rombel bernama sama di tahun lalu tidak boleh tertukar (CLAUDE.md: id, bukan nama).
+- **Tidak ada bulan atau tanggal kegiatan yang ditanam di aplikasi.** Setiap tahun sekolah menyusun Kalender Akademik sendiri. Contohnya, kartu survei peminatan muncul karena server mengirim kapabilitasnya, bukan karena bulannya April. Layar Kalender menampilkan label kegiatan kunci dari server (kode `milestone`) apa adanya, dan bertindak berdasarkan kode, bukan teks.
 
 ### 80.5: Kriteria Selesai
 - [ ] Alur 80.1 berjalan ujung ke ujung terhadap server staging/lokal dengan seeder demo FASE 120.
