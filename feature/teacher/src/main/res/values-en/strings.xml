@@ -385,4 +385,18 @@
     <string name="ce_img_type">Unsupported image format. Use JPG, PNG or WebP.</string>
     <string name="ce_img_size">The image is larger than 10 MB.</string>
     <string name="ce_img_unreadable">The image couldn\'t be read from the device.</string>
+    <string name="student_remedial_title">My Remedials</string>
+    <string name="student_remedial_load_failed">Couldn\'t load your remedials</string>
+    <string name="student_remedial_retry">Try again</string>
+    <string name="student_remedial_empty_title">No remedials</string>
+    <string name="student_remedial_empty_body">Your teachers haven\'t given you any remedial work.</string>
+    <string name="student_remedial_unknown">–</string>
+    <string name="student_remedial_status_done">Completed</string>
+    <string name="student_remedial_status_pending">Not done yet</string>
+    <string name="student_remedial_status_overdue">Past the deadline</string>
+    <string name="student_remedial_original">First score</string>
+    <string name="student_remedial_kkm">Pass mark</string>
+    <string name="student_remedial_result">Remedial score</string>
+    <string name="student_remedial_notes">Teacher\'s note: %1$s</string>
+    <string name="student_remedial_deadline">Due: %1$s</string>
 </resources>
