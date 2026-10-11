@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Translate
@@ -50,25 +49,36 @@ import com.sultanagung1.sista.ui.navigation.Screen
 import com.sultanagung1.sista.ui.navigation.canOpen
 import com.sultanagung1.sista.ui.profile.themeLabel
 
-/** Settings of this phone: theme, language, accessibility. Saved on the phone, for this app only. */
+/**
+ * Settings of this phone: theme, language, text size and reading aids, all on
+ * one page (FASE 78.3). Saved on the phone, for this app only; the language is
+ * also saved on the account.
+ */
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateToLanguage: () -> Unit,
-    onNavigateToAccessibility: () -> Unit,
     onNavigateToSecurity: () -> Unit = {},
     onNavigateBack: () -> Unit,
 ) {
     val theme by viewModel.currentTheme.collectAsState()
     val language by viewModel.currentLanguage.collectAsState()
+    val fontScale by viewModel.fontScale.collectAsState()
+    val dyslexic by viewModel.isDyslexicFriendly.collectAsState()
+    val highContrast by viewModel.isHighContrast.collectAsState()
     val capabilities = LocalCapabilityState.current
     SettingsContent(
         theme = theme,
         language = language,
+        fontScale = fontScale,
+        dyslexicFriendly = dyslexic,
+        highContrast = highContrast,
         canOpen = { capabilities.canOpen(it) },
         onTheme = viewModel::setTheme,
         onLanguage = onNavigateToLanguage,
-        onAccessibility = onNavigateToAccessibility,
+        onFontScale = viewModel::setFontScale,
+        onDyslexicFriendly = viewModel::setDyslexicFriendly,
+        onHighContrast = viewModel::setHighContrast,
         onSecurity = onNavigateToSecurity,
         onNavigateBack = onNavigateBack,
     )
@@ -93,10 +103,15 @@ internal fun themeHint(mode: AppThemeMode): Int = when (mode) {
 fun SettingsContent(
     theme: AppThemeMode,
     language: AppLanguage,
+    fontScale: Float,
+    dyslexicFriendly: Boolean,
+    highContrast: Boolean,
     canOpen: (String) -> Boolean,
     onTheme: (AppThemeMode) -> Unit,
     onLanguage: () -> Unit,
-    onAccessibility: () -> Unit,
+    onFontScale: (Float) -> Unit,
+    onDyslexicFriendly: (Boolean) -> Unit,
+    onHighContrast: (Boolean) -> Unit,
     onSecurity: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -141,10 +156,10 @@ fun SettingsContent(
                 item(key = "general") {
                     SistaCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
                         SettingsRow(Icons.Outlined.Translate, stringResource(R.string.settings_language), language.nativeName, onLanguage)
-                        HorizontalDivider(color = SistaTheme.colors.outlineVariant)
-                        SettingsRow(Icons.Outlined.AccessibilityNew, stringResource(R.string.settings_accessibility), stringResource(R.string.settings_accessibility_hint), onAccessibility)
                     }
                 }
+                item(key = "text_size") { TextSizeCard(fontScale, onFontScale) }
+                item(key = "reading") { ReadingCard(dyslexicFriendly, highContrast, onDyslexicFriendly, onHighContrast) }
 
                 val security = listOfNotNull(
                     Triple(Icons.Outlined.Security, R.string.sec_title, onSecurity).takeIf { canOpen(Screen.SecuritySettings.route) },

@@ -22,7 +22,7 @@ object FeatureCatalog {
     /** Destinations any signed-in account may open. */
     val OPEN: Set<String> = setOf(
         Screen.Login, Screen.ServicesHub, Screen.Profile, Screen.Settings,
-        Screen.LanguageSettings, Screen.AccessibilitySettings, Screen.SecuritySettings,
+        Screen.LanguageSettings, Screen.SecuritySettings,
         Screen.NotificationSettings,
         Screen.InAppUpdate, Screen.PdfViewer, Screen.DownloadHistory,
         // Admissions are public: anyone may look up or register.

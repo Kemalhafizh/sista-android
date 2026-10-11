@@ -23,7 +23,6 @@ import com.sultanagung1.sista.data.model.ProfileExtracurricularItem
 import com.sultanagung1.sista.data.model.ProfileHealthSummary
 import com.sultanagung1.sista.data.model.ProfileIbadahSummary
 import com.sultanagung1.sista.data.model.StudentProfile360Data
-import com.sultanagung1.sista.ui.settings.AccessibilitySettingsContent
 import com.sultanagung1.sista.ui.settings.LanguageSettingsContent
 import com.sultanagung1.sista.ui.settings.SettingsContent
 import org.junit.Rule
@@ -98,17 +97,23 @@ class StudentProfileScreenshotTest {
         StudentProfileUiState(isLoading = false, errorMessage = "Data siswa untuk akun ini belum tercatat. Hubungi tata usaha sekolah."),
     )
 
-    @Test fun settings() = capture("settings") {
+    @Test @Config(qualifiers = "in-w400dp-h1700dp-xhdpi")
+    fun settings() = capture("settings") {
         SettingsContent(
-            theme = AppThemeMode.SYSTEM, language = AppLanguage.INDONESIAN, canOpen = { true },
-            onTheme = {}, onLanguage = {}, onAccessibility = {}, onSecurity = {}, onNavigateBack = {},
+            theme = AppThemeMode.SYSTEM, language = AppLanguage.INDONESIAN,
+            fontScale = 1.0f, dyslexicFriendly = false, highContrast = false, canOpen = { true },
+            onTheme = {}, onLanguage = {}, onFontScale = {}, onDyslexicFriendly = {}, onHighContrast = {},
+            onSecurity = {}, onNavigateBack = {},
         )
     }
 
-    @Test fun settingsAmoled() = capture("settings_amoled", dark = true, display = DisplayPreferences(amoledBlack = true)) {
+    @Test @Config(qualifiers = "in-w400dp-h1700dp-xhdpi")
+    fun settingsAmoled() = capture("settings_amoled", dark = true, display = DisplayPreferences(amoledBlack = true)) {
         SettingsContent(
-            theme = AppThemeMode.AMOLED_BLACK, language = AppLanguage.INDONESIAN, canOpen = { true },
-            onTheme = {}, onLanguage = {}, onAccessibility = {}, onSecurity = {}, onNavigateBack = {},
+            theme = AppThemeMode.AMOLED_BLACK, language = AppLanguage.INDONESIAN,
+            fontScale = 1.0f, dyslexicFriendly = false, highContrast = false, canOpen = { true },
+            onTheme = {}, onLanguage = {}, onFontScale = {}, onDyslexicFriendly = {}, onHighContrast = {},
+            onSecurity = {}, onNavigateBack = {},
         )
     }
 
@@ -134,22 +139,27 @@ class StudentProfileScreenshotTest {
     @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1100dp-xhdpi")
     fun ibadahArabic() = profile("ibadah_ar", StudentProfileUiState(isLoading = false, profile = full, tab = ProfileTab.Ibadah))
 
-    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1100dp-xhdpi")
+    @Test @Config(qualifiers = "ar-ldrtl-w400dp-h1700dp-xhdpi")
     fun settingsArabic() = capture("settings_ar") {
         SettingsContent(
-            theme = AppThemeMode.SYSTEM, language = AppLanguage.ARABIC, canOpen = { true },
-            onTheme = {}, onLanguage = {}, onAccessibility = {}, onSecurity = {}, onNavigateBack = {},
+            theme = AppThemeMode.SYSTEM, language = AppLanguage.ARABIC,
+            fontScale = 1.0f, dyslexicFriendly = false, highContrast = false, canOpen = { true },
+            onTheme = {}, onLanguage = {}, onFontScale = {}, onDyslexicFriendly = {}, onHighContrast = {},
+            onSecurity = {}, onNavigateBack = {},
         )
     }
 
-    @Test fun accessibility() = capture("accessibility") {
-        AccessibilitySettingsContent(1.0f, dyslexicFriendly = false, highContrast = false, {}, {}, {}, onNavigateBack = {})
-    }
-
-    @Test fun accessibilityApplied() = capture(
-        "accessibility_dyslexic_contrast",
+    // Text size and reading aids now sit on the settings page itself (FASE 78.3).
+    @Test @Config(qualifiers = "in-w400dp-h1700dp-xhdpi")
+    fun settingsReadingAids() = capture(
+        "settings_reading_aids",
         display = DisplayPreferences(highContrast = true, dyslexicFriendly = true),
     ) {
-        AccessibilitySettingsContent(1.25f, dyslexicFriendly = true, highContrast = true, {}, {}, {}, onNavigateBack = {})
+        SettingsContent(
+            theme = AppThemeMode.SYSTEM, language = AppLanguage.INDONESIAN,
+            fontScale = 1.25f, dyslexicFriendly = true, highContrast = true, canOpen = { true },
+            onTheme = {}, onLanguage = {}, onFontScale = {}, onDyslexicFriendly = {}, onHighContrast = {},
+            onSecurity = {}, onNavigateBack = {},
+        )
     }
 }
