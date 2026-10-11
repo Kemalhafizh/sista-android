@@ -27,7 +27,7 @@ object DeepLinkRouter {
                 "class-session" -> classSessionRoute(uri.lastPathSegment)
                 "grades", "rapor" -> Screen.PdfViewer.route
                 "pdf" -> Screen.PdfViewer.route
-                "sos", "emergency" -> Screen.AntiBullyingSos.route
+                "sos", "emergency", "bullying" -> Screen.BullyingReport.route
                 "mutabaah" -> Screen.Mutabaah.route
                 "tahsin" -> Screen.TahsinRecorder.route
                 "announcement" -> {

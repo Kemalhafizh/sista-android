@@ -206,8 +206,9 @@ fun NavGraphBuilder.settingsNavGraph(
         )
     }
 
-    guardedComposable(Screen.AntiBullyingSos.route) {
-        AntiBullyingSosScreen(
+    guardedComposable(Screen.BullyingReport.route) {
+        BullyingReportScreen(
+            viewModel = hiltViewModel<BullyingReportViewModel>(),
             onNavigateBack = { navController.popBackStack() }
         )
     }

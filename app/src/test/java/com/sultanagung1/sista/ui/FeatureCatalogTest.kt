@@ -99,9 +99,11 @@ class FeatureCatalogTest {
     }
 
     @Test
-    fun `the SOS screen that reports nothing is shut for everyone`() {
-        val everything = ready(*FeatureCatalog.REQUIRES.values.flatten().filter { it != FeatureCatalog.NOT_READY }.toTypedArray())
-        assertEquals(GateDecision.LOCKED, FeatureCatalog.decide(everything, Screen.AntiBullyingSos.route))
+    fun `the bullying report opens with its own feature, which the server gives every account`() {
+        // It replaced an SOS screen whose countdown never reached anyone and was shut for all.
+        assertEquals(GateDecision.OPEN, FeatureCatalog.decide(ready("counseling.bullying_report"), Screen.BullyingReport.route))
+        assertEquals(GateDecision.LOCKED, FeatureCatalog.decide(ready("student.grades"), Screen.BullyingReport.route))
+        assertEquals(Screen.BullyingReport.route, FeatureCatalog.ENTRY["counseling.bullying_report"])
     }
 
     @Test

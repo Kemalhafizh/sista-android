@@ -4604,7 +4604,7 @@ sealed interface ActiveSessionEffect : UiEffect {
 
 ---
 
-## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[PR A SELESAI 10 Okt 2026 — PR B menunggu endpoint FASE 119 PR 4]`
+## ✂️ FASE 78: DEBLOAT APLIKASI, HANYA FITUR YANG DIPAKAI SEKOLAH `[PR A SELESAI 10 Okt 2026, PR B SELESAI 11 Okt 2026 — sisa: sumber data widget presensi (78.2) dan Aksesibilitas digabung ke Pengaturan (78.3)]`
 
 > **Tanggal Rancangan:** 5 Oktober 2026
 > **Pelaksana:** Agent Frontend/Mobile (repo `sista-android`). Pasangannya di backend: **FASE 119** di `sistem-terpadu/implementation_plan.md`.
@@ -4677,7 +4677,8 @@ Ikut dihapus:
 - [x] Tidak ada lagi kelas, string, atau rute untuk layar 78.1. `LocalizationTest` dan `HardcodedUiTextTest` hijau, dan daftar `debt` menyusut 12 file.
 - [x] `FeatureCatalogTest` hijau tanpa kunci yang dihapus, ditambah test bahwa kunci yang tidak dikenal diabaikan.
 - [x] APK tidak lagi meminta izin lokasi (`aapt2 dump permissions`, dan `tools:node="remove"` di manifest).
-- [ ] Bagian ini diperbarui menjadi `[SELESAI]` setelah PR B (Lapor Perundungan).
+- [x] PR B: "Lapor Perundungan" mengirim ke `POST counseling/bullying-reports` (sistem-terpadu#44), dengan screenshot kosong, terisi, terkirim, error, gelap, en, ar.
+- [ ] Bagian ini diperbarui menjadi `[SELESAI]` setelah widget presensi (78.2) dan penggabungan Aksesibilitas (78.3) selesai.
 
 ### 78.7: Hasil PR A (10 Okt 2026)
 
@@ -4694,3 +4695,10 @@ Catatan pelaksanaan:
 - **Ikut dihapus karena hanya dipakai layar 78.1:** `GeoUtils` dan data `campus` dari `mobile/config`, antrean offline cek-in GPS, `DocumentApiService`/`DocumentRepository`, `GamificationApiService`/`GamificationRepository`, `AiApiService`/`AiRepository`, endpoint `analytics/executive/kpi`, `mobile/attendance/{gps-checkin,dynamic-qr,verify-qr}`, ringkasan `gamification` di model beranda kontekstual, mode scanner "Presensi QR", dan `play-services-location`.
 - **Pintu presensi siswa** (FAB beranda dan deep link `attendance`) sekarang membuka `StudentSessionQrScan`.
 - Widget presensi tidak lagi diperbarui dari cek-in GPS. Sumber datanya (`student/attendance`) belum diganti ke presensi per mapel; itu bagian 78.2.
+
+### 78.8: Hasil PR B (11 Okt 2026)
+
+- `AntiBullyingSosScreen` (tombol SOS, hitung mundur, koordinat) dihapus. Penggantinya `BullyingReportScreen` di rute `bullying_report`, dibuka oleh kunci kapabilitas `counseling.bullying_report` (semua peran yang masuk). Deep link `sos`, `emergency`, dan `bullying` diarahkan ke sana.
+- Isian: cerita kejadian (wajib, maks. 5.000 karakter), tanggal (hari ini/kemarin/pilih, tidak boleh di masa depan), tempat (maks. 255), jenis (kode `BullyingReport::TYPES` dari server), dan sakelar anonim yang menyala secara bawaan. Aturannya ada di `BullyingReportRules` dan mengikuti validasi `BullyingReportApiController::store`, sehingga form tidak mengirim sesuatu yang pasti ditolak.
+- Layar baru menyatakan "terkirim" setelah server menjawab 201, lalu menampilkan pesan server, nomor tiket, dan status dari server apa adanya. Bila gagal, pesan server ditampilkan dan isian tetap ada.
+- Tanpa GPS, tanpa SOS, dan tanpa angka atau nama karangan.

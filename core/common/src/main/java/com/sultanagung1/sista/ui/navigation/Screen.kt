@@ -39,7 +39,7 @@ sealed class Screen(val route: String, val title: String = "") {
 
     // Finance & Library & Counseling
     object Billing : Screen("billing", "Tagihan SPP")
-    object AntiBullyingSos : Screen("antibullying_sos", "Tombol Panik SOS")
+    object BullyingReport : Screen("bullying_report", "Lapor Perundungan")
 
     // Teacher Screens
     object TeacherDashboard : Screen("teacher_dashboard", "Dashboard Guru")

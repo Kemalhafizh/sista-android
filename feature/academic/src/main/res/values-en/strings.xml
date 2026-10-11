@@ -20,4 +20,46 @@
     <string name="sq_manual">Can\'t scan? Ask your teacher to mark you manually on their device.</string>
     <string name="sq_camera_cd">Class QR scanner camera</string>
     <string name="sq_already_status">You\'re already recorded as %1$s for this session.</string>
+
+    <!-- Lapor perundungan -->
+    <string name="bully_title">Report Bullying</string>
+    <string name="bully_intro_title">Your report goes to the counsellors</string>
+    <string name="bully_intro_body">Tell us what happened, to you or to a friend. If you are in danger right now, go to a teacher or the nearest adult straight away.</string>
+    <string name="bully_what">What happened?</string>
+    <string name="bully_description">Describe what happened</string>
+    <string name="bully_description_hint">Who was involved, what was done, and how often.</string>
+    <string name="bully_count">%1$d/%2$d characters</string>
+    <string name="bully_when">When and where?</string>
+    <string name="bully_today">Today</string>
+    <string name="bully_yesterday">Yesterday</string>
+    <string name="bully_other_day">Another day…</string>
+    <string name="bully_date_unset">The date is optional.</string>
+    <string name="bully_pick">Choose</string>
+    <string name="bully_cancel">Cancel</string>
+    <string name="bully_where">Place (optional)</string>
+    <string name="bully_where_hint">For example the canteen, a classroom, or a group chat</string>
+    <string name="bully_type">What kind (optional)</string>
+    <string name="bully_type_hint">If unsure, leave it empty. The counsellors will assess it.</string>
+    <string name="bully_type_verbal">Verbal</string>
+    <string name="bully_type_physical">Physical</string>
+    <string name="bully_type_cyber">Online</string>
+    <string name="bully_type_exclusion">Social exclusion</string>
+    <string name="bully_type_extortion">Extortion</string>
+    <string name="bully_type_harassment">Harassment</string>
+    <string name="bully_type_intimidation">Intimidation</string>
+    <string name="bully_type_other">Other</string>
+    <string name="bully_anonymous">Send anonymously</string>
+    <string name="bully_anonymous_on">Your name is not stored with this report.</string>
+    <string name="bully_anonymous_off">The counsellors can see your name and contact you.</string>
+    <string name="bully_send">Send report</string>
+    <string name="bully_err_description">Please describe what happened first.</string>
+    <string name="bully_err_description_long">The description is too long (at most %1$d characters).</string>
+    <string name="bully_err_location_long">The place is too long (at most %1$d characters).</string>
+    <string name="bully_err_future">The date can\'t be in the future.</string>
+    <string name="bully_sent_title">Report sent</string>
+    <string name="bully_ticket">Report number: %1$s</string>
+    <string name="bully_sent_anonymous">This report is anonymous, so the counsellors can\'t contact you. If you\'d like to talk, visit the counselling room.</string>
+    <string name="bully_sent_named">The counsellors may contact you to follow up.</string>
+    <string name="bully_new">Send another report</string>
+    <string name="bully_done">Done</string>
 </resources>

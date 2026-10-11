@@ -56,4 +56,7 @@
     <string name="cbt_sync_failed">لم تتم مزامنة الإجابات (الرمز %1$d).</string>
     <string name="cbt_token_failed">تعذر التحقق من الرمز (الرمز %1$d).</string>
     <string name="cbt_report_failed">لم يُرسل التقرير إلى المراقب (الرمز %1$d).</string>
+
+    <!-- Lapor perundungan -->
+    <string name="bullying_report_failed">لم يُرسل البلاغ (الرمز %1$d).</string>
 </resources>

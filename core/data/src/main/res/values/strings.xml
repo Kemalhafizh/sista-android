@@ -56,4 +56,7 @@
     <string name="cbt_sync_failed">Jawaban belum tersinkron (kode %1$d).</string>
     <string name="cbt_token_failed">Token belum bisa diperiksa (kode %1$d).</string>
     <string name="cbt_report_failed">Laporan ke pengawas belum terkirim (kode %1$d).</string>
+
+    <!-- Lapor perundungan -->
+    <string name="bullying_report_failed">Laporan belum terkirim (kode %1$d).</string>
 </resources>
