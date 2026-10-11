@@ -32,6 +32,7 @@ Presensi GPS, QR identitas, pendaftaran wajah, AI tutor & esai, gamifikasi, pind
 |---|---|
 | 5 Okt 2026 | Presensi siswa hanya QR per mapel. Pegawai memakai mesin sidik jari (bukan aplikasi) |
 | 11 Okt 2026 | Full Kurikulum Merdeka: siswa kelas X mengisi **survei peminatan** mapel pilihan (FASE 80). Survei hanya memetakan minat; rombel XI dirancang dan diplot Waka Kurikulum di web |
+| 12 Okt 2026 | SISTA masih **blueprint untuk dipresentasikan ke sekolah**; prioritas terdekat adalah APK demo |
 | 11 Okt 2026 | Evaluasi guru oleh siswa dipertahankan. Widget jadwal sholat **dipertahankan** |
 
 ### Aturan main
@@ -45,6 +46,7 @@ Presensi GPS, QR identitas, pendaftaran wajah, AI tutor & esai, gamifikasi, pind
 |---|---|---|---|
 | 77 | Sesi kelas & presensi QR per mapel | ✅ (arsip) | 117 |
 | 78 | Debloat | ✅ | 119 |
+| **DEMO** | APK demo ke server staging + pita "DEMO, data fiktif" (sistem-terpadu Milestone Demo D5) | ⏳ Setelah 79.3 | Milestone Demo |
 | **79** | **Siap rilis:** token terenkripsi, build rilis R8, konfigurasi lingkungan, signing, Firebase sekolah, widget sholat, kode mati | ⏳ **Berikutnya**, bisa langsung jalan paralel | 119.12 (endpoint jadwal sholat) |
 | **80** | Sisi Android FASE 120: survei peminatan, kelas tahun depan, riwayat rombel | ⏳ Setelah API 120.4 tersedia | 120 |
 | 81 | Sisi Android FASE 121: ajukan izin/sakit anak, rapor terbit, kotak masuk persetujuan pimpinan | 📝 Garis besar | 121 |
@@ -191,6 +193,12 @@ Data dimuat di Beranda siswa, setelah scan QR berhasil, dan saat orang tua membu
 ### 79.3: Konfigurasi Lingkungan
 - **Masalah:** `Constants.DEFAULT_BASE_URL = "http://127.0.0.1:8000/api/v1/"`.
 - **Kerjakan:** `BASE_URL` dan `REVERB_HOST` lewat `buildConfigField` per lingkungan (`debug`, `staging`, `release`). Build rilis **gagal** bila URL produksi tidak diisi, bukan diam-diam jatuh ke 127.0.0.1. Cleartext hanya boleh di debug (`network_security_config` per build type).
+
+### 79.3b: Varian Demo (Milestone Demo D5)
+- Varian build `demo` yang menunjuk ke server staging demo. Ikon/nama aplikasi diberi akhiran "Demo" supaya tidak tertukar dengan produksi.
+- Bila server mengirim penanda demo (`mobile/config` → `demo: true`), aplikasi menampilkan pita **"DEMO, data fiktif"** di atas layar.
+- APK demo dibagikan lewat tautan unduh untuk presentasi ke sekolah. SISTA saat ini masih blueprint yang akan dipresentasikan; produksi menunggu persetujuan sekolah.
+- Kerjakan 79.3 dan 79.3b lebih dulu dari butir 79 lainnya.
 
 ### 79.4: Widget Jadwal Sholat (dipertahankan, tetapi kini kosong)
 - **Keadaan:** `PrayerTimeWidgetProvider` hanya menampilkan "belum tersedia" karena belum ada sumber data. Ini sudah jujur, tetapi tidak berguna.
