@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_title">الفواتير</string>
+    <string name="billing_screen_load_failed">تعذّر تحميل الفواتير</string>
+    <string name="billing_retry">حاول مرة أخرى</string>
+    <string name="billing_empty_title">لا توجد فواتير بعد</string>
+    <string name="billing_empty_body">لم تسجّل الإدارة المدرسية أي فواتير لك.</string>
+    <string name="billing_summary_remaining">المتبقي للدفع</string>
+    <string name="billing_summary_open_count">⁦%1$d⁩ فواتير غير مسددة بالكامل</string>
+    <string name="billing_summary_paid">مسددة</string>
+    <string name="billing_summary_paid_hint">فواتير مسددة بالكامل</string>
+    <string name="billing_how_to_pay_title">طريقة الدفع</string>
+    <string name="billing_how_to_pay_body">لا يمكن دفع الفواتير عبر التطبيق بعد. ادفع لأمين الصندوق أو للإدارة المدرسية، وستتغير الحالة هنا بعد تسجيلها.</string>
+    <string name="billing_filter_all">الكل</string>
+    <string name="billing_filter_open">غير مسددة</string>
+    <string name="billing_filter_paid">مسددة</string>
+    <string name="billing_none_open">لا توجد فواتير غير مسددة</string>
+    <string name="billing_none_paid">لا توجد فواتير مسددة بعد</string>
+    <string name="billing_unknown">–</string>
+    <string name="billing_status_paid">مسددة</string>
+    <string name="billing_status_partial">مسددة جزئيًا</string>
+    <string name="billing_status_unpaid">غير مسددة</string>
+    <string name="billing_status_overdue">متأخرة</string>
+    <string name="billing_amount">المبلغ</string>
+    <string name="billing_remaining">المتبقي</string>
+    <string name="billing_due">تاريخ الاستحقاق: %1$s</string>
+</resources>

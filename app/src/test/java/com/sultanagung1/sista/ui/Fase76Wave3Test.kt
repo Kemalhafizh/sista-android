@@ -2,7 +2,6 @@ package com.sultanagung1.sista.ui
 
 import com.sultanagung1.sista.core.designsystem.LoadingTier
 import com.sultanagung1.sista.core.designsystem.LoadingTierTiming
-import com.sultanagung1.sista.ui.finance.formatRupiahCompact
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -78,23 +77,14 @@ class Fase76Wave3Test {
     // ── 76.2 bento on Billing ────────────────────────────────────────────
 
     @Test
-    fun billingSummaryIsABentoWithoutInventedLabels() {
+    fun billingSummaryHasNoInventedLabels() {
+        // The bento tiles became :core:ui StatTiles (BillingRules.summary, tested in
+        // :feature:finance); the compact "rb/jt" amounts could not be translated.
         val bill = code(billing)
-        assertTrue(bill.contains("BentoPair("))
-        assertTrue(bill.contains("ModernBentoCard("))
+        assertTrue(bill.contains("StatTile("))
         // Printed for every student regardless of data.
         assertFalse(bill.contains("T.A. 2026/2027"))
         assertFalse(bill.contains("Aktif Belajar"))
-    }
-
-    @Test
-    fun compactRupiahFitsHalfWidthTiles() {
-        assertEquals("Rp 750", formatRupiahCompact(750.0))
-        assertEquals("Rp 750 rb", formatRupiahCompact(750_000.0))
-        assertEquals("Rp 12,5 jt", formatRupiahCompact(12_500_000.0))
-        assertEquals("Rp 3 jt", formatRupiahCompact(3_000_000.0))
-        assertEquals("Rp 1,2 M", formatRupiahCompact(1_200_000_000.0))
-        assertEquals("Rp 0", formatRupiahCompact(0.0))
     }
 
     // ── 76.2 see-through headers ─────────────────────────────────────────

@@ -59,4 +59,5 @@
 
     <!-- Lapor perundungan -->
     <string name="bullying_report_failed">Laporan belum terkirim (kode %1$d).</string>
+    <string name="billing_load_failed">Tagihan belum bisa dimuat (kode %1$d).</string>
 </resources>

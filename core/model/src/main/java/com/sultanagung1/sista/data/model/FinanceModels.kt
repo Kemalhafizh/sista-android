@@ -2,29 +2,20 @@ package com.sultanagung1.sista.data.model
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * One bill from GET student/billings (BillingResource). [month] and [dueDate]
+ * are nullable columns on the server; nothing is filled in for them.
+ */
 data class BillingInvoice(
     @SerializedName("id") val id: Long,
-    @SerializedName("category") val category: String,
-    @SerializedName("month") val month: String,
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("month") val month: String? = null,
     @SerializedName("amount") val amount: Double,
-    @SerializedName("amount_formatted") val amountFormatted: String,
-    @SerializedName("due_date") val dueDate: String,
-    @SerializedName("status") val status: String, // e.g. paid, unpaid, pending — matches Billing.status values
+    @SerializedName("amount_formatted") val amountFormatted: String? = null,
+    /** yyyy-MM-dd */
+    @SerializedName("due_date") val dueDate: String? = null,
+    /** unpaid / partial / paid (billings.status). */
+    @SerializedName("status") val status: String,
     @SerializedName("remaining_balance") val remainingBalance: Double,
     @SerializedName("payment_url") val paymentUrl: String? = null
-) {
-    /** No "title" field exists server-side — this is the closest honest label built from real data. */
-    val displayTitle: String get() = "$category — $month"
-}
-
-data class PaymentVaResponse(
-    @SerializedName("billing_id") val billingId: Long,
-    @SerializedName("category") val category: String,
-    @SerializedName("amount") val amount: Double,
-    @SerializedName("amount_formatted") val amountFormatted: String,
-    @SerializedName("bank") val bank: String,
-    @SerializedName("va_number") val vaNumber: String,
-    @SerializedName("status") val status: String,
-    @SerializedName("expiry_time") val expiryTime: String,
-    @SerializedName("qr_content") val qrContent: String
 )

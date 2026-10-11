@@ -59,4 +59,5 @@
 
     <!-- Lapor perundungan -->
     <string name="bullying_report_failed">لم يُرسل البلاغ (الرمز %1$d).</string>
+    <string name="billing_load_failed">تعذّر تحميل الفواتير (الرمز ⁦%1$d⁩).</string>
 </resources>

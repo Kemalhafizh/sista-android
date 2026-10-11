@@ -59,4 +59,5 @@
 
     <!-- Lapor perundungan -->
     <string name="bullying_report_failed">The report wasn\'t sent (code %1$d).</string>
+    <string name="billing_load_failed">Couldn\'t load your bills (code %1$d).</string>
 </resources>

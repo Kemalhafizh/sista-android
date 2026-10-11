@@ -17,12 +17,6 @@ interface StudentApiService {
     @GET("student/billings")
     suspend fun getBillings(): Response<ApiEnvelope<List<BillingInvoice>>>
 
-    @POST("student/billings/{id}/pay")
-    suspend fun requestPaymentVa(
-        @Path("id") billingId: Long,
-        @Body body: Map<String, String>
-    ): Response<ApiEnvelope<PaymentVaResponse>>
-
     @GET("student/mutabaah")
     suspend fun getMutabaah(): Response<ApiEnvelope<List<MutabaahLogItem>>>
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_title">Tagihan</string>
+    <string name="billing_screen_load_failed">Tagihan belum bisa dimuat</string>
+    <string name="billing_retry">Coba lagi</string>
+    <string name="billing_empty_title">Belum ada tagihan</string>
+    <string name="billing_empty_body">Tata Usaha belum mencatat tagihan untukmu.</string>
+    <string name="billing_summary_remaining">Sisa tagihan</string>
+    <string name="billing_summary_open_count">%1$d tagihan belum lunas</string>
+    <string name="billing_summary_paid">Lunas</string>
+    <string name="billing_summary_paid_hint">tagihan sudah lunas</string>
+    <string name="billing_how_to_pay_title">Cara membayar</string>
+    <string name="billing_how_to_pay_body">Pembayaran belum bisa dilakukan lewat aplikasi. Bayar langsung ke Bendahara atau Tata Usaha sekolah, lalu statusnya akan berubah di sini setelah dicatat.</string>
+    <string name="billing_filter_all">Semua</string>
+    <string name="billing_filter_open">Belum lunas</string>
+    <string name="billing_filter_paid">Lunas</string>
+    <string name="billing_none_open">Tidak ada tagihan yang belum lunas</string>
+    <string name="billing_none_paid">Belum ada tagihan yang lunas</string>
+    <string name="billing_unknown">–</string>
+    <string name="billing_status_paid">Lunas</string>
+    <string name="billing_status_partial">Dibayar sebagian</string>
+    <string name="billing_status_unpaid">Belum dibayar</string>
+    <string name="billing_status_overdue">Lewat jatuh tempo</string>
+    <string name="billing_amount">Nominal</string>
+    <string name="billing_remaining">Sisa</string>
+    <string name="billing_due">Jatuh tempo: %1$s</string>
+</resources>

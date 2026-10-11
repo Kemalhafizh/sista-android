@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_title">Bills</string>
+    <string name="billing_screen_load_failed">Couldn\'t load your bills</string>
+    <string name="billing_retry">Try again</string>
+    <string name="billing_empty_title">No bills yet</string>
+    <string name="billing_empty_body">The school office hasn\'t recorded any bills for you.</string>
+    <string name="billing_summary_remaining">Left to pay</string>
+    <string name="billing_summary_open_count">%1$d bills not fully paid</string>
+    <string name="billing_summary_paid">Paid</string>
+    <string name="billing_summary_paid_hint">bills paid in full</string>
+    <string name="billing_how_to_pay_title">How to pay</string>
+    <string name="billing_how_to_pay_body">Bills can\'t be paid in the app yet. Pay the school treasurer or administration office; the status here changes once they record it.</string>
+    <string name="billing_filter_all">All</string>
+    <string name="billing_filter_open">Not paid</string>
+    <string name="billing_filter_paid">Paid</string>
+    <string name="billing_none_open">Nothing left to pay</string>
+    <string name="billing_none_paid">No bill is paid yet</string>
+    <string name="billing_unknown">–</string>
+    <string name="billing_status_paid">Paid</string>
+    <string name="billing_status_partial">Partly paid</string>
+    <string name="billing_status_unpaid">Not paid</string>
+    <string name="billing_status_overdue">Overdue</string>
+    <string name="billing_amount">Amount</string>
+    <string name="billing_remaining">Left to pay</string>
+    <string name="billing_due">Due: %1$s</string>
+</resources>

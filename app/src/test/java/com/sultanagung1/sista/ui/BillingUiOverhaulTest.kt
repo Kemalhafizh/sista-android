@@ -5,9 +5,11 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Unit test verifying compliance of BillingScreen overhaul
- * with SISTA Modern Design System: Off-white canvas, 0dp elevation, 0.5dp border,
- * Emerald600 accents, and 48dp touch targets.
+ * The billing screen shows the school's records and nothing invented. It used
+ * to offer a "virtual account" that the server made up from a bank prefix and
+ * the NIS (no bank ever knew it), and an "official receipt" whose paid date
+ * was the due date. The earlier version of this test pinned that screen's
+ * look (Slate50, 0.5dp borders); the screen is now built from :core:ui.
  */
 class BillingUiOverhaulTest {
 
@@ -21,48 +23,23 @@ class BillingUiOverhaulTest {
             ?: throw IllegalStateException("Cannot locate $relativePath in any candidate paths")
     }
 
+    private val screen = "feature/finance/src/main/java/com/sultanagung1/sista/ui/finance/BillingScreen.kt"
+    private val viewModel = "feature/finance/src/main/java/com/sultanagung1/sista/ui/finance/BillingViewModel.kt"
+
     @Test
-    fun testBillingScreenDesignCompliance() {
-        val file = findSourceFile("feature/finance/src/main/java/com/sultanagung1/sista/ui/finance/BillingScreen.kt")
-        assertTrue("BillingScreen.kt must exist", file.exists())
+    fun noInventedPaymentChannelOrReceipt() {
+        val code = findSourceFile(screen).readText() + findSourceFile(viewModel).readText()
+        for (forbidden in listOf("requestPaymentVa", "vaNumber", "Virtual Account", "KUITANSI", "Kwitansi", "receiptNumber")) {
+            assertFalse("BillingScreen still has $forbidden", code.contains(forbidden))
+        }
+    }
 
-        val content = file.readText()
-
-        // 1. Off-white background
-        assertTrue(
-            "BillingScreen must use Slate50 background token",
-            content.contains("Slate50")
-        )
-
-        // 2. Flat elevation
-        assertTrue(
-            "BillingScreen cards must use 0.dp elevation",
-            content.contains("cardElevation(0.dp)")
-        )
-
-        // 3. Hairline borders 0.5dp
-        assertTrue(
-            "BillingScreen must apply 0.5.dp border with Slate200",
-            content.contains("0.5.dp") && content.contains("Slate200")
-        )
-
-        // 4. Accent Emerald600 for key indicators and buttons
-        assertTrue(
-            "BillingScreen must use Emerald600 accent",
-            content.contains("Emerald600")
-        )
-
-        // 5. 48dp WCAG touch targets
-        assertTrue(
-            "BillingScreen must adhere to 48dp touch targets",
-            content.contains("sulaoneInteractiveTouchTarget(48.dp)")
-        )
-
-        // 6. No hardcoded hex colors
+    @Test
+    fun builtFromCoreUiWithoutHardcodedColours() {
+        val content = findSourceFile(screen).readText()
+        assertTrue(content.contains("com.sultanagung1.sista.core.ui.component.SistaCard"))
+        assertFalse(content.contains("com.sultanagung1.sista.core.designsystem"))
         val hardcodedRegex = Regex("""Color\s*\(\s*0x[0-9a-fA-F]{6,8}\s*\)""")
-        assertFalse(
-            "BillingScreen must not contain hardcoded Color(0x...)",
-            hardcodedRegex.containsMatchIn(content)
-        )
+        assertFalse("BillingScreen must not contain hardcoded Color(0x...)", hardcodedRegex.containsMatchIn(content))
     }
 }
