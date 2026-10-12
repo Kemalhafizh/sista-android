@@ -2,6 +2,8 @@
 
 Kotlin + Jetpack Compose, multi-module (`app`, `core/*`, `feature/*`). The backend is `Kemalhafizh/sistem-terpadu` (Laravel); every feature here must match an endpoint there. Read this before changing anything. CI enforces several of the rules below.
 
+What to work on and why: the "Status Saat Ini" section at the top of `android_implementation.md`. Who does what, when, and who approves it, for every feature: `sistem-terpadu/docs/ALUR_KERJA.md`. A screen follows a workflow written there.
+
 ## Aturan main
 
 ### 1. Tidak ada angka karangan
